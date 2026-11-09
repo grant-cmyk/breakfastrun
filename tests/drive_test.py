@@ -97,9 +97,11 @@ def screen_text(sp, row, col, n):
 
 def frame_ok(sp):
     bits = screen_bits(sp)
-    top = bits[30:32, 6:186].all() and bits[160:162, 6:186].all()
-    sides = bits[30:162, 6:8].all() and bits[30:162, 184:186].all()
-    return bool(top and sides)
+    top = bits[25:32, 5:187].all() and bits[160:167, 5:187].all()     # 7-px bands
+    sides = bits[29:163, 1:8].all() and bits[29:163, 184:191].all()
+    corners = not bits[25, 1:5].any() and not bits[166, 187:191].any() and bits[25, 5] and bits[28, 2]
+    outside = not bits[24, 0:192].any() and not bits[167, 0:192].any() and not bits[25:167, 0].any() and not bits[25:167, 191].any()
+    return bool(top and sides and corners and outside)
 
 class Racer(Spectrum):
     armed = False                           # stop at copy_done only when asked
@@ -147,7 +149,7 @@ with Racer(headless=True) as sp:
     p0 = car(sp, 0); cs0 = [car(sp, i) for i in CPUS]
     print('you', p0); [print('CPU', i, c) for i, c in zip(CPUS, cs0)]
     check(p0['vx'] == 0 and p0['ang'] == 16, 'your car waits on the start line')
-    check(frame_ok(sp), 'a 2-pixel frame surrounds the play window')
+    check(frame_ok(sp), 'a 7-pixel bezel with rounded corners surrounds the play window')
     logo = [[c == '#' for c in l.strip()] for l in open(os.path.join(ROOT, 'build', 'logo.txt'))]
     sb = screen_bits(sp)
     check((sb[8:32, 200:256] == np.array(logo)).all(), 'the BREAKFAST RUN logo is at the top of the panel')

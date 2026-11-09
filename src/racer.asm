@@ -1801,44 +1801,67 @@ pa_line:
         inc e
         jr pa_char
 
-; DRAW_FRAME: a 2-pixel black frame round the window.
+; DRAW_FRAME: an arcade bezel round the window - a 7-pixel black band, its
+; outer corners rounded, with no line of its own against the picture.
 ; Drawn once; the scroller never writes outside the window, so it stays.
+; Each row: the left edge byte (column WIN_COL-1), then 22 solid bytes on the
+; top and bottom bands only, then the right edge byte (column WIN_COL+WIN_W).
 draw_frame:
-        ld b,WIN_Y-2            ; top: two rows of 26 bytes over the window
-        call df_hline
-        ld b,WIN_Y-1
-        call df_hline
-        ld b,WIN_Y+WIN_H        ; bottom
-        call df_hline
-        ld b,WIN_Y+WIN_H+1
-        call df_hline
-        ld b,WIN_Y-2            ; sides: the 2 pixels each side, every row
-df_side:
+        ld b,WIN_Y-7
+df_row:
         ld c,(WIN_COL-1)*8
         call scr_addr
-        ld (hl),0x03            ; left: the right-hand 2 pixels of column 3
-        ld a,l
-        add a,WIN_W+1
-        ld l,a
-        ld (hl),0xC0            ; right: the left-hand 2 pixels of column 28
-        inc b
+        ld de,0xFE7F            ; D right edge, E left edge: 7 pixels each
         ld a,b
-        cp WIN_Y+WIN_H+2
-        jr nz,df_side
-        ret
-df_hline:                       ; row B: 0x03, 24 x 0xFF, 0xC0
-        ld c,(WIN_COL-1)*8
-        call scr_addr
-        ld (hl),0x03
+        sub WIN_Y-7             ; rows 0..3 of the top band are rounded
+        cp 4
+        jr c,df_round
+        ld a,WIN_Y+WIN_H+6
+        sub b                   ; and rows 0..3 up from the bottom
+        cp 4
+        jr nc,df_put
+df_round:
+        push hl
+        add a,a
+        ld hl,df_corn
+        add a,l
+        ld l,a
+        jr nc,df_r1
+        inc h
+df_r1:
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        pop hl
+df_put:
+        ld (hl),e
+        ld a,b
+        cp WIN_Y
+        jr c,df_fill
+        cp WIN_Y+WIN_H
+        jr c,df_skip
+df_fill:                        ; top and bottom bands: solid across the window
         inc l
         ld a,WIN_W
-df_h1:
+df_f1:
         ld (hl),0xFF
         inc l
         dec a
-        jr nz,df_h1
-        ld (hl),0xC0
+        jr nz,df_f1
+        jr df_right
+df_skip:                        ; beside the window: jump over it
+        ld a,l
+        add a,WIN_W+1
+        ld l,a
+df_right:
+        ld (hl),d
+        inc b
+        ld a,b
+        cp WIN_Y+WIN_H+7
+        jr nz,df_row
         ret
+df_corn:                        ; left, right edge bytes for the 4 rounded rows
+        db 0x07,0xE0, 0x1F,0xF8, 0x3F,0xFC, 0x3F,0xFC
 
 ; ---------------------------------------------------------------------
 ; MAKE_COPIER: write the screen-copy routine into memory at COPIER.

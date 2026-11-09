@@ -260,3 +260,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   E tyre wall on grass, F square china plate rim on blue, G stitched hem on red, H thick rounded arcade bezel.
   All in the cells outside the window, drawn once: no cost per picture. docs/design/edges.png,
   edges_corners.png (top-left corner at 5x), edges_a.._h.png at 3x. Waiting on Grant's pick.
+
+## 2026-11-09 21:04 SAST - arcade bezel built in
+- Grant picked H, the arcade bezel. draw_frame now draws a 7-pixel black band outside the window with
+  rounded outer corners (4 rows of corner bytes in df_corn), drawn once. Test frame_ok checks the bands,
+  the rounded corners and that nothing spills outside. drive_test RESULT: PASS. build/racer_22wide_trial.tap.
