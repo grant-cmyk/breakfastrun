@@ -340,6 +340,12 @@ CPU0WP  equ 29
 CPU1X   equ 224
 CPU1Y   equ 360
 CPU1WP  equ 29
+CPU2X   equ 196
+CPU2Y   equ 336
+CPU2WP  equ 29
+CPU3X   equ 196
+CPU3Y   equ 352
+CPU3WP  equ 29
 waypoints:
         dw 412,352
         dw 441,340

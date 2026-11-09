@@ -49,6 +49,7 @@ with Spectrum(headless=True) as sp:
 print('lap time %.1f s' % t)
 fps = [f for f, _ in seg if f > 0]
 print('pictures per second between waypoints: min %.1f  max %.1f  mean %.1f' % (min(fps), max(fps), sum(fps) / len(fps)))
+print('per stretch:', ' '.join('%.1f' % f for f in fps))
 out = os.path.join(ROOT, 'build', 'stage3_lap.gif')
 small = [f.resize((f.width * 2, f.height * 2), Image.NEAREST) for f in frames[::1]]
 small[0].save(out, save_all=True, append_images=small[1:], duration=20, loop=0)

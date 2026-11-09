@@ -31,6 +31,8 @@ def car_value(x, y, kind):
     if y < -3.0:                              # nose
         if kind == 0 and ax < 1.0 and -5.5 <= y < -3.6:
             return PAPER                      # player's notch
+        if kind == 3 and ax < 2.0 and -5.0 <= y < -4.0:
+            return PAPER                      # CPU C: grille slot across the nose
         return INK
     if y < -1.0:                              # windscreen: glass between the pillars
         return PAPER if ax < 2.0 else INK
@@ -40,6 +42,7 @@ def car_value(x, y, kind):
             return PAPER if ax < 2.0 else INK
         if ax >= 2.0: return PAPER            # open sides ring the roof with paper
         if kind == 1 and ax < 0.75: return PAPER  # CPU A: racing stripe
+        if kind == 4 and ax < 1.0 and -0.5 <= y < 1.0: return PAPER  # CPU D: sunroof
         return INK
     if y < 3.0:                               # rear window
         return PAPER if ax < 2.0 else INK
@@ -95,8 +98,9 @@ def rows_bytes(bits):
         out.append((v >> 8, v & 255))
     return out
 
-KINDS = ['player (notch in the nose)', 'CPU A (racing stripe)', 'CPU B (open cockpit)']
-all_frames = [frames_for(k) for k in range(3)]
+KINDS = ['player (notch in the nose)', 'CPU A (racing stripe)', 'CPU B (open cockpit)',
+         'CPU C (grille slot in the nose)', 'CPU D (sunroof)']
+all_frames = [frames_for(k) for k in range(len(KINDS))]
 
 if __name__ == '__main__':
     with open(OUT, 'w') as f:
@@ -106,21 +110,35 @@ if __name__ == '__main__':
             th = n * 2 * math.pi / 16
             dx, dy = round(64 * math.sin(th)), round(-64 * math.cos(th))
             f.write('        dw 0x%04X,0x%04X\n' % (dx & 0xFFFF, dy & 0xFFFF))
-        f.write('\n; car pictures: 3 cars x 16 headings x 16 rows x 4 bytes:\n')
+        f.write('\n; car pictures: %d cars x 16 headings' % len(KINDS) + ' x 16 rows x 4 bytes:\n')
         f.write('; mask left, ink left, mask right, ink right (mask 1 = opaque, with a\n')
         f.write('; 1px halo). One stream, so the draw reads it with one pointer.\n')
         f.write('; heading 0 = facing up, clockwise in 22.5 degree steps\ncar_data:\n')
-        for k in range(3):
+        for k in range(len(KINDS)):
             f.write('; --- car %d: %s ---\n' % (k, KINDS[k]))
             for n, g in enumerate(all_frames[k]):
                 f.write('; heading %d\n' % n)
                 for (a, b), (ma, mb) in zip(rows_bytes(ink_of(g)), rows_bytes(mask_of(g))):
                     f.write('        defb %%%s,%%%s,%%%s,%%%s\n' % tuple(format(v, '08b') for v in (ma, a, mb, b)))
+    with open(OUT, 'a') as f:
+        f.write('\n; the rows of each heading that are not empty: first row, how many\n')
+        f.write('; (the mask is the same shape for every car)\ncar_rows:\n')
+        for n, g in enumerate(all_frames[0]):
+            m = mask_of(g); used = [y for y in range(16) if any(m[y])]
+            f.write('        defb %d,%d   ; heading %d\n' % (used[0], used[-1] - used[0] + 1, n))
+        f.write('\n; quarter squares: n*n/4 for n = 0..127, low bytes then high bytes,\n')
+        f.write('; so a*b = sq4(a+b) - sq4(a-b) needs two look-ups instead of a loop\n')
+        f.write('        defs (256 - ($ & 255)) & 255\nsq4:\n')
+        q = [n * n // 4 for n in range(128)]
+        for i in range(0, 128, 16):
+            f.write('        defb ' + ','.join(str(v & 255) for v in q[i:i + 16]) + '\n')
+        for i in range(0, 128, 16):
+            f.write('        defb ' + ','.join(str(v >> 8) for v in q[i:i + 16]) + '\n')
     # preview sheet: rows = cars, columns = headings 0-3 at 1x, 2x and 6x, on a busy track
     from PIL import Image
     S = 6
-    img = Image.new('RGB', (16 * 18 * S, 3 * 18 * S + 20), (255, 255, 255))
-    for k in range(3):
+    img = Image.new('RGB', (16 * 18 * S, len(KINDS) * 18 * S + 20), (255, 255, 255))
+    for k in range(len(KINDS)):
         for n in range(16):
             g = all_frames[k][n]; ink = ink_of(g); m = mask_of(g)
             for y in range(16):

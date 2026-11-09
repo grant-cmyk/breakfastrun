@@ -94,3 +94,26 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tests/drive_test.py: 22/22 PASS on the real ROM (frame-rate floor raised 12 -> 16 to hold the gain).
   Laps: A ~16.9 s, B ~20.3 s, yours ~13.6 s. On road 100%/99%. ~20 mistakes in 90 s. Window pixel-exact.
 - Looked at: build/stage3_sheet.png and build/stage3_lap.gif (autopilot lap with both computer cars).
+
+## 2026-11-09 17:45 SAST - stage 4: five cars (cloud session, Claude)
+- Grant: "we need to add another car or two if we can". Added two: CPU C (pace 6/8, grille slot in
+  the nose) and CPU D (pace 5/8, sunroof, the most mistakes). Grid: 3 abreast + 2 behind.
+- Memory: each car is 1 KB of pictures. The 5.6 KB POP/PUSH copier is no longer carried on the tape:
+  make_copier WRITES it at start-up into 0xE800-0xFE03 (above the tables, below the UDGs). Code area
+  now ends 0xB327; the tape went from 15.7 KB to 12 KB with two more cars.
+- Engine generalised to NCARS (loops for AI and physics; bumps generated as gen_bumps.asm, all 10 pairs
+  checked in full with fixed addresses, bump called only within 11 px both ways).
+- PERFORMANCE, measured (tests/profile.py, five cars bunched on the grid, the worst case):
+    5 cars as first built: ticks 85k/picture (21k a tick, 4 a picture) -> 4.0 frames
+    quarter-squares multiply (sq4 table; targets scaled to +-63): ~140 T against ~450
+    waypoint distance worked out once per decision; friction unrolled; empty car rows skipped
+    computer cars TAKE TURNS to think (one full decision per frame; REACT = turns skipped)
+    edge checks on the high byte first (an assembler check caught that the world is 576 px wide)
+    physics keeps each speed in registers: one read, one write per axis
+    -> a tick 21k -> ~13.5k (physics 7.5k, AI 4.3k, bumps 1.6k); grid start ~211k = 3-4 frames
+  Along a whole autopilot lap: 16.7 pictures a second on 32 of 34 stretches, 13.9-14.8 on the first
+  two (five cars bunched off the start). Accepted and flagged to Grant rather than cutting further.
+- Test: the pixel check now stops the emulator exactly at copy_done (screen, camera and cars from the
+  same picture), so the car margin is the 1px halo instead of 6 px. Found on the way: the emulator
+  calls on_breakpoint at its own marks too - check the PC. drive_test.py 20/20 PASS; laps 16.5 / 20.2 /
+  17.2 / 19.2 s; on road 99-100%; 45 mistakes in 90 s across four cars.

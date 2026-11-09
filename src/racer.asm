@@ -1,5 +1,5 @@
 ; =====================================================================
-; BREAKFAST RUN - STAGE 3: car art and two computer cars
+; BREAKFAST RUN - STAGE 4: five cars (you and four computer cars)
 ; ZX Spectrum 48K, assembled with pasmo.
 ;
 ; Keys:  O = steer left   P = steer right   Q = accelerate   A = brake/reverse
@@ -27,6 +27,8 @@ BUF_HI  equ 0xC0        ; (so the next pixel row down is INC H, and a row
                         ; around it are margins for cars half out of view.
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
+NCARS   equ 5           ; you + 4 computer cars
+COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
 WIN_COL equ 4           ; window on screen: columns 4..27 (24 bytes wide)
 WIN_Y   equ 32          ; pixel rows 32..159 (128 high)
 WIN_W   equ 24
@@ -50,7 +52,7 @@ C_MIST  equ 16          ; computer: frames of mistake left (0 = none)
 C_MKIND equ 17          ;           which mistake: 1 late turn, 2 lift, 3 wobble
 C_THINK equ 18          ; computer: frames until it next decides how to steer
 C_PACE  equ 19          ; computer: accelerates on PACE of every 8 frames
-C_REACT equ 20          ; computer: frames between steering decisions
+C_REACT equ 20          ; computer: thinking turns it lets go by (0 = every 4 frames)
 C_ERR   equ 21          ; computer: chance of a mistake at each waypoint /256
 C_KIND  equ 22          ; which picture: 0 you, 1 CPU A, 2 CPU B
 C_STEER equ 23          ; computer: steering it decided on (bit0 L, bit1 R)
@@ -97,8 +99,9 @@ win_attr:
         call make_tables
         ld hl,cars_init         ; copy the starting records into place
         ld de,cars
-        ld bc,3*C_SIZE
+        ld bc,NCARS*C_SIZE
         ldir
+        call make_copier        ; the program writes its own copy routine
         ld a,(FRAMES)
         ld (last_frame),a
 
@@ -129,12 +132,15 @@ tick_loop:
 
         call camera
         call draw_tiles
-        ld ix,cars+2*C_SIZE     ; computer cars first, so yours is on top
+        ld ix,cars+(NCARS-1)*C_SIZE ; computer cars first, yours last (on top)
+        ld b,NCARS
+draw_all:
+        push bc
         call draw_car
-        ld ix,cars+C_SIZE
-        call draw_car
-        ld ix,cars
-        call draw_car
+        ld de,0x10000-C_SIZE
+        add ix,de
+        pop bc
+        djnz draw_all
 wait_show:
         halt                    ; wait until 3 TV frames have passed since the
         ld a,(last_shown)       ; last picture went up: a steady rhythm looks
@@ -158,26 +164,25 @@ tick:
         inc hl
         ld (ticks),hl
         call read_keys          ; your buttons -> your car's C_CTRL
-        ld ix,cars+C_SIZE
+        ld ix,cars+C_SIZE       ; the computer drives cars 1..NCARS-1
+        ld b,NCARS-1
+tk_ai:
+        push bc
         call ai_drive
-        ld ix,cars+2*C_SIZE
-        call ai_drive
-        ld ix,cars
+        ld de,C_SIZE
+        add ix,de
+        pop bc
+        djnz tk_ai
+        ld ix,cars              ; everyone moves
+        ld b,NCARS
+tk_ph:
+        push bc
         call physics
-        ld ix,cars+C_SIZE
-        call physics
-        ld ix,cars+2*C_SIZE
-        call physics
-        ld ix,cars              ; bumps: every pair once
-        ld hl,cars+C_SIZE
-        call bump
-        ld ix,cars
-        ld hl,cars+2*C_SIZE
-        call bump
-        ld ix,cars+C_SIZE
-        ld hl,cars+2*C_SIZE
-        call bump
-        ret
+        ld de,C_SIZE
+        add ix,de
+        pop bc
+        djnz tk_ph
+        jp bump_all             ; bumps: every pair (gen_bumps.asm)
 
 read_keys:
         ld c,0
@@ -274,71 +279,80 @@ ph_nr:
         ld a,(ix+C_ANG)         ; BC, DE = push for the way the car faces
         call heading_push
         pop hl                  ; L = buttons
-        bit 2,l
-        jr z,ph_ng
-        push hl
-        ld l,(ix+C_VX)
-        ld h,(ix+C_VX+1)
-        add hl,de
-        ld (ix+C_VX),l
-        ld (ix+C_VX+1),h
-        ld l,(ix+C_VY)
-        ld h,(ix+C_VY+1)
-        add hl,bc
-        ld (ix+C_VY),l
-        ld (ix+C_VY+1),h
-        pop hl
-ph_ng:
-        bit 3,l
-        jr z,ph_nb
-        sra d                   ; brake / reverse: half the push, backwards
+        ; work out this frame's push: Q = full push, A = half push backwards,
+        ; both = half push, neither = none
+        ld a,l
+        and CT_GO+CT_BRK
+        jr nz,ph_some
+        ld d,a                  ; no buttons: no push
+        ld e,a
+        ld b,a
+        ld c,a
+        jr ph_push_set
+ph_some:
+        cp CT_GO
+        jr z,ph_push_set        ; Q alone: the full push as it is
+        sra d                   ; otherwise half of it...
         rr e
         sra b
         rr c
-        ld l,(ix+C_VX)
-        ld h,(ix+C_VX+1)
-        or a
-        sbc hl,de
-        ld (ix+C_VX),l
-        ld (ix+C_VX+1),h
-        ld l,(ix+C_VY)
-        ld h,(ix+C_VY+1)
-        or a
-        sbc hl,bc
-        ld (ix+C_VY),l
-        ld (ix+C_VY+1),h
-ph_nb:
+        cp CT_BRK
+        jr nz,ph_push_set       ; Q and A: half forwards
+        xor a                   ; A alone: half, backwards (negate DE, BC)
+        sub e
+        ld e,a
+        sbc a,a
+        sub d
+        ld d,a
+        xor a
+        sub c
+        ld c,a
+        sbc a,a
+        sub b
+        ld b,a
+ph_push_set:
         ld a,(ticks)            ; look at the ground under the car on one
         add a,(ix+C_KIND)       ; frame in 4 (the cars take turns): it
         and 3                   ; cannot change much in 4 frames
         jr nz,ph_surf_kept
+        push bc
+        push de
         call surface
+        pop de
+        pop bc
         ld (ix+C_FSH),a
 ph_surf_kept:
         ld a,(ix+C_FSH)
         ld (fshift),a
+        ; ---- x: speed += push, friction, position += speed; each value is
+        ;      read from the car record once and written back once ----
         ld l,(ix+C_VX)
         ld h,(ix+C_VX+1)
-        call friction
+        add hl,de
+        call friction           ; (keeps BC: the y push)
         ld (ix+C_VX),l
         ld (ix+C_VX+1),h
-        ld l,(ix+C_VY)
-        ld h,(ix+C_VY+1)
-        call friction
-        ld (ix+C_VY),l
-        ld (ix+C_VY+1),h
-
-        push ix                 ; x = x + vx
-        pop hl
-        ld e,(ix+C_VX)
-        ld d,(ix+C_VX+1)
-        call add_v
-        ld l,(ix+C_X)           ; keep inside the world
-        ld h,(ix+C_X+1)
-        ld de,MAPW*8-16
-        or a
-        sbc hl,de
+        ld d,0                  ; D = top byte of the speed, sign-extended
+        bit 7,h
+        jr z,ph_xp
+        dec d
+ph_xp:
+        ld a,(ix+C_XF)          ; 24-bit add: fraction, then whole pixels
+        add a,l                 ; (LD, BIT, DEC and JR leave the carry alone)
+        ld (ix+C_XF),a
+        ld a,(ix+C_X)
+        adc a,h
+        ld (ix+C_X),a
+        ld a,(ix+C_X+1)
+        adc a,d
+        ld (ix+C_X+1),a
+        cp (MAPW*8-16)/256      ; keep inside the world (x 0..MAPW*8-17): a
+        jr c,ph_xok             ; high byte below the limit's is fine (the
+        jr nz,ph_xout           ; usual case); above it, or negative: out
+        ld a,(ix+C_X)
+        cp (MAPW*8-16) AND 255
         jr c,ph_xok
+ph_xout:
         ld hl,0
         bit 7,(ix+C_VX+1)
         jr nz,ph_xset
@@ -350,20 +364,34 @@ ph_xset:
         ld (ix+C_VX),a
         ld (ix+C_VX+1),a
 ph_xok:
-        push ix                 ; y = y + vy
-        pop hl
-        inc hl
-        inc hl
-        inc hl
-        ld e,(ix+C_VY)
-        ld d,(ix+C_VY+1)
-        call add_v
-        ld l,(ix+C_Y)
-        ld h,(ix+C_Y+1)
-        ld de,MAPH*8-16
-        or a
-        sbc hl,de
+        ; ---- y: the same, with the y push in BC ----
+        ld l,(ix+C_VY)
+        ld h,(ix+C_VY+1)
+        add hl,bc
+        call friction
+        ld (ix+C_VY),l
+        ld (ix+C_VY+1),h
+        ld d,0
+        bit 7,h
+        jr z,ph_yp
+        dec d
+ph_yp:
+        ld a,(ix+C_YF)
+        add a,l
+        ld (ix+C_YF),a
+        ld a,(ix+C_Y)
+        adc a,h
+        ld (ix+C_Y),a
+        ld a,(ix+C_Y+1)
+        adc a,d
+        ld (ix+C_Y+1),a
+        cp (MAPH*8-16)/256
         jr c,ph_yok
+        jr nz,ph_yout
+        ld a,(ix+C_Y)
+        cp (MAPH*8-16) AND 255
+        jr c,ph_yok
+ph_yout:
         ld hl,0
         bit 7,(ix+C_VY+1)
         jr nz,ph_yset
@@ -422,12 +450,16 @@ av_pos:
 friction:
         ld d,h
         ld e,l
-        ld a,(fshift)
-        ld b,a
-fr_div:
+        sra d                   ; DE = HL / 4 ...
+        rr e
         sra d
         rr e
-        djnz fr_div
+        ld a,(fshift)
+        cp 2
+        jr z,fr_div
+        sra d                   ; ... or / 8 on the road
+        rr e
+fr_div:
         or a
         sbc hl,de
         ld a,h
@@ -536,30 +568,39 @@ ai_m3:
         jp ai_set
 
 ai_no_mist:
-        ; ---- 2. between decisions: keep steering, just work the throttle ----
+        ; ---- 2. the computer cars TAKE TURNS to think: car k may decide on
+        ;         frames where (ticks - k) AND 3 = 0, so only one car does the
+        ;         expensive part each frame. REACT = turns it lets go by. ----
+        ld a,(ticks)
+        sub (ix+C_KIND)
+        and 3
+        jp nz,ai_throttle
         ld a,(ix+C_THINK)
         or a
         jr z,ai_decide
         dec (ix+C_THINK)
         jp ai_throttle
 ai_decide:
-        ; ---- 3. a decision frame (every REACT frames): look ahead, steer ----
+        ; ---- 3. a decision frame: look ahead, steer ----
         ld a,(ix+C_REACT)
         ld (ix+C_THINK),a
         ; where am I aiming?  waypoint + this lap's offset
         call wp_delta           ; DE = dx, BC = dy from car centre to aim point
-        ; reached it?  (|dx| + |dy| < 24)
-        call manhattan
+        push de                 ; keep them: manhattan uses DE and BC
+        push bc
+        call manhattan          ; reached it?  (|dx| + |dy| < 24)
         ld de,24
         or a
         sbc hl,de
         jr nc,ai_check_next
+        pop bc
+        pop de
         call next_waypoint      ; yes: aim at the next one
         call wp_delta
         jr ai_have_target
 ai_check_next:
         ; overshot it?  if the NEXT waypoint is nearer, move on (no U-turns)
-        push hl
+        ld (dist_cur),hl        ; distance to current - 24
         ld a,(ix+C_WP)
         push af
         call wp_inc
@@ -567,20 +608,24 @@ ai_check_next:
         call manhattan
         pop af
         ld (ix+C_WP),a
-        pop de                  ; DE = distance to current - 24
-        push hl
-        ld hl,24
-        add hl,de               ; HL = distance to current
-        pop de                  ; DE = distance to next
+        ex de,hl                ; DE = distance to next
+        ld hl,(dist_cur)
+        ld bc,24
+        add hl,bc               ; HL = distance to current
         or a
         sbc hl,de
         jr c,ai_keep            ; current still nearer: keep it
         jr z,ai_keep
+        pop bc
+        pop de
         call next_waypoint
-ai_keep:
         call wp_delta
+        jr ai_have_target
+ai_keep:
+        pop bc                  ; the current waypoint's dx, dy again
+        pop de
 ai_have_target:
-        call scale_to_byte      ; D = dx, B = dy, both -127..127
+        call scale_to_byte      ; D = dx, B = dy, both -63..63
         ld a,(ix+C_ANG)         ; heading vector: hx = E, hy = C (-64..64)
         push de
         push bc
@@ -810,8 +855,9 @@ abs_hl:
         sbc hl,de
         ret
 
-; scale_to_byte: halve DE and BC together until both fit -127..127;
-; returns D = dx byte, B = dy byte
+; scale_to_byte: halve DE and BC together until both fit -63..63;
+; returns D = dx byte, B = dy byte. (63, so that heading + target never
+; passes 127, which the quarter-squares multiply needs.)
 scale_to_byte:
 stb_loop:
         ld h,d
@@ -833,59 +879,53 @@ stb_done:
         ld b,c
         ret
 
-fits_byte:                      ; Z set if HL is in -127..127
-        ld a,l
-        cp 0x80
-        jr z,fb_no              ; -128: also too big (keeps |x| <= 127)
+fits_byte:                      ; Z set if HL is in -63..63
         ld a,h
         or a
         jr nz,fb_neg
-        bit 7,l
-        ret                     ; Z if 0..127
+        ld a,l
+        cp 64
+        jr nc,fb_no
+        xor a
+        ret
 fb_neg:
         inc a
         jr nz,fb_no
-        bit 7,l
-        jr z,fb_no
-        xor a                   ; -127..-1
+        ld a,l
+        cp 0xC1
+        jr c,fb_no
+        xor a
         ret
 fb_no:
         or 1
         ret
 
-; mul8s: HL = B * C, both signed bytes
+; mul8s: HL = B * C, both signed, |B + C| and |B - C| no more than 127.
+; Quarter squares: B*C = (B+C)^2/4 - (B-C)^2/4, both read from the sq4
+; table - about 140 T, against about 450 T for a shift-and-add loop.
 mul8s:
         ld a,b
-        xor c
-        ld (msign),a
+        add a,c                 ; B + C
+        jp p,mq1
+        neg
+mq1:
+        ld l,a
+        ld h,sq4/256
+        ld e,(hl)
+        set 7,l
+        ld d,(hl)               ; DE = (B+C)^2 / 4
         ld a,b
-        or a
-        jp p,ms1
+        sub c                   ; B - C
+        jp p,mq2
         neg
-ms1:
-        ld e,a
-        ld d,0
-        ld a,c
-        or a
-        jp p,ms2
-        neg
-ms2:
-        ld hl,0
-        ld b,8
-ms_loop:
-        add hl,hl
-        rla
-        jr nc,ms_skip
-        add hl,de
-ms_skip:
-        djnz ms_loop
-        ld a,(msign)
-        or a
-        ret p
+mq2:
+        ld l,a
+        ld c,(hl)
+        set 7,l
+        ld b,(hl)               ; BC = (B-C)^2 / 4
         ex de,hl
-        ld hl,0
         or a
-        sbc hl,de
+        sbc hl,bc
         ret
 
 ; rnd: A = a pseudo-random byte (16-bit xorshift)
@@ -923,22 +963,43 @@ TB_VY   equ tb+7
 KICK    equ 0x00C0          ; bounce speed: 0.75 pixels a frame
 bump:
         ld (bump_b),hl
-        inc hl                  ; quick look first: if their x differ by 12
-        ld e,(hl)               ; or more, nothing to do (most of the time)
+        inc hl                  ; quick look: are they within 11 pixels in x?
+        ld a,(ix+C_X)
+        sub (hl)
+        ld e,a
         inc hl
-        ld d,(hl)
-        dec hl
-        push hl
-        ld l,(ix+C_X)
-        ld h,(ix+C_X+1)
-        or a
-        sbc hl,de
-        call abs_hl
-        ld de,12
-        or a
-        sbc hl,de
-        pop hl
+        ld a,(ix+C_X+1)
+        sbc a,(hl)
+        ld d,a                  ; DE = ax - bx
+        ld a,e
+        add a,11                ; within 11 means 0..22 after adding 11
+        ld e,a
+        ld a,d
+        adc a,0
+        ret nz
+        ld a,e
+        cp 23
         ret nc
+        inc hl                  ; ... and in y?
+        inc hl
+        ld a,(ix+C_Y)
+        sub (hl)
+        ld e,a
+        inc hl
+        ld a,(ix+C_Y+1)
+        sbc a,(hl)
+        ld d,a
+        ld a,e
+        add a,11
+        ld e,a
+        ld a,d
+        adc a,0
+        ret nz
+        ld a,e
+        cp 23
+        ret nc
+        ld hl,(bump_b)          ; touching: copy car b out to work on it
+        inc hl
         ld de,tb
         ld bc,9
         ldir
@@ -1249,6 +1310,29 @@ draw_car:
         ld de,car_data
         add hl,de
         ex de,hl                ; DE = this car's rows
+        ld a,(ix+C_ANG)         ; skip the empty rows at the top: car_rows
+        rrca                    ; says the first row and how many
+        rrca
+        and 15
+        add a,a
+        add a,car_rows AND 255
+        ld l,a
+        ld a,0
+        adc a,car_rows/256
+        ld h,a
+        ld a,(hl)
+        ld (dc_first),a
+        inc hl
+        ld a,(hl)
+        ld (dc_count),a
+        ld a,(dc_first)
+        add a,a
+        add a,a
+        add a,e                 ; DE += first * 4
+        ld e,a
+        jr nc,dc_f1
+        inc d
+dc_f1:
         ; shift table t = (-wx) AND 7 = (15 - u) AND 7
         ; first byte = window column (wx - 1) DIV 8, + 2 = u DIV 8
         ld a,(wxu)
@@ -1262,12 +1346,15 @@ draw_car:
         ld a,c                  ; C = byte * 8 for buf_addr
         and 0xF8
         ld c,a
-        ld a,(dc_row0)          ; buffer row = 1 + (wy + 15)
+        ld a,(dc_first)         ; buffer row = 1 + (wy + 15) + first
+        ld b,a
+        ld a,(dc_row0)
+        add a,b
         ld b,a
         call buf_addr
         ld a,(dc_tab)
         ld b,a
-        ld a,16
+        ld a,(dc_count)
 dc_loop:
         ld (dc_n),a
         ; left byte of the row: columns k and k+1
@@ -1341,7 +1428,7 @@ dc_same:
 
 ; ---------------------------------------------------------------------
 ; COPY_TO_SCREEN: the window part of the buffer -> the screen, with the
-; generated POP/PUSH code (gen_copy.asm). It moves the stack pointer, so
+; POP/PUSH code that make_copier wrote at COPIER. It moves the stack pointer, so
 ; interrupts are off while it runs: it starts just after an interrupt and
 ; takes well under a frame, so no interrupt is missed. IY goes back to the
 ; value the ROM's interrupt routine needs.
@@ -1349,7 +1436,7 @@ dc_same:
 copy_to_screen:
         di
         ld (save_sp),sp
-        jp copy_rows
+        jp COPIER
 copy_done:
         ld sp,(save_sp)
         ld iy,23610
@@ -1392,6 +1479,84 @@ cb_t0:
         ld sp,(save_sp)
         ret
 
+; ---------------------------------------------------------------------
+; MAKE_COPIER: write the screen-copy routine into memory at COPIER.
+; Code is just bytes, so a program can write code. For each window row,
+; twice (12 bytes at a time) it writes:
+;   ld sp,<buffer row>  pop af,bc,de,hl,ix,iy   (12 bytes off the buffer)
+;   ld sp,<screen row+12> push iy,ix,hl,de,bc,af (12 bytes onto the screen)
+; and finally  jp copy_done.  5,635 bytes: too big to carry on the tape
+; for nothing, and every address in it is worked out here.
+; ---------------------------------------------------------------------
+make_copier:
+        ld de,COPIER
+        xor a
+mc_row:
+        ld (mc_y),a
+        xor a
+        call mc_half            ; bytes 0..11 of the row
+        ld a,12
+        call mc_half            ; bytes 12..23
+        ld a,(mc_y)
+        inc a
+        cp WIN_H
+        jr nz,mc_row
+        ld a,0xC3               ; jp copy_done
+        ld (de),a
+        inc de
+        ld hl,copy_done
+        ld a,l
+        ld (de),a
+        inc de
+        ld a,h
+        ld (de),a
+        ret
+mc_half:                        ; A = 0 or 12: which half of the row
+        ld (mc_h),a
+        add a,2                 ; source: buffer row 16 + y, byte 2 + half
+        add a,a
+        add a,a
+        add a,a
+        ld c,a
+        ld a,(mc_y)
+        add a,16
+        ld b,a
+        call buf_addr
+        call mc_ldsp
+        ld hl,mc_pops
+        ld bc,8
+        ldir
+        ld a,(mc_h)             ; destination: screen row 32 + y, byte 4 + half,
+        add a,WIN_COL           ; plus 12 because PUSH works downwards
+        add a,a
+        add a,a
+        add a,a
+        ld c,a
+        ld a,(mc_y)
+        add a,WIN_Y
+        ld b,a
+        call scr_addr
+        ld bc,12
+        add hl,bc
+        call mc_ldsp
+        ld hl,mc_pushes
+        ld bc,8
+        ldir
+        ret
+mc_ldsp:                        ; write "ld sp,HL"
+        ld a,0x31
+        ld (de),a
+        inc de
+        ld a,l
+        ld (de),a
+        inc de
+        ld a,h
+        ld (de),a
+        inc de
+        ret
+mc_pops:   db 0xF1,0xC1,0xD1,0xE1,0xDD,0xE1,0xFD,0xE1   ; pop af,bc,de,hl,ix,iy
+mc_pushes: db 0xFD,0xE5,0xDD,0xE5,0xE5,0xD5,0xC5,0xF5   ; push iy,ix,hl,de,bc,af
+
 ; buf_addr: B = buffer row, C = x  ->  HL = address (screen layout at BUF)
 buf_addr:
         call scr_addr
@@ -1431,8 +1596,10 @@ scr_addr:
 ;   x frac, x, y frac, y, vx, vy, heading, buttons, friction,
 ;   waypoint, offset x, offset y, mistake, kind of mistake, think,
 ;   PACE, REACT, ERR, picture, steering, ease off
-; CPU A: faster (6 of 8), quick to react, few mistakes.
-; CPU B: slower (5 of 8), slower to react, more mistakes.
+; CPU A: faster (6 of 8), thinks every 4 frames, few mistakes.
+; CPU B: slower (5 of 8), thinks every 8 frames, more mistakes.
+; CPU C: faster (6 of 8), thinks every 8 frames, some mistakes.
+; CPU D: slower (5 of 8), thinks every 4 frames but sloppy - the most mistakes.
 ; ---------------------------------------------------------------------
 cars_init:
         db 0
@@ -1446,18 +1613,31 @@ cars_init:
         db 0
         dw CPU0Y
         dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 6,2,14, 1,0,0
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 6,0,14, 1,0,0
         db 0
         dw CPU1X
         db 0
         dw CPU1Y
         dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 5,4,24, 2,0,0
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 5,1,24, 2,0,0
+        db 0
+        dw CPU2X
+        db 0
+        dw CPU2Y
+        dw 0,0
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 6,1,18, 3,0,0
+        db 0
+        dw CPU3X
+        db 0
+        dw CPU3Y
+        dw 0,0
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 5,0,34, 4,0,0
+cars_init_end:
 
 ; ---------------------------------------------------------------------
 ; variables
 ; ---------------------------------------------------------------------
-cars:     defs 3*C_SIZE         ; you, CPU A, CPU B
+cars:     defs NCARS*C_SIZE     ; you, CPU A, B, C, D
 camx:     dw 0
 camy:     dw 0
 fshift:   db 3
@@ -1484,6 +1664,12 @@ bumps:    dw 0
 tb:       defs 9
 dc_row0:  db 0
 dc_ink:   db 0
+dc_first: db 0
+dc_count: db 0
+dist_cur: dw 0
+bo_n:     db 0
+mc_y:     db 0
+mc_h:     db 0
 dc_n:     db 0
 dt_rows:  db 0
 save_sp:  dw 0
@@ -1495,11 +1681,14 @@ dc_tab:   db 0
         include "data.asm"
         include "world.asm"
         include "gen_tiles.asm"
-        include "gen_copy.asm"
+        include "gen_bumps.asm"
 code_end:
 
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide
+        endif
+        if NCARS*C_SIZE - (cars_init_end - cars_init)
+        .error cars_init does not hold NCARS records
         endif
         if code_end > BUF_HI*256
         .error code and data run into the back buffer

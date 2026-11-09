@@ -126,7 +126,8 @@ for k in range(NWP):
     t = d / seglen[i]
     wps.append((round(x0 + (x1 - x0) * t), round(y0 + (y1 - y0) * t)))
 # computer cars start beside the player, one each side
-cpu = [(start_x, start_y - 16), (start_x, start_y + 16)]   # three abreast on the grid
+cpu = [(start_x, start_y - 16), (start_x, start_y + 16),     # front row: three abreast
+       (start_x - 28, start_y - 8), (start_x - 28, start_y + 8)]  # second row: two
 def first_wp(cx, cy):
     ahead = [k for k, (x, y) in enumerate(wps) if abs(y - cy) < 30 and x > cx + 16]
     return min(ahead, key=lambda k: wps[k][0] - cx)

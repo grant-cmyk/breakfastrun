@@ -16,7 +16,7 @@ for line in open(SYMF):
     p = line.split()
     if len(p) >= 3 and p[1] == 'EQU':
         SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
-CS = SYM['c_size']; CARS = SYM['cars']
+CS = SYM['c_size']; CARS = SYM['cars']; N = SYM['ncars']; CPUS = list(range(1, N))
 
 src = open(os.path.join(ROOT, 'src', 'world.asm')).read()
 MAPW = int(re.search(r'MAPW\s+equ\s+(\d+)', src).group(1))
@@ -83,28 +83,51 @@ def check(ok, msg):
     global fails
     print(('PASS ' if ok else 'FAIL ') + msg); fails += not ok
 
+class Racer(Spectrum):
+    armed = False                           # stop at copy_done only when asked
+    def on_breakpoint(self):                # (the emulator calls this at its own
+        if self.armed and self.pc == SYM['copy_done']:   # marks too: check where)
+            self.armed = False
+            raise zs.EmulatorException('at copy_done')
+
 def window_bad(sp):
+    # look at the exact moment the copy has finished: the screen, the camera
+    # and the car positions then all belong to the same picture
+    sp.set_breakpoint(SYM['copy_done'])     # (set after loading: a reset clears it)
+    sp.armed = True
+    for _ in range(50):
+        try:
+            sp.run(duration=0.02, fast_forward=True)
+        except zs.EmulatorException:
+            break
+    assert sp.pc == SYM['copy_done'], 'did not stop at copy_done (pc %04X)' % sp.pc
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
     bits = screen_bits(sp)[32:160, 32:224]
     want = world[camy:camy + 128, camx:camx + 192]
     mask = np.ones_like(want, dtype=bool)
-    for n in range(3):
+    for n in range(N):
         c = car(sp, n)
         cx, cy = c['x'] - camx, c['y'] - camy
-        m = 6                                   # cars can move a few pixels between drawn and read
+        m = 1                                   # the car's 1px halo
         mask[max(cy - m, 0):max(cy + 16 + m, 0), max(cx - m, 0):max(cx + 16 + m, 0)] = False
-    return int(((bits != want) & mask).sum())
+    bad = int(((bits != want) & mask).sum())
+    if bad:                                 # save what differs, to look at
+        im = np.stack([want * 255, bits * 255, ((bits != want) & mask) * 255], axis=-1).astype(np.uint8)
+        Image.fromarray(255 - im).resize((576, 384), Image.NEAREST).save(os.path.join(OUT, 'window_diff.png'))
+        print('  cars (window x, y):', [(car(sp, n)['x'] - camx, car(sp, n)['y'] - camy) for n in range(N)], 'cam', camx, camy)
+    return bad
 
-with Spectrum(headless=True) as sp:
+with Racer(headless=True) as sp:
     sp.load_tape(TAP)
     t = 0                                   # the test loader is fast: start
     while g(sp, 'renders') == 0 and t < 60: # watching the moment the game runs
         sp.run(duration=0.1, fast_forward=True); t += 0.1
     sp.run(duration=3.0, fast_forward=True)
-    p0 = car(sp, 0); a0 = car(sp, 1); b0 = car(sp, 2)
-    print('you', p0, '\nA', a0, '\nB', b0)
+    p0 = car(sp, 0); cs0 = [car(sp, i) for i in CPUS]
+    print('you', p0); [print('CPU', i, c) for i, c in zip(CPUS, cs0)]
     check(p0['vx'] == 0 and p0['ang'] == 16, 'your car waits on the start line')
-    check((a0['x'], b0['x'], a0['vx'], b0['vx']) == (CPU0X, CPU0X, 0, 0), 'computer cars wait on the grid until you press Q')
+    check(len(CPUS) == 4, 'there are four computer cars')
+    check(all(c['vx'] == 0 and c['vy'] == 0 for c in cs0), 'computer cars wait on the grid until you press Q')
     bad = window_bad(sp)
     check(bad == 0, 'window matches the world map pixel for pixel, cars excluded (%d wrong)' % bad)
     shot(sp, 'stage3_start.png')
@@ -115,55 +138,50 @@ with Spectrum(headless=True) as sp:
     p1 = car(sp, 0)
     fps = (g(sp, 'renders') - r0) / 2.0
     print('you after 2s of Q', p1, ' pictures/s %.1f' % fps)
-    check(p1['x'] > car(sp, 1)['x'] and p1['x'] > car(sp, 2)['x'], 'from a side-by-side start you pull away from both')
-    check(fps >= 16, 'at least 16 pictures a second with three cars (got %.1f)' % fps)
-    a1 = car(sp, 1)
-    check(a1['x'] > CPU0X + 40, 'pressing Q started the race: computer cars set off')
+    check(all(p1['x'] > car(sp, i)['x'] for i in CPUS), 'from the grid you pull away from all four')
+    check(fps >= 13, 'at least 13 pictures a second off the start, five cars bunched (got %.1f)' % fps)
+    check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
     cx, cy = p1['x'] - g(sp, 'camx'), p1['y'] - g(sp, 'camy')
     check(abs(cx - 88) <= 6 and abs(cy - 56) <= 6, 'camera keeps your car in the middle (%d,%d)' % (cx, cy))
 
     # ---- park your car in the infield and watch the computer race 90 s ----
     put(sp, 0, 40, 40)                        # top-left corner, well off the track
     sp.run(duration=0.5, fast_forward=True)
-    laps = [0, 0]; last_wp = [car(sp, 1)['wp'], car(sp, 2)['wp']]
-    onroad = [0, 0]; samples = 0; vmax = [0, 0]; tracks = [[], []]
-    lap_t = [[], []]; t = 0.0; m0 = g(sp, 'mistakes')
+    K = len(CPUS)
+    laps = [0] * K; last_wp = [car(sp, i)['wp'] for i in CPUS]
+    onroad = [0] * K; samples = 0; vmax = [0] * K; tracks = [[] for _ in CPUS]
+    lap_t = [[] for _ in CPUS]; t = 0.0; m0 = g(sp, 'mistakes'); r0 = g(sp, 'renders')
     while t < 90:
         sp.run(duration=0.1, fast_forward=True); t += 0.1; samples += 1
-        for i in (0, 1):
-            c = car(sp, i + 1)
+        for i, n in enumerate(CPUS):
+            c = car(sp, n)
             if c['wp'] < last_wp[i] and last_wp[i] - c['wp'] > NWP // 2:
                 laps[i] += 1; lap_t[i].append(round(t, 1))
             last_wp[i] = c['wp']
             tx, ty = (c['x'] + 8) // 8, (c['y'] + 8) // 8
             onroad[i] += surf[ty * MAPW + tx] == 0
-            v = math.hypot(c['vx'], c['vy'])
-            if v > 1.75: print('  fast: car %s at %.1f s v=%.2f %s bumps=%d' % ('AB'[i], t, v, c, g(sp, 'bumps')))
-            vmax[i] = max(vmax[i], v)
+            vmax[i] = max(vmax[i], math.hypot(c['vx'], c['vy']))
             tracks[i].append((c['x'], c['y']))
     mistakes = g(sp, 'mistakes') - m0
-    print('laps', laps, 'lap times', lap_t, 'top speeds %.2f %.2f' % tuple(vmax),
-          'on road %.0f%% %.0f%%' % (100 * onroad[0] / samples, 100 * onroad[1] / samples),
-          'mistakes', mistakes, 'bumps', g(sp, 'bumps'))
-    check(laps[0] >= 3 and laps[1] >= 3, 'both computer cars lap the track (A %d, B %d laps in 90 s)' % tuple(laps))
-    check(vmax[0] < 1.75 and vmax[1] < 1.75, 'computer cars never reach your top speed (top %.2f, %.2f vs 1.75)' % tuple(vmax))
-    lapA = (lap_t[0][-1] - lap_t[0][0]) / (len(lap_t[0]) - 1)
-    lapB = (lap_t[1][-1] - lap_t[1][0]) / (len(lap_t[1]) - 1)
-    print('average lap: A %.1f s, B %.1f s' % (lapA, lapB))
-    check(lapB > lapA, 'CPU B is the slower of the two (A %.1f s, B %.1f s a lap)' % (lapA, lapB))
-    lapsA = [round(b - a, 1) for a, b in zip(lap_t[0], lap_t[0][1:])]
-    print('A lap times', lapsA)
-    check(max(lapsA) - min(lapsA) >= 0.5, 'lap times vary from lap to lap (A: %s)' % lapsA)
+    print('laps', laps, 'top speeds', ' '.join('%.2f' % v for v in vmax),
+          'on road', ' '.join('%.0f%%' % (100 * o / samples) for o in onroad), 'mistakes', mistakes, 'bumps', g(sp, 'bumps'))
+    check(min(laps) >= 3, 'all four computer cars lap the track (%s laps in 90 s)' % laps)
+    check(max(vmax) < 1.75, 'computer cars never reach your top speed (top %s vs 1.75)' % ' '.join('%.2f' % v for v in vmax))
+    avg = [(lt[-1] - lt[0]) / (len(lt) - 1) for lt in lap_t]
+    print('average laps (s):', ' '.join('%.1f' % a for a in avg))
+    check(max(avg) - min(avg) > 1.0, 'the computer cars are not all the same speed (%s s a lap)' % ' '.join('%.1f' % a for a in avg))
+    check(min(avg) > 14.0, 'every computer car laps slower than you (~13.5 s)')
+    check(min(o / samples for o in onroad) > 0.8, 'computer cars stay mostly on the road')
+    check(mistakes >= 6, 'computer cars make mistakes (%d in 90 s)' % mistakes)
+    d = [math.dist(a, b) for a, b in zip(tracks[0], tracks[1])]
+    check(max(d) > 40, 'the computer cars drive differently (they spread out)')
 
     # ---- your top speed on a clear road (computer cars sent far away) ----
-    put(sp, 1, 40, 420); put(sp, 2, 70, 420); put(sp, 0, 180, 344, 16)
+    for i in CPUS: put(sp, i, 20 + 25 * i, 420)
+    put(sp, 0, 180, 344, 16)
     hold(sp, ['Q'], 1.5)
     pv = car(sp, 0)
     check(1.6 < math.hypot(pv['vx'], pv['vy']) <= 1.8, 'your top speed on a clear road is 1.75 px/frame (%.2f)' % math.hypot(pv['vx'], pv['vy']))
-    check(onroad[0] / samples > 0.8 and onroad[1] / samples > 0.8, 'computer cars stay mostly on the road')
-    check(mistakes >= 3, 'computer cars make mistakes (%d in 90 s)' % mistakes)
-    d = [math.dist(a, b) for a, b in zip(tracks[0], tracks[1])]
-    check(max(d) > 40, 'the two computer cars drive differently (they spread out)')
 
     # ---- bump: drop a computer car just in front of you, drive into it ----
     put(sp, 0, 200, 344, 16); put(sp, 1, 230, 344, 16)
