@@ -67,7 +67,7 @@ random.seed(7)
 far = road_mask(ROAD + 28).load()
 for ty in range(1, H - 1):
     for tx in range(1, W - 1):
-        if random.random() > 0.10: continue
+        if random.random() > 0.05: continue      # sparse: every hoop costs drawing time
         if any(far[tx * 8 + i, ty * 8 + j] for i in range(8) for j in range(8)): continue
         for j, row in enumerate(HOOP):
             for i, ch in enumerate(row):
@@ -96,12 +96,49 @@ with open(OUT, 'w') as f:
     f.write('; tile pictures, 8 bytes each (tile 0 = blank). Page aligned so a\n; tile never crosses a 256-byte page.\n        defs (256 - ($ & 255)) & 255\ntiles:\n')
     for i, t in enumerate(order):
         f.write('        defb ' + ','.join('0x%02X' % b for b in t) + '   ; %d\n' % i)
-    f.write('\n; the map: one tile number per 8x8 block, %d per row\nworld_map:\n' % W)
+    # the map, stored as a LIST of the non-blank tiles in each row: most of the
+    # table is blank, and the renderer then only looks at tiles it must draw
+    f.write('\n; the map: for each of the %d tile rows, a pointer to its list\nrow_index:\n' % H)
     for ty in range(H):
-        f.write('        defb ' + ','.join(str(v) for v in mapb[ty * W:(ty + 1) * W]) + '\n')
-    f.write('\n; surface: 0 = road, 1 = off-road (slower)\nsurface_map:\n')
+        f.write('        dw row_%d\n' % ty)
+    f.write('; each list: how many tiles, then (column, tile number) pairs, left to right\n')
     for ty in range(H):
-        f.write('        defb ' + ','.join(str(v) for v in surf[ty * W:(ty + 1) * W]) + '\n')
+        ent = [(tx, mapb[ty * W + tx]) for tx in range(W) if mapb[ty * W + tx]]
+        f.write('row_%d:  defb %d' % (ty, len(ent)) + ''.join(',%d,%d' % e for e in ent) + '\n')
+    f.write('\n; surface: one BIT per tile, 1 = off-road (slower); %d bytes a row,\n' % (W // 8))
+    f.write('; leftmost tile in the top bit\nsurface_map:\n')
+    for ty in range(H):
+        row = surf[ty * W:(ty + 1) * W]
+        f.write('        defb ' + ','.join('%%%s' % ''.join(str(b) for b in row[i:i + 8]) for i in range(0, W, 8)) + '\n')
+
+# waypoints: the centre line every ~32 px, in racing order, for the computer cars
+loop = PATH + [PATH[0]]
+seglen = [math.dist(loop[i], loop[i + 1]) for i in range(len(PATH))]
+total = sum(seglen)
+NWP = round(total / 32)
+wps = []
+for k in range(NWP):
+    d = k * total / NWP
+    i = 0
+    while d > seglen[i]:
+        d -= seglen[i]; i += 1
+    (x0, y0), (x1, y1) = loop[i], loop[i + 1]
+    t = d / seglen[i]
+    wps.append((round(x0 + (x1 - x0) * t), round(y0 + (y1 - y0) * t)))
+# computer cars start beside the player, one each side
+cpu = [(start_x, start_y - 16), (start_x, start_y + 16)]   # three abreast on the grid
+def first_wp(cx, cy):
+    ahead = [k for k, (x, y) in enumerate(wps) if abs(y - cy) < 30 and x > cx + 16]
+    return min(ahead, key=lambda k: wps[k][0] - cx)
+with open(OUT, 'a') as f:
+    f.write('\n; waypoints for the computer cars: centre line, racing order (x, y)\n')
+    f.write('NWP     equ %d\n' % NWP)
+    for n, (x, y) in enumerate(cpu):
+        f.write('CPU%dX   equ %d\nCPU%dY   equ %d\nCPU%dWP  equ %d\n' % (n, x, n, y, n, first_wp(x + 8, y + 8)))
+    f.write('waypoints:\n')
+    for x, y in wps:
+        f.write('        dw %d,%d\n' % (x, y))
+print('waypoints:', NWP)
 
 big = img.convert('L').point(lambda v: 0 if v else 255).resize((PW * 2, PH * 2), Image.NEAREST)
 big.save(os.path.join(HERE, '..', 'build', 'world_preview.png'))
