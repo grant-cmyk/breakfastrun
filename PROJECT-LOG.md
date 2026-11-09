@@ -246,3 +246,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   copy 44.8k -> 41.3k. About 5k saved, not the 8k estimated: the tiles that drop out are mostly blank.
 - On a branch until Grant has played it beside today's build (build/racer_23wide.tap vs
   build/racer_22wide_trial.tap).
+
+## 2026-11-09 20:56 SAST - surround mock-ups
+- Grant: "the outside rectangle for the game is really quite boring ... a few mockups". tools/make_surround_mockups.py
+  on a real corner screen of the 22-wide trial: A gingham tablecloth (red/white 2x2-cell checks, dithered
+  where they cross, white rim), B chequered-flag frame on green, C wooden table (yellow-on-red grain) with a
+  lace placemat edge, D blue-and-white kitchen tiles. HUD text on plain strips. All drawn once at start:
+  no cost per picture. docs/design/surrounds.png (+ _a.._d at 3x). Waiting on Grant's pick.
