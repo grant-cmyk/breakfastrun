@@ -5,15 +5,13 @@ A top-down micro-car racer for the ZX Spectrum 48K, written in Z80 assembler
 Inspired by the *genre* of Micro Machines / Super Off Road / Super Sprint:
 tiny cars, momentum and drift, household tracks. Original game, original art.
 
-## Stage 4 (this build) - five cars
-- Keys: **O** left, **P** right, **Q** accelerate, **A** brake/reverse. The race starts on your first **Q**.
-- You and four computer cars (a 3 + 2 grid). Each has its own mark: you a nose notch, A a roof
-  stripe, B an open cockpit, C a grille slot, D a sunroof. Their laps: about 16.5, 20.2, 17.2 and
-  19.2 s against your 13.5 s. They take turns to think, take different lines, make mistakes, and
-  bounce off each other and you.
-- 16.7 pictures a second on 32 of the lap's 34 stretches; 14-15 for the first two, while all five
-  cars are bunched off the start.
-- The screen-copy code (5.6 KB) is written by the program itself at start-up (make_copier).
+## Current build - the race screen
+- Keys: **O** left, **P** right, **Q** accelerate (and start, and race again), **A** brake/reverse.
+- 3 laps, you and four computer cars. Window 23 x 16 cells on the left; panel: logo, race order
+  (each car on its colour, you on red), mini-map (a dot per car, yours blinking). Above the window:
+  start lights, GO!, FINAL LAP!, FINISHED nTH. Below: LAP, TIME, BEST lap (time, car, lap).
+- Track: chequered kerbs; a breakfast table round it (plate, eggs, toast, juice, bacon, cutlery).
+- 16.7 pictures a second where the screen is clear, a steady 12.5 where it is busy.
 
 Stage 3 (three cars) is commit e150334.
 Stage 2 (scrolling, one car) is tag `stage2-verified` / commit 2ce33b7.
@@ -25,7 +23,8 @@ Stage 1 (one car, one single-screen track) is tag `stage1-verified` / commit 850
     python3 tools/make_code.py                       # regenerates src/gen_tiles.asm, src/gen_bumps.asm
     bash <retro plugin>/skills/zxspectrum/scripts/build.sh asm src/racer.asm build/racer.tap racer
     (cd src && pasmo racer.asm ../build/racer.bin ../build/racer.sym)
-    python3 tests/drive_test.py                       # real 48K ROM test, 20 checks
+    python3 tests/drive_test.py                       # real 48K ROM test, 38 checks
+    python3 tests/profile_lap.py                      # T-states per stage over a whole lap
     python3 tests/profile.py                          # T-states per stage of a picture
     python3 tests/lap_capture.py                      # autopilot lap: frame rate + build/stage3_lap.gif
 
