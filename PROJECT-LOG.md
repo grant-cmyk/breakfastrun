@@ -331,3 +331,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   drive_test updated (window slice, bezel, centre, text rows): RESULT PASS.
 - Measured, whole lap: work 187.0k T a picture (was 195.7k): tiles 49.3k, ticks 40.3k, copy 38.5k, cloth
   35.2k, cars 15.2k. 179 pictures at 3 frames, 34 at 4 (was 149 / 57).
+
+## 2026-11-09 21:53 SAST - measured option, not applied
+- O's 18 px apart (106, not 131): tiles 45.2k, work 181.9k, 191 at 3 frames / 26 at 4. Reverted to 15 px
+  pending Grant (it changes the look). CONTINUE.md rewritten for the branch.
