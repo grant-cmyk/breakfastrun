@@ -97,8 +97,8 @@ def screen_text(sp, row, col, n):
 
 def frame_ok(sp):
     bits = screen_bits(sp)
-    top = bits[30:32, 30:226].all() and bits[160:162, 30:226].all()
-    sides = bits[30:162, 30:32].all() and bits[30:162, 224:226].all()
+    top = bits[30:32, 6:194].all() and bits[160:162, 6:194].all()
+    sides = bits[30:162, 6:8].all() and bits[30:162, 192:194].all()
     return bool(top and sides)
 
 class Racer(Spectrum):
@@ -108,8 +108,8 @@ class Racer(Spectrum):
             self.armed = False
             raise zs.EmulatorException('at copy_done')
 
-def window_bad(sp):
-    # look at the exact moment the copy has finished: the screen, the camera
+def at_copy_done(sp):
+    # stop at the exact moment the copy has finished: the screen, the camera
     # and the car positions then all belong to the same picture
     sp.set_breakpoint(SYM['copy_done'])     # (set after loading: a reset clears it)
     sp.armed = True
@@ -119,9 +119,12 @@ def window_bad(sp):
         except zs.EmulatorException:
             break
     assert sp.pc == SYM['copy_done'], 'did not stop at copy_done (pc %04X)' % sp.pc
+
+def window_bad(sp):
+    at_copy_done(sp)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
-    bits = screen_bits(sp)[32:160, 32:224]
-    want = world[camy:camy + 128, camx:camx + 192]
+    bits = screen_bits(sp)[32:160, 8:192]            # the window: cells 1-23, rows 4-19
+    want = world[camy:camy + 128, camx:camx + 184]
     mask = np.ones_like(want, dtype=bool)
     for n in range(N):
         c = car(sp, n)
@@ -145,10 +148,18 @@ with Racer(headless=True) as sp:
     print('you', p0); [print('CPU', i, c) for i, c in zip(CPUS, cs0)]
     check(p0['vx'] == 0 and p0['ang'] == 16, 'your car waits on the start line')
     check(frame_ok(sp), 'a 2-pixel frame surrounds the play window')
-    title, hud = screen_text(sp, 1, 9, 13), screen_text(sp, 21, 4, 24)
-    print('title %r  hud %r' % (title, hud))
-    check(title == 'BREAKFAST RUN', 'the title is above the window')
-    check(hud.startswith('LAP 1/3') and 'POS 1ST' in hud, 'below the window: LAP 1/3 and your position')
+    logo = [[c == '#' for c in l.strip()] for l in open(os.path.join(ROOT, 'build', 'logo.txt'))]
+    sb = screen_bits(sp)
+    check((sb[8:32, 200:256] == np.array(logo)).all(), 'the BREAKFAST RUN logo is at the top of the panel')
+    msg = screen_text(sp, 1, 12, 9) + '/' + screen_text(sp, 2, 12, 7)
+    attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
+    labels = screen_text(sp, 21, 1, 3) + '/' + screen_text(sp, 21, 12, 4) + '/' + screen_text(sp, 22, 1, 4)
+    print('message bar %r  panel labels %r' % (msg, labels))
+    check(msg == 'GET READY/PRESS Q', 'before the start: GET READY, PRESS Q in the message bar')
+    check(labels == 'LAP/TIME/BEST', 'under the window: LAP, TIME and BEST')
+    check(all(attr(6 + 2 * i, 26) == [0x57, 0x68, 0x60, 0x58, 0x78][i] for i in range(5)), 'the whole race order is drawn at the start, each car on its colour')
+    place = lambda: next(i + 1 for i in range(5) if attr(6 + 2 * i, 25) == 0x57)
+    check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
     check(len(CPUS) == 4, 'there are four computer cars')
     check(all(c['vx'] == 0 and c['vy'] == 0 for c in cs0), 'computer cars wait on the grid until you press Q')
     bad = window_bad(sp)
@@ -164,8 +175,9 @@ with Racer(headless=True) as sp:
     check(all(p1['x'] > car(sp, i)['x'] for i in CPUS), 'from the grid you pull away from all four')
     check(fps >= 13, 'at least 13 pictures a second off the start, five cars bunched (got %.1f)' % fps)
     check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
-    cx, cy = p1['x'] - g(sp, 'camx'), p1['y'] - g(sp, 'camy')
-    check(abs(cx - 88) <= 6 and abs(cy - 56) <= 6, 'camera keeps your car in the middle (%d,%d)' % (cx, cy))
+    press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
+    cx, cy = pc_['x'] - g(sp, 'camx'), pc_['y'] - g(sp, 'camy')
+    check((cx, cy) == (84, 56), 'camera keeps your car exactly in the middle of the 184 x 128 window (%d,%d)' % (cx, cy))
 
     # ---- park your car in the infield and watch the computer race 90 s ----
     put(sp, 0, 40, 40)                        # top-left corner, well off the track
@@ -197,10 +209,14 @@ with Racer(headless=True) as sp:
     check(max(avg) < 17.5, 'even the slowest computer car is within 4 s a lap of you (%.1f s)' % max(avg))
     cl = [car(sp, i) for i in CPUS]
     claps = [sp.read8(CARS + i * CS + 25) for i in CPUS]
-    hud = screen_text(sp, 21, 4, 24)
-    print('computer cars past the line', claps, 'hud', repr(hud))
+    print('computer cars past the line', claps, 'race time', g(sp, 'race_time'))
     check(min(claps) >= 3, 'the computer cars\' laps are counted (%s)' % claps)
-    check('POS 5TH' in hud, 'parked while four cars race: you are shown 5TH')
+    best = screen_text(sp, 22, 1, 23)
+    print('best lap line %r' % best)
+    check(best.startswith('BEST 0:1') and best[12:17].strip() in ('CYAN', 'GREEN', 'PINK', 'WHITE') and best[18:21] == 'LAP',
+          'the best lap shows its time, the car that set it and the lap')
+    check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
+    check(g(sp, 'race_time') > 50 * 85, 'the race clock is running (%.1f s)' % (g(sp, 'race_time') / 50))
     check(min(o / samples for o in onroad) > 0.8, 'computer cars stay mostly on the road')
     check(mistakes >= 6, 'computer cars make mistakes (%d in 90 s)' % mistakes)
     d = [math.dist(a, b) for a, b in zip(tracks[0], tracks[1])]
@@ -245,9 +261,17 @@ with Racer(headless=True) as sp:
     put(sp, 0, 250, 344, 16)
     hold(sp, ['Q'], 1.5)
     sp.run(duration=0.3, fast_forward=True)
-    fin = screen_text(sp, 21, 4, 12)
-    print('after crossing the line on lap 3:', repr(fin), 'laps', sp.read8(CARS + 25))
-    check(fin.startswith('FINISHED'), 'crossing the line on the last lap shows FINISHED and your place')
+    again = screen_text(sp, 21, 1, 21)
+    print('after crossing the line on lap 3:', repr(again), 'race_over', sp.read8(SYM['race_over']))
+    check(sp.read8(SYM['race_over']) == 1 and attr(1, 0) == 0x57, 'crossing the line on the last lap: FINISHED in the message bar')
+    check(again == 'PRESS Q TO RACE AGAIN', 'and PRESS Q TO RACE AGAIN under the window')
+    sp.run(duration=0.3, fast_forward=True)
+    hold(sp, ['Q'], 0.3)                           # let go, then press: a new race
+    sp.run(duration=1.5, fast_forward=True)
+    p5 = car(sp, 0)
+    check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0 and screen_text(sp, 1, 12, 9) == 'GET READY'
+          and (p5['x'], p5['y']) == (car(sp, 0)['x'], car(sp, 0)['y']), 'Q after the finish starts a new race on the grid')
+    hold(sp, ['Q'], 0.2)
 
     # ---- the picture: pixel check with cars masked out, after a stop ----
     sp.run(duration=3.0, fast_forward=True)

@@ -145,6 +145,26 @@ with open(OUT, 'a') as f:
         f.write('        dw %d,%d\n' % (x, y))
 print('waypoints:', NWP)
 
+# the mini-map: the road at 1/8 scale, from (64,32), 56 x 48 px (7 x 6
+# cells in the panel), drawn as its two edges so a car's dot shows between
+MW, MH = 56, 48
+def on_road(mx, my):
+    x, y = 64 + mx * 8 + 4, 32 + my * 8 + 4
+    return 0 <= x < PW and 0 <= y < PH and road[x, y]
+mm = [[0] * MW for _ in range(MH)]
+for my in range(MH):
+    for mx in range(MW):
+        if on_road(mx, my) and any(not on_road(mx + dx, my + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            mm[my][mx] = 1
+smx = (256 + OFF + 4 - 64) // 8                   # the start line: a tick across the road
+for my in range(MH):
+    if on_road(smx, my): mm[my][smx] = 1
+with open(OUT, 'a') as f:
+    f.write('\n; the mini-map: road edges at 1/8 scale from world (64,32), 7 bytes x 48 rows\nminimap:\n')
+    for row in mm:
+        f.write('        defb ' + ','.join('%%%s' % ''.join(str(v) for v in row[i:i + 8]) for i in range(0, MW, 8)) + '\n')
+open(os.path.join(HERE, '..', 'build', 'minimap.txt'), 'w').write('\n'.join(''.join('#' if v else '.' for v in r) for r in mm) + '\n')
+
 big = img.convert('L').point(lambda v: 0 if v else 255).resize((PW * 2, PH * 2), Image.NEAREST)
 big.save(os.path.join(HERE, '..', 'build', 'world_preview.png'))
 print('tiles:', len(order), ' road tiles:', surf.count(0))

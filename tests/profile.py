@@ -9,7 +9,7 @@ SYM = {}
 for line in open(os.environ.get('ZSYM', os.path.join(ROOT, 'build', 'racer.sym'))):
     p = line.split()
     if len(p) >= 3 and p[1] == 'EQU': SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
-STAGES = ['main', 'tick_loop', 'camera', 'draw_tiles', 'draw_car', 'copy_to_screen', 'clear_buffer']
+STAGES = ['main', 'tick_loop', 'race_progress', 'hud_update', 'camera', 'draw_tiles', 'draw_car', 'copy_to_screen', 'clear_buffer']
 ADDR = {SYM[n]: n for n in STAGES}
 log = []
 class P(Spectrum):

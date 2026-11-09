@@ -166,3 +166,25 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Claude Design canvas "Breakfast Run Screen Design": https://claude.ai/artifact/1EoS3CaKDwVeBd7vqpeWjw
   (artboards: race screen mid race, what every cell is for, start, finish, logo). Images in docs/design/.
 - Not built into the game yet: WAITING ON GRANT to approve the layout and the logo.
+
+## 2026-11-09 19:32 SAST - stage 6: the race screen built (cloud session, Claude)
+- Grant approved the Claude Design layout ("that looks good as a layout - lets do it"), then while it was
+  being built: drop the lap strip ("that bar at the bottom can go"), put a mini-map where lap and time
+  were, add a best lap with the car and the lap. Then: "go in search of methods to improve frame rates,
+  speed, smoothness, I'm going to be away for an hour".
+- Built (src/hud.asm): window 23 x 16 at cell column 1 (camera keeps you at 84,56); 2-px frame; panel:
+  logo (src/logo.asm, the 1-bit logo), RACE, the race order (each car's picture on its colour, you on red;
+  one row redrawn per picture at most, all five at the start), mini-map (track edges at 1/8 scale, a dot
+  per car, yours 3x3 and blinking); message bar: start lights + GET READY / PRESS Q, GO!, FINAL LAP!,
+  FINISHED nTH in double-size ROM letters; bottom band: LAP n/3, TIME m:ss.t, BEST m:ss.t NAME LAP n.
+  Q after the finish starts a new race (every race variable reset).
+- Copier: 23-byte rows = 6 pairs + 5 pairs + 1 byte (ld a,(nn)/ld (nn),a).
+- Per-car lap timing (C_LST); best lap by anyone, with car and lap.
+- Bugs found on the way: ranking used an address instead of the progress (ex de,hl) - order nonsense;
+  XOR lap-strip markers cancelled when level (strip later removed anyway); the camera offset edit had
+  not applied (car 4 px off centre) and a +-6 px test tolerance hid it - the check now stops at copy_done
+  and is exact.
+- Cost control: progress is one byte (saturating), ranking 25 byte compares; HUD work spread over
+  pictures (order 1 in 4, map 1 in 4, clock 2 in 4); tower rows drawn with cell-address INC H loops.
+- tests/drive_test.py 38/38 PASS. Frame rate: 13.0 off the start; lap 14.6 mean, 12.5 on ~14 of 34
+  stretches - NEXT: the frame-rate hunt.
