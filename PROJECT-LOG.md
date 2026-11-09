@@ -117,3 +117,21 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   same picture), so the car margin is the 1px halo instead of 6 px. Found on the way: the emulator
   calls on_breakpoint at its own marks too - check the PC. drive_test.py 20/20 PASS; laps 16.5 / 20.2 /
   17.2 / 19.2 s; on road 99-100%; 45 mistakes in 90 s across four cars.
+
+## 2026-11-09 19:07 SAST - stage 5: competitive computer cars, laps, position, a frame (cloud session, Claude)
+- Grant: "make the other cars a little faster / better around the track - to be more competitive";
+  then "now add laps and position"; then "put a border around the play area" and asked the play
+  area's size: window 192x128 px = 24x16 character cells, of 256x192 (32x24): 75% of the width, 67% of
+  the height, 50% of the area.
+- Tuning harness tests/tune_ai.py (real ROM, 90 s races, laps and time on road per car). Measured
+  (A/B/C/D lap s): today 16.1/19.7/16.5/19.9; pace 7,7,7,6 13.9/14.2/14.2/16.0; pace 8,7,7,6
+  12.8/14.4/14.0/16.4; pace 8,8,7,7 12.2/12.5/14.0/14.5 - all 99-100% on road. Chosen: pace 7,7,7,6,
+  every car thinks every 4 frames, ERR 8/14/10/20. Pace 8 would beat the autopilot's 13.5 s and a
+  person on a keyboard is likely slower. REACH is now a named constant.
+- Laps: counted when a car reaches waypoint WS (31, the first after the start line); LAPS = 3. Your car
+  passes waypoints within 40 (or the one after, if you went wide). Progress = laps*NWP + passed; your
+  position = 1 + cars with more progress. HUD below the window in the ROM font, printed only on change
+  (skill: never reprint text every frame): LAP n/3, POS 1ST..5TH, FINISHED nTH. Title above.
+- Frame: 2 px black round the window, drawn once at start.
+- tests/drive_test.py: 28/28 PASS - reads the HUD text off the screen by matching ROM font cells;
+  frame pixels; finish shows FINISHED. Laps 14.2/14.7/14.6/16.4 s. Off the start, 5 cars bunched: 13.5/s.

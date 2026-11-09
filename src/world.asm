@@ -334,6 +334,8 @@ surface_map:
 
 ; waypoints for the computer cars: centre line, racing order (x, y)
 NWP     equ 34
+WS      equ 31          ; first waypoint after the start line
+PLAYERWP equ 29
 CPU0X   equ 224
 CPU0Y   equ 328
 CPU0WP  equ 29

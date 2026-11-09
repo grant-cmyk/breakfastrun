@@ -1,5 +1,5 @@
 ; =====================================================================
-; BREAKFAST RUN - STAGE 4: five cars (you and four computer cars)
+; BREAKFAST RUN - STAGE 5: competitive cars, laps, position, a frame
 ; ZX Spectrum 48K, assembled with pasmo.
 ;
 ; Keys:  O = steer left   P = steer right   Q = accelerate   A = brake/reverse
@@ -28,6 +28,8 @@ BUF_HI  equ 0xC0        ; (so the next pixel row down is INC H, and a row
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
 NCARS   equ 5           ; you + 4 computer cars
+LAPS    equ 3           ; laps in a race
+REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
 WIN_COL equ 4           ; window on screen: columns 4..27 (24 bytes wide)
 WIN_Y   equ 32          ; pixel rows 32..159 (128 high)
@@ -57,7 +59,8 @@ C_ERR   equ 21          ; computer: chance of a mistake at each waypoint /256
 C_KIND  equ 22          ; which picture: 0 you, 1 CPU A, 2 CPU B
 C_STEER equ 23          ; computer: steering it decided on (bit0 L, bit1 R)
 C_EASE  equ 24          ; computer: 1 = target well off to the side, ease off
-C_SIZE  equ 25
+C_LAPS  equ 25          ; times past the start line (1 = on lap 1)
+C_SIZE  equ 26
 
 CT_L    equ 1
 CT_R    equ 2
@@ -96,6 +99,7 @@ win_attr:
         pop bc
         djnz win_attr
 
+        call draw_frame
         call make_tables
         ld hl,cars_init         ; copy the starting records into place
         ld de,cars
@@ -130,6 +134,7 @@ tick_loop:
         pop bc
         djnz tick_loop
 
+        call race_progress      ; your waypoints and laps, positions, the HUD
         call camera
         call draw_tiles
         ld ix,cars+(NCARS-1)*C_SIZE ; computer cars first, yours last (on top)
@@ -589,7 +594,7 @@ ai_decide:
         push de                 ; keep them: manhattan uses DE and BC
         push bc
         call manhattan          ; reached it?  (|dx| + |dy| < 24)
-        ld de,24
+        ld de,REACH
         or a
         sbc hl,de
         jr nc,ai_check_next
@@ -610,7 +615,7 @@ ai_check_next:
         ld (ix+C_WP),a
         ex de,hl                ; DE = distance to next
         ld hl,(dist_cur)
-        ld bc,24
+        ld bc,REACH
         add hl,bc               ; HL = distance to current
         or a
         sbc hl,de
@@ -741,7 +746,7 @@ pace_gate:
 
 ; next_waypoint: move on, pick a new aiming offset, maybe start a mistake
 next_waypoint:
-        call wp_inc
+        call lap_and_inc
         call rnd                ; offset -8..+7 pixels each way: a different
         and 15                  ; line through every corner
         sub 8
@@ -772,7 +777,14 @@ nw_k:
         ld (mistakes),hl
         ret
 
-wp_inc:
+; lap_and_inc: the car has reached its waypoint - count a lap if it is the
+; first one after the start line, then aim at the next
+lap_and_inc:
+        ld a,(ix+C_WP)
+        cp WS
+        jr nz,wp_inc
+        inc (ix+C_LAPS)
+wp_inc:                         ; (also used just to look one waypoint ahead)
         ld a,(ix+C_WP)
         inc a
         cp NWP
@@ -1480,6 +1492,238 @@ cb_t0:
         ret
 
 ; ---------------------------------------------------------------------
+; RACE_PROGRESS: once per picture.
+;   - your car passes waypoints like the computer cars do (within 40 of
+;     the next one, or of the one after it if you went wide)
+;   - progress = laps * NWP + waypoints passed since the line; your
+;     position = 1 + the cars with more progress than you
+;   - the HUD below the window is redrawn only when something changed
+; ---------------------------------------------------------------------
+race_progress:
+        ld ix,cars
+        ld b,2                  ; you may pass up to 2 waypoints a picture
+rp_wp:
+        push bc
+        call wp_delta
+        call manhattan
+        ld de,40
+        or a
+        sbc hl,de
+        jr nc,rp_try_next
+        call lap_and_inc
+        pop bc
+        djnz rp_wp
+        jr rp_pos
+rp_try_next:                    ; went wide of it? the one after it counts too
+        ld a,(ix+C_WP)
+        push af
+        call wp_inc
+        call wp_delta
+        call manhattan
+        pop af
+        ld (ix+C_WP),a
+        pop bc
+        ld de,40
+        or a
+        sbc hl,de
+        jr nc,rp_pos
+        call lap_and_inc        ; the missed one, then the one reached
+        call lap_and_inc
+rp_pos:
+        ld a,(race_over)
+        or a
+        ret nz                  ; finished: the HUD stays as it ended
+        ld ix,cars
+        call progress
+        ld (my_prog),hl
+        ld c,1                  ; position
+        ld b,NCARS-1
+        ld ix,cars+C_SIZE
+rp_cmp:
+        push bc
+        call progress
+        ld de,(my_prog)
+        or a
+        sbc hl,de               ; their progress - mine
+        pop bc
+        jr z,rp_not             ; level: you keep the place
+        jr c,rp_not
+        inc c                   ; they are ahead
+rp_not:
+        ld de,C_SIZE
+        add ix,de
+        djnz rp_cmp
+        ld a,c
+        ld (position),a
+        ld a,(cars+C_LAPS)      ; finished?  past the line LAPS+1 times
+        cp LAPS+1
+        jr c,rp_hud
+        ld a,1
+        ld (race_over),a
+        ld hl,txt_finished
+        ld b,21
+        ld c,4
+        call print_at
+        ld a,(position)
+        ld b,21
+        ld c,13
+        call print_place
+        ld hl,txt_blank         ; and clear the POS text: the race is over
+        ld b,21
+        ld c,19
+        jp print_at
+rp_hud:
+        ld a,(cars+C_LAPS)      ; lap shown: 1..LAPS
+        or a
+        jr nz,rp_l1
+        inc a
+rp_l1:
+        ld hl,shown_lap
+        cp (hl)
+        jr z,rp_h2
+        ld (hl),a
+        add a,'0'
+        ld (txt_lap+4),a
+        ld hl,txt_lap
+        ld b,21
+        ld c,4
+        call print_at
+rp_h2:
+        ld a,(position)
+        ld hl,shown_pos
+        cp (hl)
+        ret z
+        ld (hl),a
+        ld hl,txt_pos
+        ld b,21
+        ld c,19
+        call print_at
+        ld a,(position)
+        ld b,21
+        ld c,23
+        jp print_place
+
+; progress (IX = car): HL = laps * NWP + waypoints passed since the line
+progress:
+        ld a,(ix+C_WP)          ; passed = (target - WS - 1) MOD NWP
+        sub WS+1
+        jr nc,pr1
+        add a,NWP
+pr1:
+        ld l,a
+        ld h,0
+        ld b,(ix+C_LAPS)
+        inc b
+        ld de,NWP
+        jr pr_go
+pr_add:
+        add hl,de
+pr_go:
+        djnz pr_add
+        ret
+
+; print_place: A = 1..5 -> "1ST" ... "5TH" at row B, column C
+print_place:
+        dec a
+        add a,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,txt_places
+        add hl,de
+        jp print_at
+
+; print_at: the 0-terminated text at HL, at character row B, column C,
+; using the ROM's own letters (at 0x3D00). Written straight into the
+; screen, only when something changes - never every frame.
+print_at:
+        ld a,b                  ; screen address of the character cell
+        and 0x18
+        or 0x40
+        ld d,a
+        ld a,b
+        and 7
+        rrca
+        rrca
+        rrca
+        or c
+        ld e,a
+pa_char:
+        ld a,(hl)
+        or a
+        ret z
+        push hl
+        push de
+        ld l,a                  ; font: 0x3C00 + code * 8
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld bc,0x3C00
+        add hl,bc
+        ld b,8
+pa_line:
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc d
+        djnz pa_line
+        pop de
+        pop hl
+        inc hl
+        inc e
+        jr pa_char
+
+; DRAW_FRAME: a 2-pixel black frame round the window and the title.
+; Drawn once; the scroller never writes outside the window, so it stays.
+draw_frame:
+        ld b,WIN_Y-2            ; top: two rows of 26 bytes over the window
+        call df_hline
+        ld b,WIN_Y-1
+        call df_hline
+        ld b,WIN_Y+WIN_H        ; bottom
+        call df_hline
+        ld b,WIN_Y+WIN_H+1
+        call df_hline
+        ld b,WIN_Y-2            ; sides: the 2 pixels each side, every row
+df_side:
+        ld c,(WIN_COL-1)*8
+        call scr_addr
+        ld (hl),0x03            ; left: the right-hand 2 pixels of column 3
+        ld a,l
+        add a,WIN_W+1
+        ld l,a
+        ld (hl),0xC0            ; right: the left-hand 2 pixels of column 28
+        inc b
+        ld a,b
+        cp WIN_Y+WIN_H+2
+        jr nz,df_side
+        ld hl,txt_title
+        ld b,1
+        ld c,9
+        jp print_at
+df_hline:                       ; row B: 0x03, 24 x 0xFF, 0xC0
+        ld c,(WIN_COL-1)*8
+        call scr_addr
+        ld (hl),0x03
+        inc l
+        ld a,WIN_W
+df_h1:
+        ld (hl),0xFF
+        inc l
+        dec a
+        jr nz,df_h1
+        ld (hl),0xC0
+        ret
+
+txt_title:    db "BREAKFAST RUN",0
+txt_lap:      db "LAP 1/",'0'+LAPS,0
+txt_pos:      db "POS",0
+txt_finished: db "FINISHED",0
+txt_blank:    db "       ",0
+txt_places:   db "1ST",0, "2ND",0, "3RD",0, "4TH",0, "5TH",0
+
+; ---------------------------------------------------------------------
 ; MAKE_COPIER: write the screen-copy routine into memory at COPIER.
 ; Code is just bytes, so a program can write code. For each window row,
 ; twice (12 bytes at a time) it writes:
@@ -1595,11 +1839,13 @@ scr_addr:
 ; the starting line-up (copied into "cars" at the start)
 ;   x frac, x, y frac, y, vx, vy, heading, buttons, friction,
 ;   waypoint, offset x, offset y, mistake, kind of mistake, think,
-;   PACE, REACT, ERR, picture, steering, ease off
-; CPU A: faster (6 of 8), thinks every 4 frames, few mistakes.
-; CPU B: slower (5 of 8), thinks every 8 frames, more mistakes.
-; CPU C: faster (6 of 8), thinks every 8 frames, some mistakes.
-; CPU D: slower (5 of 8), thinks every 4 frames but sloppy - the most mistakes.
+;   PACE, REACT, ERR, picture, steering, ease off, laps
+; Tuned on the real ROM (tests/tune_ai.py) to race round your pace:
+; CPU A: 7 of 8, fewest mistakes  (laps ~13.9 s)
+; CPU B: 7 of 8, more mistakes    (~14.2 s)
+; CPU C: 7 of 8, some mistakes    (~14.2 s)
+; CPU D: 6 of 8, the most mistakes (~16.0 s)
+; Everyone thinks every 4 frames. Your autopilot lap: ~13.5 s.
 ; ---------------------------------------------------------------------
 cars_init:
         db 0
@@ -1607,31 +1853,31 @@ cars_init:
         db 0
         dw STARTY
         dw 0,0
-        db STARTA,0,3, 0,0,0, 0,0,0, 8,0,0, 0,0,0
+        db STARTA,0,3, PLAYERWP,0,0, 0,0,0, 8,0,0, 0,0,0, 0
         db 0
         dw CPU0X
         db 0
         dw CPU0Y
         dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 6,0,14, 1,0,0
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 7,0,8, 1,0,0, 0
         db 0
         dw CPU1X
         db 0
         dw CPU1Y
         dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 5,1,24, 2,0,0
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 7,0,14, 2,0,0, 0
         db 0
         dw CPU2X
         db 0
         dw CPU2Y
         dw 0,0
-        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 6,1,18, 3,0,0
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 7,0,10, 3,0,0, 0
         db 0
         dw CPU3X
         db 0
         dw CPU3Y
         dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 5,0,34, 4,0,0
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 6,0,20, 4,0,0, 0
 cars_init_end:
 
 ; ---------------------------------------------------------------------
@@ -1664,6 +1910,11 @@ bumps:    dw 0
 tb:       defs 9
 dc_row0:  db 0
 dc_ink:   db 0
+my_prog:  dw 0
+position: db 0
+shown_lap: db 0
+shown_pos: db 0
+race_over: db 0
 dc_first: db 0
 dc_count: db 0
 dist_cur: dw 0

@@ -83,6 +83,24 @@ def check(ok, msg):
     global fails
     print(('PASS ' if ok else 'FAIL ') + msg); fails += not ok
 
+def screen_text(sp, row, col, n):
+    font = sp.read(0x3D00, 96 * 8)
+    out = ''
+    for c in range(col, col + n):
+        a = 0x4000 | ((row & 0x18) << 8) | ((row & 7) << 5) | c
+        cell = bytes(sp.read8(a + 256 * k) for k in range(8))
+        ch = '?'
+        for code in range(96):
+            if bytes(font[code * 8:code * 8 + 8]) == cell: ch = chr(32 + code); break
+        out += ch
+    return out
+
+def frame_ok(sp):
+    bits = screen_bits(sp)
+    top = bits[30:32, 30:226].all() and bits[160:162, 30:226].all()
+    sides = bits[30:162, 30:32].all() and bits[30:162, 224:226].all()
+    return bool(top and sides)
+
 class Racer(Spectrum):
     armed = False                           # stop at copy_done only when asked
     def on_breakpoint(self):                # (the emulator calls this at its own
@@ -126,6 +144,11 @@ with Racer(headless=True) as sp:
     p0 = car(sp, 0); cs0 = [car(sp, i) for i in CPUS]
     print('you', p0); [print('CPU', i, c) for i, c in zip(CPUS, cs0)]
     check(p0['vx'] == 0 and p0['ang'] == 16, 'your car waits on the start line')
+    check(frame_ok(sp), 'a 2-pixel frame surrounds the play window')
+    title, hud = screen_text(sp, 1, 9, 13), screen_text(sp, 21, 4, 24)
+    print('title %r  hud %r' % (title, hud))
+    check(title == 'BREAKFAST RUN', 'the title is above the window')
+    check(hud.startswith('LAP 1/3') and 'POS 1ST' in hud, 'below the window: LAP 1/3 and your position')
     check(len(CPUS) == 4, 'there are four computer cars')
     check(all(c['vx'] == 0 and c['vy'] == 0 for c in cs0), 'computer cars wait on the grid until you press Q')
     bad = window_bad(sp)
@@ -170,7 +193,14 @@ with Racer(headless=True) as sp:
     avg = [(lt[-1] - lt[0]) / (len(lt) - 1) for lt in lap_t]
     print('average laps (s):', ' '.join('%.1f' % a for a in avg))
     check(max(avg) - min(avg) > 1.0, 'the computer cars are not all the same speed (%s s a lap)' % ' '.join('%.1f' % a for a in avg))
-    check(min(avg) > 14.0, 'every computer car laps slower than you (~13.5 s)')
+    check(13.0 < min(avg) < 15.0, 'the fastest computer car is competitive: %.1f s a lap against your ~13.5 s' % min(avg))
+    check(max(avg) < 17.5, 'even the slowest computer car is within 4 s a lap of you (%.1f s)' % max(avg))
+    cl = [car(sp, i) for i in CPUS]
+    claps = [sp.read8(CARS + i * CS + 25) for i in CPUS]
+    hud = screen_text(sp, 21, 4, 24)
+    print('computer cars past the line', claps, 'hud', repr(hud))
+    check(min(claps) >= 3, 'the computer cars\' laps are counted (%s)' % claps)
+    check('POS 5TH' in hud, 'parked while four cars race: you are shown 5TH')
     check(min(o / samples for o in onroad) > 0.8, 'computer cars stay mostly on the road')
     check(mistakes >= 6, 'computer cars make mistakes (%d in 90 s)' % mistakes)
     d = [math.dist(a, b) for a, b in zip(tracks[0], tracks[1])]
@@ -207,6 +237,17 @@ with Racer(headless=True) as sp:
     print('just after the head-on bump', seen)
     check(seen is not None and seen[0]['vx'] < 0 < seen[1]['vx'],
           'cars that hit head-on bounce away from each other')
+
+    # ---- finish: on your last lap, cross the line ----
+    for i in CPUS: put(sp, i, 20 + 25 * i, 420)
+    sp.write(CARS + 25, bytes([3]))                # past the line 3 times: on lap 3
+    sp.write(CARS + 13, bytes([SYM['ws']]))        # heading for the first waypoint after it
+    put(sp, 0, 250, 344, 16)
+    hold(sp, ['Q'], 1.5)
+    sp.run(duration=0.3, fast_forward=True)
+    fin = screen_text(sp, 21, 4, 12)
+    print('after crossing the line on lap 3:', repr(fin), 'laps', sp.read8(CARS + 25))
+    check(fin.startswith('FINISHED'), 'crossing the line on the last lap shows FINISHED and your place')
 
     # ---- the picture: pixel check with cars masked out, after a stop ----
     sp.run(duration=3.0, fast_forward=True)

@@ -134,6 +134,10 @@ def first_wp(cx, cy):
 with open(OUT, 'a') as f:
     f.write('\n; waypoints for the computer cars: centre line, racing order (x, y)\n')
     f.write('NWP     equ %d\n' % NWP)
+    # the first waypoint past the start line (lap counting) and your first target
+    ws = min((k for k, (x, y) in enumerate(wps) if abs(y - (320 + OFF)) < 30 and x > 264 + OFF), key=lambda k: wps[k][0])
+    f.write('WS      equ %d          ; first waypoint after the start line\n' % ws)
+    f.write('PLAYERWP equ %d\n' % first_wp(start_x + 8, start_y + 8))
     for n, (x, y) in enumerate(cpu):
         f.write('CPU%dX   equ %d\nCPU%dY   equ %d\nCPU%dWP  equ %d\n' % (n, x, n, y, n, first_wp(x + 8, y + 8)))
     f.write('waypoints:\n')
