@@ -253,3 +253,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   where they cross, white rim), B chequered-flag frame on green, C wooden table (yellow-on-red grain) with a
   lace placemat edge, D blue-and-white kitchen tiles. HUD text on plain strips. All drawn once at start:
   no cost per picture. docs/design/surrounds.png (+ _a.._d at 3x). Waiting on Grant's pick.
+
+## 2026-11-09 21:00 SAST - window-edge mock-ups
+- Grant does not like the solid 1-pixel rectangle round the play window. tools/make_edge_mockups.py: eight
+  edges with no plain line - A none (colour change), B drop shadow, C corner brackets, D red/white kerb band,
+  E tyre wall on grass, F square china plate rim on blue, G stitched hem on red, H thick rounded arcade bezel.
+  All in the cells outside the window, drawn once: no cost per picture. docs/design/edges.png,
+  edges_corners.png (top-left corner at 5x), edges_a.._h.png at 3x. Waiting on Grant's pick.
