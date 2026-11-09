@@ -32,9 +32,11 @@ LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
-WIN_Y   equ 32          ; pixel rows 32..159 (128 high)
+WIN_Y   equ 32          ; pixel rows 32..151 (120 high: one character row less
+                        ; than the screen allows, for speed - Grant, 9 Nov 2026)
 WIN_W   equ 22
-WIN_H   equ 128
+WIN_H   equ 120
+BAND_Y  equ (WIN_Y+WIN_H)/8+1    ; the text rows under the window: LAP, TIME, BEST
 FRAMES  equ 23672       ; ROM counter, +1 every TV frame (1/50 s)
 
 ; ---- the car record: one block of bytes per car (offsets from IX) ----
@@ -85,7 +87,7 @@ start:
         ldir
         ld hl,0x5800+4*32+WIN_COL   ; ...and the window bright white, blue ink:
                                     ; a blue and white tablecloth
-        ld b,16
+        ld b,WIN_H/8
 win_attr:
         push bc
         push hl
@@ -1207,13 +1209,13 @@ cx_pos:
         call clamp_hl
         ld (camx),hl
         ld hl,(cars+C_Y)
-        ld de,56
+        ld de,WIN_H/2-8         ; the car in the middle, top to bottom
         or a
         sbc hl,de
         jr nc,cy_pos
         ld hl,0
 cy_pos:
-        ld de,MAPH*8-136
+        ld de,MAPH*8-WIN_H-8
         call clamp_hl
         ld (camy),hl
         ret
@@ -1281,7 +1283,7 @@ draw_tiles:
         ld de,row_index
         add hl,de
         ld (dt_rowp),hl
-        ld a,17                 ; 17 rows of tiles
+        ld a,WIN_H/8+1          ; rows of tiles
 dt_row:
         ld (dt_rows),a
         ld hl,(dt_rowp)         ; this row's list
@@ -1577,7 +1579,7 @@ isr:
 
 ; ---------------------------------------------------------------------
 ; CLOTH_FILL: the tablecloth. Instead of clearing the back buffer to blank,
-; fill buffer rows 16..143 with the cloth the camera sees: 32-px checks, the
+; fill buffer rows 16..16+WIN_H-1 with the cloth the camera sees: 32-px checks, the
 ; dark ones a 50% dither, locked to the table so they scroll with it.
 ; World pixel (x, y) is buffer row y-camy+16, bit x-camx+16 of that row.
 ;
@@ -1599,7 +1601,7 @@ cloth_fill:
         ld (cf_sp),sp
         ld hl,cf_tab
         ld (cf_tp),hl
-        ld a,16
+        ld a,WIN_H/8
         ld (cf_n),a
 cf_cr:                          ; one character row
         ld hl,(cf_tp)
@@ -1730,8 +1732,7 @@ cf_l11: CF_LOAD cloth_pat+24, cloth_pat+8    ; main: phase 1, check row 1
 cf_slots:
         dw cf_s0,cf_s1,cf_s2,cf_s3,cf_s4,cf_s5,cf_s6,cf_s7
 cf_tab:                         ; each character row: IX for line 0, buffer row
-        dw 0xD038
-        db 136
+                                ; (WIN_H/8 of them: buffer rows 16..135)
         dw 0xD018
         db 128
         dw 0xC8F8
@@ -2507,6 +2508,9 @@ code_end:
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
+        endif
+        if WIN_H - 120
+        .error cf_tab lists the character rows of a 120-line window
         endif
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide

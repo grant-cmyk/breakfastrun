@@ -324,3 +324,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   15.0 15.1 14.9 17.4 s. RESULT: PASS.
 - Measured, whole lap: work 195.7k T a picture (was 203.4k): cloth 37.7k, tiles 51.6k, ticks 41.7k,
   copy 41.1k, cars 15.0k. 149 pictures at 3 frames, 57 at 4 (was 127 / 73).
+
+## 2026-11-09 21:52 SAST - one character row less of view (Grant's offer)
+- WIN_H 120 (was 128); BAND_Y = the text rows under the window, now rows 20-21 (were 21-22); camera
+  centre (80,52); 16 rows of tiles; 15 character rows of cloth; win_attr WIN_H/8. Asserts guard cf_tab.
+  drive_test updated (window slice, bezel, centre, text rows): RESULT PASS.
+- Measured, whole lap: work 187.0k T a picture (was 195.7k): tiles 49.3k, ticks 40.3k, copy 38.5k, cloth
+  35.2k, cars 15.2k. 179 pictures at 3 frames, 34 at 4 (was 149 / 57).

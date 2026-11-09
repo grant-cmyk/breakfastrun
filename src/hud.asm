@@ -56,20 +56,20 @@ hi_tw:
         ld a,b
         cp NCARS
         jr nz,hi_tw
-        ld hl,txt_lapw          ; bottom band, row 21: LAP n/3 and TIME
-        ld b,21
+        ld hl,txt_lapw          ; bottom band, row BAND_Y: LAP n/3 and TIME
+        ld b,BAND_Y
         ld c,1
         call print_at
         ld hl,txt_time
-        ld b,21
+        ld b,BAND_Y
         ld c,12
         call print_at
-        ld hl,txt_best          ; row 22: BEST -:--.-
-        ld b,22
+        ld hl,txt_best          ; row BAND_Y+1: BEST -:--.-
+        ld b,BAND_Y+1
         ld c,1
         call print_at
         ld hl,txt_nobest
-        ld b,22
+        ld b,BAND_Y+1
         ld c,6
         call print_at
         jp msg_lights
@@ -404,7 +404,7 @@ hu_l2:
         add a,'0'
         ld (txt_digit),a
         ld hl,txt_digit
-        ld b,21
+        ld b,BAND_Y
         ld c,5
         call print_at
 hu_best:
@@ -422,12 +422,12 @@ hu_order:
         jp z,map_update
         jp time_update
 
-; print_best: BEST m:ss.t NAME LAP n on row 22 (the name on the car's colour)
+; print_best: BEST m:ss.t NAME LAP n on row BAND_Y+1 (the name on the car's colour)
 print_best:
         ld hl,(best_lap)
         call time_fmt
         ld hl,time_txt
-        ld b,22
+        ld b,BAND_Y+1
         ld c,6
         call print_at
         ld a,(best_car)         ; the name, 5 letters
@@ -441,7 +441,7 @@ print_best:
         ld d,0
         ld hl,car_names
         add hl,de
-        ld b,22
+        ld b,BAND_Y+1
         ld c,13
         call print_at
         ld a,(best_car)
@@ -450,20 +450,20 @@ print_best:
         ld hl,car_colours
         add hl,de
         ld a,(hl)
-        ld b,22
+        ld b,BAND_Y+1
         ld c,13
         ld d,1
         ld e,5
         call set_attrs
         ld hl,txt_lapw
-        ld b,22
+        ld b,BAND_Y+1
         ld c,19
         call print_at
         ld a,(best_lapno)
         add a,'0'
         ld (txt_digit),a
         ld hl,txt_digit
-        ld b,22
+        ld b,BAND_Y+1
         ld c,23
         jp print_at
 
@@ -868,7 +868,7 @@ mr_done:
         ret
 
 ; ---------------------------------------------------------------------
-; THE TIME: m:ss.t at panel row 22, only the characters that changed
+; THE TIME: m:ss.t on row BAND_Y, only the characters that changed
 ; ---------------------------------------------------------------------
 time_update:
         ld hl,(race_time)
@@ -948,7 +948,7 @@ tm_cmp:
         push bc
         ld (txt_digit),a
         ld hl,txt_digit
-        ld b,21
+        ld b,BAND_Y
         call print_at
         pop bc
         pop de
@@ -963,13 +963,13 @@ tm_skip:
 ; the finish: best lap and PRESS Q under the window
 ; ---------------------------------------------------------------------
 show_best:
-        ld b,21
+        ld b,BAND_Y
         ld c,0
         ld d,1
         ld e,24
         call clear_cells
         ld hl,txt_again
-        ld b,21
+        ld b,BAND_Y
         ld c,1
         jp print_at
 
