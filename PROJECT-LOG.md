@@ -293,3 +293,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tools/car_art.txt holds hand-drawn cars; make_data.py uses them in place of its own drawing; car_rows now
   covers every car. drive_test RESULT: PASS. Editor rebuilt with the new art.
 - To do: add Grant's car to the one-bit-art exemplars (rule 15, claude-plugins-personal).
+
+## 2026-11-09 21:23 SAST - Grant's second car is YOU, his first is CYAN
+- Grant: make the first car a computer car; this one is the player's. Transcribed by eye (the screenshot
+  came mid-turn, not as a file) and checked against it. 22.5 and 45 rebuilt from his shapes and cleaned as
+  before. tools/car_art.txt now has YOU and CYAN. drive_test RESULT: PASS. Review sheet
+  docs/design/you_car_review.png. Editor republished with both.
