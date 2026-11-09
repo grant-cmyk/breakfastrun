@@ -238,3 +238,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   renders today / 22x16 / 23x15 / what each loses from a real screen captured at the first bend
   (docs/design/window_trial.png). Estimates (not measured): column ~8k a picture (tiles, copy, and the
   copy's odd byte goes), row ~8.5k (tiles, copy, clear). Waiting on Grant to pick one to build as a trial.
+
+## 2026-11-09 20:53 SAST - trial: window one column less (branch trial-window-22)
+- Grant: "one column less is doable". WIN_W 22 (176 px); copier 12 + 10 bytes, no odd byte; 23 tiles across;
+  camera keeps you at 80,56. drive_test 38/38 PASS (window, frame and centring checks updated).
+- Measured, whole lap: 195.0k average (was 200.1k), 144 / 60 pictures at 3 / 4 frames (was 140 / 65);
+  copy 44.8k -> 41.3k. About 5k saved, not the 8k estimated: the tiles that drop out are mostly blank.
+- On a branch until Grant has played it beside today's build (build/racer_23wide.tap vs
+  build/racer_22wide_trial.tap).

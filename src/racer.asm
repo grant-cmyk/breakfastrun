@@ -31,9 +31,9 @@ NCARS   equ 5           ; you + 4 computer cars
 LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
-WIN_COL equ 1           ; window on screen: columns 1..23 (23 bytes wide)
+WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
 WIN_Y   equ 32          ; pixel rows 32..159 (128 high)
-WIN_W   equ 23
+WIN_W   equ 22
 WIN_H   equ 128
 FRAMES  equ 23672       ; ROM counter, +1 every TV frame (1/50 s)
 
@@ -1195,7 +1195,7 @@ bu_write:
 ; ---------------------------------------------------------------------
 camera:
         ld hl,(cars+C_X)
-        ld de,WIN_W*4-8         ; window is 184 wide, car is 16: 84 to its left
+        ld de,WIN_W*4-8         ; window is 176 wide, car is 16: 80 to its left
         or a
         sbc hl,de
         jr nc,cx_pos
@@ -1842,9 +1842,9 @@ df_h1:
 
 ; ---------------------------------------------------------------------
 ; MAKE_COPIER: write the screen-copy routine into memory at COPIER.
-; Code is just bytes, so a program can write code. Each 23-byte window row
-; is 12 bytes (pop 6 pairs off the buffer, push them onto the screen), 10
-; bytes (5 pairs), then 1 byte by ld a,(nn) / ld (nn),a. Finally jp
+; Code is just bytes, so a program can write code. Each 22-byte window row
+; is 12 bytes (pop 6 pairs off the buffer, push them onto the screen), then
+; 10 bytes (5 pairs). Finally jp
 ; copy_done. Too big to carry on the tape for nothing, and every address in
 ; it is worked out here.
 ; ---------------------------------------------------------------------
@@ -1857,11 +1857,10 @@ mc_row:
         ld (mc_n),a
         xor a
         call mc_half
-        ld a,5                  ; bytes 12..21: 5 pairs
+        ld a,5                  ; bytes 12..21: 5 pairs - the whole row
         ld (mc_n),a
         ld a,12
-        call mc_half
-        call mc_last            ; byte 22: on its own
+        call mc_half            ; (22 bytes: no odd byte left over)
         ld a,(mc_y)
         inc a
         cp WIN_H
@@ -1927,14 +1926,6 @@ mc_h1:
         sbc hl,bc
         ldir
         ret
-mc_last:                        ; ld a,(src+22) / ld (dst+22),a
-        ld a,22
-        call mc_src
-        ld a,0x3A
-        call mc_op
-        ld a,22
-        call mc_dst
-        ld a,0x32
 mc_op:                          ; write opcode A and address HL
         ld (de),a
         inc de
@@ -2130,8 +2121,8 @@ dc_tab:   db 0
         include "gen_bumps.asm"
 code_end:
 
-        if WIN_W - 23
-        .error make_copier is written for a 23-byte window row
+        if WIN_W - 22
+        .error make_copier is written for a 22-byte window row
         endif
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide

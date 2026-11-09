@@ -97,8 +97,8 @@ def screen_text(sp, row, col, n):
 
 def frame_ok(sp):
     bits = screen_bits(sp)
-    top = bits[30:32, 6:194].all() and bits[160:162, 6:194].all()
-    sides = bits[30:162, 6:8].all() and bits[30:162, 192:194].all()
+    top = bits[30:32, 6:186].all() and bits[160:162, 6:186].all()
+    sides = bits[30:162, 6:8].all() and bits[30:162, 184:186].all()
     return bool(top and sides)
 
 class Racer(Spectrum):
@@ -123,8 +123,8 @@ def at_copy_done(sp):
 def window_bad(sp):
     at_copy_done(sp)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
-    bits = screen_bits(sp)[32:160, 8:192]            # the window: cells 1-23, rows 4-19
-    want = world[camy:camy + 128, camx:camx + 184]
+    bits = screen_bits(sp)[32:160, 8:184]            # the window: cells 1-22, rows 4-19
+    want = world[camy:camy + 128, camx:camx + 176]
     mask = np.ones_like(want, dtype=bool)
     for n in range(N):
         c = car(sp, n)
@@ -177,7 +177,7 @@ with Racer(headless=True) as sp:
     check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
     press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
     cx, cy = pc_['x'] - g(sp, 'camx'), pc_['y'] - g(sp, 'camy')
-    check((cx, cy) == (84, 56), 'camera keeps your car exactly in the middle of the 184 x 128 window (%d,%d)' % (cx, cy))
+    check((cx, cy) == (80, 56), 'camera keeps your car exactly in the middle of the 176 x 128 window (%d,%d)' % (cx, cy))
 
     # ---- park your car in the infield and watch the computer race 90 s ----
     put(sp, 0, 40, 40)                        # top-left corner, well off the track
