@@ -2121,6 +2121,8 @@ dt_rowp:  dw 0
 dc_tab:   db 0
 
         include "data.asm"
+        include "waypoints.asm"   ; (fills the gap before sq4's page)
+        include "sq4.asm"
         include "world.asm"
         include "logo.asm"
         include "hud.asm"

@@ -13,7 +13,7 @@ for line in open(os.path.join(ROOT, 'build', 'racer.sym')):
     p = line.split()
     if len(p) >= 3 and p[1] == 'EQU': SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
 src = open(os.path.join(ROOT, 'src', 'world.asm')).read()
-wps = [tuple(int(v) for v in l.split('dw')[1].split(',')) for l in src[src.index('waypoints:'):].splitlines() if 'dw' in l]
+wps = [tuple(int(v) for v in l.split('dw')[1].split(',')) for l in open(os.path.join(ROOT, 'src', 'waypoints.asm')).read().split('waypoints:')[1].splitlines() if 'dw' in l]
 CARS, CS = SYM['cars'], SYM['c_size']
 held = set()
 def key(sp, k, down):
@@ -23,7 +23,7 @@ frames = []
 def grab(sp):
     sp.render_screen()
     px = np.array(sp.get_frame_pixels(), dtype=np.uint8).reshape(-1, 352, 4)[:, :, [2, 1, 0]]
-    frames.append(Image.fromarray(px[24 + 32:24 + 160, 48 + 32 - 16:48 + 224 + 16]))
+    frames.append(Image.fromarray(px[24:24 + 192, 48:48 + 256]))      # the whole screen
 with Spectrum(headless=True) as sp:
     sp.load_tape(os.path.join(ROOT, 'build', 'racer.tap'))
     while sp.read16(SYM['renders']) == 0: sp.run(duration=0.1, fast_forward=True)

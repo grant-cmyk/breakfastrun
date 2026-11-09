@@ -9,7 +9,7 @@ SYM = {}
 for line in open(os.path.join(ROOT, 'build', 'racer.sym')):
     p = line.split()
     if len(p) >= 3 and p[1] == 'EQU': SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
-src = open(os.path.join(ROOT, 'src', 'world.asm')).read()
+src = open(os.path.join(ROOT, 'src', 'world.asm')).read() + open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()
 NWP = int(re.search(r'NWP\s+equ\s+(\d+)', src).group(1))
 surf = []
 for l in src[src.index('surface_map:'):src.index('waypoints')].splitlines():

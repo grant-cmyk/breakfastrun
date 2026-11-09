@@ -18,7 +18,7 @@ for line in open(SYMF):
         SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
 CS = SYM['c_size']; CARS = SYM['cars']; N = SYM['ncars']; CPUS = list(range(1, N))
 
-src = open(os.path.join(ROOT, 'src', 'world.asm')).read()
+src = open(os.path.join(ROOT, 'src', 'world.asm')).read() + open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()
 MAPW = int(re.search(r'MAPW\s+equ\s+(\d+)', src).group(1))
 MAPH = int(re.search(r'MAPH\s+equ\s+(\d+)', src).group(1))
 NWP = int(re.search(r'NWP\s+equ\s+(\d+)', src).group(1))

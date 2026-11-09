@@ -216,3 +216,16 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   forward again after the kick and hid the bounce.
 - tests/drive_test.py 38/38 PASS. Grant then asked for breakfast-table scenery (eggs, bacon, knife,
   fork, juice, spoon, plate, toast) instead of trees - next.
+
+## 2026-11-09 19:46 SAST - breakfast-table scenery (cloud session, Claude)
+- Grant: "for the scenery - things that sit at a breakfast table. Eggs, bacon, knife, fork, juice ...
+  spoon, dinner plate, toast". tools/make_breakfast.py draws them top-down, one-bit-art value plan:
+  plate (two rings), fried egg (lumpy outline, solid yolk, 1 px shine - first try read as a rounded
+  square, redrawn), toast (solid crust, 25% dither), juice (ring, 50% dither, paper highlight), bacon (two
+  wavy rashers, dithered meat), knife/fork/spoon (solid handles). Trees, bushes and houses removed.
+  A place setting in the infield (fork, plate, knife, spoon) plus 15 more items round the table.
+- Memory: 47 bytes over at first. sq4 needs a page boundary and wasted 143 bytes of padding; the 34
+  waypoints (136 bytes) now sit in that gap (src/waypoints.asm, src/sq4.asm split out). Code/data end
+  0xBFA7: 89 bytes spare - MEMORY IS THE NEXT CONSTRAINT.
+- Whole lap: 140 / 65 pictures at 3 / 4 frames, 200.1k average (cheaper than the trees - sparser near
+  the track). Autopilot lap 15.4 pictures a second mean. drive_test 38/38 PASS.
