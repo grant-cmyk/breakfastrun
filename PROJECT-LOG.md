@@ -135,3 +135,15 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Frame: 2 px black round the window, drawn once at start.
 - tests/drive_test.py: 28/28 PASS - reads the HUD text off the screen by matching ROM font cells;
   frame pixels; finish shows FINISHED. Laps 14.2/14.7/14.6/16.4 s. Off the start, 5 cars bunched: 13.5/s.
+
+## 2026-11-09 19:10 SAST - HUD layout mock-ups (cloud session, Claude)
+- Grant: "make the play area a character row less wide - and mockup some designs for a HUD - where
+  would the HUD fit around the game area". Read as one character narrower. 23 cells cannot be centred
+  on 32 (4 + 5), so both 23 (off-centre, with a side panel) and 22 (centred) are shown.
+- Four layouts drawn as real Spectrum screens (tools/make_hud_mockups.py: a race frame captured on the
+  real ROM, the ROM font, the real car pictures, the 15 Spectrum colours, one attribute per cell):
+  A bottom strip (22), B position tower (23, panel right), C top banner (22, moved down), D wings (22).
+  Files: docs/hud/mock_a.png .. mock_d.png; page docs/hud/hud-layouts.html, published as the artifact
+  "Breakfast Run HUD Layouts" https://claude.ai/artifact/4c3E8kwVkzfxTsPK1SAzTT
+- Recommended: B. Not built yet - WAITING ON GRANT to pick. Speed saving from a narrower window is an
+  ESTIMATE (about 5k T at 23, 11k at 22), not measured.
