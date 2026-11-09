@@ -229,3 +229,6 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   0xBFA7: 89 bytes spare - MEMORY IS THE NEXT CONSTRAINT.
 - Whole lap: 140 / 65 pictures at 3 / 4 frames, 200.1k average (cheaper than the trees - sparser near
   the track). Autopilot lap 15.4 pictures a second mean. drive_test 38/38 PASS.
+
+## 2026-11-09 20:43 SAST - playtest
+- Grant on the race-screen build (cdda3e9): "play well". Tagged race-screen-verified locally (cloud sessions cannot push tags - WAITING ON GRANT to push it with the other two).
