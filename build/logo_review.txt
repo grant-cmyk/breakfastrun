@@ -1,0 +1,19 @@
+1-bit review: logo
+
+frame 0  (56x24)
+  ink coverage        539 px = 40.1% of the box
+  negative space      52.4% of the closed envelope is paper (cuts open to the outside count - implied lines)
+  enclosed only       10.6% of the filled silhouette is enclosed paper
+  solid mass          largest all-ink square 5x5; 27.1% of ink is interior (all 4 neighbours ink)
+  stroke pixels       38.2% of ink has <= 2 ink neighbours (line, not mass)
+  carved regions      7  sizes [33, 16, 3, 3, 3, 3, 3]
+  1px pinholes        0  outside dither (an eye or rivet - or noise; check each)
+  ink islands         21  (1 = one connected shape)
+  orphan pixels       1  at [(46, 14)]
+  diagonal joints     19  (2x2 checker windows - diagonal strokes make these)
+  dither              0 3x3 checker windows covering 0 px (a mid-tone; a 1px horizontal move flips its phase)
+  edge-to-area        0.59  (higher = busier outline; compare family members)
+  8x8 cells touched   21  (each is an attribute it can clash in)
+
+These are measurements, not verdicts. Read them against the checklist
+in the one-bit-art skill and against the approved exemplars.

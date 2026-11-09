@@ -147,3 +147,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   "Breakfast Run HUD Layouts" https://claude.ai/artifact/4c3E8kwVkzfxTsPK1SAzTT
 - Recommended: B. Not built yet - WAITING ON GRANT to pick. Speed saving from a narrower window is an
   ESTIMATE (about 5k T at 23, 11k at 22), not measured.
+
+## 2026-11-09 19:16 SAST - screen design on Claude Design, and the logo (cloud session, Claude)
+- Grant: "take it through claude design to give it a smarter layout around the screen, so within the
+  zx spectrum limitations and colour sprites use the 1 bit pixel skill to look at a small logo -
+  breakfast run". Also asked: is the scroll 1, 2 or 4 px? Answer: pixel-exact (positions in 1/256 px,
+  8 shift tables); per picture the window moves however far you went in 3 TV frames - ~5 px flat out.
+- Logo (one-bit-art skill, tools/make_logo.py -> src/logo.asm, docs/design/logo.txt): 56 x 24 px,
+  7 x 3 cells. Value plan: RUN solid, italic, 2 px paper racing stripe; BREAKFAST 5x5 line capitals;
+  the egg's white is INK and the yolk a PAPER hole, so white ink on yellow paper gives a white egg with a
+  yellow yolk (two colours a cell). First egg read as a ring/cereal hoop - redrawn as a lumpy white with an
+  off-centre yolk. Review (one_bit_review.py): largest solid 4x4, ~52% of the envelope paper, 0 orphans,
+  0 pinholes. Not yet approved by Grant.
+- Layout (tools/make_screen_design.py, real Spectrum screens): window 23 x 16 cells at the left; a 7-cell
+  panel on the right: logo, race order with each car's picture on its own colour (you on red), lap
+  (double size), time; message bar above the window (start lights / GO! / FINAL LAP! / FINISHED nTH);
+  lap-progress strip below it (a marker per car, you in a red cell). Cell budget on the canvas.
+- Claude Design canvas "Breakfast Run Screen Design": https://claude.ai/artifact/1EoS3CaKDwVeBd7vqpeWjw
+  (artboards: race screen mid race, what every cell is for, start, finish, logo). Images in docs/design/.
+- Not built into the game yet: WAITING ON GRANT to approve the layout and the logo.
