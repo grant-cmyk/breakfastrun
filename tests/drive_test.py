@@ -122,11 +122,16 @@ def at_copy_done(sp):
             break
     assert sp.pc == SYM['copy_done'], 'did not stop at copy_done (pc %04X)' % sp.pc
 
+def cloth(camx, camy):
+    # the tablecloth: 32-px checks, the dark ones a 50% dither, locked to the table
+    y, x = np.mgrid[camy:camy + 128, camx:camx + 176]
+    return ((((x >> 5) + (y >> 5)) & 1) == 1) & (((x + y) & 1) == 0)
+
 def window_bad(sp):
     at_copy_done(sp)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
     bits = screen_bits(sp)[32:160, 8:184]            # the window: cells 1-22, rows 4-19
-    want = world[camy:camy + 128, camx:camx + 176]
+    want = world[camy:camy + 128, camx:camx + 176] | cloth(camx, camy)
     mask = np.ones_like(want, dtype=bool)
     for n in range(N):
         c = car(sp, n)

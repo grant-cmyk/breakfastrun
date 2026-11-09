@@ -299,3 +299,14 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   came mid-turn, not as a file) and checked against it. 22.5 and 45 rebuilt from his shapes and cleaned as
   before. tools/car_art.txt now has YOU and CYAN. drive_test RESULT: PASS. Review sheet
   docs/design/you_car_review.png. Editor republished with both.
+
+## 2026-11-09 21:37 SAST - tablecloth (D) and cereal O's built
+- make_world.py: 131 cereal O's (snapped to a 4-px grid) replace the kerbs: 90 tiles instead of 184, about
+  1 KB of memory back. Window ink blue (0x79).
+- racer.asm: clear_buffer replaced by cloth_fill, after the camera: 32-px checks, dark ones a 50% dither,
+  world-locked. 4 register pairs per line kind (BC DE HL AF), main and alternate sets swapped by EXX + EX
+  AF,AF' through patched slots in an unrolled 8-row push; per-third setup done once. Bug found and fixed:
+  the loader table straddled a page and an 8-bit add wrapped, so 1 in 4 line kinds jumped into data (a
+  72-frame stall); the guard that would have caught it sat after END and was never assembled.
+- Measured, whole lap: work 203.4k T a picture (cloth 42.1k, tiles 52.3k, ticks 43.7k, copy 41.3k, cars
+  15.2k); 127 pictures at 3 frames, 73 at 4. Pixel-exact test now includes the cloth: RESULT PASS.

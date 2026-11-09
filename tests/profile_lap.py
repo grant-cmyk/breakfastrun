@@ -11,7 +11,7 @@ for line in open(os.path.join(ROOT, 'build', 'racer.sym')):
     if len(p) >= 3 and p[1] == 'EQU': SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
 src = open(os.path.join(ROOT, 'src', 'world.asm')).read()
 wps = [tuple(int(v) for v in l.split('dw')[1].split(',')) for l in open(os.path.join(ROOT, 'src', 'waypoints.asm')).read().split('waypoints:')[1].splitlines() if 'dw' in l]
-STAGES = ['main', 'tick_loop', 'race_progress', 'hud_update', 'camera', 'draw_tiles', 'draw_car', 'wait_show', 'copy_to_screen', 'clear_buffer']
+STAGES = ['main', 'tick_loop', 'race_progress', 'hud_update', 'camera', 'cloth_fill', 'draw_tiles', 'draw_car', 'wait_show', 'copy_to_screen']
 ADDR = {SYM[n]: n for n in STAGES}
 log = []
 class P(Spectrum):

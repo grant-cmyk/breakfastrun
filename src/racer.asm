@@ -83,7 +83,8 @@ start:
         ld bc,767
         ld (hl),0x30
         ldir
-        ld hl,0x5800+4*32+WIN_COL   ; ...and the window bright white, black ink
+        ld hl,0x5800+4*32+WIN_COL   ; ...and the window bright white, blue ink:
+                                    ; a blue and white tablecloth
         ld b,16
 win_attr:
         push bc
@@ -91,7 +92,7 @@ win_attr:
         ld d,h
         ld e,l
         inc de
-        ld (hl),0x78
+        ld (hl),0x79
         ld bc,WIN_W-1
         ldir
         pop hl
@@ -151,6 +152,7 @@ tick_loop:
         call race_progress      ; your waypoints and laps, everyone's progress
         call hud_update         ; the panel, message bar and lap strip
         call camera
+        call cloth_fill         ; the tablecloth, as the camera sees it
         call draw_tiles
         ld ix,cars+(NCARS-1)*C_SIZE ; computer cars first, yours last (on top)
         ld b,NCARS
@@ -193,7 +195,6 @@ wait_show:
         ld a,(FRAMES)
         ld (last_shown),a
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
-        call clear_buffer
         ld hl,(renders)
         inc hl
         ld (renders),hl
@@ -1537,40 +1538,284 @@ copy_done:
         ei
         ret
 
-; CLEAR_BUFFER: zero buffer rows 16..143 (what the window shows) with PUSH.
-; In the screen layout those are: third 2 character rows 0-1, all of
-; third 1, third 0 character rows 2-7 - cleared in that order, so anything
-; an interrupt pushes below SP lands on bytes still to be cleared, or on
-; margin rows that are never shown.
-clear_buffer:
-        ld (save_sp),sp
-        ld de,0
+; ---------------------------------------------------------------------
+; CLOTH_FILL: the tablecloth. Instead of clearing the back buffer to blank,
+; fill buffer rows 16..143 with the cloth the camera sees: 32-px checks, the
+; dark ones a 50% dither, locked to the table so they scroll with it.
+; World pixel (x, y) is buffer row y-camy+16, bit x-camx+16 of that row.
+;
+; A buffer line repeats every 8 bytes (64 px), so 4 register pairs hold one:
+; BC, DE, HL and AF (pushed as bytes 7,6 / 5,4 / 3,2 / 1,0). A page of the
+; buffer (one pixel line of 8 character rows) has one dither phase and at
+; most two kinds of check row, so the main and alternate register sets hold
+; both and EXX + EX AF,AF' swaps between them - no reloading mid-page. The
+; pushes are unrolled (8 rows of 32 bytes); the swaps go in 2-byte slots
+; between rows, written for each page.
+; Filled in falling address order (third 2, 1, 0; each page from the top),
+; so anything an interrupt pushes below SP lands on bytes still to be
+; filled, or on margin rows that are never shown.
+; ---------------------------------------------------------------------
+cloth_fill:
+        call cloth_pats
+        ld a,(camy)
+        sub 16
+        ld (cf_y0),a            ; low byte of the world y of buffer row 0
+        ld hl,BUF+0x1740        ; third 2: rows 128..143 (char rows 1, 0)
+        ld bc,0x0200+128+8+7    ; B = rows of 8 a page, C = buffer row at the top
+        call cf_third
+        ld hl,BUF+0x1000        ; third 1: rows 64..127
+        ld bc,0x0800+64+56+7
+        call cf_third
+        ld hl,BUF+0x0800        ; third 0: rows 16..63 (char rows 7..2)
+        ld bc,0x0600+56+7
+; CF_THIRD: pages 7..0 of a third. HL = top of page 7's part, B = character
+; rows a page, C = the buffer row of page 7's top row. Everything that is the
+; same for the 8 pages is worked out once here.
+cf_third:
+        ld (cf_sp),sp
+        ld (cf_top),hl
+        ld a,(cf_y0)
+        add a,c
+        ld (cf_yt),a            ; world y (low byte) of the top row, page 7
+        ld a,8
+        ld (cf_k),a
+        sub b
+        ld (cf_e),a             ; first of the unrolled 8 rows to run
+        ld l,a                  ; jump in at cf_c0 + 18 * that
+        add a,a
+        add a,a
+        add a,a
+        add a,l
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,cf_c0
+        add hl,de
+        ld (cf_jp+1),hl
+cf_pg:
+        ld a,(cf_yt)            ; the check row changes every 32 px: after
+        and 0x18                ; ((y AND 31) / 8) + 1 rows, then every 4
+        rrca
+        rrca
+        rrca
+        ld hl,cf_e
+        add a,(hl)              ; = the slot after the first row that changes
+        ld hl,cf_f
+        cp (hl)
+        call nz,cf_repatch      ; (the same for most pages of a third)
+        ld a,(cf_yt)            ; loader: dither phase (y AND 1), check row (bit 5)
+        and 1
+        add a,a
+        ld hl,cf_yt
+        bit 5,(hl)
+        jr z,cf_p3
+        inc a
+cf_p3:
+        add a,a                 ; 2 bytes an entry
+        ld l,a
+        ld h,0
+        ld de,cf_loaders
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ld (cf_call+1),de
+        ld sp,(cf_top)
+cf_call:
+        call 0                  ; (the call and the loader use the buffer as
+cf_jp:                          ; stack: bytes about to be filled anyway)
+        jp 0
+cf_back:
+        ld sp,(cf_sp)
+        ld hl,cf_top+1
+        dec (hl)                ; the page below
+        ld hl,cf_yt
+        dec (hl)                ; one row up the table
+        ld hl,cf_k
+        dec (hl)
+        jr nz,cf_pg
+        ret
+
+; CF_REPATCH: A = the slot for the first swap (7 or more = none). Undo the
+; last page's swaps, write this one's: at A and every 4 slots after it.
+cf_repatch:
+        ld (cf_f),a
+        ld hl,(cf_pa)           ; undo: back to nop, nop
+        ld (hl),0
+        inc hl
+        ld (hl),0
+        ld hl,(cf_pb)
+        ld (hl),0
+        inc hl
+        ld (hl),0
+        ld hl,cf_dummy          ; nothing written yet
+        ld (cf_pa),hl
+        ld (cf_pb),hl
+        cp 7
+        ret nc
+        call cf_slot
+        ld (cf_pa),hl
+        add a,4
+        cp 7
+        ret nc
+        call cf_slot
+        ld (cf_pb),hl
+        ret
+cf_slot:                        ; write exx, ex af,af' at slot A; HL = its address
+        push af
+        ld l,a
+        add a,a
+        add a,a
+        add a,a
+        add a,l
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,cf_s0
+        add hl,de
+        ld (hl),0xD9
+        inc hl
+        ld (hl),0x08
+        dec hl
+        pop af
+        ret
+
+CF_LOAD macro mainp, altp       ; the alternate set first, then the main
+        ld hl,(altp)
+        push hl
+        pop af
+        ld hl,(altp+2)
+        ld de,(altp+4)
+        ld bc,(altp+6)
+        exx
+        ex af,af'
+        ld hl,(mainp)
+        push hl
+        pop af
+        ld hl,(mainp+2)
+        ld de,(mainp+4)
+        ld bc,(mainp+6)
+        ret
+        endm
+cf_loaders:
+        dw cf_l00,cf_l01,cf_l10,cf_l11
+cf_l00: CF_LOAD cloth_pat+0,  cloth_pat+8
+cf_l01: CF_LOAD cloth_pat+8,  cloth_pat+0
+cf_l10: CF_LOAD cloth_pat+16, cloth_pat+24
+cf_l11: CF_LOAD cloth_pat+24, cloth_pat+16
+
+CF_ROW macro
+        rept 4
+        push bc
+        push de
+        push hl
+        push af
+        endm
+        endm
+cf_c0:  CF_ROW
+cf_s0:  nop                     ; swap slots: nop,nop or exx,ex af,af'
+        nop
+        CF_ROW
+        nop
+        nop
+        CF_ROW
+        nop
+        nop
+        CF_ROW
+        nop
+        nop
+        CF_ROW
+        nop
+        nop
+        CF_ROW
+        nop
+        nop
+        CF_ROW
+        nop
+        nop
+        CF_ROW
+        jp cf_back
+
+; CLOTH_PATS: the 4 kinds of buffer line for this camera, 8 bytes each, into
+; cloth_pat + 16 * dither phase + 8 * check row. Byte j of a line covers world
+; x = camx - 16 + 8j .. +7 (and every 8th byte after it is the same).
+cloth_pats:
+        ld hl,(camx)
+        ld a,l
+        sub 16
+        and 63
+        ld c,a                  ; C = where in the 64-px repeat the line starts
+        and 7
+        ld b,a
+        ld a,0xFF               ; E = 0xFF << (C AND 7): the part of a dark byte
+        inc b                   ; that still shows; its CPL comes in from the
+        jr cpt_1                ; next byte
+cpt_0:
+        add a,a
+cpt_1:
+        djnz cpt_0
+        ld e,a
+        ld a,c
+        rrca
+        rrca
+        rrca
+        and 7
+        ld d,a                  ; D = which byte of the repeat
+        ld hl,cloth_pat
         ld b,8
-        ld hl,BUF+0x1000+64     ; third 2: 64 bytes on each of 8 lines
-cb_t2:
-        ld sp,hl
-        rept 32
-        push de
-        endm
-        inc h
-        djnz cb_t2
-        ld sp,BUF+0x1000        ; third 1: all 2048 bytes
-        ld b,16
-cb_t1:
-        rept 64
-        push de
-        endm
-        djnz cb_t1
+cpt_j:                          ; dark mask for check row 0: x AND 32 set = dark
+        ld c,0
+        ld a,d
+        and 4
+        jr z,cpt_a
+        ld c,e
+cpt_a:
+        ld a,d
+        inc a
+        and 4
+        jr z,cpt_b
+        ld a,e
+        cpl
+        or c
+        ld c,a
+cpt_b:
+        ld (hl),c
+        inc hl
+        inc d
+        djnz cpt_j
+        ld c,0xAA               ; the dither on even rows: pixel when x + y
+        ld a,(camx)             ; is even
+        and 1
+        jr z,cpt_c
+        ld c,0x55
+cpt_c:
+        ld hl,cloth_pat
         ld b,8
-        ld hl,BUF+0x0800        ; third 0: bytes 64..255 of each line
-cb_t0:
-        ld sp,hl
-        rept 96
-        push de
-        endm
-        dec h
-        djnz cb_t0
-        ld sp,(save_sp)
+cpt_k:
+        ld d,(hl)               ; D = dark mask, row 0
+        ld a,d
+        cpl
+        ld e,a                  ; E = dark mask, row 1
+        ld a,c
+        cpl
+        and d
+        set 4,l
+        ld (hl),a               ; odd rows, check row 0
+        ld a,c
+        cpl
+        and e
+        set 3,l
+        ld (hl),a               ; odd rows, check row 1
+        ld a,c
+        and e
+        res 4,l
+        ld (hl),a               ; even rows, check row 1
+        ld a,c
+        and d
+        res 3,l
+        ld (hl),a               ; even rows, check row 0
+        inc l
+        djnz cpt_k
         ret
 
 ; lap_timed (IX = a car that just crossed the line): time its lap, and if
@@ -2088,6 +2333,18 @@ mc_n:     db 0
 dc_n:     db 0
 dt_rows:  db 0
 save_sp:  dw 0
+cf_sp:    dw 0
+cf_top:   dw 0
+cf_y0:    db 0
+cf_yt:    db 0
+cf_k:     db 0
+cf_e:     db 0
+cf_f:     db 0xFF
+cf_pa:    dw cf_dummy
+cf_pb:    dw cf_dummy
+cf_dummy: dw 0
+        defs (32 - ($ AND 31)) AND 31
+cloth_pat: defs 32              ; 4 kinds of cloth line (aligned: index by bits)
 pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
 pace_hold: db 0
 ph_steps: db 1

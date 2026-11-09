@@ -1,7 +1,7 @@
 """Generate the scrolling world for stage 2: a top-down breakfast-table track
 576 x 448 pixels, cut into 8x8 tiles. Writes src/world.asm.
   road        = blank table (white)
-  road edges  = 2-pixel black lines
+  road edges  = cereal O's
   off-road    = blank, with cereal hoops scattered on it
   start line  = a black-and-white checker band across the road
 The scrolling window is ONE colour pair (a Spectrum can only colour 8x8 blocks,
@@ -47,16 +47,34 @@ def road_mask(width):
 road = road_mask(ROAD).load()
 img = Image.new('1', (PW, PH), 0)        # 1 = ink
 px = img.load()
-# kerbs: a 4-px chequered band along both edges of the road, its 4x4 blocks
-# locked to the world grid, so the same tiles repeat along a straight
-def near_edge(x, y, d):
-    return any(not road[x + dx, y + dy] if 0 <= x + dx < PW and 0 <= y + dy < PH else True
-               for dx in range(-d, d + 1, 2) for dy in range(-d, d + 1, 2))
-for y in range(PH):
-    for x in range(PW):
-        if road[x, y]:
-            if near_edge(x, y, 4) and ((x // 4) + (y // 4)) % 2 == 0:
-                px[x, y] = 1                                   # the chequer (it is the edge)
+# cereal O's mark both sides of the road (Grant, 9 Nov 2026), in place of kerbs.
+# Each O is 8x8, its top-left snapped to a 4-px grid so the 140-odd O's share a
+# dozen tile pictures. Walk the centre line; step out half a road plus 3 px.
+O_RING = ["..####..", ".#.####.", "###..###", "##....##", "##....##", "###..###", ".######.", "..####.."]
+def place_os():
+    pts = PATH + [PATH[0]]
+    seq = []
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        n = max(1, int(math.hypot(x1 - x0, y1 - y0)))
+        for i in range(n): seq.append((x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n))
+    got = []
+    for side in (-1, 1):
+        last = None
+        for i in range(len(seq)):
+            (xa, ya), (xb, yb) = seq[i - 2], seq[(i + 2) % len(seq)]
+            d = math.hypot(xb - xa, yb - ya) or 1
+            nx, ny = -(yb - ya) / d, (xb - xa) / d
+            cx, cy = seq[i][0] + side * nx * (ROAD / 2 + 3), seq[i][1] + side * ny * (ROAD / 2 + 3)
+            p = (int(round((cx - 4) / 4)) * 4, int(round((cy - 4) / 4)) * 4)
+            if last is None or math.hypot(p[0] - last[0], p[1] - last[1]) >= 15:
+                if all(math.hypot(p[0] - q[0], p[1] - q[1]) >= 13 for q in got):
+                    got.append(p); last = p
+    return got
+OS = place_os()
+for ox, oy in OS:
+    for j, r in enumerate(O_RING):
+        for i, c in enumerate(r):
+            if c == '#': px[ox + i, oy + j] = 1
 # start line: checker band 8px tall across the bottom straight at x=256..263
 for y in range(240 + OFF, 340 + OFF):
     for x in range(256 + OFF, 264 + OFF):
@@ -100,7 +118,7 @@ for name, tx, ty in wanted:
     shape = I[name]
     if free(tx, ty, len(shape[0]) // 8, len(shape) // 8):
         place(shape, tx, ty); placed.append(name)
-print('placed:', ' '.join(placed))
+print('placed:', ' '.join(placed)); print('cereal Os:', len(OS))
 
 # cut into tiles
 tiles = {bytes(8): 0}
