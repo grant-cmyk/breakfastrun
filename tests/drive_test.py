@@ -190,16 +190,17 @@ with Racer(headless=True) as sp:
     put(sp, 0, 40, 40)                        # top-left corner, well off the track
     sp.run(duration=0.5, fast_forward=True)
     K = len(CPUS)
-    laps = [0] * K; last_wp = [car(sp, i)['wp'] for i in CPUS]
+    laps = [0] * K; last_wp = [sp.read8(CARS + n * CS + 25) for n in CPUS]
     onroad = [0] * K; samples = 0; vmax = [0] * K; tracks = [[] for _ in CPUS]
     lap_t = [[] for _ in CPUS]; vs = [[] for _ in CPUS]; t = 0.0; m0 = g(sp, 'mistakes'); r0 = g(sp, 'renders')
     while t < 90:
         sp.run(duration=0.1, fast_forward=True); t += 0.1; samples += 1
         for i, n in enumerate(CPUS):
             c = car(sp, n)
-            if c['wp'] < last_wp[i] and last_wp[i] - c['wp'] > NWP // 2:
-                laps[i] += 1; lap_t[i].append(round(t, 1))
-            last_wp[i] = c['wp']
+            gl = sp.read8(CARS + n * CS + 25)   # the game's own lap count (C_LAPS):
+            if gl != last_wp[i]:                 # the waypoint can't be sampled - the
+                laps[i] += 1; lap_t[i].append(round(t, 1))   # AI moves it ahead
+            last_wp[i] = gl                      # for a moment to look ahead
             tx, ty = (c['x'] + 8) // 8, (c['y'] + 8) // 8
             onroad[i] += surf[ty * MAPW + tx] == 0
             vs[i].append(math.hypot(c['vx'], c['vy']))

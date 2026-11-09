@@ -310,3 +310,17 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   72-frame stall); the guard that would have caught it sat after END and was never assembled.
 - Measured, whole lap: work 203.4k T a picture (cloth 42.1k, tiles 52.3k, ticks 43.7k, copy 41.3k, cars
   15.2k); 127 pictures at 3 frames, 73 at 4. Pixel-exact test now includes the cloth: RESULT PASS.
+
+## 2026-11-09 21:48 SAST - speed-ups: own interrupt routine, cloth by character row
+- IM2 with our own interrupt routine (I=0x39 at the ROM's spare 0xFF bytes -> JR at 0xFFFF -> JP isr at
+  0xFFF4): it only counts FRAMES. The game reads keys from the ports and never calls the ROM. Saves the
+  ROM's keyboard scan every frame (~2.9k T a picture) and pushes 6 bytes, not 10+.
+- That lets the cloth fill go one character row at a time (8 lines, one per page, unrolled; dither
+  phase swapped by EXX + EX AF,AF' each line; a mid-row loader call where the check row changes), and
+  only bytes 0..23 of each line. Bugs caught by the pixel test and fixed: INC IXH changed F (a pattern
+  register); a helper clobbered the line number.
+- drive_test: laps now counted from the game's C_LAPS; the old waypoint-wrap count was fooled when the
+  AI moves C_WP ahead for a moment to look ahead (car 1 'lapped' twice in 0.4 s). Real laps unchanged:
+  15.0 15.1 14.9 17.4 s. RESULT: PASS.
+- Measured, whole lap: work 195.7k T a picture (was 203.4k): cloth 37.7k, tiles 51.6k, ticks 41.7k,
+  copy 41.1k, cars 15.0k. 149 pictures at 3 frames, 57 at 4 (was 127 / 73).

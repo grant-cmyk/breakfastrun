@@ -123,6 +123,7 @@ st_so:
         call make_copier        ; the program writes its own copy routine
         ld a,(FRAMES)
         ld (last_frame),a
+        call im2_on
 
 ; ---------------------------------------------------------------------
 ; MAIN LOOP
@@ -1539,79 +1540,160 @@ copy_done:
         ret
 
 ; ---------------------------------------------------------------------
+; IM2_ON: our own interrupt routine in place of the ROM's. The game reads the
+; keys from the ports itself and never calls the ROM, so all the interrupt
+; has to do is count frames - and the ROM's routine (which also scans the
+; keyboard) costs time every frame and pushes 10+ bytes onto whatever stack
+; is in use. Ours pushes 6, which the 8-byte margin at the end of every
+; buffer row soaks up, so the cloth can be filled in any order.
+; Vector: I = 0x39 points at the ROM's spare bytes, all 0xFF, so whatever is
+; on the bus the routine is at 0xFFFF: a JR whose offset is the ROM's first
+; byte (0xF3, -13), landing at 0xFFF4: a JP to isr. (0xFFF4.. is BASIC's
+; user-graphics area, unused here.)
+; ---------------------------------------------------------------------
+im2_on:
+        di
+        ld a,0x18               ; JR
+        ld (0xFFFF),a
+        ld a,0xC3               ; JP isr
+        ld (0xFFF4),a
+        ld hl,isr
+        ld (0xFFF5),hl
+        ld a,0x39
+        ld i,a
+        im 2
+        ei
+        ret
+isr:
+        push af
+        push hl
+        ld hl,(FRAMES)
+        inc hl
+        ld (FRAMES),hl
+        pop hl
+        pop af
+        ei
+        ret
+
+; ---------------------------------------------------------------------
 ; CLOTH_FILL: the tablecloth. Instead of clearing the back buffer to blank,
 ; fill buffer rows 16..143 with the cloth the camera sees: 32-px checks, the
 ; dark ones a 50% dither, locked to the table so they scroll with it.
 ; World pixel (x, y) is buffer row y-camy+16, bit x-camx+16 of that row.
 ;
 ; A buffer line repeats every 8 bytes (64 px), so 4 register pairs hold one:
-; BC, DE, HL and AF (pushed as bytes 7,6 / 5,4 / 3,2 / 1,0). A page of the
-; buffer (one pixel line of 8 character rows) has one dither phase and at
-; most two kinds of check row, so the main and alternate register sets hold
-; both and EXX + EX AF,AF' swaps between them - no reloading mid-page. The
-; pushes are unrolled (8 rows of 32 bytes); the swaps go in 2-byte slots
-; between rows, written for each page.
-; Filled in falling address order (third 2, 1, 0; each page from the top),
-; so anything an interrupt pushes below SP lands on bytes still to be
-; filled, or on margin rows that are never shown.
+; BC, DE, HL and AF (pushed as bytes 7,6 / 5,4 / 3,2 / 1,0); only bytes 0..23
+; are filled (the rest is margin, never shown). Next-door lines have the
+; other dither phase: the main and alternate sets hold one each, and EXX +
+; EX AF,AF' swaps them every line. The check row changes every 32 lines, so
+; at most once in a character row: a slot before that line calls a loader.
+; One character row (8 lines, one in each page) is one unrolled run.
+; Any order is safe: the interrupt routine pushes 6 bytes, and below the
+; start of every line are the 8 margin bytes of another.
 ; ---------------------------------------------------------------------
 cloth_fill:
         call cloth_pats
         ld a,(camy)
         sub 16
         ld (cf_y0),a            ; low byte of the world y of buffer row 0
-        ld hl,BUF+0x1740        ; third 2: rows 128..143 (char rows 1, 0)
-        ld bc,0x0200+128+8+7    ; B = rows of 8 a page, C = buffer row at the top
-        call cf_third
-        ld hl,BUF+0x1000        ; third 1: rows 64..127
-        ld bc,0x0800+64+56+7
-        call cf_third
-        ld hl,BUF+0x0800        ; third 0: rows 16..63 (char rows 7..2)
-        ld bc,0x0600+56+7
-; CF_THIRD: pages 7..0 of a third. HL = top of page 7's part, B = character
-; rows a page, C = the buffer row of page 7's top row. Everything that is the
-; same for the 8 pages is worked out once here.
-cf_third:
         ld (cf_sp),sp
-        ld (cf_top),hl
-        ld a,(cf_y0)
+        ld hl,cf_tab
+        ld (cf_tp),hl
+        ld a,16
+        ld (cf_n),a
+cf_cr:                          ; one character row
+        ld hl,(cf_tp)
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld a,(hl)
+        inc hl
+        ld (cf_tp),hl
+        ld (cf_ixv),de          ; IX = line 0's page, and byte 24 of the row
+        ld hl,cf_y0
+        add a,(hl)
+        ld c,a                  ; C = world y (low byte) of line 0
+        ld a,(cf_th)            ; a new third: its 8 pages into the lines' LD IXH
+        cp d
+        call nz,cf_pages
+        ld a,c
+        call cf_lidx
+        ld (cf_s0+1),hl         ; line 0 starts with this loader
+        ld hl,(cf_pf)           ; the last row's mid-row loader: back to nops
+        ld (hl),0
+        inc hl
+        ld (hl),0
+        inc hl
+        ld (hl),0
+        ld hl,cf_dummy
+        ld (cf_pf),hl
+        ld a,c                  ; does the check row change in this row?
+        and 31                  ; at line 32 - (y AND 31), if that is 1..7
+        neg
+        add a,32
+        cp 8
+        jr nc,cf_go
+        ld (cf_kk),a
         add a,c
-        ld (cf_yt),a            ; world y (low byte) of the top row, page 7
-        ld a,8
-        ld (cf_k),a
-        sub b
-        ld (cf_e),a             ; first of the unrolled 8 rows to run
-        ld l,a                  ; jump in at cf_c0 + 18 * that
-        add a,a
-        add a,a
-        add a,a
-        add a,l
+        call cf_lidx            ; HL = the loader for that line
+        push hl
+        ld a,(cf_kk)
         add a,a
         ld l,a
         ld h,0
-        ld de,cf_c0
+        ld de,cf_slots
         add hl,de
-        ld (cf_jp+1),hl
-cf_pg:
-        ld a,(cf_yt)            ; the check row changes every 32 px: after
-        and 0x18                ; ((y AND 31) / 8) + 1 rows, then every 4
-        rrca
-        rrca
-        rrca
-        ld hl,cf_e
-        add a,(hl)              ; = the slot after the first row that changes
-        ld hl,cf_f
-        cp (hl)
-        call nz,cf_repatch      ; (the same for most pages of a third)
-        ld a,(cf_yt)            ; loader: dither phase (y AND 1), check row (bit 5)
-        and 1
-        add a,a
-        ld hl,cf_yt
-        bit 5,(hl)
-        jr z,cf_p3
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ex de,hl                ; HL -> that line's slot
+        pop de                  ; DE = the loader
+        ld (cf_pf),hl
+        ld (hl),0xCD            ; call
+        inc hl
+        ld (hl),e
+        inc hl
+        ld (hl),d
+cf_go:
+        ld ix,(cf_ixv)
+        jp cf_r0
+cf_crnext:
+        ld sp,(cf_sp)
+        ld hl,cf_n
+        dec (hl)
+        jr nz,cf_cr
+        ret
+
+; CF_PAGES: D = a third's first page: lines 1..7 use the 7 pages after it
+cf_pages:
+        ld a,d
+        ld (cf_th),a
         inc a
-cf_p3:
-        add a,a                 ; 2 bytes an entry
+        ld (cf_h1),a
+        inc a
+        ld (cf_h2),a
+        inc a
+        ld (cf_h3),a
+        inc a
+        ld (cf_h4),a
+        inc a
+        ld (cf_h5),a
+        inc a
+        ld (cf_h6),a
+        inc a
+        ld (cf_h7),a
+        ret
+
+; CF_LIDX: A = world y (low byte) of a line -> HL = the loader that puts its
+; kind of line in the main set and the other dither phase in the alternate
+cf_lidx:
+        and 0x21                ; dither phase (bit 0), check row (bit 5)
+        rlca                    ; bit 5 -> bit 0, bit 0 -> bit 3
+        rlca
+        rlca
+        and 9
+        add a,a                 ; 0, 2, 16, 18
         ld l,a
         ld h,0
         ld de,cf_loaders
@@ -1619,65 +1701,7 @@ cf_p3:
         ld e,(hl)
         inc hl
         ld d,(hl)
-        ld (cf_call+1),de
-        ld sp,(cf_top)
-cf_call:
-        call 0                  ; (the call and the loader use the buffer as
-cf_jp:                          ; stack: bytes about to be filled anyway)
-        jp 0
-cf_back:
-        ld sp,(cf_sp)
-        ld hl,cf_top+1
-        dec (hl)                ; the page below
-        ld hl,cf_yt
-        dec (hl)                ; one row up the table
-        ld hl,cf_k
-        dec (hl)
-        jr nz,cf_pg
-        ret
-
-; CF_REPATCH: A = the slot for the first swap (7 or more = none). Undo the
-; last page's swaps, write this one's: at A and every 4 slots after it.
-cf_repatch:
-        ld (cf_f),a
-        ld hl,(cf_pa)           ; undo: back to nop, nop
-        ld (hl),0
-        inc hl
-        ld (hl),0
-        ld hl,(cf_pb)
-        ld (hl),0
-        inc hl
-        ld (hl),0
-        ld hl,cf_dummy          ; nothing written yet
-        ld (cf_pa),hl
-        ld (cf_pb),hl
-        cp 7
-        ret nc
-        call cf_slot
-        ld (cf_pa),hl
-        add a,4
-        cp 7
-        ret nc
-        call cf_slot
-        ld (cf_pb),hl
-        ret
-cf_slot:                        ; write exx, ex af,af' at slot A; HL = its address
-        push af
-        ld l,a
-        add a,a
-        add a,a
-        add a,a
-        add a,l
-        add a,a
-        ld l,a
-        ld h,0
-        ld de,cf_s0
-        add hl,de
-        ld (hl),0xD9
-        inc hl
-        ld (hl),0x08
-        dec hl
-        pop af
+        ex de,hl
         ret
 
 CF_LOAD macro mainp, altp       ; the alternate set first, then the main
@@ -1697,44 +1721,125 @@ CF_LOAD macro mainp, altp       ; the alternate set first, then the main
         ld bc,(mainp+6)
         ret
         endm
-cf_loaders:
-        dw cf_l00,cf_l01,cf_l10,cf_l11
-cf_l00: CF_LOAD cloth_pat+0,  cloth_pat+8
-cf_l01: CF_LOAD cloth_pat+8,  cloth_pat+0
-cf_l10: CF_LOAD cloth_pat+16, cloth_pat+24
-cf_l11: CF_LOAD cloth_pat+24, cloth_pat+16
+cf_loaders:                     ; by (dither phase * 8 + check row) * 2
+        dw cf_l00,cf_l01,0,0,0,0,0,0,cf_l10,cf_l11
+cf_l00: CF_LOAD cloth_pat+0,  cloth_pat+16   ; main: phase 0, check row 0
+cf_l01: CF_LOAD cloth_pat+8,  cloth_pat+24   ; main: phase 0, check row 1
+cf_l10: CF_LOAD cloth_pat+16, cloth_pat+0    ; main: phase 1, check row 0
+cf_l11: CF_LOAD cloth_pat+24, cloth_pat+8    ; main: phase 1, check row 1
+cf_slots:
+        dw cf_s0,cf_s1,cf_s2,cf_s3,cf_s4,cf_s5,cf_s6,cf_s7
+cf_tab:                         ; each character row: IX for line 0, buffer row
+        dw 0xD038
+        db 136
+        dw 0xD018
+        db 128
+        dw 0xC8F8
+        db 120
+        dw 0xC8D8
+        db 112
+        dw 0xC8B8
+        db 104
+        dw 0xC898
+        db 96
+        dw 0xC878
+        db 88
+        dw 0xC858
+        db 80
+        dw 0xC838
+        db 72
+        dw 0xC818
+        db 64
+        dw 0xC0F8
+        db 56
+        dw 0xC0D8
+        db 48
+        dw 0xC0B8
+        db 40
+        dw 0xC098
+        db 32
+        dw 0xC078
+        db 24
+        dw 0xC058
+        db 16
 
-CF_ROW macro
-        rept 4
+CF_ROW macro                    ; bytes 23..0 of a line: 3 x 8, as 4 pairs each
+        rept 3
         push bc
         push de
         push hl
         push af
         endm
         endm
-cf_c0:  CF_ROW
-cf_s0:  nop                     ; swap slots: nop,nop or exx,ex af,af'
+; one character row, unrolled: 8 lines, one in each page of the third.
+; (No INC IXH between lines: it would change F, which holds pattern bytes.)
+cf_r0:  ld sp,ix                 ; SP to byte 24 of the line
+cf_s0:  call cf_l00             ; (line 0: the loader for this character row)
+        CF_ROW
+        exx                     ; the next line has the other dither phase
+        ex af,af'
+cf_r1:  ld ixh,0                 ; (written when the third changes: its page)
+cf_h1   equ cf_r1+2
+        ld sp,ix
+cf_s1:  nop                     ; slot: nop x3, or call a loader where the
+        nop                     ; check row changes
         nop
         CF_ROW
-        nop
-        nop
-        CF_ROW
-        nop
-        nop
-        CF_ROW
-        nop
-        nop
-        CF_ROW
-        nop
+        exx                     ; the next line has the other dither phase
+        ex af,af'
+cf_r2:  ld ixh,0                 ; (written when the third changes: its page)
+cf_h2   equ cf_r2+2
+        ld sp,ix
+cf_s2:  nop                     ; slot: nop x3, or call a loader where the
+        nop                     ; check row changes
         nop
         CF_ROW
-        nop
+        exx                     ; the next line has the other dither phase
+        ex af,af'
+cf_r3:  ld ixh,0                 ; (written when the third changes: its page)
+cf_h3   equ cf_r3+2
+        ld sp,ix
+cf_s3:  nop                     ; slot: nop x3, or call a loader where the
+        nop                     ; check row changes
         nop
         CF_ROW
-        nop
+        exx                     ; the next line has the other dither phase
+        ex af,af'
+cf_r4:  ld ixh,0                 ; (written when the third changes: its page)
+cf_h4   equ cf_r4+2
+        ld sp,ix
+cf_s4:  nop                     ; slot: nop x3, or call a loader where the
+        nop                     ; check row changes
         nop
         CF_ROW
-        jp cf_back
+        exx                     ; the next line has the other dither phase
+        ex af,af'
+cf_r5:  ld ixh,0                 ; (written when the third changes: its page)
+cf_h5   equ cf_r5+2
+        ld sp,ix
+cf_s5:  nop                     ; slot: nop x3, or call a loader where the
+        nop                     ; check row changes
+        nop
+        CF_ROW
+        exx                     ; the next line has the other dither phase
+        ex af,af'
+cf_r6:  ld ixh,0                 ; (written when the third changes: its page)
+cf_h6   equ cf_r6+2
+        ld sp,ix
+cf_s6:  nop                     ; slot: nop x3, or call a loader where the
+        nop                     ; check row changes
+        nop
+        CF_ROW
+        exx                     ; the next line has the other dither phase
+        ex af,af'
+cf_r7:  ld ixh,0                 ; (written when the third changes: its page)
+cf_h7   equ cf_r7+2
+        ld sp,ix
+cf_s7:  nop                     ; slot: nop x3, or call a loader where the
+        nop                     ; check row changes
+        nop
+        CF_ROW
+        jp cf_crnext
 
 ; CLOTH_PATS: the 4 kinds of buffer line for this camera, 8 bytes each, into
 ; cloth_pat + 16 * dither phase + 8 * check row. Byte j of a line covers world
@@ -2334,15 +2439,14 @@ dc_n:     db 0
 dt_rows:  db 0
 save_sp:  dw 0
 cf_sp:    dw 0
-cf_top:   dw 0
+cf_ixv:   dw 0
+cf_tp:    dw 0
+cf_pf:    dw cf_dummy
 cf_y0:    db 0
-cf_yt:    db 0
-cf_k:     db 0
-cf_e:     db 0
-cf_f:     db 0xFF
-cf_pa:    dw cf_dummy
-cf_pb:    dw cf_dummy
-cf_dummy: dw 0
+cf_n:     db 0
+cf_kk:    db 0
+cf_th:    db 0
+cf_dummy: db 0,0,0
         defs (32 - ($ AND 31)) AND 31
 cloth_pat: defs 32              ; 4 kinds of cloth line (aligned: index by bits)
 pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
