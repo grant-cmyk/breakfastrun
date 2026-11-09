@@ -265,3 +265,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant picked H, the arcade bezel. draw_frame now draws a 7-pixel black band outside the window with
   rounded outer corners (4 rows of corner bytes in df_corn), drawn once. Test frame_ok checks the bands,
   the rounded corners and that nothing spills outside. drive_test RESULT: PASS. build/racer_22wide_trial.tap.
+
+## 2026-11-09 21:08 SAST - car pixel editor
+- Grant asked for a simple pixel editor for the car graphic. docs/tools/car_editor.html (built by
+  tools/make_car_editor.py from car_editor.template.html with the game's art), published as a private
+  artifact: https://claude.ai/artifact/2EqdSKs3fDfUqERTX9pTzL. Draws the 3 drawn headings (0, 22.5, 45) per car
+  in ink / paper / clear, previews all 16 headings with the 1px halo over kerbs, and copies the art as text
+  ('BREAKFAST RUN CAR ART v1'). Checked in headless Chromium: paint, mirror, copy/load round trip, no errors.
+- When Grant's art comes back: make_data.py must read it, and car_rows must cover every car's rows (today it
+  uses the player's mask only). Up heading is not mirror-symmetric (tyre checker), so mirror starts off.
