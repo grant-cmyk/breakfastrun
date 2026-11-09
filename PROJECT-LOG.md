@@ -232,3 +232,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 
 ## 2026-11-09 20:43 SAST - playtest
 - Grant on the race-screen build (cdda3e9): "play well". Tagged race-screen-verified locally (cloud sessions cannot push tags - WAITING ON GRANT to push it with the other two).
+
+## 2026-11-09 20:51 SAST - window trial mock-ups
+- Grant asked the impact of one column less vs one row less, mocked up at a corner. tools/make_window_trial.py
+  renders today / 22x16 / 23x15 / what each loses from a real screen captured at the first bend
+  (docs/design/window_trial.png). Estimates (not measured): column ~8k a picture (tiles, copy, and the
+  copy's odd byte goes), row ~8.5k (tiles, copy, clear). Waiting on Grant to pick one to build as a trial.
