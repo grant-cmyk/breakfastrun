@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-09 15:29 SAST · machine: Claude cloud container · commit: see `git log -1`
+**Stamped:** 2026-11-09 15:32 SAST · machine: Claude cloud container · commit: f0ca1a6 + this log commit
 **Lifecycle:** Active
 
 **Status:** Stage 1 built and passing its real-ROM drive test (10/10). Not yet playtested by Grant.
@@ -14,3 +14,4 @@ and says how the handling feels.
 **Open decision:** single-screen tracks first (recommended) vs scrolling from the start.
 
 Full history: PROJECT-LOG.md
+Notion row: https://app.notion.com/p/41342c9abb32810d8672e5281550b1ac

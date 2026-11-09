@@ -20,3 +20,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 ## 2026-11-09 15:29 SAST - named Breakfast Run
 - Grant created grant-cmyk/breakfastrun (PUBLIC - Claude had suggested private; flagged).
 - Repo attach (push) blocked by the session's permission check; local commit ready to push.
+
+## 2026-11-09 15:32 SAST - pushed and tracked
+- Grant gave the Claude GitHub App access to breakfastrun; stage 1 pushed to main (f0ca1a6), remote verified.
+- Notion Workstreams row created: "Breakfast Run (ZX Spectrum)",
+  https://app.notion.com/p/41342c9abb32810d8672e5281550b1ac
