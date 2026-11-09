@@ -1,0 +1,3 @@
+build/*.bin
+build/*.sym
+__pycache__/
