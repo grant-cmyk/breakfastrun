@@ -1,4 +1,4 @@
-# Tabletop Racer (working title)
+# Breakfast Run
 
 A top-down micro-car racer for the ZX Spectrum 48K, written in Z80 assembler
 (pasmo). Personal home project - Grant learning to code the Spectrum.

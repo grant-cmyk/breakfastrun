@@ -1,5 +1,5 @@
 ; =====================================================================
-; TABLETOP RACER (working title) - STAGE 1: one car, one track
+; BREAKFAST RUN - STAGE 1: one car, one track
 ; ZX Spectrum 48K, assembled with pasmo.
 ;
 ; Keys:  O = steer left   P = steer right   Q = accelerate   A = brake/reverse
