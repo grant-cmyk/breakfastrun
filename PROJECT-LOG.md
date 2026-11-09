@@ -274,3 +274,13 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   ('BREAKFAST RUN CAR ART v1'). Checked in headless Chromium: paint, mirror, copy/load round trip, no errors.
 - When Grant's art comes back: make_data.py must read it, and car_rows must cover every car's rows (today it
   uses the player's mask only). Up heading is not mirror-symmetric (tyre checker), so mirror starts off.
+
+## 2026-11-09 21:11 SAST - chequered tablecloth mock-ups
+- Grant: stylise the table as a chequered board, dithered, cars masked; the sides of the road are cereal O's;
+  one colour pair only (pixel scroll). tools/make_table_mockups.py redraws the real world: 32-px checks (dark
+  ones dithered), 140 cereal O's (thick ring, glint, hole shows the cloth) 3 px outside both road edges, items
+  and O's masked (white halo, solid inside), cars masked as in the game. A 50% dither, B 25% dots, C diagonal
+  lines, D = A in blue ink. docs/design/table.png (+ _a.._d). Not built.
+- Cost (estimate, not measured): cloth by pattern fill instead of the zero clear, about +10k T; masking the
+  O's and items instead of OR, about +25-40k T. Today 195k of 209.7k: would drop to 4 frames a picture unless
+  savings are found. Masks need memory (89 bytes free).
