@@ -188,3 +188,31 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   pictures (order 1 in 4, map 1 in 4, clock 2 in 4); tower rows drawn with cell-address INC H loops.
 - tests/drive_test.py 38/38 PASS. Frame rate: 13.0 off the start; lap 14.6 mean, 12.5 on ~14 of 34
   stretches - NEXT: the frame-rate hunt.
+
+## 2026-11-09 19:42 SAST - frame-rate hunt while Grant was away; kerbs and scenery (cloud session, Claude)
+- New tool tests/profile_lap.py: an autopilot lap with breakpoints on every stage; T-states per stage
+  averaged over every picture, and how many TV frames each picture took. (The start-grid profile hid
+  that the mid-lap stretches were the problem.)
+- Measured, whole lap, pictures at 3 frames / 4 frames, average work per picture (limit 209,664):
+    stage 6 as built            102 / 93   205.7k
+    computer cars at half rate  139 / 63   199.1k   (each moves 2 frames' worth on alternate frames;
+                                                     pace gate, ease-off and mistake lengths re-timed;
+                                                     you stay at every frame)
+    AI overshoot check only within 64 px; bumps on alternate frames; race order 1 picture in 4;
+    your waypoint check every other picture
+                                166 / 45   194.0k
+    + kerbs (4-px chequer, world-locked) and trees/bushes/houses: tiles 60k -> 74k
+                                 93 / 99   211.5k
+    kerb outline line dropped (tiles 163 -> 120 distinct; 69k)
+                                109 / 88   206.5k
+    trees 3% -> 2%, bushes 4% -> 2.8%
+                                110 / 87   204.8k
+- Smoothness: the rhythm now settles on 4 frames for ~25 pictures after one runs over, then tries 3
+  again - a steady 4 in busy places instead of 3,4,3,4 judder (pace, pace_hold).
+- Findings: 70 tiles in view on average, 61 of them road edges at ~4 drawn lines; 53 list entries
+  skipped left of the view (~2.7k); the remaining big costs are fixed (tiles ~69k, copy 45k, clear 23k).
+  MEMORY is nearly full: code/data end 0xBE7B (0xC000 is the buffer).
+- Head-on test made to coast (no keys): with ticks run in a burst per picture, a held Q pushed you
+  forward again after the kick and hid the bounce.
+- tests/drive_test.py 38/38 PASS. Grant then asked for breakfast-table scenery (eggs, bacon, knife,
+  fork, juice, spoon, plate, toast) instead of trees - next.

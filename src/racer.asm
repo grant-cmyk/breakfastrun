@@ -161,13 +161,34 @@ draw_all:
         add ix,de
         pop bc
         djnz draw_all
-wait_show:
-        halt                    ; wait until 3 TV frames have passed since the
-        ld a,(last_shown)       ; last picture went up: a steady rhythm looks
-        ld b,a                  ; smoother than one that jumps between 3 and 4
+        ld a,(last_shown)       ; did this picture run over the rhythm?
+        ld b,a
         ld a,(FRAMES)
         sub b
-        cp PACE_FR
+        ld hl,pace
+        cp (hl)
+        jr c,ws_in_time
+        jr z,ws_in_time
+        ld (hl),PACE_FR+1       ; yes: settle on 4 frames for a while (a
+        ld a,25                 ; steady 4 looks smoother than 3,4,3,4)
+        ld (pace_hold),a
+        jr wait_show
+ws_in_time:
+        ld a,(pace_hold)        ; in time: after a while at 4, try 3 again
+        or a
+        jr z,wait_show
+        dec a
+        ld (pace_hold),a
+        jr nz,wait_show
+        ld (hl),PACE_FR
+wait_show:
+        halt                    ; wait until the rhythm's frames have passed
+        ld a,(last_shown)       ; since the last picture went up
+        ld b,a
+        ld a,(FRAMES)
+        sub b
+        ld hl,pace
+        cp (hl)
         jr c,wait_show
         ld a,(FRAMES)
         ld (last_shown),a
@@ -176,7 +197,7 @@ wait_show:
         ld hl,(renders)
         inc hl
         ld (renders),hl
-        jr main
+        jp main
 
 ; tick: one TV frame - read keys, let the computer drive, move, bump
 tick:
@@ -194,25 +215,31 @@ tick:
         ld (race_time),hl
 tk_clock:
         call read_keys          ; your buttons -> your car's C_CTRL
-        ld ix,cars+C_SIZE       ; the computer drives cars 1..NCARS-1
-        ld b,NCARS-1
+        ld ix,cars              ; you: every TV frame
+        ld a,1
+        ld (ph_steps),a
+        call physics
+        ld a,2                  ; the computer cars: each on alternate TV
+        ld (ph_steps),a         ; frames (cars 2 and 4 on one, 1 and 3 on
+        ld ix,cars+C_SIZE       ; the other), moving two frames' worth -
+        ld b,NCARS-1            ; the same driving for about half the work
 tk_ai:
         push bc
+        ld a,(ticks)
+        add a,(ix+C_KIND)
+        and 1
+        jr nz,tk_rest
         call ai_drive
+        call physics
+tk_rest:
         ld de,C_SIZE
         add ix,de
         pop bc
         djnz tk_ai
-        ld ix,cars              ; everyone moves
-        ld b,NCARS
-tk_ph:
-        push bc
-        call physics
-        ld de,C_SIZE
-        add ix,de
-        pop bc
-        djnz tk_ph
-        jp bump_all             ; bumps: every pair (gen_bumps.asm)
+        ld a,(ticks)            ; bumps: every pair (gen_bumps.asm), on
+        and 1                   ; alternate frames - cars move a pixel or
+        ret nz                  ; two between, well inside the 11-px test
+        jp bump_all
 
 read_keys:
         ld c,0
@@ -291,17 +318,19 @@ mt_l_done:
 ; ---------------------------------------------------------------------
 physics:
         ld e,(ix+C_CTRL)
+        ld a,(ph_steps)         ; steering: one heading step per frame
+        ld d,a
         bit 0,e
         jr z,ph_nl
         ld a,(ix+C_ANG)
-        dec a
+        sub d
         and 63
         ld (ix+C_ANG),a
 ph_nl:
         bit 1,e
         jr z,ph_nr
         ld a,(ix+C_ANG)
-        inc a
+        add a,d
         and 63
         ld (ix+C_ANG),a
 ph_nr:
@@ -354,14 +383,19 @@ ph_push_set:
 ph_surf_kept:
         ld a,(ix+C_FSH)
         ld (fshift),a
+        ld (ph_px),de           ; the pushes, kept for the second frame
+        ld (ph_py),bc
         ; ---- x: speed += push, friction, position += speed; each value is
-        ;      read from the car record once and written back once ----
+        ;      read from the car record once and written back once; all of
+        ;      it ph_steps times (2 for a computer car) ----
         ld l,(ix+C_VX)
         ld h,(ix+C_VX+1)
+        ld a,(ph_steps)
+phx_step:
+        ld (ph_cnt),a
+        ld de,(ph_px)
         add hl,de
-        call friction           ; (keeps BC: the y push)
-        ld (ix+C_VX),l
-        ld (ix+C_VX+1),h
+        call friction
         ld d,0                  ; D = top byte of the speed, sign-extended
         bit 7,h
         jr z,ph_xp
@@ -376,6 +410,12 @@ ph_xp:
         ld a,(ix+C_X+1)
         adc a,d
         ld (ix+C_X+1),a
+        ld a,(ph_cnt)
+        dec a
+        jr nz,phx_step
+        ld (ix+C_VX),l
+        ld (ix+C_VX+1),h
+        ld a,(ix+C_X+1)
         cp (MAPW*8-16)/256      ; keep inside the world (x 0..MAPW*8-17): a
         jr c,ph_xok             ; high byte below the limit's is fine (the
         jr nz,ph_xout           ; usual case); above it, or negative: out
@@ -397,10 +437,12 @@ ph_xok:
         ; ---- y: the same, with the y push in BC ----
         ld l,(ix+C_VY)
         ld h,(ix+C_VY+1)
-        add hl,bc
+        ld a,(ph_steps)
+phy_step:
+        ld (ph_cnt),a
+        ld de,(ph_py)
+        add hl,de
         call friction
-        ld (ix+C_VY),l
-        ld (ix+C_VY+1),h
         ld d,0
         bit 7,h
         jr z,ph_yp
@@ -415,6 +457,12 @@ ph_yp:
         ld a,(ix+C_Y+1)
         adc a,d
         ld (ix+C_Y+1),a
+        ld a,(ph_cnt)
+        dec a
+        jr nz,phy_step
+        ld (ix+C_VY),l
+        ld (ix+C_VY+1),h
+        ld a,(ix+C_Y+1)
         cp (MAPH*8-16)/256
         jr c,ph_yok
         jr nz,ph_yout
@@ -629,7 +677,14 @@ ai_decide:
         call wp_delta
         jr ai_have_target
 ai_check_next:
-        ; overshot it?  if the NEXT waypoint is nearer, move on (no U-turns)
+        ; overshot it?  if the NEXT waypoint is nearer, move on (no U-turns).
+        ; Only worth asking when the current one is near (within 64).
+        ld de,64-REACH
+        push hl
+        or a
+        sbc hl,de
+        pop hl
+        jr nc,ai_keep
         ld (dist_cur),hl        ; distance to current - 24
         ld a,(ix+C_WP)
         push af
@@ -747,8 +802,8 @@ ai_throttle:
         ld a,(ix+C_EASE)
         or a
         jr z,ai_go
-        ld a,(ticks)
-        and 1
+        ld a,(ticks)            ; every other one of its own frames
+        and 2
         jr z,ai_go
         ld b,0
 ai_go:
@@ -760,8 +815,9 @@ ai_set:
 
 ; pace_gate (IX): A = CT_GO on PACE of every 8 frames, else 0
 pace_gate:
-        ld a,(ticks)
-        add a,(ix+C_KIND)       ; the two cars pulse out of step
+        ld a,(ticks)            ; counted in the car's own frames (it runs
+        add a,(ix+C_KIND)       ; on every other one): PACE of 8 of them
+        rrca
         and 7
         cp (ix+C_PACE)
         ld a,0
@@ -794,8 +850,8 @@ nw_kind:
 nw_k:
         ld (ix+C_MKIND),a
         call rnd
-        and 15
-        add a,8                 ; lasts 8..23 frames
+        and 7
+        add a,4                 ; lasts 4..11 of its frames (8..23 TV frames)
         ld (ix+C_MIST),a
         ld hl,(mistakes)
         inc hl
@@ -1555,6 +1611,9 @@ lap_timed:
 ;   - the HUD below the window is redrawn only when something changed
 ; ---------------------------------------------------------------------
 race_progress:
+        ld a,(renders)          ; your waypoints: every other picture is
+        and 1                   ; plenty (40 px circles, 5 px a picture)
+        jr nz,rp_pos
         ld ix,cars
         ld b,2                  ; you may pass up to 2 waypoints a picture
 rp_wp:
@@ -1597,8 +1656,9 @@ rp_all:
         call msg_finished
         jp show_best
 rp_go_on:
-        ld a,(renders)          ; the order only every other picture
-        and 1                   ; (8 times a second is plenty)
+        ld a,(renders)          ; the order one picture in four (4 times a
+        and 3                   ; second; the tower shows it one in four)
+        cp 3
         ret nz
         ld ix,cars              ; every car's progress (prog) and waypoints
         ld b,0                  ; passed this lap (passed)
@@ -2014,6 +2074,12 @@ mc_n:     db 0
 dc_n:     db 0
 dt_rows:  db 0
 save_sp:  dw 0
+pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
+pace_hold: db 0
+ph_steps: db 1
+ph_cnt:   db 0
+ph_px:    dw 0
+ph_py:    dw 0
 ; ---- reset to zero at the start of every race ----
 race_vars:
 race_on:     db 0

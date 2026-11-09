@@ -47,31 +47,95 @@ def road_mask(width):
 road = road_mask(ROAD).load()
 img = Image.new('1', (PW, PH), 0)        # 1 = ink
 px = img.load()
+# kerbs: a 4-px chequered band along both edges of the road, its 4x4 blocks
+# locked to the world grid, so the same tiles repeat along a straight
+def near_edge(x, y, d):
+    return any(not road[x + dx, y + dy] if 0 <= x + dx < PW and 0 <= y + dy < PH else True
+               for dx in range(-d, d + 1, 2) for dy in range(-d, d + 1, 2))
 for y in range(PH):
     for x in range(PW):
         if road[x, y]:
-            edge = any(not road[x + dx, y + dy] if 0 <= x + dx < PW and 0 <= y + dy < PH else True
-                       for dx in (-2, 0, 2) for dy in (-2, 0, 2))
-            if edge: px[x, y] = 1
-
+            if near_edge(x, y, 4) and ((x // 4) + (y // 4)) % 2 == 0:
+                px[x, y] = 1                                   # the chequer (it is the edge)
 # start line: checker band 8px tall across the bottom straight at x=256..263
 for y in range(240 + OFF, 340 + OFF):
     for x in range(256 + OFF, 264 + OFF):
         if road[x, y] and not px[x, y] and ((x // 4) + (y // 4)) % 2 == 0:
             px[x, y] = 1
 
-# cereal hoops: an 8x8 ring on whole tiles that are fully off-road and clear of the road
-HOOP = ["..####..", ".#....#.", "#......#", "#......#", "#......#", "#......#", ".#....#.", "..####.."]
+# scenery off the road, straight top-down, drawn in the one-bit-art house
+# style: trees (an outlined canopy, the shadow side dithered, the lit side
+# paper), bushes, and houses (roof outline, ridge, dithered shadow half,
+# a solid chimney). Placed on the 8-px grid so their tiles repeat.
+TREE = ["....######......",
+        "..##......##....",
+        ".#..........#...",
+        ".#...........#..",
+        "#............#..",
+        "#...........#.#.",
+        "#..........#.#.#",
+        "#.........#.#.##",
+        "#........#.#.#.#",
+        ".#.....#.#.#.#.#",
+        ".#......#.#.#.##",
+        "..#..#.#.#.#.##.",
+        "...##.#.#.#.##..",
+        ".....########...",
+        "................",
+        "................"]
+BUSH = ["..####..",
+        ".#....#.",
+        "#....#.#",
+        "#...#.##",
+        "#..#.#.#",
+        ".#.#.##.",
+        "..####..",
+        "........"]
+HOUSE = ["########################",
+         "#..........#...........#",
+         "#..........#.#.#.#.#.#.#",
+         "#..........##.#.#.#.#.##",
+         "#....##....#.#.#.#.#.#.#",
+         "#....##....##.#.#.#.#.##",
+         "#..........#.#.#.#.#.#.#",
+         "#..........##.#.#.#.#.##",
+         "#..........#.#.#.#.#.#.#",
+         "#..........##.#.#.#.#.##",
+         "#..........#.#.#.#.#.#.#",
+         "#..........##.#.#.#.#.##",
+         "#..........#.#.#.#.#.#.#",
+         "#..........##.#.#.#.#.##",
+         "#..........#...........#",
+         "########################"]
 import random
 random.seed(7)
 far = road_mask(ROAD + 28).load()
-for ty in range(1, H - 1):
-    for tx in range(1, W - 1):
-        if random.random() > 0.05: continue      # sparse: every hoop costs drawing time
-        if any(far[tx * 8 + i, ty * 8 + j] for i in range(8) for j in range(8)): continue
-        for j, row in enumerate(HOOP):
-            for i, ch in enumerate(row):
-                if ch == '#': px[tx * 8 + i, ty * 8 + j] = 1
+taken = set()
+def free(tx, ty, w, h):
+    for j in range(h):
+        for i in range(w):
+            if (tx + i, ty + j) in taken: return False
+            for yy in range(8):
+                for xx in range(8):
+                    X, Y = (tx + i) * 8 + xx, (ty + j) * 8 + yy
+                    if not (0 <= X < PW and 0 <= Y < PH) or far[X, Y]: return False
+    return True
+def place(shape, tx, ty):
+    w, h = len(shape[0]) // 8, len(shape) // 8
+    for j in range(h + 1):
+        for i in range(w + 1):
+            taken.add((tx + i - 0, ty + j - 0))
+    for y, row in enumerate(shape):
+        for x, c in enumerate(row):
+            if c == '#': px[tx * 8 + x, ty * 8 + y] = 1
+houses = [(19, 15), (37, 21), (9, 46), (58, 8), (26, 47)]   # a few, inside and out
+for tx, ty in houses:
+    if free(tx, ty, 3, 2): place(HOUSE, tx, ty)
+for ty in range(1, H - 2):
+    for tx in range(1, W - 2):
+        r = random.random()
+        if r < 0.020 and free(tx, ty, 2, 2): place(TREE, tx, ty)
+        elif r < 0.028 and free(tx, ty, 1, 1): place(BUSH, tx, ty)
 
 # cut into tiles
 tiles = {bytes(8): 0}
