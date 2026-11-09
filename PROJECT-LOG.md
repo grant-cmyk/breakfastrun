@@ -284,3 +284,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Cost (estimate, not measured): cloth by pattern fill instead of the zero clear, about +10k T; masking the
   O's and items instead of OR, about +25-40k T. Today 195k of 209.7k: would drop to 4 frames a picture unless
   savings are found. Masks need memory (89 bytes free).
+
+## 2026-11-09 21:19 SAST - Grant's car is YOU
+- Grant drew the player car in the editor (an open-wheel racer, heading 0). Read from his screenshot pixel
+  by pixel and checked against it. Claude rebuilt 22.5 and 45 from his shapes (one-bit-art T1: shape model
+  reproduces his drawing exactly at 0, rasterised at 26.6 and 45, then cleaned: front hubs restored at 45,
+  pinholes filled, strays removed). Review: 1 island, largest block 4x4. docs/design/you_car_review.png.
+- tools/car_art.txt holds hand-drawn cars; make_data.py uses them in place of its own drawing; car_rows now
+  covers every car. drive_test RESULT: PASS. Editor rebuilt with the new art.
+- To do: add Grant's car to the one-bit-art exemplars (rule 15, claude-plugins-personal).
