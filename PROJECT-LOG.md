@@ -553,3 +553,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   a parted fringe, dot eyes, a one-pixel nose, a little smile, the jaw tapering to a small chin.
   Checked in the game's own race order: docs/design/panel_jane_pigtails.png. Data only (same size);
   the full drive test was not re-run for it.
+
+## 2026-11-10 SAST - Grant's own faces
+- Grant redrew all five faces in the editor's Faces mode; kept in tools/face_art.txt, which
+  make_faces.py now reads over its own drawings (as make_data.py does with car_art.txt). Then, at
+  his ask, the faces of rows 4 and 5 swapped: PINK (the tank) and GREEN (the truck).
+  Checked in the game's race order: docs/design/panel_grants_faces.png.

@@ -113,6 +113,13 @@ F['WHITE'] = ["................",
               ".......##.......",
               "................",
               "................"]
+# Grant's own drawings (the editor's Faces mode, tools/face_art.txt) replace
+# the ones above for every driver named there
+import re
+_fa = os.path.join(ROOT, 'tools', 'face_art.txt')
+if os.path.exists(_fa):
+    for _m in re.finditer(r'== (\w+) face ==\n((?:[X.]{16}\n){16})', open(_fa).read()):
+        F[_m.group(1)] = [r.replace('X', '#') for r in _m.group(2).split()]
 # The pool: drivers kept for later races, not in the game yet (tools/pool_art.txt)
 POOL = {}
 # SPECS (WHITE until 10 Nov 2026): a side parting, round glasses joined by a bridge, a straight mouth
