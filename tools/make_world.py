@@ -66,8 +66,8 @@ def place_os():
             nx, ny = -(yb - ya) / d, (xb - xa) / d
             cx, cy = seq[i][0] + side * nx * (ROAD / 2 + 3), seq[i][1] + side * ny * (ROAD / 2 + 3)
             p = (int(round((cx - 4) / 8)) * 8, int(round((cy - 4) / 8)) * 8)   # one tile each: cheapest to draw
-            if last is None or math.hypot(p[0] - last[0], p[1] - last[1]) >= 15:
-                if all(math.hypot(p[0] - q[0], p[1] - q[1]) >= 13 for q in got):
+            if last is None or math.hypot(p[0] - last[0], p[1] - last[1]) >= 18:
+                if all(math.hypot(p[0] - q[0], p[1] - q[1]) >= 15 for q in got):
                     got.append(p); last = p
     return got
 OS = place_os()
@@ -170,7 +170,7 @@ imask = d | ~seen
 def tbytes(get, tx, ty):
     return bytes(sum((int(get(tx * 8 + i, ty * 8 + j)) << (7 - i)) for i in range(8)) for j in range(8))
 yy, xx = np.mgrid[0:PH, 0:PW]                         # the cloth's dithered pixels
-cloth_on = ((((xx >> 5) + (yy >> 5)) & 1) == 1) & (((xx + yy) & 1) == 0)
+cloth_on = ((((xx >> 5) + (yy >> 5)) & 1) == 1) & ((xx & 1) == 0) & ((yy & 1) == 0)   # 25% dots
 cells = {}
 for ty in range(H):
     for tx in range(W):
@@ -288,6 +288,13 @@ for my in range(MH):
 smx = (256 + OFF + 4 - 64) // 8                   # the start line: a tick across the road
 for my in range(MH):
     if on_road(smx, my): mm[my][smx] = 1
+obits = [[0] * W for _ in range(H)]                # where the cereal O's are: cars bounce off them
+for ox, oy in OS: obits[oy // 8][ox // 8] = 1
+with open(TOPDATA, 'a') as f:
+    f.write('\n; the cereal O\'s: one BIT per tile (1 = an O: solid - cars bounce off it),\n')
+    f.write('; %d bytes a row, leftmost tile in the top bit\nomap_src:\n' % (W // 8))
+    for r in obits:
+        f.write('        defb ' + ','.join('%%%s' % ''.join(str(b) for b in r[i:i + 8]) for i in range(0, W, 8)) + '\n')
 with open(TOPDATA, 'a') as f:
     f.write('\n; the mini-map: road edges at 1/8 scale from world (64,32), 7 bytes x 48 rows\nminimap_src:\n')
     for row in mm:

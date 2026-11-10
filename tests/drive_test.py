@@ -43,7 +43,7 @@ top = open(os.path.join(ROOT, 'src', 'topdata.asm')).read()
 tsect = lambda a, b: [int(v, 0) for l in top[top.index(a):top.index(b)].splitlines() if 'defb' in l
                       for v in l.split('defb')[1].split(';')[0].split(',')]
 midx = tsect('tmask_idx_src:', 'tmask_src:')
-mbytes = tsect('tmask_src:', 'minimap_src:')
+mbytes = tsect('tmask_src:', 'omap_src:')
 world = np.zeros((MAPH * 8, MAPW * 8), dtype=np.uint8)
 wmask = np.zeros((MAPH * 8, MAPW * 8), dtype=bool)    # breakfast things: cover the cloth
 for ty in range(MAPH):
@@ -133,9 +133,9 @@ def at_copy_done(sp):
     assert sp.pc == SYM['copy_done'], 'did not stop at copy_done (pc %04X)' % sp.pc
 
 def cloth(camx, camy):
-    # the tablecloth: 32-px checks, the dark ones a 50% dither, locked to the table
+    # the tablecloth: 32-px checks, the dark ones 25% dots, locked to the table
     y, x = np.mgrid[camy:camy + 120, camx:camx + 176]
-    return ((((x >> 5) + (y >> 5)) & 1) == 1) & (((x + y) & 1) == 0)
+    return ((((x >> 5) + (y >> 5)) & 1) == 1) & ((x & 1) == 0) & ((y & 1) == 0)   # dark checks: 25% dots
 
 def window_bad(sp):
     at_copy_done(sp)

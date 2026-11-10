@@ -455,3 +455,16 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Measured, whole lap: work 181.5k T (unchanged - the sound is in the wait); 196 pictures at 3 frames,
   22 at 4. Engine gap follows speed (60 at 1.55, 101 at 0.77); a bump with you sets the crash.
   Not heard: the cloud has no audio - Grant to listen. drive_test RESULT: PASS.
+
+## 2026-11-10 07:35 SAST - blue on cyan with dots; smoother computer cars; O's 18 apart and solid
+- Grant: colour 1 (blue on cyan) with the 25% dots: window attr 0x29, cloth odd rows empty (dots).
+- Grant: computer cars jerky - measured: 3.4 / 6.8 px a picture alternating (2-frame steps on alternate
+  frames, a picture every 3). Now they move every frame and think on alternate ones; throttle-off
+  frames spread evenly (bit-reversed count). tests/smooth_cpu.py: spread 32-41% -> 15-22%.
+- Re-tune: GREEN 12/16 (slowest), WHITE 15/16, PINK fewer mistakes, eases at 45, line +-4
+  (late braking + the bigger skid ran it wide). Laps 14.0 17.2 14.6 14.9 s.
+- Grant: O spacing 18 px (91 O's); O's are solid: omap (1 bit a tile, TOPMEM); o_check on alternate
+  frames looks at the 4 tiles nearest each car, kicks it away like a bump, crunch if it is you.
+  Checked: you driving into an O stop 8 px short and bounce. 2 O bounces in 20 s of computer racing.
+- Measured, whole lap: work 193.7k T (was 181.5k: cars moving every frame + O checks); 177 pictures
+  at 3 frames, 31 at 4, 14 at 2. drive_test RESULT: PASS.
