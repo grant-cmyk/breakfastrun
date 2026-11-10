@@ -916,67 +916,13 @@ tc_row:
 ; ---------------------------------------------------------------------
 MAP_X   equ 25*8                ; screen pixel of the map's top-left
 MAP_Y   equ 17*8
-map_init:
-        ld de,minimap
-        ld b,MAP_Y
-mi_row:
-        ld c,MAP_X
-        call scr_addr
-        ld a,7
-mi_b:
-        ex af,af'
-        ld a,(de)
-        ld (hl),a
-        inc de
-        inc l
-        ex af,af'
-        dec a
-        jr nz,mi_b
-        inc b
-        ld a,b
-        cp MAP_Y+48
-        jr nz,mi_row
-        ld b,17
-        ld c,25
-        ld d,6
-        ld e,7
-        ld a,0x30               ; black on yellow, like the background (Grant: no white box)
-        call set_attrs
-        ld hl,shown_dot         ; no dots drawn yet
-        ld b,2*NCARS
-mi_d:
-        ld (hl),0xFF
-        inc hl
-        djnz mi_d
-        ret
+map_init:                       ; a new race: the last race's dots off the map (the
+        jp map_off              ; map itself is drawn once, by screen_once)
 
 map_update:
         ld hl,blink             ; your dot blinks: on 2 updates, off 2
         inc (hl)
-        ld c,0                  ; 1. put back the map under every old dot
-mu_old:
-        ld a,c
-        add a,a
-        ld hl,shown_dot
-        add a,l
-        ld l,a
-        jr nc,mu_o1
-        inc h
-mu_o1:
-        ld a,(hl)
-        cp 0xFF
-        jr z,mu_onext
-        ld e,a                  ; E = x, D = y
-        inc hl
-        ld d,(hl)
-        push bc
-        call map_restore
-        pop bc
-mu_onext:
-        inc c
-        ld a,c
-        cp NCARS
-        jr nz,mu_old
+        call map_off            ; 1. every old dot off (XOR it again)
         ld ix,cars+(NCARS-1)*C_SIZE   ; 2. the new dots, yours last
         ld c,NCARS-1
 mu_new:
@@ -1025,7 +971,11 @@ mu_n1:
         jr nz,mu_draw
         ld a,(blink)            ; you: 3 x 3, shown 2 updates in 4
         and 2
-        jr z,mu_skip
+        jr nz,mu_you
+        dec hl
+        ld (hl),0xFF            ; (blinked off: nothing to take off next time)
+        jr mu_skip
+mu_you:
         ld b,0xE0
         ld c,3
 mu_draw:
@@ -1036,6 +986,44 @@ mu_skip:
         pop bc
         dec c
         jp p,mu_new
+        ret
+
+; MAP_OFF: every dot shown, off again - drawn with XOR, so drawing it again
+; puts the map back (no copy of the map needed: Grant's sweep, 10 Nov 2026)
+map_off:
+        ld c,0
+mo_1:
+        ld a,c
+        add a,a
+        ld hl,shown_dot
+        add a,l
+        ld l,a
+        jr nc,mo_2
+        inc h
+mo_2:
+        ld a,(hl)
+        cp 0xFF
+        jr z,mo_3
+        ld (hl),0xFF
+        ld e,a                  ; E = x, D = y
+        inc hl
+        ld d,(hl)
+        push bc
+        ld a,c
+        or a
+        ld b,0xC0               ; a computer car's 2 x 2, your 3 x 3
+        ld c,2
+        jr nz,mo_4
+        ld b,0xE0
+        ld c,3
+mo_4:
+        call map_dot
+        pop bc
+mo_3:
+        inc c
+        ld a,c
+        cp NCARS
+        jr nz,mo_1
         ret
 
 map_coord:                      ; HL (may be negative) / 8 -> A, 0 if negative
@@ -1055,7 +1043,7 @@ map_coord:                      ; HL (may be negative) / 8 -> A, 0 if negative
         ld a,255
         ret
 
-; map_dot: C rows of the pattern B (0xC0 or 0xE0) at map x E, y D (OR)
+; map_dot: C rows of the pattern B (0xC0 or 0xE0) at map x E, y D (XOR)
 map_dot:
         ld a,e
         and 7
@@ -1084,7 +1072,7 @@ md_row:
         call scr_addr
         ld bc,(md_pat)
         ld a,(hl)
-        or c
+        xor c
         ld (hl),a
         ld a,e
         and 0xF8
@@ -1092,7 +1080,7 @@ md_row:
         jr nc,md_one
         inc l
         ld a,(hl)
-        or b
+        xor b
         ld (hl),a
 md_one:
         pop de
@@ -1100,63 +1088,6 @@ md_one:
         pop bc
         dec c
         jr nz,md_row
-        ret
-
-; map_restore: the 3 x 3 area at map x E, y D back from the map picture
-map_restore:
-        ld c,3
-mr_row:
-        push bc
-        push de
-        ld a,d                  ; source: minimap + y * 7 + x / 8
-        cp 48
-        jr nc,mr_done
-        ld l,a
-        ld h,0
-        ld b,h
-        ld c,l
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        or a
-        sbc hl,bc               ; y * 7
-        ld a,e
-        rrca
-        rrca
-        rrca
-        and 7
-        ld c,a
-        ld b,0
-        add hl,bc
-        ld bc,minimap
-        add hl,bc
-        push hl
-        ld a,d
-        add a,MAP_Y
-        ld b,a
-        ld a,e
-        add a,MAP_X
-        ld c,a
-        call scr_addr
-        pop de                  ; DE = the map picture's byte
-        ld a,(de)
-        ld (hl),a
-        pop bc                  ; (x, y back in C/B for the edge test)
-        push bc
-        ld a,c
-        and 0xF8
-        cp 48
-        jr nc,mr_done
-        inc l
-        inc de
-        ld a,(de)
-        ld (hl),a
-mr_done:
-        pop de
-        inc d
-        pop bc
-        dec c
-        jr nz,mr_row
         ret
 
 ; ---------------------------------------------------------------------

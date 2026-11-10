@@ -17,7 +17,10 @@ with Racer(headless=True) as sp:
     while g(sp, 'renders') == 0 and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
     sp.run(duration=1.0, fast_forward=True)
     ok(list(sp.read(INV, 3)) == [1, 0, 0], 'you start with one NOS canister (inventory %s)' % list(sp.read(INV, 3)))
-    hold(sp, ['Q'], 2.5)                                  # up to top speed on the straight
+    hold(sp, ['Q'], 0.3)                                  # racing; then the start straight's
+    for i in CPUS: put(sp, i, 20 + 25 * i, 420)           # (the computer cars out of the way)
+    put(sp, 0, 175, 344, 16)                              # left end, clear of canister A
+    hold(sp, ['Q'], 1.2)                                  # up to top speed on the straight
     v0 = car(sp, 0)['vx']
     press(sp, 'Q', True); press(sp, 'SPACE', True)
     sp.run(duration=0.1, fast_forward=True); press(sp, 'SPACE', False)

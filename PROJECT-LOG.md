@@ -726,3 +726,18 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   written-out version), F's minis (~5k). Graphics: 12 of each car's 16 headings are quarter-turns
   of the first 4 (3.8 KB) - only worth making at the start if a 4 KB space is ever free.
 - drive_test PASS (start 15.0/s), nos_test PASS.
+
+## 2026-11-10 SAST - no bubble when the chief is quiet; memory sweep (second pass)
+- Grant: if the pit crew is not saying something, do not show the bubble. The bubble (the box and
+  its tail) is drawn only while he talks: it appears in 2 halves (2 strip ticks), the words type
+  out, it stays ~3 s, then goes in 2 halves; the strip's picture no longer has it. A new message
+  redraws it (so the old words go: box_wipe no longer needed).
+- Memory: the mini-map's dots are drawn with XOR, so drawing one again takes it off - no copy of
+  the map is needed at run time: its picture (336 bytes) is drawn once from the start-up area and
+  map_restore is gone. 380 bytes of the map's row lists moved into that space at the top of memory
+  (toprows.asm; the row index and the canister addresses point at it). Low memory: 300 bytes
+  spare (was 15).
+- Fixed: the message timer overlapped the inventory's shown copy (BUFC+144).
+- NOS on a clear straight: 1.75 -> 3.50 px/frame (twice); the test now moves the computer cars
+  out of the way (they were in the way, which read as a weak boost).
+- drive_test PASS (adds: the bubble at the green light; no bubble when quiet), nos_test PASS.

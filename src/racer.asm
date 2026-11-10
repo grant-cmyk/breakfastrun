@@ -2924,7 +2924,6 @@ best_car:    db 0
 best_lapno:  db 0
 best_seq:    db 0
 shown_best_seq: db 0
-shown_dot:   defs 2*NCARS
 md_pat:      dw 0
 fin_at:      defs NCARS         ; each car's finishing place (0 = still racing)
 fin_count:   db 0               ; cars in so far
@@ -2938,6 +2937,7 @@ tr_force:    db 0               ; gap_draw: draw even if it looks unchanged
 gd_place:    db 0
 gd_y:        db 0               ; Q has been let go since this race was set up
 race_vars_end:
+shown_dot:   defs 2*NCARS       ; each car's dot on the mini-map (0xFF x: none) - not reset
 last_shown: db 0
 tr_base:  dw 0
 dt_rowp:  dw 0
@@ -3178,7 +3178,29 @@ so_attr:
         ex de,hl
         pop bc
         djnz so_attr
+        ld de,minimap_src       ; the mini-map, black on yellow (Grant: no white
+        ld b,MAP_Y              ; box); the cars' dots are XORed on and off it
+so_map:
+        ld c,MAP_X
+        call scr_addr
+        ex de,hl
+        ld bc,7
+        ldir
+        ex de,hl
+        ld a,(so_y)             ; (B is 0 after LDIR: the row is kept in so_y)
+        inc a
+        ld (so_y),a
+        ld b,a
+        cp MAP_Y+48
+        jr nz,so_map
+        ld hl,shown_dot         ; no dots on it yet
+        ld b,2*NCARS
+so_d:
+        ld (hl),0xFF
+        inc hl
+        djnz so_d
         ret
+so_y:   db MAP_Y
 
 ; DRAW_FRAME: an arcade bezel round the window - a 7-pixel black band, its
 ; outer corners rounded, with no line of its own against the picture.
@@ -3289,6 +3311,7 @@ dl_attr:
         ret
 
         include "strip_img.asm" ; the driver strip's fixed picture and colours
+        include "minimap.asm"   ; the mini-map's picture (drawn once, below)
 
 ; ---------------------------------------------------------------------
 ; make_tables: for each shift s = 0..7, two 256-byte tables:
@@ -3460,6 +3483,7 @@ im2_on:
 high_src:
         include "topdata.asm"   ; the breakfast things' masks, the O map, the mini-map
         include "hudtext.asm"   ; the HUD's fixed text
+        include "toprows.asm"   ; some of the map's row lists
         include "carrows.asm"   ; each heading's rows in use
         include "tdtab.asm"     ; the tile routine for each camy AND 7
 high_end:
@@ -3533,7 +3557,6 @@ car_rows  equ TOPMEM + car_rows_src - high_src
 tdraw_table equ TOPMEM + tdraw_table_src - high_src
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
-minimap   equ TOPMEM + minimap_src - high_src
 omap      equ TOPMEM + omap_src - high_src
 faces     equ BUFA + faces_src - bufa_src
 

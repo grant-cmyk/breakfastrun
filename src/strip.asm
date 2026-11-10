@@ -7,7 +7,8 @@
 ; other moves the wave.
 ; ---------------------------------------------------------------------
 MSG_P   equ BUFC+128            ; the next letter (2)
-MSG_ST  equ BUFC+130            ; 0 quiet, 1 wipe the box, 3 typing, 4 shown
+MSG_ST  equ BUFC+130            ; 0 quiet (no bubble), 1-2 the bubble appears, 3 typing,
+                                ; 4 shown (MSG_T), 5-6 the bubble goes
 MSG_Y   equ BUFC+131            ; pixel row of the line being typed
 MSG_X   equ BUFC+132            ; pixel x of the next letter
 WAVE_T  equ BUFC+133            ; wave updates of talking left
@@ -18,6 +19,7 @@ TRG_LAP equ BUFC+137            ; your lap, as last seen
 HIT_O   equ BUFC+138            ; you hit an O (set in tick)
 INV     equ BUFC+139            ; the inventory: 3 slots, 0 empty, 1 NOS
 INV_SH  equ BUFC+142            ; ... as shown (3)
+MSG_T   equ BUFC+148            ; strip ticks the message stays up once typed
 BOX_X   equ 89                  ; the box's inside: x 89-150
 WAVE_X  equ 107                 ; the wave: 13 lines, 2 px apart, rows 161-167
 WAVE_MID equ 164
@@ -43,9 +45,8 @@ srs_1:
         ld (NOS_SHOW),a
         ld (BOOST_T),a
         call nos_place
-        ld a,1
-        ld (MSG_ST),a           ; wipe the box,
-        ld (WAVE_T),a           ; and the wave goes flat
+        ld a,5
+        ld (MSG_ST),a           ; no bubble (it goes, if one was up)
         jp inv_draw
 
 msg_say:                        ; A = message: the chief starts talking
@@ -59,9 +60,11 @@ msg_say:                        ; A = message: the chief starts talking
         ld d,(hl)
         ld (MSG_P),de
         ld a,1
-        ld (MSG_ST),a
+        ld (MSG_ST),a           ; the bubble (drawn afresh: the old words go)
         ld a,9                  ; ~2 s of wave (4 updates a second)
         ld (WAVE_T),a
+        ld a,12                 ; up ~3 s once typed
+        ld (MSG_T),a
         ld a,48                 ; and ~3 s before a nag may follow
         ld (COOL),a
         ret
@@ -72,10 +75,56 @@ strip_tick:
         and 2
         jp nz,wave_tick
         ld a,(MSG_ST)
-        cp 1
-        jr z,st_wipe
+        or a
+        ret z
         cp 3
+        jr z,st_type
+        jr c,st_show
+        cp 4
+        jr z,st_up
+        cp 5                    ; 5-6: the bubble goes, half a tick
+        ld b,20
+        jr z,st_hide
+        ld b,22
+st_hide:
+        xor a
+        call bubble2
+        ld a,(MSG_ST)
+        cp 6
+        jr nz,st_next
+        ld a,0x30               ; gone: the strip's yellow again
+        call bb_attr
+        xor a
+        ld (MSG_ST),a
+        ret
+st_up:                          ; shown: the bubble stays a while, then goes
+        ld hl,MSG_T
+        dec (hl)
         ret nz
+st_next:
+        ld hl,MSG_ST
+        inc (hl)
+        ret
+st_show:                        ; 1-2: the bubble appears, half a tick
+        ld b,20
+        cp 1
+        jr z,st_sh1
+        ld b,22
+st_sh1:
+        ld a,1
+        call bubble2
+        ld a,(MSG_ST)
+        cp 2
+        jr nz,st_next
+        ld a,0x78               ; drawn: white, then the words
+        call bb_attr
+        ld a,171
+        ld (MSG_Y),a
+        call line_x
+        ld a,3
+        ld (MSG_ST),a
+        ret
+st_type:
         ld b,4                  ; typing: 4 letters a time
 stt_1:
         push bc
@@ -108,45 +157,116 @@ stt_end:
         ld a,4
         ld (MSG_ST),a
         ret
-st_wipe:                        ; the box's 3 lines (rows 171-188): then type
-        ld b,171
-        ld c,18
-        call box_wipe
-        ld hl,(MSG_P)
-        ld a,h
-        or l
-        ld a,0
-        jr z,stw_1
-        ld a,171
-        ld (MSG_Y),a
-        call line_x
-        ld a,3
-stw_1:
-        ld (MSG_ST),a
-        ret
-
-box_wipe:                       ; B = first row, C = rows: the box's inside
-        push bc                 ; (x 89-150: its left and right edge bytes
-        ld c,BOX_X-1            ; keep their border pixel)
-        call scr_addr
-        ld a,(hl)
-        and 0x80
-        ld (hl),a
-        inc l
+; BUBBLE: A = 1 draws, 0 clears the crew chief's speech bubble in
+; char row B (20-23) - its 8 lines, columns 11-19: the box (x 88-151, rounded) and
+; its tail out to the chief (column 19, rows 172-179). Drawn while he talks.
+bubble:
+        ld (bb_on+1),a
+        ld a,b
+        and 7
+        rrca
+        rrca
+        rrca
+        or 11
+        ld l,a
+        ld h,0x50               ; (rows 160-191: the screen's third third)
+        ld a,b
+        sub 20
+        add a,a
+        add a,a
+        add a,a
+        add a,160
+        ld c,a                  ; C = y
+        ld b,8
+bb_ln:
+        push bc
+        push hl
+        ld d,0x80               ; D: column 11 (the left edge), E: 18 (the right),
+        ld e,0x01               ; B: 19 (the tail); the middle: blank
+        ld b,0
+        ld a,c
+        cp 160
+        jr z,bb_lin
+        cp 191
+        jr z,bb_lin
+        cp 161
+        jr z,bb_crn
+        cp 190
+        jr z,bb_crn
+        sub 172                 ; the tail: rows 172-179
+        cp 8
+        jr nc,bb_mid
+        push hl
+        ld hl,bb_tail
+        add a,l
+        ld l,a
+        jr nc,bb_t1
+        inc h
+bb_t1:
+        ld b,(hl)
+        pop hl
+        ld a,c
+        cp 173                  ; its mouth, rows 173-178: no right edge
+        jr c,bb_mid
+        cp 179
+        jr nc,bb_mid
+        ld e,0
+        jr bb_mid
+bb_crn:
+        ld d,0x40               ; the rounded corners
+        ld e,0x02
+        jr bb_mid
+bb_lin:
+        ld d,0x3F               ; the top and bottom lines
+        ld e,0xFC
+        ld a,0xFF
+        jr bb_w
+bb_mid:
         xor a
-        ld b,6
-bw_1:
+bb_w:
+bb_on:
+        ld c,0                  ; (patched) 1 draw, 0 clear
+        inc c
+        dec c
+        jr nz,bb_w1
+        xor a
+        ld d,a
+        ld e,a
+        ld b,a
+bb_w1:
+        ld (hl),d
+        inc l
+        ld c,6
+bb_w2:
         ld (hl),a
         inc l
-        djnz bw_1
-        ld a,(hl)
-        and 0x01
-        ld (hl),a
-        pop bc
-        inc b
         dec c
-        jr nz,box_wipe
+        jr nz,bb_w2
+        ld (hl),e
+        inc l
+        ld (hl),b
+        pop hl
+        pop bc
+        inc h
+        inc c
+        djnz bb_ln
         ret
+bb_tail: db 0x80,0x40,0x20,0x18,0x18,0x20,0x40,0x80
+
+bubble2:                        ; A = 1 draw, 0 clear: char rows B and B+1
+        push af
+        push bc
+        call bubble
+        pop bc
+        pop af
+        inc b
+        jp bubble
+bb_attr:                        ; A = the bubble's colour: columns 11-18, rows 20-23
+        ld b,20
+        ld c,11
+        ld d,4
+        ld e,8
+        jp set_attrs
 
         ; (line_x: in clothmini.asm, the gap before sq4's page)
 
@@ -244,6 +364,10 @@ gl_syms: db "!.-'"              ; in the font's order: 26..29 (B counts down)
 ; WAVE_TICK: the radio wave - 13 lines about a mid line, a new shape while
 ; the chief talks, flat when he stops
 wave_tick:
+        ld a,(MSG_ST)           ; only in the bubble (3 typing, 4 shown)
+        sub 3
+        cp 2
+        ret nc
         ld a,(WAVE_T)
         or a
         ret z

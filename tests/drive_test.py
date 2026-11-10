@@ -18,14 +18,14 @@ for line in open(SYMF):
         SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
 CS = SYM['c_size']; CARS = SYM['cars']; N = SYM['ncars']; CPUS = list(range(1, N)); TOWER_Y = SYM['tower_y']
 
-src = open(os.path.join(ROOT, 'src', 'world.asm')).read() + open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()
+src = open(os.path.join(ROOT, 'src', 'world.asm')).read() + open(os.path.join(ROOT, 'src', 'waypoints.asm')).read() + open(os.path.join(ROOT, 'src', 'toprows.asm')).read()
 MAPW = int(re.search(r'MAPW\s+equ\s+(\d+)', src).group(1))
 MAPH = int(re.search(r'MAPH\s+equ\s+(\d+)', src).group(1))
 NWP = int(re.search(r'NWP\s+equ\s+(\d+)', src).group(1))
 CPU0X = int(re.search(r'CPU0X\s+equ\s+(\d+)', src).group(1))
 sect = lambda a, b: src[src.index(a):src.index(b)]
 tiles = [[int(v, 16) for v in l.split('defb')[1].split(';')[0].split(',')]
-         for l in sect('tiles:', 'row_0:').splitlines() if 'defb' in l]
+         for l in sect('tiles:', 'surface_map:').splitlines() if 'defb' in l]
 wmap = [0] * (MAPW * MAPH)                  # rebuilt from each row's list of tiles
 for l in src.splitlines():
     m = re.match(r'row_(\d+):\s+defb\s+(.*)', l)
@@ -195,6 +195,7 @@ with Racer(headless=True) as sp:
     check(all(p1['x'] > car(sp, i)['x'] for i in CPUS), 'from the grid you pull away from all four')
     check(fps >= 13, 'at least 13 pictures a second off the start, five cars bunched (got %.1f)' % fps)
     check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
+    check(attr(21, 12) == 0x78 and screen_bits(sp)[171:188, 90:150].any(), 'at the green light the crew chief talks: his bubble, words in it')
     press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
     cx, cy = pc_['x'] - g(sp, 'camx'), pc_['y'] - g(sp, 'camy')
     check((cx, cy) == (80, 52), 'camera keeps your car exactly in the middle of the 176 x 120 window (%d,%d)' % (cx, cy))
@@ -239,7 +240,8 @@ with Racer(headless=True) as sp:
     print('best lap', bl, 'frames')
     check(bl < 0xFFFF and sb[(TOWER_Y + 10) * 8:(TOWER_Y + 10) * 8 + 8, 208:224].any(),
           'the best lap is set, and shown under the race order beside its clock')
-    check(sb[171:188, 90:150].any(), 'the crew chief has said something in the radio box')
+    check(sp.read8(SYM['bufc'] + 130) == 0 and not sb[160:192, 88:160].any() and attr(21, 12) == 0x30,
+          'the crew chief quiet: no speech bubble')
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
     # the four computer cars are in by now: the race order shows no faces while racing - a mini
     # chequered flag in column 30 for each car that is in, and the gaps to the leader in a small font
