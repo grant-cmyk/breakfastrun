@@ -755,3 +755,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the head-on check). drive_test PASS, nos_test PASS.
 - Speed: lap work 211.0k T a picture (3 frames = 209.7k), frames {3: 164, 4: 53} - more road tiles
   and O's in view. To win back (with the taller window Grant asked for next).
+- Grant: the window one row taller (the row above where FINISHED shows), then optimise. Costed
+  before building: the screen copier is generated per line (~40 bytes a line, 0xE800-0xFAC3 for
+  120 lines), so 8 more lines need ~320 bytes where TOPMEM begins - TOPMEM has 11 spare; and about
+  +7k T a picture (cloth, tiles, copy) when lap work is already 211.0k (3 frames = 209.7k).
+  Found: the logo (BUFB) and the track name / RACE texts are only drawn once - they can move to the
+  start-up area (~190 bytes). Options put to Grant: taller as asked (remove something to make room
+  and run at 4 frames more often until the speed work lands), or taller and one column narrower
+  (168 x 128: the same memory and speed as now).
