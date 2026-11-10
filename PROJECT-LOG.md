@@ -438,3 +438,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   1/16, 1/32, then 1/64 a frame). Measured on the road, full speed, full turn held: largest drift angle
   125 degrees (was 75). (A first measurement on the grass read 33 for both: grass friction swamps it.)
   drive_test RESULT: PASS; computer cars 99-100% on the road; laps 14.3 17.1 16.7 14.6 s.
+
+## 2026-11-10 07:16 SAST - colour options without white (mock-ups)
+- Grant: slight flicker, probably the chequered cloth, worse with the white; suggest colours without
+  white. tools/make_colour_mockups.py: a real game screen with the window redrawn as 1 blue/cyan,
+  2 black/green, 3 blue/green, 4 red/yellow, 5 black/cyan, 6 magenta/cyan, and 1, 2, 4 with a 25%
+  dot cloth (a 50% checker shimmers when it scrolls a pixel at a time - one-bit-art rule 16).
+  docs/design/colours.png. Waiting on Grant's pick.
