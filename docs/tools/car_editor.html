@@ -88,6 +88,7 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
         <button id="copy">Copy art for Claude</button>
         <button id="load">Load pasted art</button>
         <button id="reset">Reset all to the game's art</button>
+        <button id="older" hidden>Bring back my earlier draft</button>
       </div>
       <div class="status" id="status" role="status"></div>
       <textarea id="text" aria-label="Car art as text" spellcheck="false"></textarea>
@@ -105,7 +106,20 @@ const CARS = [
   { name: 'PINK',  mark: 'grille slot',       col: '#d700d7' },
   { name: 'WHITE', mark: 'sunroof',           col: '#d7d7d7' }];
 const HEADS = ['Up (0°)', '22½°', '45°'];
-const KEY = 'breakfastrun-car-art-v1';
+// A saved drawing belongs to the game art it started from: when the game's art
+// changes, the editor opens on the new art, and older drafts stay available.
+const SIG = (() => { let h = 5381; const t = JSON.stringify(GAME); for (let i = 0; i < t.length; i++) h = (h * 33 + t.charCodeAt(i)) >>> 0; return h.toString(36) })();
+const KEY = 'breakfastrun-car-art-' + SIG;
+function olderDraft() {
+  try {
+    let best = null;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('breakfastrun-car-art-') && k !== KEY) { const d = JSON.parse(localStorage.getItem(k)); if (valid(d)) best = d }
+    }
+    return best;
+  } catch (e) { return null }
+}
 const clone = a => a.map(c => c.map(g => g.map(r => r.split(''))));
 let art = clone(GAME), car = 0, head = 0, tool = 'X', mirror = false, undo = [];
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (valid(s)) art = s; } catch (e) {}
@@ -244,6 +258,13 @@ function refresh(full = true) {
   undoBtn.disabled = !undo.length;
 }
 const undoBtn = document.getElementById('undo');
+const olderBtn = document.getElementById('older');
+if (olderDraft()) olderBtn.hidden = false;
+olderBtn.onclick = () => {
+  const d = olderDraft(); if (!d) return say('No earlier draft in this browser.', true);
+  undo = []; art = d; save(); refresh(); text.value = toText();
+  say('Your earlier draft is back. Copy it for Claude if it has drawings you want to keep.');
+};
 text.value = toText();
 // a link can open on one car: #you, #cyan, #green, #pink, #white (or #car-1 .. #car-5)
 function fromHash() {

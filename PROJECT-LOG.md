@@ -415,3 +415,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant: flags smaller to fit in better. Now a 6x6 square of 2x2 checks on a 4-px pole, 2 px clear
   of the face, centred on the place. Test updated. drive_test RESULT: PASS.
   docs/design/panel_flags_small.png.
+
+## 2026-11-10 06:38 SAST - car editor opens on the game's art
+- Grant: put the graphics in the editor as they are in the game. Drafts are now saved per version of
+  the game's art (key = hash of it), so a new game version opens on its own art; older drafts stay in
+  the browser behind 'Bring back my earlier draft'. Checked in headless Chromium with a stale draft:
+  opens on the game art, button shown, draft restored, no errors.
