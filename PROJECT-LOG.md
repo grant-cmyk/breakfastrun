@@ -651,3 +651,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   mock-ups draw him from there. His later 'updated' version came as an image only (not saved
   as a file): waiting for it as pasted text. The live editor is left as it is, so his draft in
   that browser is not set aside.
+- Grant: the NOS to edit too. Editor Faces mode: a seventh picture, NOS (black on a white slot;
+  link #nos); kept in tools/face_art.txt. 'Bring back my earlier draft' now also brings back face
+  drafts made on older game art (the newest kind; pictures it lacks come from the game) - tested
+  in Chromium - so Grant's updated crew chief, drawn on the last version, can be restored.

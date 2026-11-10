@@ -15,7 +15,7 @@ art = [[rows(g) for g in ns['all_frames'][k][:3]] for k in range(5)]
 fsrc = open(os.path.join(HERE, 'make_faces.py')).read()
 fns = {'__file__': os.path.join(HERE, 'make_faces.py')}
 exec(fsrc[:fsrc.index('ORDER = ')], fns)                   # the drivers' faces, without writing them
-faces = [[r.replace('#', 'X') for r in fns['F'][n]] for n in ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE', 'CREW']]   # (+ the pit crew chief)
+faces = [[r.replace('#', 'X') for r in fns['F'][n]] for n in ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE', 'CREW', 'NOS']]   # (+ the crew chief, the NOS)
 docs = os.path.join(HERE, '..', 'docs', 'tools')
 page = open(os.path.join(docs, 'car_editor.template.html')).read().replace('__ART__', json.dumps(art, separators=(',', ':'))).replace('__FACES__', json.dumps(faces, separators=(',', ':')))
 open(os.path.join(docs, 'car_editor.html'), 'w').write(page); print('ok')
