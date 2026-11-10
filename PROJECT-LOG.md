@@ -527,3 +527,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 
 ## 2026-11-10 08:50 SAST - Jane's angled headings accepted
 - Grant: "good enough" - her hand-placed 22.5 and 45 degree drawings stay as they are.
+
+## 2026-11-10 SAST - best lap clear of the clock
+- Grant: the best time looked cut off ("d2.8": the clock's right edge ran into the 1). st_text_x
+  takes a start offset; the best lap now starts 2 px right of the clock (14 px of text + 2 = 16,
+  still two columns). docs/design/best_lap_panel.png. drive_test RESULT: PASS (start 16.5/s).

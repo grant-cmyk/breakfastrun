@@ -375,6 +375,7 @@ ST_ACC  equ BUFC+44             ; small text: the row being built (2)
 ST_X    equ BUFC+46             ;   where the next character goes
 ST_T    equ BUFC+47             ;   the text (2)
 ST_COL  equ BUFC+49             ;   its byte column
+ST_X0   equ BUFC+50             ;   where the first character goes (pixels)
 gaps_reset:                     ; a new race: nothing noted, nothing shown
         ld hl,CP_G
         ld b,8
@@ -487,10 +488,15 @@ best_panel:                     ; under the racers: a clock and the best lap
         ld hl,time_txt+2
         ld b,(TOWER_Y+2*NCARS)*8+1
         ld c,26
+        ld a,2                  ; 2 px clear of the clock (Grant: it read "d2.8")
+        jr st_text_x
 ; ST_TEXT: HL = text (digits, '.', ' '), B = top pixel row, C = byte column:
 ; the text in the small font (3 x 5, 4 px a digit), 5 rows x 2 bytes, written
 ; over what was there - so more numbers fit (Grant, 10 Nov 2026)
-st_text:
+st_text:                        ; (st_text_x: A = pixels in from the left)
+        xor a
+st_text_x:
+        ld (ST_X0),a
         ld (ST_T),hl
         ld a,c
         ld (ST_COL),a
@@ -499,7 +505,7 @@ st_r:
         push bc
         ld hl,0
         ld (ST_ACC),hl
-        xor a
+        ld a,(ST_X0)
         ld (ST_X),a
         ld hl,(ST_T)
 st_ch:
