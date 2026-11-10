@@ -5,7 +5,9 @@ around the map, like the corners"). Renders the real map (world.asm and
 topdata.asm as built) through the 176 x 120 window, blue ink on cyan.
 Writes docs/design/road_options.png, and (Grant: "the dotted effect ... less
 visible in the road area") docs/design/road_dots_options.png, and (Grant: "the dots on the road area
-specifically ... much lighter") docs/design/road_light_options.png."""
+specifically ... much lighter") docs/design/road_light_options.png; and the lighter cloths the engine draws at no
+extra cost (each line one 64-px pattern, even and odd lines their own):
+docs/design/cloth_free_options.png."""
 import os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -124,4 +126,28 @@ for i, (tag, what, dd) in enumerate(OPTS4):
     full = np.where(ink[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
     sheet.paste(Image.fromarray(full).resize((W // 2, H // 2), Image.BOX), (ox, 32 + len(VIEWS) * (ch + 12) + 8))
 out = os.path.join(ROOT, 'docs', 'design', 'road_h_build.png')
+sheet.save(out); print('wrote', os.path.normpath(out))
+
+# ---- lighter everywhere, at no cost: the cloth is stamped line by line from two
+# patterns (one for even lines, one for odd), so only line-pair patterns are free
+f1 = dark & (xx % 4 == 0) & (yy % 2 == 0)                                   # 1 in 8: even lines, every 4th pixel
+f2 = dark & (((xx % 8 == 0) & (yy % 2 == 0)) | ((xx % 8 == 4) & (yy % 2 == 1)))   # 1 in 8, odd lines offset
+f3 = dark & (xx % 8 == 0) & (yy % 2 == 0)                                   # 1 in 16
+OPTS5 = [('NOW', 'dots 1 in 4 everywhere', d25),
+         ('J', '1 in 8 (even lines, every 4th pixel)', f1),
+         ('K', '1 in 8 (every line, staggered)', f2),
+         ('L', '1 in 16 (even lines, every 8th pixel)', f3)]
+sheet = Image.new('RGB', (len(OPTS5) * (cw + 16) + 16, 40 + len(VIEWS) * (ch + 12) + 12 + H // 2 + 20), (17, 18, 22))
+d = ImageDraw.Draw(sheet)
+for i, (tag, what, dd) in enumerate(OPTS5):
+    ink = world.astype(bool) | (dd & ~wmask)
+    ox = 16 + i * (cw + 16)
+    d.text((ox, 10), tag + ': ' + what, fill=(236, 235, 230), font=fnt)
+    for j, (vx, vy) in enumerate(VIEWS):
+        win = ink[vy:vy + 120, vx:vx + 176]
+        rgb = np.where(win[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
+        sheet.paste(Image.fromarray(rgb).resize((cw, ch), Image.NEAREST), (ox, 32 + j * (ch + 12)))
+    full = np.where(ink[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
+    sheet.paste(Image.fromarray(full).resize((W // 2, H // 2), Image.BOX), (ox, 32 + len(VIEWS) * (ch + 12) + 8))
+out = os.path.join(ROOT, 'docs', 'design', 'cloth_free_options.png')
 sheet.save(out); print('wrote', os.path.normpath(out))

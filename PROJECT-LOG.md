@@ -596,3 +596,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   straight (44 runs): 11.0 pictures/s off the start (was 16.5); lap work 275k T a picture (was 199k;
   3 frames = 209.7k), pictures mostly 4-5 frames. An optimised pass would still cost ~20k T, more
   than the ~10k of headroom. Kept on branch trial-road-h, not merged. Main unchanged.
+- Grant asked why H is slower when it has fewer dots. The cloth is stamped line by line from one
+  repeating pattern (a blank costs the same as a dot); the road is a different shape on every line,
+  so H adds a second job that finds it and rubs the dots out byte by byte. Free lighter cloths (one
+  pattern for even lines, one for odd): docs/design/cloth_free_options.png J, K, L - all read as
+  vertical stripes; the even, staggered look (F) needs a 4-line pattern, a small engine change.
