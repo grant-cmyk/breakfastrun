@@ -36,7 +36,18 @@ you_grip:
         add a,16
         call trig
         ld (yg_c),bc
+        ld bc,(yg_s)            ; and as signed bytes /64, for the small multiplies
+        call t6
+        ld (yg_s6),a
+        ld bc,(yg_c)
+        call t6
+        ld (yg_c6),a
 yg_tok:
+        ld hl,yg_rs             ; every 32 frames: work (vf, vs) out afresh from
+        inc (hl)                ; the world speed, so the small multiplies' rounding
+        ld a,(hl)               ; never builds up
+        and 31
+        jp z,yg_derive
         ld l,(ix+C_VX)          ; the world speed changed outside? (a bump, an
         ld h,(ix+C_VX+1)        ; O, the edge, a test)
         ld de,(yg_vx)
@@ -113,6 +124,10 @@ yg_left:                        ; heading -1 step: vf' = vf C - vs S, vs' = vs C
 yg_forces:
         ld a,(ix+C_ANG)
         ld (yg_ang),a
+        ld hl,(yg_vf)           ; where the forces start from: the world speed
+        ld (yg_f0),hl           ; changes by what they change
+        ld hl,(yg_vs)
+        ld (yg_s0),hl
         ; ---- the engine and drag: forwards only ----
         ld hl,(yg_vf)
         ld de,G_PUSH
@@ -208,7 +223,11 @@ yg_g3:
         inc a
 yg_g4:
         ld (snd_skid),a
-        ; ---- never faster than the top speed: vf gives way ----
+        ; ---- never faster than the top speed: vf gives way (only in a slide:
+        ;      gripping, the push and drag hold vf at the top speed) ----
+        ld a,(yg_sl)
+        or a
+        jp z,yg_world
         ld hl,(yg_vf)           ; m = larger of |vf|, |vs| + half the smaller
         call abs_hl
         push hl
@@ -250,56 +269,116 @@ yg_c3:
         ld hl,0
 yg_c4:
         ld (yg_vf),hl
-yg_world:                       ; vx = vf sin + vs cos, vy = vs sin - vf cos
-        ld hl,(yg_vf)           ; nothing changed since last frame (straight on
-        ld de,(yg_pvf)          ; at a steady speed): the world speed stands
+yg_world:                       ; the world speed += dF along the heading + dS across
+        ld hl,(yg_vf)           ; it: small numbers, so the quick multiply (mul8s);
+        ld de,(yg_f0)           ; a big change (NOS, the top-speed cap) or a fresh
+        or a                    ; start: the full sum (yg_w2)
+        sbc hl,de
+        call yg_byte
+        jp nz,yg_w2
+        ld (yg_df),a
+        ld hl,(yg_vs)
+        ld de,(yg_s0)
         or a
         sbc hl,de
-        jr nz,yg_w1
-        ld hl,(yg_vs)
-        ld de,(yg_pvs)
-        or a
-        sbc hl,de
-        jr nz,yg_w1
-        ld a,(ix+C_ANG)
-        ld hl,yg_pang
-        cp (hl)
-        jr nz,yg_w1
-        ld hl,(yg_vx)
-        ld (ix+C_VX),l
-        ld (ix+C_VX+1),h
-        ld hl,(yg_vy)
-        ld (ix+C_VY),l
-        ld (ix+C_VY+1),h
-        ret
-yg_w1:
-        ld hl,(yg_vf)
-        ld (yg_pvf),hl
-        ld hl,(yg_vs)
-        ld (yg_pvs),hl
-        ld a,(ix+C_ANG)
-        ld (yg_pang),a
-        ld a,h                  ; gripping (no sideways speed): two multiplies
-        or l
-        jr nz,yg_w2
-        ld hl,(yg_vf)
-        ld bc,(yg_s)
-        call smul
+        call yg_byte
+        jp nz,yg_w2
+        ld (yg_ds),a
+        ld a,(yg_rs)            ; (a fresh start this frame: the full sum)
+        and 31
+        jp z,yg_w2
+        ld a,(yg_df)            ; vx += dF sin + dS cos
+        ld b,a
+        ld a,(yg_s6)
+        ld c,a
+        call yg_m64
+        push hl
+        ld a,(yg_ds)
+        ld b,a
+        ld a,(yg_c6)
+        ld c,a
+        call yg_m64
+        pop de
+        add hl,de
+        ld e,(ix+C_VX)
+        ld d,(ix+C_VX+1)
+        add hl,de
         ld (ix+C_VX),l
         ld (ix+C_VX+1),h
         ld (yg_vx),hl
-        ld hl,(yg_vf)
-        ld bc,(yg_c)
-        call smul
+        ld a,(yg_ds)            ; vy += dS sin - dF cos
+        ld b,a
+        ld a,(yg_s6)
+        ld c,a
+        call yg_m64
+        push hl
+        ld a,(yg_df)
+        ld b,a
+        ld a,(yg_c6)
+        ld c,a
+        call yg_m64
+        pop de
         ex de,hl
-        ld hl,0
         or a
         sbc hl,de
+        ld e,(ix+C_VY)
+        ld d,(ix+C_VY+1)
+        add hl,de
         ld (ix+C_VY),l
         ld (ix+C_VY+1),h
         ld (yg_vy),hl
         ret
-yg_w2:
+yg_byte:                        ; HL in -63..63?  Z and A = L; else NZ
+        ld a,h
+        or a
+        jr z,yb_pos
+        inc a                   ; H = FF?
+        jr nz,yb_no
+        ld a,l
+        cp 0xC1                 ; -63 or above
+        jr c,yb_no
+        xor a                   ; Z
+        ld a,l
+        ret
+yb_pos:
+        ld a,l
+        cp 64
+        jr nc,yb_no
+        cp a                    ; Z (A kept)
+        ret
+yb_no:
+        or 1                    ; NZ
+        ret
+yg_m64:                         ; HL = B x C / 64, rounded (B, C signed bytes)
+        ld a,b
+        or a
+        jr z,ym_0
+        ld a,c
+        or a
+        jr z,ym_0
+        call mul8s
+        ld de,32
+        add hl,de
+        add hl,hl
+        add hl,hl
+        ld l,h                  ; / 64: the top byte of x 4
+        ld a,h
+        rla
+        sbc a,a
+        ld h,a
+        ret
+ym_0:
+        ld hl,0
+        ret
+t6:                             ; BC (C = |x| / 128, B = sign) -> A = x / 64, signed
+        ld a,c
+        inc a
+        srl a
+        dec b
+        ret nz                  ; (B was 0: positive)
+        neg
+        ret
+yg_w2:                          ; the full sum: vx = vf sin + vs cos, vy = vs sin - vf cos
         ld hl,(yg_vf)
         ld bc,(yg_s)
         call smul

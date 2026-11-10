@@ -358,6 +358,9 @@ ph_nl:
         and 63
         ld (ix+C_ANG),a
 ph_nr:
+        ld a,(ix+C_KIND)        ; you: no push here (the grip model has its own)
+        or a
+        jp z,ph_push_set
         push de
         ld a,(ix+C_ANG)         ; BC, DE = push for the way the car faces
         call heading_push
@@ -1257,6 +1260,8 @@ o_check:
         srl h
         rr l
         ld b,l                  ; B = first tile row
+        call oc_quick           ; (almost always: no O in the 4 tiles - done)
+        ret nc
         call oc_try
         ret c
         inc c
@@ -1266,6 +1271,72 @@ o_check:
         call oc_try
         ret c
         dec c
+        jr oc_try               ; (the fourth tile: oc_quick sits between)
+; OC_QUICK: any O in tiles (C, B), (C+1, B), (C, B+1), (C+1, B+1)? CY = maybe (then
+; the full check), NC = none. Both columns' bits read at once with a 2-bit mask
+; across the byte pair (most checks end here: ~250 T, against ~1,900 for four
+; oc_try's - Grant's speed pass, 10 Nov 2026). The car stays inside the world, so
+; the tiles are inside the map (a mask over a row's end reads the next row's
+; first byte: at worst a needless full check).
+oc_quick:
+        ld l,b                  ; HL = omap + row * 9 + column / 8
+        ld h,0
+        ld e,l
+        ld d,h
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,de
+        ld a,c
+        rrca
+        rrca
+        rrca
+        and 31
+        ld e,a
+        add hl,de
+        ld de,omap
+        add hl,de
+        ld a,c                  ; DE = the 2-bit mask for columns C, C+1
+        and 7
+        add a,a
+        add a,oq_mask AND 255
+        ld e,a
+        ld a,0
+        adc a,oq_mask/256
+        ld d,a
+        ld a,(de)
+        inc de
+        push af                 ; (A' would do, but the cloth fill owns it)
+        ld a,(de)
+        ld e,a                  ; E = the mask's right byte, D = its left byte
+        pop af
+        ld d,a
+        ld a,(hl)               ; row B: the left byte, the right byte
+        and d
+        jr nz,oq_maybe
+        inc hl
+        ld a,(hl)
+        and e
+        jr nz,oq_maybe
+        ld a,l                  ; row B+1: 9 bytes on from each (here: the
+        add a,9                 ; right byte, then back one for the left)
+        ld l,a
+        jr nc,oq_1
+        inc h
+oq_1:
+        ld a,(hl)               ; (the right byte)
+        and e
+        jr nz,oq_maybe
+        dec hl
+        ld a,(hl)               ; (the left byte)
+        and d
+        ret z                   ; (NC: none)
+oq_maybe:
+        scf
+        ret
+oq_mask:                        ; column C AND 7 -> left byte, right byte
+        db 0xC0,0x00, 0x60,0x00, 0x30,0x00, 0x18,0x00, 0x0C,0x00, 0x06,0x00, 0x03,0x00, 0x01,0x80
+
 oc_try:                         ; tile (C, B): an O, close enough? CY = bounced
         push bc
         ld a,b                  ; byte = omap + row * 9 + column / 8
@@ -1958,8 +2029,10 @@ dc_f1:
         ld a,(dc_count)
 dc_loop:
         ld (dc_n),a
-        ld a,(de)               ; mask byte
-        inc de
+        ld a,(de)               ; mask byte (0: nothing in this byte - skip it
+        inc de                  ; and its ink: 14 in 100 of the big cars' bytes)
+        or a
+        jr z,dc_e0
         ld c,a
         ld a,(bc)               ;   cut the hole: column k ...
         cpl
@@ -1983,8 +2056,15 @@ dc_loop:
         or (hl)
         ld (hl),a
         inc l                   ; on to the next byte
-        ld a,(de)               ; mask byte
-        inc de
+        jr dc_e0_x
+dc_e0:
+        inc de                  ; (its ink byte)
+        inc l
+dc_e0_x:
+        ld a,(de)               ; mask byte (0: nothing in this byte - skip it
+        inc de                  ; and its ink: 14 in 100 of the big cars' bytes)
+        or a
+        jr z,dc_e1
         ld c,a
         ld a,(bc)               ;   cut the hole: column k ...
         cpl
@@ -2008,8 +2088,15 @@ dc_loop:
         or (hl)
         ld (hl),a
         inc l                   ; on to the next byte
-        ld a,(de)               ; mask byte
-        inc de
+        jr dc_e1_x
+dc_e1:
+        inc de                  ; (its ink byte)
+        inc l
+dc_e1_x:
+        ld a,(de)               ; mask byte (0: nothing in this byte - skip it
+        inc de                  ; and its ink: 14 in 100 of the big cars' bytes)
+        or a
+        jr z,dc_e2
         ld c,a
         ld a,(bc)               ;   cut the hole: column k ...
         cpl
@@ -2034,6 +2121,12 @@ dc_loop:
         ld (hl),a
         dec l                   ; back to the row's first byte
         dec l
+        jr dc_e2_x
+dc_e2:
+        inc de                  ; (its ink byte)
+        dec l
+        dec l
+dc_e2_x:
         inc h                   ; next pixel row down (screen layout)
         ld a,h
         and 7
@@ -3034,6 +3127,13 @@ yg_t1:       dw 0               ;   the turn's four products
 yg_t2:       dw 0
 yg_t3:       dw 0
 yg_t4:       dw 0
+yg_s6:       db 0               ;   sin, cos / 64 as signed bytes (the small multiplies)
+yg_c6:       db 0
+yg_rs:       db 0               ;   frames, for the fresh start every 32
+yg_f0:       dw 0               ;   vf, vs before this frame's forces
+yg_s0:       dw 0
+yg_df:       db 0               ;   their changes, as bytes
+yg_ds:       db 0
 yg_tang:     db 0               ;   heading + 1 the sine/cosine are for (0: none)
 yg_pvf:      dw 0               ;   vf, vs, heading the world speed was made from
 yg_pvs:      dw 0
