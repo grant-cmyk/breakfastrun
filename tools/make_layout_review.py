@@ -81,15 +81,15 @@ if __name__ == '__main__':
             b[168 + j, 168 + i] = cf[j][i] == 'X'
     cells(a, 1, 21, 2, 2, 0x57); cells(a, 21, 21, 2, 2, 0x4F)
     b[160:192, 32:80] = strip[:, 32:80]; a[20:24, 4:10] = attrs[20:24, 4:10]   # the inventory, as now
-    bx0, bx1, by0, by1 = 88, 160, 161, 182      # (it fills its cells: rows 20-22)                                      # the bubble, reaching the chief
-    b[by0:by1 + 1, bx0:bx1 + 1] = 0
+    bx0, bx1, by0, by1 = 88, 166, 161, 182      # (it fills its cells: rows 20-22, columns 11-20)
+    b[by0:by1 + 1, bx0:bx1 + 2] = 0
     b[by0, bx0 + 2:bx1 - 1] = 1; b[by1, bx0 + 2:bx1 - 1] = 1; b[by0 + 2:by1 - 1, bx0] = 1; b[by0 + 2:by1 - 1, bx1] = 1
     for (x, y) in [(bx0 + 1, by0 + 1), (bx1 - 1, by0 + 1), (bx0 + 1, by1 - 1), (bx1 - 1, by1 - 1)]: b[y, x] = 1
-    b[168:176, bx1 + 1:bx1 + 6] = 0
-    for k in range(4): b[169 + k, bx1 + 1 + k] = 1; b[174 - k, bx1 + 1 + k] = 1
-    b[162:182, 90:150] |= strip[8:28, 90:150]                                   # the words, as now
+    b[170:178, bx1] = 0                          # the tail: the edge opens, and a white point goes
+    for k, w in enumerate([1, 2, 3, 4, 4, 3, 2, 1]):   # into the chief's blue panel (white ink there)
+        b[170 + k, 168:168 + w] = 1
+    b[162:182, 95:155] |= strip[8:28, 90:150]               # (moved 5 px: centred in the wider bubble)                                   # the words, as now
     cells(a, 11, 20, 10, 3, 0x78)
-    b[160:192, 184:192] = 0
     now2 = render(b, a)
     now2.save(os.path.join(out, 'layout_proposed.png'))
     print('wrote layout_now.png, layout_proposed.png')
