@@ -237,19 +237,19 @@ with Racer(headless=True) as sp:
     check(best.startswith('BEST 1') and best[10:15].strip() in ('CYAN', 'GREEN', 'PINK', 'WHITE') and best[16:19] == 'LAP',
           'the best lap shows its time, the car that set it and the lap')
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
-    # the four computer cars are in by now: each has a flag beside its face (column 30), and the face
-    # itself is untouched (columns 28-29 match the face data)
+    # the four computer cars are in by now: each has a flag beside its face (column 31), and the face
+    # itself is untouched (columns 29-30 match the face data)
     faces = [int(v, 2) for l in open(os.path.join(ROOT, 'src', 'faces.asm')) if 'defb' in l for v in l.split('defb')[1].replace('%', '').split(',')]
     def cellrows(row, col):
         return [sp.read8(0x4000 | ((row & 0x18) << 8) | ((row & 7) << 5) | col | (k << 8)) for k in range(8)]
     ok_flags = ok_faces = True
     for i in range(4):
         r = 5 + 2 * i
-        flag = cellrows(r, 30) + cellrows(r + 1, 30)
-        ok_flags &= flag[4:12] == [0xE6, 0xE6, 0x98, 0x98, 0xE6, 0xE6, 0x80, 0x80]
+        flag = cellrows(r, 31) + cellrows(r + 1, 31)
+        ok_flags &= flag == [0, 0, 0xCC, 0xCC, 0x33, 0x33, 0xCC, 0xCC, 0x33, 0x33, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]
         cn = sp.read8(SYM['order'] + i)
         want = faces[cn * 32:cn * 32 + 32]
-        got = [b for k in range(2) for pair in zip(cellrows(r + k, 28), cellrows(r + k, 29)) for b in pair]
+        got = [b for k in range(2) for pair in zip(cellrows(r + k, 29), cellrows(r + k, 30)) for b in pair]
         ok_faces &= got == want
     check(ok_flags and ok_faces, 'finished cars: a chequered flag beside the face, and the face intact')
     check(g(sp, 'race_time') > 50 * 85, 'the race clock is running (%.1f s)' % (g(sp, 'race_time') / 50))

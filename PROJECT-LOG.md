@@ -398,3 +398,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   drawn from the flag's bytes. Fixed with an explicit JR. New test: every finished car shows the
   flag and its face matches the face data byte for byte. drive_test RESULT: PASS.
   docs/design/flags_fixed.png.
+
+## 2026-11-10 06:30 SAST - faces spaced from the cars; clearer flag
+- Grant: faces too close to the cars; and the flag read as a glitch. Face now at panel columns
+  29-30 (column 28 a gap), flag at 31, redrawn as a square of 2x2 checks on a pole (8 x 14).
+  Test checks the flag bytes and the faces. drive_test RESULT: PASS. docs/design/panel_spaced.png.

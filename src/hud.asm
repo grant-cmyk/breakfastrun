@@ -490,7 +490,8 @@ ho_down:
 
 ; ---------------------------------------------------------------------
 ; THE RACE ORDER (the tower): rows TOWER_Y.. of the panel, 2 rows a place:
-; the place, the car, its driver's face, and a flag when it is in
+; the place (25), the car (26-27), a gap, its driver's face (29-30), and a
+; flag when it is in (31)
 ; ---------------------------------------------------------------------
 tower_update:                   ; redraw the first place whose car changed
         ld b,0                  ; (one a picture at most: no spikes)
@@ -621,17 +622,17 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ret z
         ld a,(tr_row)
         ld b,a
-        ld c,30
+        ld c,31
         ld de,flag_top
         call tr_glyph
         ld a,(tr_row)
         inc a
         ld b,a
-        ld c,30
+        ld c,31
         ld de,flag_bot
         jr tr_glyph             ; (not falling through: tr_face is in between)
-tr_face:                        ; 8 rows x 2 bytes at DE into cells B, 28-29
-        ld c,28
+tr_face:                        ; 8 rows x 2 bytes at DE into cells B, 29-30
+        ld c,29                 ; (column 28 left clear: a gap after the car)
         call cell_addr
         ld b,8
 tf_row:
@@ -656,12 +657,15 @@ tg_row:
         inc h
         djnz tg_row
         ret
-flag_top:                       ; the flag, 8 x 8, centred on the 2 cell rows:
-        db 0,0,0,0              ; a pole, and 2 x 2 checks
-        db %11100110,%11100110,%10011000,%10011000
+flag_top:                       ; the chequered flag: a square of 2 x 2 checks
+        db 0,0                  ; on a pole, 8 wide and 14 tall, centred on the
+        db %11001100,%11001100  ; place's 2 cell rows
+        db %00110011,%00110011
+        db %11001100,%11001100
 flag_bot:
-        db %11100110,%11100110,%10000000,%10000000
-        db 0,0,0,0
+        db %00110011,%00110011
+        db %10000000,%10000000,%10000000,%10000000
+        db %10000000,%10000000
 tr_pic:                         ; 8 rows of the picture (ink only) into cell B, C
         call cell_addr
         ld b,8
