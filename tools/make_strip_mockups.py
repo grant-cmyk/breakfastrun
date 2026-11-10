@@ -5,7 +5,9 @@ overtake, "SUPERB LAP!", "GET IT TOGETHER" when you hit the O's) - spoken by you
 crew chief on the right (Grant: the messages come from the pits). Drawn on a real
 race screen (docs/design/mock_screen.bin, from the game) with the Spectrum's own colours
 and ROM letters. Writes docs/design/driver_strip.png; and (Grant: "a set of text that is smaller - like the
-numbers - to make more space") the same with 3 x 5 letters: docs/design/driver_strip_small.png."""
+numbers - to make more space") the same with 3 x 5 letters: docs/design/driver_strip_small.png; and (Grant: "on tv they show
+a mini graphic that looks like a sound wave") the radio wave, animated:
+docs/design/radio_wave.gif."""
 import os, re
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -136,3 +138,33 @@ d.text((16, 12), 'The driver strip with small letters (3 x 5, like the numbers):
 out.paste(full, (16, 36)); y = 36 + full.height + 24
 for s in strips: out.paste(s, (16, y)); y += s.height + 16
 o = os.path.join(ROOT, 'docs', 'design', 'driver_strip_small.png'); out.save(o); print('wrote', os.path.normpath(o))
+
+# ---- the radio wave, as TV shows team radio: bars about a mid line, moving while the
+# crew chief talks, then flat. Above the 3 lines of small letters.
+import random
+def strip_radio(lines, heights):
+    bits, attr = strip(())
+    x0 = 88
+    mid, n = 165, len(heights)
+    left = x0 + 1 + (62 - (n * 2 - 1)) // 2
+    for i, h in enumerate(heights):
+        bits[mid - h:mid + h + 1, left + i * 2] = 1
+    top = 171
+    for i, line in enumerate(lines):
+        w = len(line) * 4 - 1
+        stext(bits, line, x0 + 1 + (62 - w) // 2, top + i * 6)
+    return bits, attr
+random.seed(7)
+frames = []
+for f in range(16):                                 # talking: 12 pictures, then quiet
+    if f < 12:
+        hs = [random.choice((0, 1, 1, 2, 2, 3)) for _ in range(15)]
+        hs = [min(h, 1 + min(i, 14 - i)) for i, h in enumerate(hs)]   # taller in the middle
+    else:
+        hs = [0] * 15
+    img = render(*strip_radio(('PUSH! PUSH!', 'HE IS 0.4 AHEAD', ''), hs), 3).crop((0, 152 * 3, 196 * 3, 192 * 3))
+    frames.append(img)
+o = os.path.join(ROOT, 'docs', 'design', 'radio_wave.gif')
+frames[0].save(o, save_all=True, append_images=frames[1:], duration=[90] * 12 + [400] * 4, loop=0)
+print('wrote', os.path.normpath(o))
+frames[5].save(os.path.join(ROOT, 'docs', 'design', 'radio_wave_still.png'))

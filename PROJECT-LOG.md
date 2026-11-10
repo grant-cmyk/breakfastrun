@@ -655,3 +655,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   link #nos); kept in tools/face_art.txt. 'Bring back my earlier draft' now also brings back face
   drafts made on older game art (the newest kind; pictures it lacks come from the game) - tested
   in Chromium - so Grant's updated crew chief, drawn on the last version, can be restored.
+- Grant: more prompts ('PUSH! PUSH!' when 2nd and close to 1st); look up real pit-to-driver phrases;
+  a TV-style radio sound wave while a message comes in. Searched: 'box, box' (pit now) and the FIA's
+  2014 ban on 'push hard' / 'push now' confirmed; 'hammer time' (Hamilton's team) confirmed by one
+  glossary. Mock-up: the wave (15 bars about a mid line, moving while the chief talks, then flat)
+  above the small letters: docs/design/radio_wave.gif, radio_wave_still.png.
