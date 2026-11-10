@@ -30,6 +30,8 @@ BUFC    equ BUF+0x1260  ; race-order variables, in the buffer's unused bottom ro
         ; would give that code a stale first-pass value)
 cloth_pat equ BUFC+96    ; 4 kinds of dotted cloth line, 8 bytes each (32-aligned)
 CFT     equ BUFC+80     ; the 3 mini slots' loaders, check row 0 then 1 (12)
+snd_rate equ BUFC+149   ; engine in the interrupt: flips per 256 frames (0 quiet)
+snd_acc equ BUFC+150    ; ... its running count
 CFW_CR  equ BUFC+92     ; the check row (0 or 32) the mini slots hold; 0xFF: rewrite
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
@@ -1971,7 +1973,10 @@ copy_done:
 ; interrupt it was waiting for.
 ;   engine: one speaker flip per piece, the gap set by your speed: about
 ;           230 Hz rolling, 450 Hz flat out; silent before the start and
-;           after the finish
+;           after the finish. The loop rarely has time to spare now (10 Nov
+;           2026: 26 flips a second, measured), so the interrupt also flips
+;           the speaker 9-49 times a second by speed (isr): a putter that
+;           rises to a buzz, heard however busy the picture is
 ;   crash:  noise when your car hits another, for SND_CRASH pictures
 ; Port 254: bits 0-2 the border (yellow, 6), bits 3-4 the speaker.
 ; ---------------------------------------------------------------------
@@ -1985,6 +1990,7 @@ snd_picture:
 sp_1:
         xor a                   ; engine pitch: 0 = quiet
         ld (snd_gap),a
+        ld (snd_rate),a
         ld a,(race_on)
         or a
         ret z
@@ -2014,6 +2020,11 @@ sp_2:
         jr c,sp_3
         ld a,111
 sp_3:
+        ld b,a                  ; the interrupt's rate: 2 x speed + 30
+        add a,a
+        add a,30
+        ld (snd_rate),a
+        ld a,b
         neg                     ; gap = 150 - speed: faster, higher
         add a,150
         ld (snd_gap),a
@@ -2069,16 +2080,7 @@ sw_c2:
 ; byte (0xF3, -13), landing at 0xFFF4: a JP to isr. (0xFFF4.. is BASIC's
 ; user-graphics area, unused here.)
 ; ---------------------------------------------------------------------
-isr:
-        push af
-        push hl
-        ld hl,(FRAMES)
-        inc hl
-        ld (FRAMES),hl
-        pop hl
-        pop af
-        ei
-        ret
+; (isr: after strip.asm, out of the gap before sq4)
 
 ; ---------------------------------------------------------------------
 ; CLOTH_FILL: the tablecloth. Instead of clearing the back buffer to blank,
@@ -3046,6 +3048,27 @@ gd_2:
         include "gen_bumps.asm"
         include "clothmini2.asm"
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
+isr:
+        push af
+        push hl
+        ld hl,(FRAMES)
+        inc hl
+        ld (FRAMES),hl
+        ld hl,snd_rate          ; the engine: snd_rate/256 of a speaker flip
+        ld a,(hl)               ; every frame - 9 to 49 a second, so it is
+        inc hl                  ; heard however busy the loop is (snd_acc
+        add a,(hl)              ; follows snd_rate; a rate of 0 never carries)
+        ld (hl),a
+        jr nc,isr_q
+        ld a,(snd_port)
+        xor 24
+        ld (snd_port),a
+        out (254),a
+isr_q:
+        pop hl
+        pop af
+        ei
+        ret
 code_end:
 
 ; ---------------------------------------------------------------------
@@ -3060,37 +3083,34 @@ start_once:                     ; (start, from the start-up area)
         ld de,TOPMEM            ; out of the way: copied up there first,
         ld bc,high_end-high_src ; before the back buffer it loads into is used
         ldir
-        ld hl,bufa_src          ; and into the buffer's unused bottom rows
+        ; and into the buffer's unused bottom rows: the blocks sit back to back,
+        ; so HL runs on from one into the next (checked at the end)
         ld de,BUFA
         ld bc,bufa_end-bufa_src
         ldir
-        ld hl,bufb_src
         ld de,BUFB
         ld bc,bufb_end-bufb_src
         ldir
-        ld hl,bufd_src
         ld de,BUFD
         ld bc,bufd_end-bufd_src
         ldir
-        ld hl,bufg_src
-        ld de,BUFG
-        ld bc,bufg_end-bufg_src
-        ldir
-        ld hl,bufe_src
-        ld de,BUFE
-        ld bc,bufe_end-bufe_src
-        ldir
-        ld hl,buff_src
         ld de,BUFF
         ld bc,buff_end-buff_src
         ldir
-        ld hl,bufh_src
         ld de,BUFH
         ld bc,bufh_end-bufh_src
+        ldir
+        ld de,BUFG
+        ld bc,bufg_end-bufg_src
+        ldir
+        ld de,BUFE
+        ld bc,bufe_end-bufe_src
         ldir
         call make_tables
         call make_copier        ; the program writes its own copy routine
         call screen_once        ; everything on the screen that never changes
+        xor a                   ; the engine quiet until the first picture
+        ld (snd_rate),a
         call im2_on
         jp new_race
 
@@ -3581,6 +3601,9 @@ faces     equ BUFA + faces_src - bufa_src
         endif
         if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161 + (bufg_end - bufg_src) / 161 + (bufe_end - bufe_src) / 161 + (buff_end - buff_src) / 161 + (bufh_end - bufh_src) / 161
         .error a block for the buffer's bottom rows is over 160 bytes
+        endif
+        if (bufa_src - high_end) + (bufb_src - bufa_end) + (bufd_src - bufb_end) + (buff_src - bufd_end) + (bufh_src - buff_end) + (bufg_src - bufh_end) + (bufe_src - bufg_end)
+        .error start_once copies the blocks back to back: keep them in this order
         endif
         if init_end > BUFA
         .error the start-up area runs into where the buffer blocks are copied

@@ -770,3 +770,19 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   5 x 7 plate stamped upright into every heading of each car's 16 x 16 pictures at build time -
   no cost in the game. docs/design/car_numbers.png: A dark number on a light plate, B light on
   dark; A reads better at real size; on Jane's slim car the plate covers most of the body.
+
+## 2026-11-10 SAST - the engine can be heard again
+- Grant: "change the settings so that I can hear". Measured on the real ROM: the engine played only
+  in the time the loop spends waiting for its next picture, and the game now has almost none - 130
+  speaker flips in 5 s of racing (about 26 a second: faint ticks, not the 230-450 Hz note designed).
+- Fix: the interrupt (50 a second) also flips the speaker, snd_rate/256 of a flip a frame, the rate
+  2 x speed + 30: 9 to 49 flips a second, a putter rising to a buzz however busy the picture is. The
+  spare-time note and the crash noise stay. Measured flat out on the start straight: 45 interrupt
+  flips a second plus ~170 spare-time ones. snd_rate / snd_acc in BUFC+149/150.
+- Room for it: the interrupt routine moved out of the gap before sq4 (after strip.asm); start_once's
+  eight block copies now run back to back (HL carries on; an assembler check keeps the order) - 21
+  bytes saved. Spare now: 6 bytes low memory, 6 in the start-up area.
+- Lap work 212.3k T a picture (was 211.0k; the interrupt adds ~70 T a frame); frames {2:14, 3:170,
+  4:49, 5:1}. drive_test PASS, nos_test PASS.
+- tools/record_sound.py records the speaker writes from the emulator to docs/design/engine_sound.wav
+  (14 s: the lights, the run off, the straight flat out, a crash) - the sound heard without the tape.
