@@ -425,3 +425,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 ## 2026-11-10 06:41 SAST - CYAN redrawn by Grant
 - Editor paste (now starting from the game's art): one drawing changed, CYAN heading 0 (24 pixels).
   22.5 and 45 rebuilt from it (sampled 16x a pixel; 45 symmetric). drive_test RESULT: PASS.
+
+## 2026-11-10 07:05 SAST - PINK redrawn by Grant (a tracked car)
+- Editor paste: one drawing changed, PINK heading 0 (86 pixels): tracks with treads, a round cockpit,
+  a barrel. Turned by sampling, the treads went to mush (one-bit-art T1), so 22.5 and 45 were rebuilt
+  from its key shapes (tracks as two rails, body, cockpit ring, barrel). tools/turn_car.py added for
+  the sampled drafts. docs/design/pink_headings.png. drive_test RESULT: PASS.
