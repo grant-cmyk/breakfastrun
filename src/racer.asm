@@ -407,6 +407,18 @@ ph_push_set:
 ph_surf_kept:
         ld a,(ix+C_FSH)
         ld (fshift),a
+        ld a,(ix+C_KIND)        ; you: the grip model works out your speed
+        or a                    ; (grip.asm); below only moves the car - no
+        jr nz,ph_cpu            ; push here, and no friction (fshift 0)
+        call you_grip
+        xor a
+        ld (fshift),a
+        ld d,a
+        ld e,a
+        ld b,a
+        ld c,a
+        jr ph_nb
+ph_cpu:
         call skid               ; fast and turning: it slides (DE, BC, fshift)
         ld a,(ix+C_KIND)        ; NOS: you, twice the push (so twice the top
         or a                    ; speed while it burns)
@@ -533,18 +545,10 @@ ph_yok:
 ; frame, then 1/64 - a long slide (Grant asked for more). No multiplying; only while
 ; turning fast.
 ; ---------------------------------------------------------------------
-SKID_V    equ 160               ; you: slides from 0.625 px a frame (top speed 1.75)
 SKID_VC   equ 256               ; the computer cars: from 1.0 px a frame, as before
 SKID_STEP equ 64                ; and more for each 0.25 faster (Grant: more skid)
 SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
-SKID_HOLD equ 25                ; you: a slide goes on this many frames after you let
-                                ; go of the steering (Grant, 10 Nov 2026: "turns very
-                                ; sharply but does not actually skid" - the grip came
-                                ; back the moment you let go, so the car never slid)
-skid:
-        ld a,(ix+C_KIND)
-        or a
-        jr z,skid_you
+skid:                           ; (the computer cars: you have the grip model)
         ld a,(ix+C_CTRL)        ; a computer car: only while turning fast
         and CT_L+CT_R
         ret z
@@ -566,63 +570,6 @@ skc_lv:
         ret c
         dec a
         jr nz,skc_lv
-        ret
-skid_you:                       ; you: turning fast starts a slide (1-3 steps by
-        ld a,(ix+C_CTRL)        ; speed), and it goes on SKID_HOLD frames after
-        and CT_L+CT_R           ; you let go - the car carries on the way it was
-        jr z,sy_free            ; going while it points into the corner
-        call sk_speed
-        push de
-        ld de,SKID_V
-        or a
-        sbc hl,de
-        pop de
-        jr c,sy_grip            ; slow: it grips
-        ld a,1
-sy_lv:
-        cp SKID_N
-        jr nc,sy_set
-        push de
-        ld de,SKID_STEP
-        or a
-        sbc hl,de
-        pop de
-        jr c,sy_set
-        inc a
-        jr sy_lv
-sy_set:
-        ld (snd_skid),a
-        ld a,SKID_HOLD
-        ld (skid_t),a
-        jr sy_apply
-sy_free:
-        ld a,(skid_t)           ; let go: still sliding for a while, the grip
-        or a                    ; coming back a step at a time (the frames left
-        jr z,sy_grip            ; / 8, rounded up: 3, then 2, then 1) - the path
-        dec a                   ; curves round to where the car points instead
-        ld (skid_t),a           ; of snapping to it
-        add a,7
-        rrca
-        rrca
-        rrca
-        and 31
-        ld hl,snd_skid
-        cp (hl)
-        jr nc,sy_apply
-        ld (hl),a
-sy_apply:
-        ld a,(snd_skid)
-        or a
-        ret z
-sy_l:
-        call sk_half
-        dec a
-        jr nz,sy_l
-        ret
-sy_grip:
-        xor a
-        ld (snd_skid),a
-        ld (skid_t),a
         ret
 sk_half:                        ; half the push (DE, BC) and half the friction
         sra d
@@ -680,6 +627,9 @@ heading_push:
 
 ; friction: HL = HL - HL/2^fshift; tiny speeds become exactly 0
 friction:
+        ld a,(fshift)           ; 0: none (you - the grip model did it)
+        or a
+        ret z
         ld d,h
         ld e,l
         sra d                   ; DE = HL / 4 off the road, / 8 on it,
@@ -3063,7 +3013,6 @@ snd_bump: db 0                  ; crash noise: pictures left
 snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
 snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
 snd_fxk:  db 0                  ; ... which: 0 NOS picked up, 1 NOS fired, 2 up: a beep
-skid_t:   db 0                  ; you: frames the slide goes on after you let go
 snd_port: db 6                  ; what port 254 last had: border yellow
 ai_s:     db 0
 ph_cnt:   db 0
@@ -3073,6 +3022,22 @@ ph_py:    dw 0
 rec_lap:     dw 0xFFFF          ; the lap record: the best lap of any race since
                                 ; loading (not cleared by a new race; 0xFFFF none)
 race_vars:
+yg_vf:       dw 0               ; you (grip.asm): forwards speed (8.8)
+yg_vs:       dw 0               ;   sideways speed
+yg_vx:       dw 0               ;   the world speed it last set
+yg_vy:       dw 0
+yg_ang:      db 0               ;   the heading it last saw
+yg_sl:       db 0               ;   1: sliding
+yg_s:        dw 0               ;   sin, cos of the heading: |x| / 128, sign
+yg_c:        dw 0
+yg_t1:       dw 0               ;   the turn's four products
+yg_t2:       dw 0
+yg_t3:       dw 0
+yg_t4:       dw 0
+yg_tang:     db 0               ;   heading + 1 the sine/cosine are for (0: none)
+yg_pvf:      dw 0               ;   vf, vs, heading the world speed was made from
+yg_pvs:      dw 0
+yg_pang:     db 0
 start_go:    db 0               ; Q pressed: the lights are coming on
 start_f0:    db 0               ; FRAMES when Q was pressed
 start_ph:    db 0               ; the lights shown: 0 none, 1-3 red, 4 green
@@ -3224,6 +3189,8 @@ gd_2:
         include "clothmini2.asm"
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
         include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
+        include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
+        include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
 isr:
         push af
         push hl

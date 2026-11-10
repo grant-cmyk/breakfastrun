@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-10 21:04 SAST · machine: Claude cloud container · branch: main · commit: see `git log -1`
+**Stamped:** 2026-11-10 22:06 SAST · machine: Claude cloud container · branch: main · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 120 in an arcade bezel; blue-on-cyan
@@ -16,9 +16,10 @@ and the crash; hear it in docs/design/engine_sound.wav (tools/record_sound.py).
 Big cars (Grant's 20 x 20; 22.5/45 are drafts). Lap record kept across races (hi-score).
 Track 1.35x (road 72, world 72 x 64 tiles, 46 waypoints); lap ~19 s. Start lights red-red-red-green.
 Sound: engine only on Q; skid hiss; crash; NOS pick-up chirp and fire rush; light beeps. Your car
-slides from 0.625 px/frame and the slide fades over 0.5 s after you let go (interim).
+handles with the Skid Lab's grip model (src/grip.asm; the computer cars keep the old slide).
 Skid Lab: https://claude.ai/artifact/XWjkAzJ9kFKki9naPic3V8 - Grant tunes the grip model, then it goes in.
-Whole lap: work 207.2k T a picture (3 frames = 209.7k); 255 pictures at 3 TV frames, 26 at 4.
+Whole lap: work 218.4k T a picture (3 frames = 209.7k); 167 pictures at 3 TV frames, 87 at 4 (the grip model).
+Next speed step: grip.asm adds only each frame's change to the world speed.
 Open: a speed pass for the start (drive_test fails 13/s off the grid: 12.0); Grant to touch up the big cars' 22.5/45.
 
 **Next step:** Grant plays `build/racer.tap` and says what to change next.

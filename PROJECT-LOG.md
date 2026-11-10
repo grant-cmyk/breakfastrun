@@ -891,3 +891,27 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   while sliding; Q uses part of the grip; a slide never adds speed). Sliders for grip, sliding grip,
   throttle share, steering and top speed; "Copy settings for Claude".
 - Tests: drive_test 1 FAIL (12.0 pictures a second off the grid, asks 13); nos_test PASS.
+
+## 2026-11-10 SAST - the Skid Lab's grip model in the game (your car)
+- Grant: "I will go with your recommendations" - the Skid Lab's grip-limit model at its starting
+  settings: grip 0.085 px a frame of sideways speed, 65% of it while sliding, Q uses 35%, steering
+  5.625 degrees a frame (one step of 64), top speed 1.75 (push 0.25, drag 1/8 forwards only). Your
+  car only: the computer cars keep the old slide (their driving is tuned to it).
+- src/grip.asm (you_grip): your speed kept as forwards and sideways (vf, vs); steering turns them
+  by one step with shifts (cos 5.625 = 1 - 1/256 - 1/1024, sin = 1/16 + 1/32 + 1/256); push and drag
+  on vf; the tyres take vs down by the grip a frame (to 0 under it - gripping; sliding over it, and
+  the grip drops); over the top speed vf gives way; then the world speed = vf along the heading + vs
+  across it. A bump, an O, the world's edge or a test that changes the world speed is seen the next
+  frame and (vf, vs) are worked out again from it. Multiplying: quarter squares (src/sqtab.asm,
+  n * n / 128 for n = 0..383 - the / 32 comes free). Physics skips your old push, skid and friction
+  (fshift 0 = no friction). The skid hiss follows the slide (1-3 by sideways speed).
+- Measured in the game, the Skid Lab's own test (top speed, steer 0.4 s, let go, Q held): slip 16,
+  35, 60, 65 degrees, then fading 54, 45, 37 - the lab gave 21, 41, 54, 63, then 47, 36, 28. Top
+  speed 1.75; NOS 3.50.
+- Cost: turning frames ~2.5k T (two trig look-ups, the turn, four multiplies); straight on, cached.
+  Lap profile (autopilot, which steers nearly every frame): 218.4k T a picture (was 207.2k);
+  frames {2:37, 3:167, 4:87, 5:2}. First try was 224.2k: the trig and world speed are now cached,
+  two multiplies when gripping, the rotation's shifts written out (calls cost more than shifts).
+  Next speed step if wanted: add only the frame's change to the world speed (small numbers, the
+  existing sq4 multiply) instead of rebuilding it.
+- Tests: drive_test 1 FAIL (11.5 pictures a second off the grid, asks 13); nos_test PASS.
