@@ -55,7 +55,7 @@ C_OFFY  equ 15
 C_MIST  equ 16          ; computer: frames of mistake left (0 = none)
 C_MKIND equ 17          ;           which mistake: 1 late turn, 2 lift, 3 wobble
 C_THINK equ 18          ; computer: frames until it next decides how to steer
-C_PACE  equ 19          ; computer: accelerates on PACE of every 8 frames
+C_PACE  equ 19          ; computer: accelerates on PACE of every 16 frames
 C_REACT equ 20          ; computer: thinking turns it lets go by (0 = every 4 frames)
 C_ERR   equ 21          ; computer: chance of a mistake at each waypoint /256
 C_KIND  equ 22          ; which picture: 0 you, 1 CPU A, 2 CPU B
@@ -73,6 +73,10 @@ CT_BRK  equ 8
         org 32768
 
 start:                          ; once, when the program is loaded
+        ld hl,high_src          ; the data that lives at the top of memory,
+        ld de,TOPMEM              ; out of the way: copied up there first,
+        ld bc,high_end-high_src ; before the back buffer it loads into is used
+        ldir
         call make_tables
         call make_copier        ; the program writes its own copy routine
         call im2_on
@@ -792,8 +796,12 @@ ai_decide:
         call wp_delta           ; DE = dx, BC = dy from car centre to aim point
         push de                 ; keep them: manhattan uses DE and BC
         push bc
-        call manhattan          ; reached it?  (|dx| + |dy| < 24)
-        ld de,REACH
+        call manhattan          ; reached it?  (|dx| + |dy| < its reach)
+        push hl
+        call ai_style           ; HL -> this car's driving style
+        ld e,(hl)               ; S_REACH: turns in for the next one this far out
+        ld d,0
+        pop hl
         or a
         sbc hl,de
         jr nc,ai_check_next
@@ -887,25 +895,48 @@ ai_have_target:
         ; 45 degrees off (|cross| > dot) - kept per car in C_EASE
         ld (ix+C_EASE),1
         bit 7,h
-        jr nz,ai_ease_set
+        jr nz,ai_ease_set       ; behind it: everyone eases off
         push hl
+        call ai_style
+        inc hl
+        inc hl
+        inc hl
+        ld a,(hl)               ; S_EASE: 0 late braker, 1 at 45 deg, 2 at 27
+        ld (ai_s),a
         ld hl,(cross)
         call abs_hl
         ex de,hl
         pop hl
+        ld a,(ai_s)
+        or a
+        jr z,ai_ease_off        ; the late braker: only when it is behind
+        dec a
+        jr z,ai_e45
+        ex de,hl                ; |cross| * 2 > dot: about 27 degrees off
+        add hl,hl
+        ex de,hl
+ai_e45:
         or a
         sbc hl,de
         jr c,ai_ease_set
+ai_ease_off:
         ld (ix+C_EASE),0
 ai_ease_set:
         ld hl,(dot)
         ; straight on if ahead and |cross| * 4 < dot  (within about 14 degrees)
         bit 7,h
         jr nz,ai_turn
+        call ai_style
+        inc hl
+        inc hl
+        inc hl
+        inc hl
+        ld b,(hl)               ; S_FUSS: 2 smooth (lets 14 deg go), 3 twitchy (7)
         ld hl,(cross)
         call abs_hl
+ai_fuss:
         add hl,hl
-        add hl,hl
+        djnz ai_fuss
         ld de,(dot)
         or a
         sbc hl,de
@@ -939,12 +970,41 @@ ai_set:
         ld (ix+C_CTRL),a
         ret
 
-; pace_gate (IX): A = CT_GO on PACE of every 8 frames, else 0
+; ai_style (IX): HL -> the car's driving style, 5 bytes (by its kind).
+; Each computer car mixes the ways of driving differently (Grant, 10 Nov):
+;   S_REACH  turn-in: how near a waypoint counts as reached (bigger = turns
+;            for the next one earlier, cutting the corner)
+;   S_LINE   mask, half: how far its line wanders from the centre (tidy..wild)
+;   S_EASE   braking: 0 only when the target is behind, 1 at 45 degrees off,
+;            2 at about 27 degrees (early and careful)
+;   S_FUSS   steering: 2 lets 14 degrees go (smooth), 3 only 7 (twitchy)
+; with PACE (throttle, of 8), ERR (mistakes) and REACT in cars_init.
+ai_style:
+        ld a,(ix+C_KIND)
+        ld l,a
+        add a,a
+        add a,a
+        add a,l                 ; kind * 5
+        ld l,a
+        ld h,0
+        ld de,ai_styles-5
+        add hl,de
+        ret
+ai_styles:  ;  reach  line   ease fuss
+        db 24, 3,2,  1,   2     ; CYAN  the racer: full throttle, a tidy
+                                ;       line, eases off at 45 degrees
+        db 30, 3,2,  1,   2     ; GREEN the smooth one: turns in early, cuts
+                                ;       corners, eases off at 45 degrees
+        db 24, 15,8, 0,   3     ; PINK  the wild one: full throttle, late
+                                ;       brakes, wide wandering line, twitchy
+        db 26, 7,4,  2,   2     ; WHITE the steady one: brakes early, rarely
+                                ;       wrong
+; pace_gate (IX): A = CT_GO on PACE of every 16 frames, else 0
 pace_gate:
         ld a,(ticks)            ; counted in the car's own frames (it runs
-        add a,(ix+C_KIND)       ; on every other one): PACE of 8 of them
+        add a,(ix+C_KIND)       ; on every other one): PACE of 16 of them
         rrca
-        and 7
+        and 15
         cp (ix+C_PACE)
         ld a,0
         ret nc
@@ -954,13 +1014,18 @@ pace_gate:
 ; next_waypoint: move on, pick a new aiming offset, maybe start a mistake
 next_waypoint:
         call lap_and_inc
-        call rnd                ; offset -8..+7 pixels each way: a different
-        and 15                  ; line through every corner
-        sub 8
+        call ai_style           ; S_LINE: how far its line wanders, each way -
+        inc hl                  ; a different line through every corner
+        ld c,(hl)               ; mask (3, 7 or 15)
+        inc hl
+        ld b,(hl)               ; half of it, rounded up
+        call rnd
+        and c
+        sub b
         ld (ix+C_OFFX),a
         call rnd
-        and 15
-        sub 8
+        and c
+        sub b
         ld (ix+C_OFFY),a
         call rnd                ; a mistake?  ERR chances in 256
         cp (ix+C_ERR)
@@ -2398,25 +2463,25 @@ cars_init:
         db 0
         dw CPU0Y
         dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 7,0,8, 1,0,0, 0, 0,0
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 15,0,8, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
         db 0
         dw CPU1X
         db 0
         dw CPU1Y
         dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 7,0,14, 2,0,0, 0, 0,0
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 14,0,6, 2,0,0, 0, 0,0     ; GREEN: 14/16, few mistakes
         db 0
         dw CPU2X
         db 0
         dw CPU2Y
         dw 0,0
-        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 7,0,10, 3,0,0, 0, 0,0
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 15,0,22, 3,0,0, 0, 0,0 ; PINK: 15/16, most mistakes
         db 0
         dw CPU3X
         db 0
         dw CPU3Y
         dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 6,0,20, 4,0,0, 0, 0,0
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 14,0,3, 4,0,0, 0, 0,0     ; WHITE: 14/16, hardly ever wrong
 cars_init_end:
 
 ; ---------------------------------------------------------------------
@@ -2469,6 +2534,7 @@ cloth_pat: defs 32              ; 4 kinds of cloth line (aligned: index by bits)
 pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
 pace_hold: db 0
 ph_steps: db 1
+ai_s:     db 0
 sk_nx:    db 0
 sk_ny:    db 0
 sk_m:     db 0
@@ -2559,7 +2625,6 @@ scr_addr:
         include "waypoints.asm"   ; (fills the gap before sq4's page)
         include "sq4.asm"
         include "world.asm"
-        include "logo.asm"
         include "hud.asm"
         include "gen_tiles.asm"
         include "gen_bumps.asm"
@@ -2735,7 +2800,15 @@ im2_on:
         im 2
         ei
         ret
+; data kept at the top of memory (TOPMEM, above the generated copy routine),
+; loaded here and copied up by start; use the names below, not the _src ones
+high_src:
+        include "logo.asm"
+high_end:
 init_end:
+TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
+logo_bits equ TOPMEM + logo_bits_src - high_src
+logo_attr equ TOPMEM + logo_attr_src - high_src
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
@@ -2751,6 +2824,9 @@ init_end:
         endif
         if code_end > BUF_HI*256
         .error code and data run into the back buffer
+        endif
+        if TOPMEM + high_end - high_src > 0xFFF4
+        .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
         if init_end > TAB_HI*256
         .error the start-up routines run into the shift tables they build

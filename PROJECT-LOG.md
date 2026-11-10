@@ -351,3 +351,13 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Memory: start-up-only code (make_tables, make_copier, im2_on) moved past code_end into the back
   buffer (runs once before the buffer is used; guarded below TAB_HI). start does them once; new_race
   is where Q comes back to. drive_test RESULT: PASS.
+
+## 2026-11-10 05:56 SAST - computer-car personalities; top-of-memory data
+- Grant: computer cars a little faster, each with different logic and strengths. Driving styles
+  (ai_styles, by kind): turn-in reach, racing-line wander, braking (late / 45 deg / 27 deg), steering
+  fuss (14 / 7 deg); with throttle now in 16ths (pace_gate) and mistake rate:
+  CYAN racer 15/16, tidy, 45 deg; GREEN smooth 14/16, turns in early (reach 30), few mistakes;
+  PINK wild 15/16, late brakes, wide line, twitchy, most mistakes; WHITE steady 14/16, early brakes.
+  Laps (90 s watch): 13.6 14.8 15.8 14.5 s (were 14.7 15.5 15.3 17.2). drive_test RESULT: PASS.
+- Memory: TOPMEM 0xFAD0..0xFFF3 (above the generated copier, which ends 0xFAC3) holds read-only data
+  loaded in the start-up area and copied up by start; the logo first. HIGH is a pasmo keyword.
