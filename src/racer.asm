@@ -477,9 +477,13 @@ ph_yok:
 ; halve both the friction and the push: the top speed is the same (push /
 ; friction), but the sideways speed now dies away half as fast - the car
 ; keeps sliding the way it was going and drifts round the corner (Grant,
-; 10 Nov 2026). No multiplying: about 200 T, and only while turning fast.
+; 10 Nov 2026). From SKID_V2 the same again: sideways speed dies at 1/32 a
+; frame, then 1/64 - a long slide (Grant asked for more). No multiplying; only while
+; turning fast.
 ; ---------------------------------------------------------------------
-SKID_V  equ 320                 ; 1.25 px a frame (top speed is 1.75)
+SKID_V    equ 256               ; slides from 1.0 px a frame (top speed 1.75)
+SKID_STEP equ 64                ; and more for each 0.25 faster (Grant: more skid)
+SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
 skid:
         ld a,(ix+C_CTRL)        ; only while turning: that is when it slides
         and CT_L+CT_R           ; (let go, and the grip comes back)
@@ -509,12 +513,24 @@ sk_1:
         pop de
         pop bc
         ret c                   ; slow: it grips
-        sra d                   ; half the push...
+        ld a,SKID_N             ; up to SKID_N steps: each SKID_STEP faster,
+sk_lv:                          ; half the push and half the friction again
+        sra d
         rr e
         sra b
         rr c
-        ld hl,fshift            ; ...and half the friction
+        push hl
+        ld hl,fshift
         inc (hl)
+        pop hl
+        push de
+        ld de,SKID_STEP
+        or a
+        sbc hl,de
+        pop de
+        ret c                   ; not that much faster: done
+        dec a
+        jr nz,sk_lv
         ret
 
 ; heading_push: A = heading 0..63 -> DE = push x, BC = push y (8.8)
@@ -563,7 +579,7 @@ friction:
         ld d,h
         ld e,l
         sra d                   ; DE = HL / 4 off the road, / 8 on it,
-        rr e                    ; / 8 or / 16 while sliding
+        rr e                    ; / 8, / 16 or / 32 while sliding
         sra d
         rr e
         ld a,(fshift)           ; (RR sets the flags: compare after each)
@@ -574,6 +590,14 @@ friction:
         cp 3
         jr z,fr_div             ; 3: / 8
         sra d                   ; 4: / 16
+        rr e
+        cp 5
+        jr c,fr_div
+        sra d                   ; 5: / 32 (a long slide on the road)
+        rr e
+        cp 6
+        jr c,fr_div
+        sra d                   ; 6: / 64 (the longest)
         rr e
 fr_div:
         or a

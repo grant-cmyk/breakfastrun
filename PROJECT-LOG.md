@@ -431,3 +431,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   a barrel. Turned by sampling, the treads went to mush (one-bit-art T1), so 22.5 and 45 were rebuilt
   from its key shapes (tracks as two rails, body, cockpit ring, barrel). tools/turn_car.py added for
   the sampled drafts. docs/design/pink_headings.png. drive_test RESULT: PASS.
+
+## 2026-11-10 07:14 SAST - more skid
+- Grant: more skidding round corners. Slides from 1.0 px/frame (was 1.25) and one more step for each
+  0.25 faster, up to 3 (push and friction halved each step: same top speed; sideways speed dies at
+  1/16, 1/32, then 1/64 a frame). Measured on the road, full speed, full turn held: largest drift angle
+  125 degrees (was 75). (A first measurement on the grass read 33 for both: grass friction swamps it.)
+  drive_test RESULT: PASS; computer cars 99-100% on the road; laps 14.3 17.1 16.7 14.6 s.
