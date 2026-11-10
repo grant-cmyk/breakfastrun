@@ -46,6 +46,8 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
 .status { font-family: var(--f-mono); font-size: 12px; color: var(--sp-grn); min-height: 1.4em }
 .status.err { color: #ff6b6b }
 .edited { font-family: var(--f-mono); font-size: 11px; color: var(--sp-yel) }
+[hidden] { display: none !important }
+.legend { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; margin-right: 6px }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
 </style>
 
@@ -53,13 +55,13 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
   <header>
     <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <h1>Breakfast Run car editor</h1>
-    <span class="spec">16 × 16 px · the cars (16 headings from 3 drawings) and the drivers' faces</span>
+    <span class="spec">16 × 16 px · the cars (16 headings from 3 drawings), the drivers' faces, and 20 × 20 big-car drafts</span>
   </header>
 
   <div class="main">
     <section aria-label="Drawing">
       <h2>Drawing</h2>
-      <div class="row"><button id="m-car" aria-pressed="true">Cars</button><button id="m-face" aria-pressed="false">Faces</button></div>
+      <div class="row"><button id="m-car" aria-pressed="true">Cars</button><button id="m-face" aria-pressed="false">Faces</button><button id="m-big" aria-pressed="false">Big cars</button></div>
       <h2 id="who-h">Car</h2>
       <div class="row" id="cars"></div>
       <div id="headbox" style="display:grid;gap:14px">
@@ -68,9 +70,10 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
       </div>
       <canvas id="grid" width="384" height="384" aria-label="16 by 16 drawing grid"></canvas>
       <div class="row">
-        <button id="t-ink" aria-pressed="true"><span class="chip sw-ink"></span>Ink <kbd>1</kbd></button>
-        <button id="t-paper" aria-pressed="false"><span class="chip sw-paper"></span>Paper <kbd>2</kbd></button>
-        <button id="t-clear" aria-pressed="false"><span class="chip sw-clear"></span>Clear <kbd>3</kbd></button>
+        <span class="legend"><span class="chip sw-ink"></span>Left-click: Ink</span>
+        <span class="legend" id="leg-paper"><span class="chip sw-paper"></span>Right-click: Paper</span>
+        <span class="legend"><span class="chip sw-clear"></span>Double-click: Clear</span>
+        <button id="t-ink" hidden></button><button id="t-paper" hidden></button><button id="t-clear" hidden></button>
         <button id="mirror" aria-pressed="false">Mirror <kbd>M</kbd></button>
       </div>
       <div class="row">
@@ -78,8 +81,9 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
         <button id="revert">Revert this heading</button>
         <span class="edited" id="edited"></span>
       </div>
-      <p class="note" id="facenote" hidden>A face is one colour on the driver's band in the race order, exactly as here: <b>left-click</b> draws Ink, <b>right-click</b> (or Clear) shows the band. <b>Mirror</b> paints both halves at once. Faces show beside the cars before the race starts.</p>
-      <p class="note" id="carnote"><b>Ink</b> is black. <b>Paper</b> is the car's white body: solid, so the road does not show through it. <b>Clear</b> leaves the road showing. <b>Left-click</b> draws with the tool you have picked (Ink to start); <b>right-click</b> paints Paper. <b>Mirror</b> paints both sides of the car at once, on the yellow line (straight up and 45° only). At straight up it can flip the checker on a tyre, because the checker does not mirror.</p>
+      <p class="note" id="facenote" hidden>A face is one colour on the driver's band in the race order, exactly as here: <b>left-click</b> draws Ink; <b>right-click</b> or <b>double-click</b> shows the band. <b>Mirror</b> paints both halves at once. Faces show beside the cars before the race starts.</p>
+      <p class="note" id="bignote" hidden><b>Big cars are drafts</b>, not in the game yet: 20 × 20, straight up, each with its race number carved in. The 16 × 16 car it came from is shown beside it. <b>Left-click</b> draws Ink, <b>right-click</b> Paper, <b>double-click</b> clears. <b>Mirror</b> paints both sides on the yellow line - the bodies are an odd width (centre column 10), so the number sits dead centre; column 20 is left empty.</p>
+      <p class="note" id="carnote"><b>Ink</b> is black. <b>Paper</b> is the car's white body: solid, so the road does not show through it. <b>Clear</b> leaves the road showing. <b>Left-click</b> draws Ink, <b>right-click</b> Paper, <b>double-click</b> clears (drag to paint a run). <b>Mirror</b> paints both sides of the car at once, on the yellow line (straight up and 45° only). At straight up it can flip the checker on a tyre, because the checker does not mirror.</p>
     </section>
 
     <section aria-label="Preview">
@@ -88,6 +92,12 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
       <div class="scroller"><canvas class="px" id="faces3"></canvas></div>
       <h2>Real size and 2×</h2>
       <div class="scroller"><canvas class="px" id="faces1"></canvas></div>
+      </div>
+      <div id="bigprev" hidden style="display:grid;gap:10px">
+      <h2>Before and after (4×)</h2>
+      <div class="scroller"><canvas class="px" id="big4"></canvas></div>
+      <h2>All five, real size and 2×, on the track: 16 × 16 above, 20 × 20 below</h2>
+      <div class="scroller"><canvas class="px" id="bigreal"></canvas></div>
       </div>
       <div id="carprev" style="display:grid;gap:10px">
       <h2>All 16 headings, as the game draws them (3×)</h2>
@@ -120,7 +130,8 @@ const CARS = [
   { name: 'WHITE', mark: 'sunroof',           col: '#d7d7d7' }];
 CARS[4].label = 'WHITE · Jane';
 const HEADS = ['Up (0°)', '22½°', '45°'];
-const GFACES = [["................",".....XX..XX.....","...XXXX..XXXX...","...XXXX..XXXX...","..XXXXX..XXXXX..","..X.XXXXXXXX.X..","..X..........X..","..X.XXX..XXX.X..","..X..XX...XX.X..","..X..........X..","..X....XX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....XXXXXX.....","................"],["................","...XXXXXXXXXX...","..XXXX.X.X.XXX..","..XX........XX..","..XX.X....X.XX..","...X..X..X..X...","...X........X...","..X...X..X...X..","..XX........XX..","...XXX.XX.XXX...","...XX......XX...","....X.XXXX.X....","....XX....XX....","....XXXXXXXX....",".....XXXXXX.....","................"],["................",".X.X........X.X.","..X.X.XXXX.X.X..",".X.X.X....X.X.X.","..X.X......X.X..","...X.X....X.X...","..X.XXX..XXX.X..","..X..X....X..X..",".X.....XX.....X.","..X....XX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","....XXXXXXXX....","...XXXXXXXXXX...","...XXXXXXXXXX...","..XX.XXXXXX.XX..","..X..........X..","..X.XXX..XXX.X..",".X...XX..XX...X.",".XX...X......XX.","..X...XXX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","......XXXX......",".....XXXXXX.....","....XXX..XXX....","....XX....XX....","...XX......XX...","...XX.X..X.XX...","....X......X....","...X...XX...X...","..XXX......XXX..",".XXX.X.XX.X.XXX.",".XXX.X....X.XXX.","..XX..X..X..XX..",".......XX.......","................","................"],["....XXXXXXX.....","....X......X....","...X.XXXXX..X...","...XX.....X.X...","...X.......X.X..",".XXX.X...X..XXX.",".XXX.X...X..XXX.",".XXX...X....XXX.","...X.........X..","...X..XXX..XXX..","...X......X.X...","....X...XX.X....",".....XXXXXX.....","................","................","................"],["................","......XXXX......","........X.......","......XXXX......",".....XXXXXX.....","....X......X....","....X.X....X....","....XXXXXXXX....","....XXXXXXXX....","....XXXXXXXX....","....X.X....X....","....X.X....X....","....X......X....",".....XXXXXX.....","................","................"]];                   // [car] = 16 strings of X . (ink on the car's band)
+const GBIG = [["....................",".......XXXXX........","......XXXXXXX.......",".....XXXXoXXXX......","..XXXXXXooXXXXXXX...","..XoXXXXXoXXXXXoX...","..XoXXXXXoXXXXXoX...","..XXXXXXoooXXXXXX...",".....XXXXXXXXX......","......XoooooX.......","......XoooooX.......",".....XXXXXXXXX......",".....XXXXXXXXX......","..XXXXXXXXXXXXXXX...","..XoXXXXXXXXXXXoX...","..XoXXXXXXXXXXXoX...","..XXXXoooooooXXXX...","...XXXoooooooXXX....","...XXXXXXXXXXXXX....","...................."],["....................",".......XXXXX........","......XXXXXXX.......","..XXXXoooooooXXXX...","..X.XXXXXXXXXXX.X...","..XX.XXXooXXXX.XX...","..X.XXXXXXoXXXX.X...","..XX.XXXXoXXXX.XX...",".....XXXoXXXXX......",".....XXXoooXXX......",".....XXXXXXXXX......",".....XoooooooX......",".....XoooooooX......","..XXXXXXXXXXXXXXX...","..XoXXoooooooXXoX...","..XoXXXXXXXXXXXoX...","..XoXXXXXXXXXXXoX...","..XXXXoooooooXXXX...","...XXXXXXXXXXXXX....","...................."],["....................","....................",".XX....XXXXX....XX..",".XX..XXXXXXXXX..XX..",".XX.XXXXXXXXXXX.XX..",".XX.XXXXXXXXXXX.XX..","....XXXoooooXXX.....","....XXoXXXXXoXX.....","....XXoXoooXoXX.....","....XXoXoXXXoXX.....","....XXoXooXXoXX.....","....XXoXXXoXoXX.....","....XXoXooXXoXX.....","....XXoXXXXXoXX.....","....XXXoooooXXX.....",".XX.XXXXXXXXXXX.XX..",".XX.XXXXXXXXXXX.XX..",".XX..XXXXXXXXX..XX..",".XX....XXXXX....XX..","...................."],["....................","........XXX.........","........XXX.........","........XXX.........","........XXX.........",".XXX....XXX....XXX..",".X.XXXXXXXXXXXXX.X..",".XX.XXXXXXXXXXX.XX..",".X.XXXXoooooXXXX.X..",".XX.XXoXXXXXoXX.XX..",".X.XXXoXoXoXoXXX.X..",".XX.XXoXoXoXoXX.XX..",".X.XXXoXoooXoXXX.X..",".XX.XXoXXXoXoXX.XX..",".X.XXXoXXXoXoXXX.X..",".XX.XXoXXXXXoXX.XX..",".X.XXXXoooooXXXX.X..",".XX.XXXXXXXXXXX.XX..",".XXX...........XXX..","...................."],["....................","....................",".....XX..X..XX......",".....XXXXXXXXX......",".....XX..X..XX......",".....XX..X..XX......",".........X..........","........XXX.........",".......XXXXX........",".......XooXX........",".......XXXoX........",".......XXoXX........",".......XXXoX........",".......XooXX........",".......XXXXX........","....XX.XXXXX.XX.....","....XXXXXXXXXXX.....","....XX.XXXXX.XX.....","....XX.......XX.....","...................."]];                       // [car] = 20 strings of X o . (big-car drafts, straight up)
+const GFACES = [["................",".....XX..XX.....","....XXX..XXX....","...XXXX..XXXX...","...XXXX..XXXX...","...XXXXXXXXX.X..",".............X..","...XXXXXXXXX.X..","...X.XX.XX..X...","...X...X....X...","....X....X.X....","....X..XX..X....",".....X....X.....","......XXXX......","................","................"],["................","...XXXXXXXXXX...","..XXXX.X.X.XXX..","..XX........XX..","..XX.X....X.XX..","...X..X..X..X...","...X........X...","..X...X..X...X..","..XX........XX..","...XXX.XX.XXX...","...XX......XX...","....X.XXXX.X....","....XX....XX....","....XXXXXXXX....",".....XXXXXX.....","................"],["................",".X.X........X.X.","..X.X.XXXX.X.X..",".X.X.X....X.X.X.","..X.X......X.X..","...X.X....X.X...","..X.XXX..XXX.X..","..X..X....X..X..",".X.....XX.....X.","..X....XX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","....XXXXXXXX....","...XXXXXXXXXX...","...XXXXXXXXXX...","..XX.XXXXXX.XX..","..X..........X..","..X.XXX..XXX.X..",".X...XX..XX...X.",".XX...X......XX.","..X...XXX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","......XXXX......",".....XXXXXX.....","....XXX..XXX....","....XX....XX....","...XX......XX...","...XX.X..X.XX...","....X......X....","...X...XX...X...","..XXX......XXX..",".XXX.X.XX.X.XXX.",".XXX.X....X.XXX.","..XX..X..X..XX..",".......XX.......","................","................"],["....XXXXXXX.....","....X......X....","...X.XXXXX..X...","...XX.....X.X...","...X.......X.X..",".XXX.X...X..XXX.",".XXX.X...X..XXX.",".XXX...X....XXX.","...X.........X..","...X..XXX..XXX..","...X......X.X...","....X...XX.X....",".....XXXXXX.....","................","................","................"],["................","......XXXX......","........X.......","......XXXX......",".....XXXXXX.....","....X......X....","....X.X....X....","....XXXXXXXX....","....XXXXXXXX....","....XXXXXXXX....","....X.X....X....","....X......X....",".....XXXXXX.....","................","................","................"]];                   // [car] = 16 strings of X . (ink on the car's band)
 const BAND = [{ bg: '#d70000', ink: '#ffffff' }, { bg: '#00d7d7', ink: '#000000' }, { bg: '#00d700', ink: '#000000' },
               { bg: '#d700d7', ink: '#000000' }, { bg: '#ffffff', ink: '#000000' }, { bg: '#0000ff', ink: '#ffffff' },
               { bg: '#ffffff', ink: '#000000' }];
@@ -148,7 +159,14 @@ let faces = fclone(GFACES);
 function validF(a) { return Array.isArray(a) && a.length === GFACES.length && a.every(g => g.length === 16 && g.every(r => r.length === 16 && r.every(v => 'X.'.includes(v)))) }
 try { const s = JSON.parse(localStorage.getItem(FKEY)); if (validF(s)) faces = s; } catch (e) {}
 function saveF() { try { localStorage.setItem(FKEY, JSON.stringify(faces)) } catch (e) {} }
-const cur = () => mode === 'face' ? faces[car] : art[car][head];
+const BSIG = (() => { let h = 5381; const t = JSON.stringify(GBIG); for (let i = 0; i < t.length; i++) h = (h * 33 + t.charCodeAt(i)) >>> 0; return h.toString(36) })();
+const BKEY = 'breakfastrun-big-art-' + BSIG;
+let big = fclone(GBIG);
+function validB(a) { return Array.isArray(a) && a.length === GBIG.length && a.every(g => g.length === 20 && g.every(r => r.length === 20 && r.every(v => 'Xo.'.includes(v)))) }
+try { const s = JSON.parse(localStorage.getItem(BKEY)); if (validB(s)) big = s; } catch (e) {}
+function saveB() { try { localStorage.setItem(BKEY, JSON.stringify(big)) } catch (e) {} }
+const N = () => mode === 'big' ? 20 : 16;
+const cur = () => mode === 'face' ? faces[car] : mode === 'big' ? big[car] : art[car][head];
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (valid(s)) art = s; } catch (e) {}
 function valid(a) { return Array.isArray(a) && a.length === 5 && a.every(c => c.length === 3 && c.every(g => g.length === 16 && g.every(r => r.length === 16 && r.every(v => 'Xo.'.includes(v))))) }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(art)) } catch (e) {} }
@@ -183,46 +201,52 @@ HEADS.forEach((h, i) => { const b = document.createElement('button'); b.id = 'he
 // ---- the drawing grid
 const grid = document.getElementById('grid'), gx = grid.getContext('2d'), CELL = 24;
 function drawGrid() {
-  const g = cur();
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+  const g = cur(), n = N(), W = n * CELL;
+  if (grid.width !== W) { grid.width = W; grid.height = W; grid.setAttribute('aria-label', `${n} by ${n} drawing grid`) }
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const v = g[y][x];
     if (mode === 'face') gx.fillStyle = v === 'X' ? BAND[car].ink : BAND[car].bg;
     else if (v === '.') { gx.fillStyle = (x + y) % 2 ? '#3a3d46' : '#30333b'; } else gx.fillStyle = v === 'X' ? '#000' : '#fff';
     gx.fillRect(x * CELL, y * CELL, CELL, CELL);
   }
   gx.strokeStyle = 'rgba(128,134,148,.35)'; gx.lineWidth = 1; gx.beginPath();
-  for (let i = 1; i < 16; i++) { gx.moveTo(i * CELL + .5, 0); gx.lineTo(i * CELL + .5, 384); gx.moveTo(0, i * CELL + .5); gx.lineTo(384, i * CELL + .5) }
+  for (let i = 1; i < n; i++) { gx.moveTo(i * CELL + .5, 0); gx.lineTo(i * CELL + .5, W); gx.moveTo(0, i * CELL + .5); gx.lineTo(W, i * CELL + .5) }
   gx.stroke();
   gx.strokeStyle = 'rgba(255,212,0,.55)'; gx.beginPath();          // the mirror line
-  if (head === 0 || mode === 'face') { gx.moveTo(192, 0); gx.lineTo(192, 384) }
+  if (mode === 'big') { gx.moveTo(9.5 * CELL, 0); gx.lineTo(9.5 * CELL, W) }
+  else if (head === 0 || mode === 'face') { gx.moveTo(192, 0); gx.lineTo(192, 384) }
   else if (head === 2) { gx.moveTo(384, 0); gx.lineTo(0, 384) }
-  if (mirror && (head !== 1 || mode === 'face')) gx.stroke();
+  if (mirror && (head !== 1 || mode !== 'car')) gx.stroke();
 }
 // up: mirror across the middle; 45 degrees: across the car's own line, bottom-left to top-right
-function partner(x, y) { return mode === 'face' || head === 0 ? [15 - x, y] : head === 2 ? [15 - y, 15 - x] : null }
+function partner(x, y) { return mode === 'big' ? (x < 19 ? [18 - x, y] : null) : mode === 'face' || head === 0 ? [15 - x, y] : head === 2 ? [15 - y, 15 - x] : null }
 let painting = null, stroke = false;
-function cellAt(e) { const r = grid.getBoundingClientRect(); return [Math.floor((e.clientX - r.left) / r.width * 16), Math.floor((e.clientY - r.top) / r.height * 16)] }
+function cellAt(e) { const r = grid.getBoundingClientRect(), n = N(); return [Math.floor((e.clientX - r.left) / r.width * n), Math.floor((e.clientY - r.top) / r.height * n)] }
 function paint(x, y, v) {
-  if (x < 0 || y < 0 || x > 15 || y > 15) return;
+  if (x < 0 || y < 0 || x >= N() || y >= N()) return;
   if (mode === 'face' && v === 'o') v = 'X';
   const g = cur(); g[y][x] = v;
   const p = mirror && partner(x, y); if (p) g[p[1]][p[0]] = v;
 }
 grid.addEventListener('contextmenu', e => e.preventDefault());
-// left button: the tool picked (Ink to start); right button: paper (on a face, the band)
+// left button: ink; right button: paper (on a face, the band); double-click: clear
 grid.addEventListener('pointerdown', e => {
   e.preventDefault(); grid.setPointerCapture(e.pointerId);
   undo.push({ mode, car, head, g: cur().map(r => r.slice()) }); if (undo.length > 200) undo.shift();
-  painting = e.button === 2 ? (mode === 'face' ? '.' : 'o') : tool; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false);
+  painting = e.button === 2 ? (mode === 'face' ? '.' : 'o') : 'X'; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false);
+});
+grid.addEventListener('dblclick', e => {           // the two clicks drew ink: one undo step takes the cell
+  e.preventDefault(); if (undo.length) undo.pop();  // back to before the double-click
+  const [x, y] = cellAt(e); paint(x, y, '.'); save(); saveF(); saveB(); refresh();
 });
 grid.addEventListener('pointermove', e => { if (!painting) return; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false) });
-['pointerup', 'pointercancel'].forEach(t => grid.addEventListener(t, () => { if (painting) { painting = null; save(); saveF(); refresh() } }));
+['pointerup', 'pointercancel'].forEach(t => grid.addEventListener(t, () => { if (painting) { painting = null; save(); saveF(); saveB(); refresh() } }));
 
 // ---- previews: kerb chequer behind, halo cleared to white, ink on top - as the game does
 function track(x, y) { return ((x >> 2) + (y >> 2)) % 2 }
 function drawCarAt(ctx, g, ox, oy, s) {
   const m = halo(g);
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+  for (let y = 0; y < g.length; y++) for (let x = 0; x < g.length; x++) {
     if (!m[y][x]) continue;
     ctx.fillStyle = g[y][x] === 'X' ? '#000' : '#fff'; ctx.fillRect(ox + x * s, oy + y * s, s, s);
   }
@@ -268,8 +292,36 @@ function drawFaces() {
   [0, 1, 4, 3, 2].forEach((k, i) => { drawBand(x, k, 0, i * 16, 1, i + 1); drawBand(x, k, 72, i * 32, 2, i + 1) });
   drawCrew(x, 20, 5 * 16 + 4, 1); drawItem(x, 40, 5 * 16 + 4, 1);
 }
+const ORDER = [0, 1, 4, 3, 2];                   // the grid: YOU 1, CYAN 2, WHITE 3, PINK 4, GREEN 5
+function cloth(ctx, ox, oy, w, h, s) {           // the game's cloth: 32-px checks, the dark ones 1 dot in 8
+  ctx.fillStyle = '#00d7d7'; ctx.fillRect(ox, oy, w * s, h * s); ctx.fillStyle = '#0000d7';
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
+    if (((x >> 5) + (y >> 5)) % 2 && ((y % 4 === 0 && x % 4 === 0) || (y % 4 === 2 && x % 4 === 2))) ctx.fillRect(ox + x * s, oy + y * s, s, s);
+}
+function drawGameCar(ctx, g, ox, oy, s) {         // blue ink on cyan paper, as in the game's window
+  const m = halo(g);
+  for (let y = 0; y < g.length; y++) for (let x = 0; x < g.length; x++) {
+    if (!m[y][x]) continue;
+    ctx.fillStyle = g[y][x] === 'X' ? '#0000d7' : '#00d7d7'; ctx.fillRect(ox + x * s, oy + y * s, s, s);
+  }
+}
+function drawBig() {
+  const a = document.getElementById('big4'), S = 4; a.width = 2 * 20 * S + 120; a.height = 20 * S + 22;
+  const c = a.getContext('2d'); c.fillStyle = '#1b1d23'; c.fillRect(0, 0, a.width, a.height);
+  c.fillStyle = '#a0a5af'; c.font = '600 11px IBM Plex Mono, monospace';
+  c.fillText('before 16 × 16', 0, 11); c.fillText('after 20 × 20', 20 * S + 70, 11);
+  c.fillStyle = '#2a2d35'; c.fillRect(0, 18, 20 * S, 20 * S); c.fillRect(20 * S + 70, 18, 20 * S, 20 * S);
+  drawGameCar(c, art[car][0], 2 * S, 18 + 2 * S, S); drawGameCar(c, big[car], 20 * S + 70, 18, S);
+  const r = document.getElementById('bigreal'), w = 176, h = 56; r.width = w + 12 + 2 * w; r.height = 2 * h;
+  const x = r.getContext('2d'); x.fillStyle = '#1b1d23'; x.fillRect(0, 0, r.width, r.height);
+  [[1, 0], [2, w + 12]].forEach(([s, ox]) => {
+    cloth(x, ox, 0, w, h, s);
+    ORDER.forEach((k, i) => { drawGameCar(x, art[k][0], ox + (10 + i * 34) * s, 6 * s, s); drawGameCar(x, big[k], ox + (8 + i * 34) * s, 30 * s, s) });
+  });
+}
 function drawPreviews() {
   if (mode === 'face') return drawFaces();
+  if (mode === 'big') return drawBig();
   const f = frames(car), S = 3;
   const a = document.getElementById('all3'); a.width = (8 * 20 + 4) * S; a.height = 2 * 24 * S + 8;
   const c = a.getContext('2d'); c.fillStyle = '#1b1d23'; c.fillRect(0, 0, a.width, a.height);
@@ -287,7 +339,12 @@ function faceText() {
   faces.forEach((g, k) => { t += `\n== ${FACE_NAMES[k]} face ==\n` + g.map(r => r.join('')).join('\n') + '\n' });
   return t;
 }
-function toText() { return carText() + '\n' + faceText() }   // one paste carries every car and face
+function bigText() {
+  let t = 'BREAKFAST RUN BIG CAR ART v1 - DRAFTS\nX = ink   o = paper   . = empty (20 x 20, straight up)\n';
+  big.forEach((g, k) => { t += `\n== ${CARS[k].name} big heading 0 ==\n` + g.map(r => r.join('')).join('\n') + '\n' });
+  return t;
+}
+function toText() { return carText() + '\n' + faceText() + '\n' + bigText() }   // one paste carries every car, face and big car
 function carText() {
   let t = 'BREAKFAST RUN CAR ART v1\nX = ink (black)   o = paper (white body)   . = empty (road shows)\n';
   art.forEach((c, k) => c.forEach((g, h) => { t += `\n== ${CARS[k].name} heading ${['0', '22.5', '45'][h]} ==\n` + g.map(r => r.join('')).join('\n') + '\n' }));
@@ -300,7 +357,10 @@ function fromText(t) {
   const fo = faces.map(g => g.map(r => r.slice()));
   const fre = /==\s*(YOU|CYAN|GREEN|PINK|WHITE|CREW|NOS)\s+face\s*==\s*\n((?:[X.]{16}\s*\n?){16})/g; let fm, nf = 0;
   while ((fm = fre.exec(t))) { fo[FACE_NAMES.indexOf(fm[1])] = fm[2].trim().split(/\s+/).map(r => r.split('')); nf++ }
-  return n || nf ? [n ? out : art, n + nf, nf ? fo : faces] : [null, 0];
+  const bo = big.map(g => g.map(r => r.slice()));
+  const bre = /==\s*(YOU|CYAN|GREEN|PINK|WHITE)\s+big\s+heading\s+0\s*==\s*\n((?:[Xo.]{20}\s*\n?){20})/g; let bm, nb = 0;
+  while ((bm = bre.exec(t))) { bo[CARS.findIndex(c => c.name === bm[1])] = bm[2].trim().split(/\s+/).map(r => r.split('')); nb++ }
+  return n || nf || nb ? [n ? out : art, n + nf + nb, nf ? fo : faces, nb ? bo : big] : [null, 0];
 }
 const text = document.getElementById('text'), status = document.getElementById('status');
 function say(s, err) { status.textContent = s; status.className = 'status' + (err ? ' err' : '') }
@@ -311,23 +371,24 @@ document.getElementById('copy').onclick = () => {
   try { navigator.clipboard.writeText(text.value).then(done, fail) } catch (e) { fail() }
 };
 document.getElementById('load').onclick = () => {
-  const [a, n, fa] = fromText(text.value);
+  const [a, n, fa, ba] = fromText(text.value);
   if (!a) return say('No art found. Paste text that starts BREAKFAST RUN CAR ART or FACE ART, then press Load.', true);
-  undo = []; art = a; faces = fa; save(); saveF(); refresh(); say(`Loaded ${n} drawing${n === 1 ? '' : 's'}.`);
+  undo = []; art = a; faces = fa; big = ba; save(); saveF(); saveB(); refresh(); say(`Loaded ${n} drawing${n === 1 ? '' : 's'}.`);
 };
 let resetArmed = false;
 document.getElementById('reset').onclick = e => {
   if (!resetArmed) { resetArmed = true; e.target.textContent = 'Press again to reset all'; setTimeout(() => { resetArmed = false; e.target.textContent = "Reset all to the game's art" }, 3000); return }
-  resetArmed = false; e.target.textContent = "Reset all to the game's art"; undo = []; art = clone(GAME); faces = fclone(GFACES); save(); saveF(); refresh(); say("Every car and face is back to the game's art.");
+  resetArmed = false; e.target.textContent = "Reset all to the game's art"; undo = []; art = clone(GAME); faces = fclone(GFACES); big = fclone(GBIG); save(); saveF(); saveB(); refresh(); say("Every car, face and big car is back to the game's art.");
 };
 document.getElementById('revert').onclick = () => {
   undo.push({ mode, car, head, g: cur().map(r => r.slice()) });
-  if (mode === 'face') faces[car] = GFACES[car].map(r => r.split('')); else art[car][head] = GAME[car][head].map(r => r.split(''));
-  save(); saveF(); refresh() };
-function doUndo() { const u = undo.pop(); if (!u) return; if (u.mode === 'face') faces[u.car] = u.g; else art[u.car][u.head] = u.g; mode = u.mode; car = u.car; head = u.head; save(); saveF(); refresh() }
-function setMode(m) { mode = m; if (m === 'face' && tool === 'o') setTool('X'); if (m === 'car' && car > 4) car = 0; text.value = toText(); refresh() }
+  if (mode === 'face') faces[car] = GFACES[car].map(r => r.split('')); else if (mode === 'big') big[car] = GBIG[car].map(r => r.split('')); else art[car][head] = GAME[car][head].map(r => r.split(''));
+  save(); saveF(); saveB(); refresh() };
+function doUndo() { const u = undo.pop(); if (!u) return; if (u.mode === 'face') faces[u.car] = u.g; else if (u.mode === 'big') big[u.car] = u.g; else art[u.car][u.head] = u.g; mode = u.mode; car = u.car; head = u.head; save(); saveF(); saveB(); refresh() }
+function setMode(m) { mode = m; if (m === 'face' && tool === 'o') setTool('X'); if (m !== 'face' && car > 4) car = 0; text.value = toText(); refresh() }
 document.getElementById('m-car').onclick = () => setMode('car');
 document.getElementById('m-face').onclick = () => setMode('face');
+document.getElementById('m-big').onclick = () => setMode('big');
 document.getElementById('undo').onclick = doUndo;
 
 // ---- tools and keys
@@ -339,8 +400,7 @@ document.getElementById('t-clear').onclick = () => setTool('.');
 document.getElementById('mirror').onclick = () => { mirror = !mirror; refresh() };
 document.addEventListener('keydown', e => {
   if (e.target === text) return;
-  if (e.key === '1') setTool('X'); else if (e.key === '2') { if (mode !== 'face') setTool('o') } else if (e.key === '3') setTool('.');
-  else if (e.key === 'm' || e.key === 'M') { mirror = !mirror; refresh() }
+  if (e.key === 'm' || e.key === 'M') { mirror = !mirror; refresh() }
   else if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); doUndo() }
 });
 
@@ -351,19 +411,22 @@ function refresh(full = true) {
   document.getElementById('car-5').hidden = mode !== 'face';
   document.getElementById('car-6').hidden = mode !== 'face';
   HEADS.forEach((_, i) => document.getElementById('head-' + i).setAttribute('aria-pressed', i === head));
-  const face = mode === 'face';
-  const m = document.getElementById('mirror'); m.setAttribute('aria-pressed', mirror && (face || head !== 1)); m.disabled = !face && head === 1;
-  document.getElementById('m-car').setAttribute('aria-pressed', !face); document.getElementById('m-face').setAttribute('aria-pressed', face);
-  document.getElementById('headbox').hidden = face; document.getElementById('headbox').style.display = face ? 'none' : 'grid';
-  document.getElementById('who-h').textContent = face ? 'Face' : 'Car';
-  document.getElementById('t-paper').disabled = face;
+  const face = mode === 'face', bg = mode === 'big', cr = mode === 'car';
+  const m = document.getElementById('mirror'); m.setAttribute('aria-pressed', mirror && (!cr || head !== 1)); m.disabled = cr && head === 1;
+  document.getElementById('m-car').setAttribute('aria-pressed', cr); document.getElementById('m-face').setAttribute('aria-pressed', face); document.getElementById('m-big').setAttribute('aria-pressed', bg);
+  document.getElementById('headbox').hidden = !cr; document.getElementById('headbox').style.display = cr ? 'grid' : 'none';
+  document.getElementById('who-h').textContent = face ? 'Face' : bg ? 'Big car (draft)' : 'Car';
+  document.getElementById('leg-paper').hidden = face;
   ['facenote', 'faceprev'].forEach(id => document.getElementById(id).hidden = !face);
-  ['carnote', 'carprev', 'carprevnote'].forEach(id => document.getElementById(id).hidden = face);
-  document.getElementById('carprev').style.display = face ? 'none' : 'grid';
+  ['bignote', 'bigprev'].forEach(id => document.getElementById(id).hidden = !bg);
+  ['carnote', 'carprev', 'carprevnote'].forEach(id => document.getElementById(id).hidden = !cr);
+  document.getElementById('carprev').style.display = cr ? 'grid' : 'none';
   document.getElementById('faceprev').style.display = face ? 'grid' : 'none';
-  document.getElementById('revert').textContent = face ? 'Revert this face' : 'Revert this heading';
+  document.getElementById('bigprev').style.display = bg ? 'grid' : 'none';
+  document.getElementById('revert').textContent = face ? 'Revert this face' : bg ? 'Revert this big car' : 'Revert this heading';
   const changed = art.reduce((n, c, k) => n + c.filter((g, h) => g.map(r => r.join('')).join() !== GAME[k][h].join()).length, 0)
-    + faces.filter((g, k) => g.map(r => r.join('')).join() !== GFACES[k].join()).length;
+    + faces.filter((g, k) => g.map(r => r.join('')).join() !== GFACES[k].join()).length
+    + big.filter((g, k) => g.map(r => r.join('')).join() !== GBIG[k].join()).length;
   document.getElementById('edited').textContent = changed ? `${changed} drawing${changed === 1 ? '' : 's'} changed from the game` : '';
   undoBtn.disabled = !undo.length;
 }
@@ -385,6 +448,8 @@ function fromHash() {
   if (h === 'nos') h = 'nos-face';
   const fm = h.match(/^(?:face-)?(you|cyan|green|pink|white|crew|nos)(?:-face)?$/);
   if (fm && h.includes('face')) { mode = 'face'; car = FACE_NAMES.indexOf(fm[1].toUpperCase()); text.value = toText(); return }
+  const bm = h.match(/^big(?:-(you|cyan|green|pink|white|jane))?$/);
+  if (bm) { mode = 'big'; car = bm[1] ? CARS.findIndex(c => c.name.toLowerCase() === (bm[1] === 'jane' ? 'white' : bm[1])) : 0; text.value = toText(); return }
   mode = 'car';
   let i = CARS.findIndex(c => c.name.toLowerCase() === h);
   const m = h.match(/^car-([1-5])$/); if (m) i = +m[1] - 1;

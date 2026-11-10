@@ -786,3 +786,18 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   4:49, 5:1}. drive_test PASS, nos_test PASS.
 - tools/record_sound.py records the speaker writes from the emulator to docs/design/engine_sound.wav
   (14 s: the lights, the run off, the straight flat out, a crash) - the sound heard without the tape.
+
+## 2026-11-10 SAST - big cars: 20 x 20 drafts, and in the editor
+- Grant: "try design some larger cars", derived from the existing ones, in the car editor with
+  the smaller before and the larger after, the larger editable. tools/make_big_cars.py draws the
+  five at 20 x 20 from his 16 x 16 heading-0 cars (one-bit-art skill: the same key shapes and values;
+  mirror-symmetric about column 9 - the bodies are an odd width so a 3-wide number sits centred;
+  the race number carved in paper out of a solid 5 x 7 plate: YOU 1, CYAN 2, WHITE/Jane 3, PINK 4,
+  GREEN 5). Writes tools/big_car_art.txt and docs/design/big_cars.png. Drafts only - not in the game
+  (cost, measured earlier: ~5.4 KB with mirrored headings and ~1.7x the car drawing time, estimated).
+- Car editor: a third mode, Big cars - 20 x 20 grid, the 16 x 16 before beside the 20 x 20 after (4x),
+  all five real size and 2x on the cloth, Mirror on column 10, copy/load as "== NAME big heading 0 ==",
+  its own saved draft. Grant: left-click Ink, right-click Paper, double-click Clear (all modes; the
+  double-click is one undo step). Fixed: [hidden] did not hide buttons (the CREW/NOS pickers showed
+  in car mode). Tested in Chromium: every mode, both buttons, double-click, undo, copy/load.
+  Published as version 19 of https://claude.ai/artifact/2EqdSKs3fDfUqERTX9pTzL.
