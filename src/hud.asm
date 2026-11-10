@@ -15,7 +15,9 @@
 A_YEL   equ 0x30                ; black ink on yellow paper (the table)
 A_MSG   equ 0x57                ; bright white on red
 A_GO    equ 0x67                ; bright white on green
-A_LAMP  equ 0x42                ; bright red on black: a start light
+A_LAMP  equ 0x42                ; bright red on black: a start light, lit
+A_LOFF  equ 0x01                ; blue on black: a start light, not lit yet
+A_LGRN  equ 0x44                ; bright green on black: all three - go
 A_LAP   equ 0x4F                ; bright white on blue
 TOWER_Y equ 5                   ; first row of the race order (RACE above it)
 A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
@@ -223,7 +225,7 @@ msg_clear:                      ; the message bar: rows 1-2 (row 0 is the
         ld a,A_YEL
         jp set_attrs
 
-msg_lights:                     ; three red lights, GET READY, PRESS Q
+msg_lights:                     ; three start lights (not lit), GET READY, PRESS Q
         call msg_clear
         ld b,1
         ld c,2
@@ -244,14 +246,88 @@ msg_lights:                     ; three red lights, GET READY, PRESS Q
         jp print_at
 ml_lamp:
         ld hl,txt_lamp
-        ld a,A_LAMP
+        ld a,A_LOFF
         jp print_big
 
-msg_go:
-        call msg_clear
+; START_LIGHTS (once a picture, before the race): Q pressed, the lights come on
+; one at a time - red, red, red - then all three green, and only then does anyone
+; go (Grant, 10 Nov 2026). Each light: a beep; green: a higher one.
+SL_RED  equ 40                  ; TV frames between the lights (0.8 s)
+SL_GRN  equ 130                 ; green this long after Q (2.6 s)
+start_lights:
+        ld a,(race_on)
+        or a
+        ret nz
+        ld a,(start_go)
+        or a
+        ret z
+        ld a,(start_f0)
+        ld b,a
+        ld a,(FRAMES)
+        sub b                   ; frames since Q
+        ld c,1
+        cp SL_RED
+        jr c,sl_ph
+        inc c
+        cp 2*SL_RED
+        jr c,sl_ph
+        inc c
+        cp SL_GRN
+        jr c,sl_ph
+        inc c
+sl_ph:
+        ld a,(start_ph)         ; a new light?
+        cp c
+        ret z
+        ld a,c
+        ld (start_ph),a
+        cp 4
+        jr z,sl_green
+        add a,a                 ; light C (1-3): its 2 x 2 cells at column 3C - 1
+        add a,c
+        dec a
+        ld c,a
+        ld hl,0x3000+6          ; a beep: 6 frames, flips 48 counts apart
+        ld (snd_fxt),hl
+        ld b,1
+        ld d,2
+        ld e,2
+        ld a,A_LAMP
+        jp set_attrs
+sl_green:
+        ld hl,0x1800+10         ; a higher beep, longer
+        ld (snd_fxt),hl
+        ld c,2
+        call sl_g
+        ld c,5
+        call sl_g
+        ld c,8
+        call sl_g
+        ld a,1                  ; and away
+        ld (race_on),a
+        ret
+sl_g:
+        ld b,1
+        ld d,2
+        ld e,2
+        ld a,A_LGRN
+        jp set_attrs
+
+msg_go:                         ; GO! beside the green lights (they stay till
+        ld b,1                  ; the message goes)
+        ld c,11
+        ld d,2
+        ld e,13
+        call clear_cells
+        ld b,1
+        ld c,11
+        ld d,2
+        ld e,13
+        ld a,A_YEL
+        call set_attrs
         ld hl,txt_go
         ld b,1
-        ld c,9
+        ld c,14
         ld a,A_GO
         call print_big
         ld a,75                 ; 1.5 s
@@ -552,6 +628,7 @@ st_put:
 ; HUD_UPDATE: once per picture, after race_progress
 ; ---------------------------------------------------------------------
 hud_update:
+        call start_lights       ; Q pressed: the lights, red, red, red, green
         ld a,(race_on)          ; the start: lights -> GO!
         ld hl,shown_on
         cp (hl)

@@ -83,6 +83,13 @@ def put(sp, n, x, y, ang=None):
     sp.write(b + 6, bytes(4))
     if ang is not None: sp.write(b + 10, bytes([ang]))
 def g(sp, name): return sp.read16(SYM[name])
+def go_green(sp, limit=4.0):
+    # Q starts the start lights; the race starts on green (Grant, 10 Nov 2026). Hold Q
+    # until then; the seconds it took
+    press(sp, 'Q', True); t = 0.0
+    while sp.read8(SYM['race_on']) == 0 and t < limit:
+        sp.run(duration=0.02, fast_forward=True); t += 0.02
+    return t
 
 def shot(sp, name):
     sp.render_screen()
@@ -187,6 +194,21 @@ with Racer(headless=True) as sp:
     check(bad == 0, 'window matches the world map pixel for pixel, cars excluded (%d wrong)' % bad)
     shot(sp, 'stage3_start.png')
 
+    # ---- the start lights: Q, then red, red, red, all green - nobody moves till green ----
+    lamps = lambda: [attr(1, c) for c in (2, 5, 8)]
+    check(lamps() == [0x01] * 3, 'before Q: the three start lights, not lit (%s)' % lamps())
+    press(sp, 'Q', True); sp.run(duration=0.3, fast_forward=True)
+    l1 = lamps(); x1 = [car(sp, n)['x'] for n in range(N)]
+    sp.run(duration=0.8, fast_forward=True); l2 = lamps()
+    sp.run(duration=0.8, fast_forward=True); l3 = lamps()
+    x3 = [car(sp, n)['x'] for n in range(N)]; print('  x on red', x1, x3)
+    still = x3 == x1 and sp.read8(SYM['race_on']) == 0
+    print('start lights after Q:', l1, l2, l3)
+    check(l1 == [0x42, 1, 1] and l2 == [0x42, 0x42, 1] and l3 == [0x42] * 3, 'Q: the lights come on one at a time - red, red, red')
+    check(still, 'holding Q on red: nobody moves')
+    tg = go_green(sp)
+    check(sp.read8(SYM['race_on']) == 1 and lamps() == [0x44] * 3, 'then all three green: the race is on (%.1f s after Q)' % (1.9 + tg))
+
     # ---- you: accelerate, camera follows, top speed unchanged ----
     r0 = g(sp, 'renders')
     hold(sp, ['Q'], 2.0)
@@ -217,7 +239,8 @@ with Racer(headless=True) as sp:
                 laps[i] += 1; lap_t[i].append(round(t, 1))   # AI moves it ahead
             last_wp[i] = gl                      # for a moment to look ahead
             tx, ty = (c['x'] + 8) // 8, (c['y'] + 8) // 8
-            onroad[i] += surf[ty * MAPW + tx] == 0
+            if not (0 <= tx < MAPW and 0 <= ty < MAPH): print('  off the map:', n, c, 't', round(t, 1))
+            onroad[i] += 0 <= tx < MAPW and 0 <= ty < MAPH and surf[ty * MAPW + tx] == 0
             vs[i].append(math.hypot(c['vx'], c['vy']))
             vmax[i] = max(vmax[i], vs[i][-1])
             tracks[i].append((c['x'], c['y']))

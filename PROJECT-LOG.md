@@ -845,3 +845,29 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   on the longer track); frames {2:17, 3:255, 4:26, 5:1}; autopilot lap 19.2 s (was ~15.5).
   Computer-car laps 17.6-22.4 s. drive_test: 1 FAIL - 12.0 pictures a second off the start with the
   five big cars bunched (asks 13); everything else PASS. nos_test PASS.
+
+## 2026-11-10 SAST - sound only when it matters; more skid; NOS sounds; start lights
+- Grant: "too much noise, just need noises if I accelerate or skid or bump something". The engine
+  (the interrupt's putter and the spare-time note) now plays only while you hold Q; a skid hisses
+  (a few quick flips at random short gaps from the interrupt, more for a harder slide); crashes as
+  before. Measured with tools/record_sound.py (now steps through every sound): coasting 4 flips in
+  a second (the engine's tail as Q is let go).
+- Grant: "more skidding ... a controlled skid gets you around corners". Your car slides from 0.625
+  px a frame (SKID_V 160, was 1.0) - the computer cars keep 1.0 (SKID_VC): with the earlier slide
+  Jane went wide off the world's bottom edge. Your slide is capped at 2 steps (sideways speed dies
+  at 1/32 - 1/64 with the earlier start spun the car out of control), and in a hard slide your
+  steering is 1.5x (an extra step on alternate frames). First try was 2x and 1/64: measured 152
+  degrees of turn in 0.3 s while the car's path moved 6 - a spin. Now 113 degrees while the path
+  follows twice as fast as before; let go of the steering and it grips again.
+- Bug found by it (old, shown up by the bigger track): past the world's edge a car was put back at
+  0 or at the limit by the sign of its SPEED - a car pushed back while past the bottom edge was sent
+  to the top, and Jane stuck flipping. Now by the sign of its position.
+- Grant: a noise when you pick up NOS and when you fire it. The interrupt plays effects: pick-up a
+  rising chirp (12 frames), fire a rush of noise (25 frames). Effects use only A, H, L in the
+  interrupt (the cloth fill leaves room for 6 bytes of pushes).
+- Grant: "when you press Q, there are 3 lights. RED, RED, RED then all green ... until they are all
+  green no-one goes". The three lamps start unlit (blue on black); Q lights them red one at a time,
+  0.8 s apart, each with a beep; at 2.6 s all three turn green with a higher beep, the race starts
+  and GO! shows beside them. Holding Q before green moves nothing (your car's buttons are cleared
+  until race_on). Tests: the lights, nobody moving on red, green.
+- drive_test: 1 FAIL (12.0 pictures a second off the grid, asks 13); nos_test PASS.

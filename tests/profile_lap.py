@@ -25,6 +25,8 @@ CARS = SYM['cars']
 with P(headless=True) as sp:
     sp.load_tape(os.path.join(ROOT, 'build', 'racer.tap'))
     while sp.read16(SYM['renders']) == 0: sp.run(duration=0.1, fast_forward=True)
+    sp.devices.notify(zs.KeyStroke(zs.KEYS['Q'].ID, pressed=True))   # the start lights: to green first
+    while sp.read8(SYM['race_on']) == 0: sp.run(duration=0.02, fast_forward=True)
     for a in ADDR: sp.set_breakpoint(a)
     x0 = sp.read16(CARS + 1); wp = 0
     while wps[wp][0] < x0 + 30: wp += 1

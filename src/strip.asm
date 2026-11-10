@@ -633,6 +633,8 @@ nt_3:
         ld (NOS_SHOW),a
         call nos_place
         call inv_draw
+        ld hl,0*256+12          ; the pick-up chirp: 12 frames (L), kind 0 (H)
+        ld (snd_fxt),hl
         ld a,M_NOS
         jp msg_say
 
@@ -660,5 +662,7 @@ nf_2:
         ld a,BOOST_FR
         ld (BOOST_T),a
         call inv_draw
+        ld hl,1*256+25          ; the rush of the NOS: 25 frames (L), kind 1 (H)
+        ld (snd_fxt),hl
         ld a,M_BOOST
         jp msg_say

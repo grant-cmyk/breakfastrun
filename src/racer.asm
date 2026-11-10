@@ -227,6 +227,11 @@ tk_clock:
         dec (hl)
 tk_nb:
         call read_keys          ; your buttons -> your car's C_CTRL
+        ld a,(race_on)          ; before green: Q starts the lights, but your
+        or a                    ; car stays on the grid
+        jr nz,tk_on
+        ld (cars+C_CTRL),a
+tk_on:
         ld a,(cars+C_LAPS)      ; finished: no more buttons - your car rolls
         cp LAPS+1               ; to a stop a little over the line
         jr c,tk_you
@@ -296,11 +301,16 @@ rk2:
         bit 0,a
         jr nz,rk_qup
         set 2,c
-        ld a,(q_free)           ; first press of Q starts the race - a new
+        ld a,(q_free)           ; first press of Q starts the lights - a new
         or a                    ; press: the Q that started this race (after
-        jr z,rk3                ; the last one finished) has to be let go
-        ld a,1
-        ld (race_on),a
+        jr z,rk3                ; the last one finished) has to be let go.
+        ld a,(start_go)         ; (the race itself starts on green:
+        or a                    ; start_lights in hud.asm)
+        jr nz,rk3
+        inc a
+        ld (start_go),a
+        ld a,(FRAMES)
+        ld (start_f0),a
         jr rk3
 rk_qup:
         ld a,1
@@ -334,6 +344,17 @@ physics:
         ld e,(ix+C_CTRL)
         ld a,(ph_steps)         ; steering: one heading step per frame
         ld d,a
+        ld a,(ix+C_KIND)        ; you, in a hard slide (step 2 or more, last
+        or a                    ; frame): the car swings round twice as fast -
+        jr nz,ph_st             ; a controlled skid gets you round a corner
+        ld a,(snd_skid)         ; (Grant, 10 Nov 2026) - half as fast again:
+        cp 2                    ; an extra step on every other frame (double
+        jr c,ph_st              ; spun the car round while it slid straight on)
+        ld a,(ticks)
+        and 1
+        jr z,ph_st
+        inc d
+ph_st:
         bit 0,e
         jr z,ph_nl
         ld a,(ix+C_ANG)
@@ -449,9 +470,11 @@ ph_xp:
         cp (MAPW*8-16) AND 255
         jr c,ph_xok
 ph_xout:
-        ld hl,0
-        bit 7,(ix+C_VX+1)
-        jr nz,ph_xset
+        ld hl,0                 ; out at the top/left (the position went
+        bit 7,(ix+C_X+1)        ; negative): 0; at the far edge: the limit.
+        jr nz,ph_xset           ; (It went by the speed's sign: a car pushed back
+                                ; while past the far edge was sent to 0 - Jane
+                                ; got stuck at the bottom, 10 Nov 2026)
         ld hl,MAPW*8-17
 ph_xset:
         ld (ix+C_X),l
@@ -496,9 +519,11 @@ ph_yp:
         cp (MAPH*8-16) AND 255
         jr c,ph_yok
 ph_yout:
-        ld hl,0
-        bit 7,(ix+C_VY+1)
-        jr nz,ph_yset
+        ld hl,0                 ; out at the top/left (the position went
+        bit 7,(ix+C_Y+1)        ; negative): 0; at the far edge: the limit.
+        jr nz,ph_yset           ; (It went by the speed's sign: a car pushed back
+                                ; while past the far edge was sent to 0 - Jane
+                                ; got stuck at the bottom, 10 Nov 2026)
         ld hl,MAPH*8-17
 ph_yset:
         ld (ix+C_Y),l
@@ -519,10 +544,19 @@ ph_yok:
 ; frame, then 1/64 - a long slide (Grant asked for more). No multiplying; only while
 ; turning fast.
 ; ---------------------------------------------------------------------
-SKID_V    equ 256               ; slides from 1.0 px a frame (top speed 1.75)
+SKID_V    equ 160               ; slides from 0.625 px a frame (top speed 1.75; it was
+                                ; 1.0 - Grant, 10 Nov 2026: skid at any decent speed)
+SKID_VC   equ 256               ; the computer cars: from 1.0 px a frame, as before
 SKID_STEP equ 64                ; and more for each 0.25 faster (Grant: more skid)
 SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
+SKID_NY   equ 2                 ; you: at most 2 (1/32) - with the slide starting
+                                ; sooner, 1/64 spun the car out of control
 skid:
+        ld a,(ix+C_KIND)        ; you: how hard you slide, for the sound and the
+        or a                    ; steering (0 = gripping, 1-3 = the slide's steps)
+        jr nz,sk_0
+        ld (snd_skid),a
+sk_0:
         ld a,(ix+C_CTRL)        ; only while turning: that is when it slides
         and CT_L+CT_R           ; (let go, and the grip comes back)
         ret z
@@ -546,13 +580,33 @@ sk_1:
         rr e
         add hl,de
         ld de,SKID_V
+        ld a,(ix+C_KIND)        ; computer cars slide from SKID_VC (they are tuned
+        or a                    ; to it, and wider slides took them off the world)
+        jr z,sk_v
+        ld de,SKID_VC
+sk_v:
         or a
         sbc hl,de
         pop de
         pop bc
         ret c                   ; slow: it grips
-        ld a,SKID_N             ; up to SKID_N steps: each SKID_STEP faster,
+        ld a,(ix+C_KIND)        ; up to SKID_N steps (you: SKID_NY): each
+        or a                    ; SKID_STEP faster,
+        ld a,SKID_N
+        jr nz,sk_lv
+        ld a,SKID_NY
 sk_lv:                          ; half the push and half the friction again
+        push af
+        neg                     ; you: the slide's step, SKID_NY+1-A
+        add a,SKID_NY+1
+        ld (sk_lvl),a
+        ld a,(ix+C_KIND)
+        or a
+        jr nz,sk_lv1
+        ld a,(sk_lvl)
+        ld (snd_skid),a
+sk_lv1:
+        pop af
         sra d
         rr e
         sra b
@@ -2065,6 +2119,9 @@ sp_1:
         ld a,(you_done)
         or a
         ret nz
+        ld a,(cars+C_CTRL)      ; only while you accelerate (Q): rolling, the
+        and CT_GO               ; engine is quiet (Grant, 10 Nov 2026: too much
+        ret z                   ; noise - accelerate, skid or bump only)
         ld hl,(cars+C_VX)       ; speed, roughly: |vx| + |vy|
         call abs_hl
         push hl
@@ -2970,6 +3027,10 @@ oc_dx:    dw 0
 oc_dy:    dw 0
 snd_gap:  db 0                  ; engine: counts between speaker flips (0 quiet)
 snd_bump: db 0                  ; crash noise: pictures left
+snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
+snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
+snd_fxk:  db 0                  ; ... which: 0 NOS picked up, 1 NOS fired, 2 up: a beep
+sk_lvl:   db 0
 snd_port: db 6                  ; what port 254 last had: border yellow
 ai_s:     db 0
 ph_cnt:   db 0
@@ -2979,6 +3040,9 @@ ph_py:    dw 0
 rec_lap:     dw 0xFFFF          ; the lap record: the best lap of any race since
                                 ; loading (not cleared by a new race; 0xFFFF none)
 race_vars:
+start_go:    db 0               ; Q pressed: the lights are coming on
+start_f0:    db 0               ; FRAMES when Q was pressed
+start_ph:    db 0               ; the lights shown: 0 none, 1-3 red, 4 green
 race_on:     db 0
 race_over:   db 0
 ticks:       dw 0
@@ -3143,7 +3207,56 @@ isr:
         xor 24
         ld (snd_port),a
         out (254),a
-isr_q:
+isr_q:                          ; (only A, H and L here: the interrupt may land
+        ld a,(snd_fxt)          ; while the cloth fill has SP in the buffer, which
+        or a                    ; has room for just 6 bytes of pushes)
+        jr z,isr_sk
+        dec a                   ; an effect, a frame at a time:
+        ld (snd_fxt),a
+        ld l,a
+        ld a,(snd_fxk)
+        or a
+        jr nz,fx_fire
+        ld a,l
+        add a,a                 ; NOS picked up: a chirp that rises (the gap
+        add a,l                 ; between flips shrinks, 53 down to 20)
+        add a,20
+        jr fx_go
+fx_fire:
+        cp 1                    ; (kind 2 up: a beep, flips that many counts apart)
+        jr nz,fx_go
+        ld a,r                  ; NOS fired: a rushing noise (random gaps)
+        and 31
+        add a,8
+fx_go:
+        ld l,a
+        ld h,6
+        jr isr_burst
+isr_sk:
+        ld a,(snd_skid)         ; you are sliding: a hiss - a few quick speaker
+        or a                    ; flips at random short gaps, every frame (more
+        jr z,isr_x              ; for a harder slide)
+        add a,a
+        add a,2
+        ld h,a
+        ld l,0                  ; (gap 0: a random one each flip)
+isr_burst:                      ; H flips, L counts apart (16 T a count)
+        ld a,(snd_port)
+        xor 24
+        ld (snd_port),a
+        out (254),a
+        ld a,l
+        or a
+        jr nz,ib_1
+        ld a,r
+        and 7
+        add a,3
+ib_1:
+        dec a
+        jr nz,ib_1
+        dec h
+        jr nz,isr_burst
+isr_x:
         pop hl
         pop af
         ei
