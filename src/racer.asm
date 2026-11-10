@@ -192,7 +192,7 @@ ws_in_time:
         jr nz,wait_show
         ld (hl),PACE_FR
 wait_show:
-        halt                    ; wait until the rhythm's frames have passed
+        call snd_wait           ; wait - playing the engine meanwhile, or HALT
         ld a,(last_shown)       ; since the last picture went up
         ld b,a
         ld a,(FRAMES)
@@ -203,6 +203,7 @@ wait_show:
         ld a,(FRAMES)
         ld (last_shown),a
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
+        call snd_picture        ; this picture's engine pitch; the crash fades
         ld hl,(renders)
         inc hl
         ld (renders),hl
@@ -1248,6 +1249,19 @@ bump:
         ld hl,(bumps)           ; touching: count it (the tests read this)
         inc hl
         ld (bumps),hl
+        push ix                 ; your car in it?  a crunch
+        pop hl
+        ld de,cars
+        or a
+        sbc hl,de
+        jr z,bp_you
+        ld hl,(bump_b)
+        sbc hl,de               ; (carry is clear: cars <= IX)
+        jr nz,bp_snd
+bp_you:
+        ld a,SND_CRASH
+        ld (snd_bump),a
+bp_snd:
         ; touching: bounce apart. Along whichever way they are further
         ; apart, each car is kicked away from the other at KICK speed and
         ; nudged 2 pixels; their speed the other way is kept.
@@ -1756,6 +1770,100 @@ copy_done:
         ld sp,(save_sp)
         ld iy,23610
         ei
+        ret
+
+; ---------------------------------------------------------------------
+; SOUND (the beeper): played in the time the loop would otherwise spend
+; waiting for its next picture, so it costs no frames (the zxspectrum
+; skill's sound notes, from Traverse USA). Each piece is short - at most
+; ~7.5k T - so the copy still starts well ahead of the beam after the
+; interrupt it was waiting for.
+;   engine: one speaker flip per piece, the gap set by your speed: about
+;           230 Hz rolling, 450 Hz flat out; silent before the start and
+;           after the finish
+;   crash:  noise when your car hits another, for SND_CRASH pictures
+; Port 254: bits 0-2 the border (yellow, 6), bits 3-4 the speaker.
+; ---------------------------------------------------------------------
+SND_CRASH equ 6
+snd_picture:
+        ld a,(snd_bump)         ; the crash fades a picture at a time
+        or a
+        jr z,sp_1
+        dec a
+        ld (snd_bump),a
+sp_1:
+        xor a                   ; engine pitch: 0 = quiet
+        ld (snd_gap),a
+        ld a,(race_on)
+        or a
+        ret z
+        ld a,(you_done)
+        or a
+        ret nz
+        ld hl,(cars+C_VX)       ; speed, roughly: |vx| + |vy|
+        call abs_hl
+        push hl
+        ld hl,(cars+C_VY)
+        call abs_hl
+        pop de
+        add hl,de
+        srl h                   ; / 4: about 0..120
+        rr l
+        srl h
+        rr l
+        ld a,h
+        or a
+        jr z,sp_2
+        ld l,255
+sp_2:
+        ld a,l
+        cp 8
+        ret c                   ; all but stopped: quiet
+        cp 112
+        jr c,sp_3
+        ld a,111
+sp_3:
+        neg                     ; gap = 150 - speed: faster, higher
+        add a,150
+        ld (snd_gap),a
+        ret
+snd_wait:
+        ld a,(snd_bump)
+        or a
+        jr nz,sw_crash
+        ld a,(snd_gap)
+        or a
+        jr nz,sw_engine
+        halt                    ; no sound: just wait for the interrupt
+        ret
+sw_engine:                      ; one flip, then the gap (51 T a count)
+        ld b,a
+        ld a,(snd_port)
+        xor 24
+        ld (snd_port),a
+        out (254),a
+sw_e1:
+        ex (sp),hl
+        ex (sp),hl
+        djnz sw_e1
+        ret
+sw_crash:                       ; 16 random flips, random short gaps
+        ld c,16
+sw_c1:
+        call rnd
+        and 24
+        or 6
+        out (254),a
+        call rnd
+        and 31
+        inc a
+        ld b,a
+sw_c2:
+        djnz sw_c2
+        dec c
+        jr nz,sw_c1
+        ld a,6
+        out (254),a
         ret
 
 ; ---------------------------------------------------------------------
@@ -2561,6 +2669,9 @@ cloth_pat: defs 32              ; 4 kinds of cloth line (aligned: index by bits)
 pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
 pace_hold: db 0
 ph_steps: db 1
+snd_gap:  db 0                  ; engine: counts between speaker flips (0 quiet)
+snd_bump: db 0                  ; crash noise: pictures left
+snd_port: db 6                  ; what port 254 last had: border yellow
 ai_s:     db 0
 ph_cnt:   db 0
 ph_px:    dw 0

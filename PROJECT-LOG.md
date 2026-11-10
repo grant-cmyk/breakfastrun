@@ -445,3 +445,13 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   2 black/green, 3 blue/green, 4 red/yellow, 5 black/cyan, 6 magenta/cyan, and 1, 2, 4 with a 25%
   dot cloth (a 50% checker shimmers when it scrolls a pixel at a time - one-bit-art rule 16).
   docs/design/colours.png. Waiting on Grant's pick.
+
+## 2026-11-10 07:19 SAST - sound: engine and crash (beeper)
+- Grant: sound when cars collide; see what can be done with car sounds. Played in the loop's wait for
+  its next picture (zxspectrum skill sound notes, Traverse USA): snd_wait replaces the HALT - one
+  speaker flip and a gap set by your speed (gap 150..39 counts of 51 T: about 230 Hz rolling to ~880 Hz
+  flat out), silent before the start and after you finish; a crash (your car in a bump) plays random
+  flips for 6 pictures. Pieces under ~7.6k T so the copy still starts ahead of the beam.
+- Measured, whole lap: work 181.5k T (unchanged - the sound is in the wait); 196 pictures at 3 frames,
+  22 at 4. Engine gap follows speed (60 at 1.55, 101 at 0.77); a bump with you sets the crash.
+  Not heard: the cloud has no audio - Grant to listen. drive_test RESULT: PASS.
