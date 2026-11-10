@@ -544,3 +544,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   A plain road only, B plain out past the O's, C checks only in the corners and infield. Not built:
   the engine fills the cloth over the whole window, so a plain road means clearing the dots on the
   road tiles each picture - a cost to measure once Grant picks one.
+
+## 2026-11-10 SAST - editor: right-click paints paper; Jane's face redrawn
+- Grant: left click ink, right click paper. Left-click draws with the picked tool (Ink to start);
+  right-click paints Paper (on a face, the band). (A comment I added first cut off the paint call
+  on the same line - caught by a click test in Chromium before publishing.)
+- Grant: Jane's nose not so big, pigtails, a slightly narrower face. Pigtails out at the sides,
+  a parted fringe, dot eyes, a one-pixel nose, a little smile, the jaw tapering to a small chin.
+  Checked in the game's own race order: docs/design/panel_jane_pigtails.png. Data only (same size);
+  the full drive test was not re-run for it.

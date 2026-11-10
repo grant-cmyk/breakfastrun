@@ -78,8 +78,8 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
         <button id="revert">Revert this heading</button>
         <span class="edited" id="edited"></span>
       </div>
-      <p class="note" id="facenote" hidden>A face is one colour on the driver's band in the race order, exactly as here: <b>Ink</b> draws, <b>Clear</b> (or right-click) shows the band. <b>Mirror</b> paints both halves at once. Faces show beside the cars before the race starts.</p>
-      <p class="note" id="carnote"><b>Ink</b> is black. <b>Paper</b> is the car's white body: solid, so the road does not show through it. <b>Clear</b> leaves the road showing. Right-click also clears. <b>Mirror</b> paints both sides of the car at once, on the yellow line (straight up and 45° only). At straight up it can flip the checker on a tyre, because the checker does not mirror.</p>
+      <p class="note" id="facenote" hidden>A face is one colour on the driver's band in the race order, exactly as here: <b>left-click</b> draws Ink, <b>right-click</b> (or Clear) shows the band. <b>Mirror</b> paints both halves at once. Faces show beside the cars before the race starts.</p>
+      <p class="note" id="carnote"><b>Ink</b> is black. <b>Paper</b> is the car's white body: solid, so the road does not show through it. <b>Clear</b> leaves the road showing. <b>Left-click</b> draws with the tool you have picked (Ink to start); <b>right-click</b> paints Paper. <b>Mirror</b> paints both sides of the car at once, on the yellow line (straight up and 45° only). At straight up it can flip the checker on a tyre, because the checker does not mirror.</p>
     </section>
 
     <section aria-label="Preview">
@@ -191,10 +191,11 @@ function paint(x, y, v) {
   const p = mirror && partner(x, y); if (p) g[p[1]][p[0]] = v;
 }
 grid.addEventListener('contextmenu', e => e.preventDefault());
+// left button: the tool picked (Ink to start); right button: paper (on a face, the band)
 grid.addEventListener('pointerdown', e => {
   e.preventDefault(); grid.setPointerCapture(e.pointerId);
   undo.push({ mode, car, head, g: cur().map(r => r.slice()) }); if (undo.length > 200) undo.shift();
-  painting = e.button === 2 ? '.' : tool; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false);
+  painting = e.button === 2 ? (mode === 'face' ? '.' : 'o') : tool; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false);
 });
 grid.addEventListener('pointermove', e => { if (!painting) return; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false) });
 ['pointerup', 'pointercancel'].forEach(t => grid.addEventListener(t, () => { if (painting) { painting = null; save(); saveF(); refresh() } }));

@@ -5,7 +5,7 @@ face says its driver's way of driving (Grant, 10 Nov 2026):
   CYAN   the racer: shades, angry brows, gritted teeth
   GREEN  the slow truck: asleep - a cap, eyes shut, a snoring o, a z
   PINK   the tank commander: a steel helmet with a star, stern brows, a moustache
-  WHITE  Slim Jane: long hair, a fringe, lashes, a smile
+  WHITE  Slim Jane: pigtails, a parted fringe, a small nose, a smile
   (pool) SPECS  the steady one: round glasses, a straight mouth
 Shown ink on the car's colour band. Writes src/faces.asm (16 rows x 2 bytes a
 face, kept in TOPMEM) and build/faces/*.txt for one_bit_review.py."""
@@ -94,23 +94,24 @@ F['PINK'] = ["................",
              "....##....##....",
              "......####......",
              "................"]
-# WHITE: Slim Jane (Grant, 10 Nov 2026: "need a girl in the race") - long hair
-# framing her face, a fringe, lashes over the eyes, a smile
+# WHITE: Slim Jane (Grant, 10 Nov 2026: "need a girl in the race"; then "the nose
+# is not so big - pigtails", "slightly narrower face"): a fringe parted in the
+# middle, pigtails, dot eyes, a one-pixel nose, a little smile, a jaw tapering to a small chin
 F['WHITE'] = ["................",
+              ".....######.....",
               "....########....",
-              "..############..",
-              ".##############.",
-              ".####......####.",
-              "###..........###",
-              "##..#.#..#.#..##",
-              "##..##....##..##",
-              "##............##",
-              "##............##",
-              "##...#....#...##",
-              "##....####....##",
-              "##.#........#.##",
-              "##..##....##..##",
-              "##....####....##",
+              "...##########...",
+              "...###....###...",
+              ".##.#......#.##.",
+              "###.#.#..#.#.###",
+              "###.#.#..#.#.###",
+              "###.#......#.###",
+              ".##.#...#..#.##.",
+              ".##.#.#..#.#.##.",
+              "..#..#.##.#..#..",
+              "......#..#......",
+              ".......##.......",
+              "................",
               "................"]
 # The pool: drivers kept for later races, not in the game yet (tools/pool_art.txt)
 POOL = {}
