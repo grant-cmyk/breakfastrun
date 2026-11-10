@@ -1,0 +1,113 @@
+<title>Breakfast Run Layout Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: a review sheet - today's screen and the proposal side by side, then numbered findings matching the screen's markers.
+   One look: the game's dark bezel, Spectrum yellow for headings, cyan for the proposal's notes. */
+:root {
+  --bg: #15161c; --panel: #1f2129; --line: #343745; --fg: #e8e9ef; --muted: #a2a6b8;
+  --yel: #d7d700; --cyan: #00d7d7; --red: #ff5a4f; --grn: #3ad46a;
+  --f-disp: "Silkscreen", "Courier New", monospace; --f-body: "Inter", system-ui, sans-serif; --f-mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--fg) }
+body { font: 15px/1.55 var(--f-body); padding-block: 22px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 22px }
+h1 { font: 400 28px/1.15 var(--f-disp); color: var(--yel); margin: 0; text-wrap: balance }
+h2 { font: 400 15px var(--f-disp); color: var(--yel); margin: 0; letter-spacing: .03em }
+.lede { color: var(--muted); max-width: 72ch; margin: 6px 0 0 }
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px }
+@media (max-width: 760px) { .shots { grid-template-columns: minmax(0, 1fr) } }
+figure { margin: 0; background: #000; border-radius: 10px; padding: 10px; display: grid; gap: 8px; min-width: 0 }
+figure img { width: 100%; image-rendering: pixelated; display: block; border-radius: 4px }
+figcaption { font: 600 12px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em }
+.rules { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 8px }
+.rules ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; max-width: 80ch }
+.find { display: grid; gap: 12px }
+.item { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px }
+.num { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: #000; font: 700 15px var(--f-body); display: grid; place-items: center }
+.item h3 { margin: 0 0 4px; font: 600 15px var(--f-body) }
+.item p { margin: 0; max-width: 76ch; color: var(--fg) }
+.item p + p { margin-top: 6px }
+.tag { display: inline-block; font: 600 11px var(--f-mono); letter-spacing: .06em; padding: 1px 7px; border-radius: 10px; margin-left: 6px; vertical-align: 2px }
+.do { background: #0e3a40; color: var(--cyan) } .keep { background: #173b22; color: var(--grn) } .ask { background: #43391a; color: var(--yel) }
+.cost { font: 13px var(--f-mono); color: var(--muted) }
+.answer { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--yel); border-radius: 10px; padding: 16px; display: grid; gap: 8px }
+.answer p { margin: 0; max-width: 78ch }
+table { border-collapse: collapse; font: 13px var(--f-mono); font-variant-numeric: tabular-nums }
+td, th { padding: 4px 10px 4px 0; text-align: left; border-bottom: 1px solid var(--line) }
+th { color: var(--muted); font-weight: 600 }
+.tw { overflow-x: auto }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Layout Review</h1>
+    <p class="lede">The race screen today, and a proposal that stays inside the Spectrum's rules. Numbers on the left screen match the findings below. The right screen is built from a real game screen, cell by cell, so everything in it can be drawn by the game.</p>
+  </header>
+
+  <div class="shots">
+    <figure><img src="data:image/png;base64,__NOW__" alt="The race screen today, with numbered markers on each area"><figcaption>Today (mid-race)</figcaption></figure>
+    <figure><img src="data:image/png;base64,__PROPOSED__" alt="The proposed race screen: your place and lap in the top bar, smaller faces, a wider speech bubble"><figcaption>Proposed</figcaption></figure>
+  </div>
+
+  <section class="rules">
+    <h2>The rules every change keeps to</h2>
+    <ul>
+      <li><b>One ink and one paper colour per 8 × 8 cell</b>, and BRIGHT per cell. Every coloured panel starts and ends on a cell edge.</li>
+      <li><b>Anything that moves stays in the play window</b>, which is one colour pair (blue on cyan). Nothing there can clash, because no cell ever needs a second ink.</li>
+      <li>Panels that sit next to each other use <b>different papers</b>, or one is BRIGHT and one isn't, so their edges read without lines.</li>
+      <li>The border is free: changing its colour costs no pixels and can't clash.</li>
+    </ul>
+  </section>
+
+  <section class="find">
+    <div class="item"><div class="num">1</div><div>
+      <h3>The message bar is empty while you race <span class="tag do">change</span></h3>
+      <p>After GO, the two rows under the track's name go blank, while your place and lap are only tiny digits in the race order. Put them here, large: your place in bright white on red (your colour) and the lap in black on bright yellow, with the race time beside them.</p>
+      <p class="cost">Cost: drawn only when the place or lap changes - no speed cost while racing.</p>
+    </div></div>
+    <div class="item"><div class="num">2</div><div>
+      <h3>The play window: one colour pair <span class="tag keep">keep</span></h3>
+      <p>Blue on cyan with no white is right: it can't clash and it doesn't flicker. Cars are told apart by their shapes, and their race numbers, not by colour. Colouring them would bleed into the cloth around every car.</p>
+    </div></div>
+    <div class="item"><div class="num">3</div><div>
+      <h3>The race order is crowded while racing <span class="tag do">change</span></h3>
+      <p>Each row squeezes a gap and a lap digit into the small font. With your lap at the top (1), drop the lap digit from every row and give the gap the room. Keep your row red, so you find yourself in a glance.</p>
+    </div></div>
+    <div class="item"><div class="num">4</div><div>
+      <h3>The mini-map <span class="tag keep">keep</span></h3>
+      <p>It reads well, and the dots move by XOR, so the map never has to be redrawn. The lap record sits above it, centred.</p>
+    </div></div>
+    <div class="item"><div class="num">5</div><div>
+      <h3>Your face is too blocky <span class="tag do">change</span></h3>
+      <p>It is your 16 × 16 drawing at double size, so every pixel is a 2 × 2 block. Shown at its own size, in a 2 × 2 cell red panel, it matches the faces in the race order and leaves space for the bubble.</p>
+    </div></div>
+    <div class="item"><div class="num">6</div><div>
+      <h3>The crew chief, the same <span class="tag do">change</span></h3>
+      <p>The same fix: 16 × 16 in a 2 × 2 cell blue panel, with the bubble's tail pointing at him.</p>
+    </div></div>
+    <div class="item"><div class="num">7</div><div>
+      <h3>The speech bubble fits its cells <span class="tag do">change</span></h3>
+      <p>The bubble's white paper must fill whole cells, or a white band shows above or below it. The proposal sizes the bubble to rows 20-22 exactly and widens it into the space the smaller faces free.</p>
+    </div></div>
+    <div class="item"><div class="num">8</div><div>
+      <h3>Use the border as a signal <span class="tag ask">your call</span></h3>
+      <p>Flash it green at GO, red when you crash and white when the NOS fires. It costs nothing and can't clash. (It shares a port with the speaker, and the sound code already keeps the border's colour, so this is a few bytes.)</p>
+    </div></div>
+  </section>
+
+  <section class="answer" aria-label="One more row at the top">
+    <h2>One more row at the top of the play window?</h2>
+    <p><b>Possible on memory now, but about 3% slower.</b> The window would go from 176 × 120 to 176 × 128 pixels. Measured costs per pixel line, from the lap profile:</p>
+    <div class="tw"><table>
+      <tr><th>Work</th><th>Now, a picture</th><th>8 more lines</th></tr>
+      <tr><td>Tablecloth</td><td>45.3k T</td><td>+3.0k T</td></tr>
+      <tr><td>Map tiles</td><td>27.0k T</td><td>+1.8k T</td></tr>
+      <tr><td>Copy to the screen</td><td>25.1k T</td><td>+1.7k T</td></tr>
+      <tr><th>Total</th><th>218.4k T</th><th>+6.5k T (budget: 209.7k)</th></tr>
+    </table></div>
+    <p><b>Memory:</b> the screen-copy code grows by about 320 bytes into the top of memory. The big cars freed about 870 bytes in the main area, so the map rows kept up there can move down to make room.</p>
+    <p><b>Layout:</b> the window's frame moves up into the message bar's second row, so the bar keeps one row: the big place and lap in (1) would become normal-size text. The game is already a little over budget in corners, since the new grip model, so the extra row is best done together with a speed pass.</p>
+  </section>
+</div>

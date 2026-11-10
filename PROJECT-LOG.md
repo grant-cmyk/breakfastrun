@@ -915,3 +915,21 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Next speed step if wanted: add only the frame's change to the world speed (small numbers, the
   existing sq4 multiply) instead of rebuilding it.
 - Tests: drive_test 1 FAIL (11.5 pictures a second off the grid, asks 13); nos_test PASS.
+
+## 2026-11-10 SAST - layout review; faces too blocky; one more row?
+- Grant: review the overall design within the Spectrum's pixel, colour and colour-clash limits;
+  then "the faces at the bottom are too blocky - they should be smaller - the blue and red"; then
+  "is it feasible performance wise to add one more row at the top to the gameplay".
+- tools/make_layout_review.py builds two screens from a real race screen (screen memory from the
+  emulator), cell by cell: docs/design/layout_now.png (numbered) and layout_proposed.png. The review
+  page docs/design/layout_review.html (template beside it; published
+  https://claude.ai/artifact/GL5FkuruWucbShFekbkLp8). Proposals: your place (bright white on red) and
+  lap (black on bright yellow) large in the message bar while racing - it is blank after GO; drop
+  the per-row lap digit from the race order; the two strip faces at their own 16 x 16 size in 2 x 2
+  cell panels (not doubled), the bubble widened and fitted to whole cells (rows 20-22); the border
+  as a free signal (green at GO, red on a crash, white for NOS). Keep: the one-colour play window,
+  the mini-map.
+- One more row (176 x 128): per line from the lap profile - cloth 377 T, tiles 225 T, copy 209 T -
+  about +6.5k T a picture on 218.4k (budget 209.7k). Memory: the copier grows ~320 bytes into
+  TOPMEM (15 bytes spare); the main area has ~870 free since the big cars, so the TOPMEM map rows
+  can move down. The bezel would take the message bar's second row. Best done with a speed pass.

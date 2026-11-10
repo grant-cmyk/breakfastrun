@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-10 22:06 SAST · machine: Claude cloud container · branch: main · commit: see `git log -1`
+**Stamped:** 2026-11-10 22:11 SAST · machine: Claude cloud container · branch: main · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 120 in an arcade bezel; blue-on-cyan
@@ -20,6 +20,7 @@ handles with the Skid Lab's grip model (src/grip.asm; the computer cars keep the
 Skid Lab: https://claude.ai/artifact/XWjkAzJ9kFKki9naPic3V8 - Grant tunes the grip model, then it goes in.
 Whole lap: work 218.4k T a picture (3 frames = 209.7k); 167 pictures at 3 TV frames, 87 at 4 (the grip model).
 Next speed step: grip.asm adds only each frame's change to the world speed.
+Layout review: https://claude.ai/artifact/GL5FkuruWucbShFekbkLp8 - Grant to choose what to build.
 Open: a speed pass for the start (drive_test fails 13/s off the grid: 12.0); Grant to touch up the big cars' 22.5/45.
 
 **Next step:** Grant plays `build/racer.tap` and says what to change next.
