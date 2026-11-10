@@ -1,6 +1,7 @@
 BREAKFAST RUN FACE ART v1
 X = ink   . = the band shows
-Drawn by Grant in the editor, 10 Nov 2026 (then PINK's and GREEN's swapped, at his ask). tools/make_faces.py uses these in
+Drawn by Grant in the editor, 10 Nov 2026 (then PINK's and GREEN's swapped, at his ask;
+the clown, now GREEN's, updated). tools/make_faces.py uses these in
 place of its own drawing for any driver named here.
 
 == YOU face ==
@@ -60,14 +61,14 @@ place of its own drawing for any driver named here.
 == GREEN face ==
 ................
 .X.X........X.X.
-..X.XX....XX.X..
+..X.X......X.X..
 .X.X.XXXXXX.X.X.
 ..X.X......X.X..
 ...XX.XXXX.XX...
 ...X........X...
-..X..XX..XX..X..
-..X..XX..XX..X..
-..X....XX....X..
+.XXX.XX..XX.XXX.
+.X.X.XX..XX.X.X.
+.XXX...XX...XXX.
 ...X........X...
 ...X..XXXX..X...
 ....X.XXXX.X....

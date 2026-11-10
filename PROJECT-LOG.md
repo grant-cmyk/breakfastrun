@@ -559,3 +559,5 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   make_faces.py now reads over its own drawings (as make_data.py does with car_art.txt). Then, at
   his ask, the faces of rows 4 and 5 swapped: PINK (the tank) and GREEN (the truck).
   Checked in the game's race order: docs/design/panel_grants_faces.png.
+- Grant's updated clown face (round eyes in rings): pasted still under PINK (from an editor draft
+  made before the swap); put on GREEN to keep the swap. PINK keeps the dark-haired face.
