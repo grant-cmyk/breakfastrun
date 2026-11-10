@@ -13,7 +13,7 @@ OUT = os.path.join(HERE, '..', 'src', 'world.asm')
 W, H = 72, 56                     # tiles (a border wide enough that the
                                   # camera never has to stop at the world's edge)
 PW, PH = W * 8, H * 8             # pixels
-ROAD = 52                         # road width in pixels (48 until 10 Nov 2026: a little wider)
+ROAD = 56                         # road width in pixels (48, then 52, then 56 - Grant, 10 Nov 2026)
 
 # centre line of the loop (pixels) - a rounded shape with an S-bend
 PATH = [(140, 300), (300, 300), (370, 300), (390, 260), (390, 200), (330, 170),
@@ -85,7 +85,7 @@ import random
 random.seed(7)
 items_img = Image.new('1', (PW, PH), 0)  # the breakfast things alone, for their masks
 ipx = items_img.load()
-far = road_mask(ROAD + 24).load()   # things stay clear of the O's (76 px band, as before the road grew)
+far = road_mask(ROAD + 24).load()   # things stay clear of the O's (a band 12 px each side wider than the road)
 taken = set()
 def free(tx, ty, w, h):
     for j in range(h):

@@ -4,7 +4,7 @@ face says its driver's way of driving (Grant, 10 Nov 2026):
   YOU    a racing helmet, visor down, a stripe over the top
   CYAN   the racer: shades and a grin
   GREEN  the smooth one: a cap, eyes closed, content
-  PINK   the wild one: spiky hair, staring eyes, mouth open
+  PINK   the tank commander: a steel helmet with a star, stern brows, a moustache
   WHITE  the steady one: round glasses, a straight mouth
 Shown ink on the car's colour band. Writes src/faces.asm (16 rows x 2 bytes a
 face, kept in TOPMEM) and build/faces/*.txt for one_bit_review.py."""
@@ -46,14 +46,24 @@ F['CYAN'] = face(ink=box(3, 5, 6, 7) + box(9, 5, 12, 7) + [(7, 5), (8, 5)] + [(2
 # GREEN: a cap (solid crown, peak to the right), closed happy eyes, small smile
 F['GREEN'] = face(ink=box(4, 1, 11, 2) + line(3, 15, 3) + [(3, 7), (4, 6), (5, 6), (6, 7), (9, 7), (10, 6), (11, 6), (12, 7)]
                       + [(5, 10), (6, 11), (7, 11), (8, 11), (9, 11), (10, 10)])
-# PINK: spikes for hair, ring eyes with pupils, an open O mouth
-spiky = ["..#....#....#...",
-         ".###..###..###..",
-         "..#.##...##..#..",
-         "..#..........#.."] + HEAD[4:]
-F['PINK'] = face(ink=[(3, 5), (4, 5), (5, 5), (2, 6), (6, 6), (2, 7), (6, 7), (3, 8), (4, 8), (5, 8), (4, 7),
-                      (10, 5), (11, 5), (12, 5), (9, 6), (13, 6), (9, 7), (13, 7), (10, 8), (11, 8), (12, 8), (11, 6),
-                      (7, 10), (8, 10), (6, 11), (9, 11), (6, 12), (9, 12), (7, 13), (8, 13)], base=spiky)
+# PINK: drives the tracked car - a tank commander (Grant, 10 Nov 2026): a steel
+# helmet (solid dome, a paper star badge, a wide brim), stern brows, a moustache
+F['PINK'] = ["................",
+             ".....######.....",
+             "...####..####...",
+             "..####....####..",
+             "..#####..#####..",
+             "################",
+             "..#..........#..",
+             "..#.###..###.#..",
+             "..#..#....#..#..",
+             "..#..........#..",
+             "..#..######..#..",
+             "..#....##....#..",
+             "...#........#...",
+             "....##....##....",
+             "......####......",
+             "................"]
 # WHITE: a side parting, round glasses joined by a bridge, a straight mouth
 F['WHITE'] = face(ink=line(5, 12, 2) + [(4, 3), (3, 4)] + [(3, 5), (4, 5), (5, 5), (2, 6), (6, 6), (2, 7), (6, 7), (3, 8), (4, 8), (5, 8),
                        (10, 5), (11, 5), (12, 5), (9, 6), (13, 6), (9, 7), (13, 7), (10, 8), (11, 8), (12, 8), (7, 6), (8, 6), (4, 7), (11, 7)]

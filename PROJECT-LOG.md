@@ -472,3 +472,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 ## 2026-11-10 07:35 SAST - merged to main
 - Grant: merge it. trial-window-22 merged into main (main was an ancestor: no conflicts).
   CONTINUE.md rewritten for main. build/racer.tap is the current build.
+
+## 2026-11-10 07:53 SAST - the tank commander's face; wider road
+- Grant: car 5 is a tank, give him a military outfit -> PINK (the tracked car; 4th on the grid) now a
+  tank commander: steel helmet with a paper star badge and brim, stern brows, moustache.
+- Grant: track slightly wider all round: ROAD 56 (was 52); items keep a band 12 px each side wider
+  than the road; all items placed; 91 O's; 22 masked tiles. drive_test RESULT: PASS; laps 13.8 16.9
+  14.2 14.9 s. Commits now as Claude <noreply@anthropic.com> (GitHub showed the earlier ones as
+  Unverified; history not rewritten - Grant to decide).
