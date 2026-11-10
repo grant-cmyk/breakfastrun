@@ -1,29 +1,30 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-09 19:46 SAST · machine: Claude cloud container · commit: see `git log -1`
+**Stamped:** 2026-11-10 07:35 SAST · machine: Claude cloud container · branch: main (trial-window-22 merged) · commit: see `git log -1`
 **Lifecycle:** Active
 
-**Status:** The race screen is built as agreed on the Claude Design canvas, then revised: window 23 x 16
-(left), panel with logo, race order and mini-map; message bar (lights, GO!, FINAL LAP!, FINISHED);
-LAP / TIME / BEST (time, car, lap) under the window; Q races again. Five cars; computer cars run at
-half rate. Kerbs and breakfast-table scenery. Real-ROM test 38/38 PASS.
-Frame rate over a whole lap: 140 pictures at 3 TV frames (16.7/s), 65 at 4 (12.5/s); busy stretches hold
-a steady 4 instead of 3,4,3,4.
+**Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 22 x 15 cells (176 x 120) in an arcade bezel; the
+table a blue-on-cyan chequered cloth (dark checks 25% dots); cereal O's (solid - cars bounce off) mark
+the road; breakfast things masked on top. Five of Grant's own cars (YOU, CYAN, GREEN the slow 3-axle
+truck, PINK the tracked car, WHITE), each computer car with its own driving style; skids at speed;
+the finish: cars roll to a stop, flags in the race order with the drivers' faces, RACE FINISHED when
+all are in. Beeper engine (pitch from your speed) and crash sound, played in the wait time. Own IM2
+interrupt routine. Real-ROM test PASS (pixel-exact window).
+Whole lap: work 193.7k T a picture; 177 pictures at 3 TV frames, 31 at 4.
 
-**Next step:** Grant plays `build/racer.tap` and decides on the frame-rate options below.
+**Next step:** Grant plays `build/racer.tap` and says what to change next.
 
-**Frame-rate options (each measured or estimated in PROJECT-LOG.md):**
-1. Accept as is (steady 16.7 in clear places, steady 12.5 in busy ones).
-2. Window 15 rows instead of 16: ~8k T a picture (estimate).
-3. Four cars instead of five: ~8-10k (estimate).
-4. Less on screen near the track (kerbs are the main tile cost now).
+**Tools:** car editor https://claude.ai/artifact/2EqdSKs3fDfUqERTX9pTzL (tools/make_car_editor.py; hand
+cars in tools/car_art.txt; tools/turn_car.py drafts the angled headings); mock-up scripts in tools/;
+tests/drive_test.py, tests/profile_lap.py, tests/smooth_cpu.py.
 
-**Constraint:** MEMORY - code and data end 0xBFA7, 89 bytes below the back buffer. Before any new
-feature: share the car masks across kinds (frees ~2 KB) or move data into the free bytes at the bottom
-of the buffer's third page.
+**Constraints:** memory - TOPMEM (0xFAD0..0xFFF3) about 80 bytes left; low memory about 280 bytes.
+Frame time: about 16k T of headroom on an average picture.
 
-**Waiting on Grant:** playtest; car art and breakfast art review; push tags stage1-verified (8501179) and
-stage2-verified (2ce33b7) from C:\Users\grant\repos\breakfastrun; confirm the repo should be public.
+**Waiting on Grant:** playtest; angled headings of his cars are drafts (redraw in the editor if any
+look wrong); confirm the repo should be public; push a tag for this build from his machine (cloud
+sessions cannot push tags).
 
-Full history: PROJECT-LOG.md · Notion row: https://app.notion.com/p/41342c9abb32810d8672e5281550b1ac ·
-Design canvas: https://claude.ai/artifact/1EoS3CaKDwVeBd7vqpeWjw
+Track names for later tracks (verified): The Breakfast Club, Green Eggs and Ham, The Dish Ran Away
+with the Spoon, Paddington's Marmalade, Goldilocks' Porridge, Breakfast in America.
+Full history: PROJECT-LOG.md · Notion row: https://app.notion.com/p/41342c9abb32810d8672e5281550b1ac

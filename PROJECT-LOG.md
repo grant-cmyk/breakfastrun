@@ -238,3 +238,237 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   renders today / 22x16 / 23x15 / what each loses from a real screen captured at the first bend
   (docs/design/window_trial.png). Estimates (not measured): column ~8k a picture (tiles, copy, and the
   copy's odd byte goes), row ~8.5k (tiles, copy, clear). Waiting on Grant to pick one to build as a trial.
+
+## 2026-11-09 20:53 SAST - trial: window one column less (branch trial-window-22)
+- Grant: "one column less is doable". WIN_W 22 (176 px); copier 12 + 10 bytes, no odd byte; 23 tiles across;
+  camera keeps you at 80,56. drive_test 38/38 PASS (window, frame and centring checks updated).
+- Measured, whole lap: 195.0k average (was 200.1k), 144 / 60 pictures at 3 / 4 frames (was 140 / 65);
+  copy 44.8k -> 41.3k. About 5k saved, not the 8k estimated: the tiles that drop out are mostly blank.
+- On a branch until Grant has played it beside today's build (build/racer_23wide.tap vs
+  build/racer_22wide_trial.tap).
+
+## 2026-11-09 20:56 SAST - surround mock-ups
+- Grant: "the outside rectangle for the game is really quite boring ... a few mockups". tools/make_surround_mockups.py
+  on a real corner screen of the 22-wide trial: A gingham tablecloth (red/white 2x2-cell checks, dithered
+  where they cross, white rim), B chequered-flag frame on green, C wooden table (yellow-on-red grain) with a
+  lace placemat edge, D blue-and-white kitchen tiles. HUD text on plain strips. All drawn once at start:
+  no cost per picture. docs/design/surrounds.png (+ _a.._d at 3x). Waiting on Grant's pick.
+
+## 2026-11-09 21:00 SAST - window-edge mock-ups
+- Grant does not like the solid 1-pixel rectangle round the play window. tools/make_edge_mockups.py: eight
+  edges with no plain line - A none (colour change), B drop shadow, C corner brackets, D red/white kerb band,
+  E tyre wall on grass, F square china plate rim on blue, G stitched hem on red, H thick rounded arcade bezel.
+  All in the cells outside the window, drawn once: no cost per picture. docs/design/edges.png,
+  edges_corners.png (top-left corner at 5x), edges_a.._h.png at 3x. Waiting on Grant's pick.
+
+## 2026-11-09 21:04 SAST - arcade bezel built in
+- Grant picked H, the arcade bezel. draw_frame now draws a 7-pixel black band outside the window with
+  rounded outer corners (4 rows of corner bytes in df_corn), drawn once. Test frame_ok checks the bands,
+  the rounded corners and that nothing spills outside. drive_test RESULT: PASS. build/racer_22wide_trial.tap.
+
+## 2026-11-09 21:08 SAST - car pixel editor
+- Grant asked for a simple pixel editor for the car graphic. docs/tools/car_editor.html (built by
+  tools/make_car_editor.py from car_editor.template.html with the game's art), published as a private
+  artifact: https://claude.ai/artifact/2EqdSKs3fDfUqERTX9pTzL. Draws the 3 drawn headings (0, 22.5, 45) per car
+  in ink / paper / clear, previews all 16 headings with the 1px halo over kerbs, and copies the art as text
+  ('BREAKFAST RUN CAR ART v1'). Checked in headless Chromium: paint, mirror, copy/load round trip, no errors.
+- When Grant's art comes back: make_data.py must read it, and car_rows must cover every car's rows (today it
+  uses the player's mask only). Up heading is not mirror-symmetric (tyre checker), so mirror starts off.
+
+## 2026-11-09 21:11 SAST - chequered tablecloth mock-ups
+- Grant: stylise the table as a chequered board, dithered, cars masked; the sides of the road are cereal O's;
+  one colour pair only (pixel scroll). tools/make_table_mockups.py redraws the real world: 32-px checks (dark
+  ones dithered), 140 cereal O's (thick ring, glint, hole shows the cloth) 3 px outside both road edges, items
+  and O's masked (white halo, solid inside), cars masked as in the game. A 50% dither, B 25% dots, C diagonal
+  lines, D = A in blue ink. docs/design/table.png (+ _a.._d). Not built.
+- Cost (estimate, not measured): cloth by pattern fill instead of the zero clear, about +10k T; masking the
+  O's and items instead of OR, about +25-40k T. Today 195k of 209.7k: would drop to 4 frames a picture unless
+  savings are found. Masks need memory (89 bytes free).
+
+## 2026-11-09 21:19 SAST - Grant's car is YOU
+- Grant drew the player car in the editor (an open-wheel racer, heading 0). Read from his screenshot pixel
+  by pixel and checked against it. Claude rebuilt 22.5 and 45 from his shapes (one-bit-art T1: shape model
+  reproduces his drawing exactly at 0, rasterised at 26.6 and 45, then cleaned: front hubs restored at 45,
+  pinholes filled, strays removed). Review: 1 island, largest block 4x4. docs/design/you_car_review.png.
+- tools/car_art.txt holds hand-drawn cars; make_data.py uses them in place of its own drawing; car_rows now
+  covers every car. drive_test RESULT: PASS. Editor rebuilt with the new art.
+- To do: add Grant's car to the one-bit-art exemplars (rule 15, claude-plugins-personal).
+
+## 2026-11-09 21:23 SAST - Grant's second car is YOU, his first is CYAN
+- Grant: make the first car a computer car; this one is the player's. Transcribed by eye (the screenshot
+  came mid-turn, not as a file) and checked against it. 22.5 and 45 rebuilt from his shapes and cleaned as
+  before. tools/car_art.txt now has YOU and CYAN. drive_test RESULT: PASS. Review sheet
+  docs/design/you_car_review.png. Editor republished with both.
+
+## 2026-11-09 21:37 SAST - tablecloth (D) and cereal O's built
+- make_world.py: 131 cereal O's (snapped to a 4-px grid) replace the kerbs: 90 tiles instead of 184, about
+  1 KB of memory back. Window ink blue (0x79).
+- racer.asm: clear_buffer replaced by cloth_fill, after the camera: 32-px checks, dark ones a 50% dither,
+  world-locked. 4 register pairs per line kind (BC DE HL AF), main and alternate sets swapped by EXX + EX
+  AF,AF' through patched slots in an unrolled 8-row push; per-third setup done once. Bug found and fixed:
+  the loader table straddled a page and an 8-bit add wrapped, so 1 in 4 line kinds jumped into data (a
+  72-frame stall); the guard that would have caught it sat after END and was never assembled.
+- Measured, whole lap: work 203.4k T a picture (cloth 42.1k, tiles 52.3k, ticks 43.7k, copy 41.3k, cars
+  15.2k); 127 pictures at 3 frames, 73 at 4. Pixel-exact test now includes the cloth: RESULT PASS.
+
+## 2026-11-09 21:48 SAST - speed-ups: own interrupt routine, cloth by character row
+- IM2 with our own interrupt routine (I=0x39 at the ROM's spare 0xFF bytes -> JR at 0xFFFF -> JP isr at
+  0xFFF4): it only counts FRAMES. The game reads keys from the ports and never calls the ROM. Saves the
+  ROM's keyboard scan every frame (~2.9k T a picture) and pushes 6 bytes, not 10+.
+- That lets the cloth fill go one character row at a time (8 lines, one per page, unrolled; dither
+  phase swapped by EXX + EX AF,AF' each line; a mid-row loader call where the check row changes), and
+  only bytes 0..23 of each line. Bugs caught by the pixel test and fixed: INC IXH changed F (a pattern
+  register); a helper clobbered the line number.
+- drive_test: laps now counted from the game's C_LAPS; the old waypoint-wrap count was fooled when the
+  AI moves C_WP ahead for a moment to look ahead (car 1 'lapped' twice in 0.4 s). Real laps unchanged:
+  15.0 15.1 14.9 17.4 s. RESULT: PASS.
+- Measured, whole lap: work 195.7k T a picture (was 203.4k): cloth 37.7k, tiles 51.6k, ticks 41.7k,
+  copy 41.1k, cars 15.0k. 149 pictures at 3 frames, 57 at 4 (was 127 / 73).
+
+## 2026-11-09 21:52 SAST - one character row less of view (Grant's offer)
+- WIN_H 120 (was 128); BAND_Y = the text rows under the window, now rows 20-21 (were 21-22); camera
+  centre (80,52); 16 rows of tiles; 15 character rows of cloth; win_attr WIN_H/8. Asserts guard cf_tab.
+  drive_test updated (window slice, bezel, centre, text rows): RESULT PASS.
+- Measured, whole lap: work 187.0k T a picture (was 195.7k): tiles 49.3k, ticks 40.3k, copy 38.5k, cloth
+  35.2k, cars 15.2k. 179 pictures at 3 frames, 34 at 4 (was 149 / 57).
+
+## 2026-11-09 21:53 SAST - measured option, not applied
+- O's 18 px apart (106, not 131): tiles 45.2k, work 181.9k, 191 at 3 frames / 26 at 4. Reverted to 15 px
+  pending Grant (it changes the look). CONTINUE.md rewritten for the branch.
+
+## 2026-11-10 05:50 SAST - skids, wider road, the finish, flags, shorter bottom text
+- Grant: cars skid when turning fast; road a little wider; a car that finishes stops a little over the
+  line; the race is Finished when every car is in; a chequered flag in the race order per finished car;
+  bottom text cut off by the map, drop the 0: from times.
+- skid (physics): above 1.25 px/frame, give back half of the sideways friction (sideways/16 a frame,
+  /8 for a computer car's 2-frame step) using the quarter-square multiply; slow cars grip as before.
+- ROAD 52 (was 48); the clear band for breakfast things kept at 76 px so the plate stays. 132 O's.
+- Finish: car_in records each car's place (fin_at, fin_count); finished cars get no buttons and roll
+  to a stop; ranking puts finished cars first in the order they came in; your time freezes on the
+  clock; race over when all 5 are in (or 30 s after you); RACE FINISHED  PRESS Q. Flag 8x8 at panel
+  column 30, centred on the two rows. A new race waits for Q to be let go first.
+- Bottom text: times without a leading 0: ('  14.2'); BEST 14.3 CYAN  LAP 3 fits in 21 columns.
+- Memory: start-up-only code (make_tables, make_copier, im2_on) moved past code_end into the back
+  buffer (runs once before the buffer is used; guarded below TAB_HI). start does them once; new_race
+  is where Q comes back to. drive_test RESULT: PASS.
+
+## 2026-11-10 05:56 SAST - computer-car personalities; top-of-memory data
+- Grant: computer cars a little faster, each with different logic and strengths. Driving styles
+  (ai_styles, by kind): turn-in reach, racing-line wander, braking (late / 45 deg / 27 deg), steering
+  fuss (14 / 7 deg); with throttle now in 16ths (pace_gate) and mistake rate:
+  CYAN racer 15/16, tidy, 45 deg; GREEN smooth 14/16, turns in early (reach 30), few mistakes;
+  PINK wild 15/16, late brakes, wide line, twitchy, most mistakes; WHITE steady 14/16, early brakes.
+  Laps (90 s watch): 13.6 14.8 15.8 14.5 s (were 14.7 15.5 15.3 17.2). drive_test RESULT: PASS.
+- Memory: TOPMEM 0xFAD0..0xFFF3 (above the generated copier, which ends 0xFAC3) holds read-only data
+  loaded in the start-up area and copied up by start; the logo first. HIGH is a pasmo keyword.
+
+## 2026-11-10 06:06 SAST - breakfast things on top of the cloth; frame rate back
+- Grant: the egg etc. on top of the chequered cloth, masked. make_world: mask = 1-px halo + solid
+  inside; a tile carries a mask only where it hides dithered cloth (28 tiles, 10 masks); items placed
+  within 3 tiles of where wanted at the spot needing fewest masked tiles (the 2nd plate fits again).
+  Masked tiles numbered from TM_FIRST, drawn by tdraw_m ((buf AND NOT mask) OR ink, shifted);
+  masks and the mini-map in TOPMEM (src/topdata.asm). Pixel test includes the masks: PASS.
+- Speed: skid now halves push and friction while turning fast (same top speed, sideways speed dies
+  half as fast) - no multiplies; O's on the 8-px tile grid (one tile each: tiles 56k -> 37k); friction
+  bug (RR resets flags after CP) caught by the top-speed test and fixed.
+- Measured, whole lap: work 183.8k T; 160 pictures at 3 frames, 48 at 4. Laps 13.7 14.5 13.7 15.0 s.
+  docs/design/items_on_cloth.png.
+
+## 2026-11-10 06:11 SAST - faces, shorter logo, PINK and WHITE cars
+- Grant: little cartoon faces for each car in the race order; RUN less tall to make room.
+  tools/make_faces.py: 16x16 line faces (YOU helmet+visor, CYAN shades+grin, GREEN cap+closed eyes,
+  PINK spikes+ring eyes+O mouth, WHITE glasses+straight mouth), kept in TOPMEM; tower_row draws place,
+  car (cols 26-27), face (28-29), flag (30). Logo 7x2 cells: RUN 8 px tall in the second row, egg
+  flattened beside it. Race order from row 5 (TOWER_Y). docs/design/panel_faces.png.
+- Grant's editor paste: PINK and WHITE heading 0 new (taken); his other headings were the old
+  generated art from a stale browser draft (not taken - would have undone his first car as CYAN).
+  PINK/WHITE 22.5 and 45 sampled 16x a pixel from his shapes, 45 made symmetric: drafts.
+  drive_test RESULT: PASS. Laps 13.6 14.4 13.8 14.9 s.
+
+## 2026-11-10 06:15 SAST - track 1 named
+- Grant: the first track is Breakfast at Tiffany's. BREAKFAST AT TIFFANY'S (22 characters, the
+  window's width) along row 0; msg_clear now clears only the message bar (rows 1-2), not row 0.
+  Test checks the name. drive_test RESULT: PASS. Other verified names for later tracks: The Breakfast
+  Club, Green Eggs and Ham, The Dish Ran Away with the Spoon, Paddington's Marmalade, Goldilocks'
+  Porridge, Breakfast in America.
+
+## 2026-11-10 06:26 SAST - fix: garbled faces once cars finish
+- Grant's screenshot: faces garbled in the race order. Cause: the flag code fell through into
+  tr_glyph for the bottom half; tr_face was added between them, so finished cars got half a face
+  drawn from the flag's bytes. Fixed with an explicit JR. New test: every finished car shows the
+  flag and its face matches the face data byte for byte. drive_test RESULT: PASS.
+  docs/design/flags_fixed.png.
+
+## 2026-11-10 06:30 SAST - faces spaced from the cars; clearer flag
+- Grant: faces too close to the cars; and the flag read as a glitch. Face now at panel columns
+  29-30 (column 28 a gap), flag at 31, redrawn as a square of 2x2 checks on a pole (8 x 14).
+  Test checks the flag bytes and the faces. drive_test RESULT: PASS. docs/design/panel_spaced.png.
+
+## 2026-11-10 06:35 SAST - Grant's GREEN car; GREEN the slowest
+- Grant's editor paste: GREEN heading 0 new (a long 3-axle racer); the rest unchanged or the stale
+  draft. 22.5 and 45 sampled from his shape: drafts. Grant: GREEN should be the slowest - throttle
+  12/16 (was 14). Laps: CYAN 13.6, GREEN 16.9, PINK 14.2, WHITE 15.3 s.
+- Test: 'not faster than your top speed' now counts speeds over 1.80 (bump kicks and slides add a
+  moment over the 1.75 cap; PINK hit 2.3% over 1.75, 0.1% over 1.80). drive_test RESULT: PASS.
+
+## 2026-11-10 06:37 SAST - smaller flag
+- Grant: flags smaller to fit in better. Now a 6x6 square of 2x2 checks on a 4-px pole, 2 px clear
+  of the face, centred on the place. Test updated. drive_test RESULT: PASS.
+  docs/design/panel_flags_small.png.
+
+## 2026-11-10 06:38 SAST - car editor opens on the game's art
+- Grant: put the graphics in the editor as they are in the game. Drafts are now saved per version of
+  the game's art (key = hash of it), so a new game version opens on its own art; older drafts stay in
+  the browser behind 'Bring back my earlier draft'. Checked in headless Chromium with a stale draft:
+  opens on the game art, button shown, draft restored, no errors.
+
+## 2026-11-10 06:41 SAST - CYAN redrawn by Grant
+- Editor paste (now starting from the game's art): one drawing changed, CYAN heading 0 (24 pixels).
+  22.5 and 45 rebuilt from it (sampled 16x a pixel; 45 symmetric). drive_test RESULT: PASS.
+
+## 2026-11-10 07:05 SAST - PINK redrawn by Grant (a tracked car)
+- Editor paste: one drawing changed, PINK heading 0 (86 pixels): tracks with treads, a round cockpit,
+  a barrel. Turned by sampling, the treads went to mush (one-bit-art T1), so 22.5 and 45 were rebuilt
+  from its key shapes (tracks as two rails, body, cockpit ring, barrel). tools/turn_car.py added for
+  the sampled drafts. docs/design/pink_headings.png. drive_test RESULT: PASS.
+
+## 2026-11-10 07:14 SAST - more skid
+- Grant: more skidding round corners. Slides from 1.0 px/frame (was 1.25) and one more step for each
+  0.25 faster, up to 3 (push and friction halved each step: same top speed; sideways speed dies at
+  1/16, 1/32, then 1/64 a frame). Measured on the road, full speed, full turn held: largest drift angle
+  125 degrees (was 75). (A first measurement on the grass read 33 for both: grass friction swamps it.)
+  drive_test RESULT: PASS; computer cars 99-100% on the road; laps 14.3 17.1 16.7 14.6 s.
+
+## 2026-11-10 07:16 SAST - colour options without white (mock-ups)
+- Grant: slight flicker, probably the chequered cloth, worse with the white; suggest colours without
+  white. tools/make_colour_mockups.py: a real game screen with the window redrawn as 1 blue/cyan,
+  2 black/green, 3 blue/green, 4 red/yellow, 5 black/cyan, 6 magenta/cyan, and 1, 2, 4 with a 25%
+  dot cloth (a 50% checker shimmers when it scrolls a pixel at a time - one-bit-art rule 16).
+  docs/design/colours.png. Waiting on Grant's pick.
+
+## 2026-11-10 07:19 SAST - sound: engine and crash (beeper)
+- Grant: sound when cars collide; see what can be done with car sounds. Played in the loop's wait for
+  its next picture (zxspectrum skill sound notes, Traverse USA): snd_wait replaces the HALT - one
+  speaker flip and a gap set by your speed (gap 150..39 counts of 51 T: about 230 Hz rolling to ~880 Hz
+  flat out), silent before the start and after you finish; a crash (your car in a bump) plays random
+  flips for 6 pictures. Pieces under ~7.6k T so the copy still starts ahead of the beam.
+- Measured, whole lap: work 181.5k T (unchanged - the sound is in the wait); 196 pictures at 3 frames,
+  22 at 4. Engine gap follows speed (60 at 1.55, 101 at 0.77); a bump with you sets the crash.
+  Not heard: the cloud has no audio - Grant to listen. drive_test RESULT: PASS.
+
+## 2026-11-10 07:35 SAST - blue on cyan with dots; smoother computer cars; O's 18 apart and solid
+- Grant: colour 1 (blue on cyan) with the 25% dots: window attr 0x29, cloth odd rows empty (dots).
+- Grant: computer cars jerky - measured: 3.4 / 6.8 px a picture alternating (2-frame steps on alternate
+  frames, a picture every 3). Now they move every frame and think on alternate ones; throttle-off
+  frames spread evenly (bit-reversed count). tests/smooth_cpu.py: spread 32-41% -> 15-22%.
+- Re-tune: GREEN 12/16 (slowest), WHITE 15/16, PINK fewer mistakes, eases at 45, line +-4
+  (late braking + the bigger skid ran it wide). Laps 14.0 17.2 14.6 14.9 s.
+- Grant: O spacing 18 px (91 O's); O's are solid: omap (1 bit a tile, TOPMEM); o_check on alternate
+  frames looks at the 4 tiles nearest each car, kicks it away like a bump, crunch if it is you.
+  Checked: you driving into an O stop 8 px short and bounce. 2 O bounces in 20 s of computer racing.
+- Measured, whole lap: work 193.7k T (was 181.5k: cars moving every frame + O checks); 177 pictures
+  at 3 frames, 31 at 4, 14 at 2. drive_test RESULT: PASS.
+
+## 2026-11-10 07:35 SAST - merged to main
+- Grant: merge it. trial-window-22 merged into main (main was an ancestor: no conflicts).
+  CONTINUE.md rewritten for main. build/racer.tap is the current build.

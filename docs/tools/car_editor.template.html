@@ -1,0 +1,279 @@
+<title>Breakfast Run Car Editor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a workbench - the 16x16 drawing grid on the left, what the game will show on the right. One dark look, by choice: a Spectrum on a desk. */
+:root {
+  --bg: #111216; --panel: #1b1d23; --raise: #252831; --line: #343844;
+  --fg: #ecebe6; --muted: #a3a8b3;
+  --sp-red: #d70000; --sp-yel: #d7d700; --sp-grn: #00d700; --sp-cyn: #00d7d7; --sp-mag: #d700d7; --sp-wht: #d7d7d7;
+  --ink: #000000; --paper: #ffffff; --focus: #ffd400;
+  --f-display: 'Silkscreen', 'Courier New', monospace;
+  --f-body: 'IBM Plex Sans', 'Segoe UI', Arial, sans-serif;
+  --f-mono: 'IBM Plex Mono', Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+.wrap { max-width: 1160px; margin: 0 auto; display: grid; gap: 20px }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: 26px; line-height: 1.1; margin: 0; letter-spacing: .5px; text-wrap: balance }
+.stripes { display: flex; transform: skewX(-30deg); height: 22px }
+.stripes i { width: 9px; display: block } .stripes i:nth-child(1){background:var(--sp-red)} .stripes i:nth-child(2){background:var(--sp-yel)} .stripes i:nth-child(3){background:var(--sp-grn)} .stripes i:nth-child(4){background:var(--sp-cyn)}
+.spec { font-family: var(--f-mono); font-size: 13px; color: var(--muted) }
+.main { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr) } }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 14px; min-width: 0 }
+h2 { font-family: var(--f-mono); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+button { font: 600 13px var(--f-body); color: var(--fg); background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px }
+button:hover { border-color: var(--muted) }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px }
+button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg) }
+button:disabled { opacity: .4; cursor: default }
+.chip { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0006; display: inline-block }
+.sw-ink { background: var(--ink); border-color: var(--muted) } .sw-paper { background: var(--paper) } .sw-clear { background: repeating-conic-gradient(#6b6f7a 0 25%, #3a3d46 0 50%) 0 0 / 6px 6px }
+kbd { font-family: var(--f-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px }
+button[aria-pressed="true"] kbd { color: var(--bg); border-color: #0004 }
+#grid { width: 100%; max-width: 384px; aspect-ratio: 1; display: block; touch-action: none; cursor: crosshair; border: 1px solid var(--line); image-rendering: pixelated }
+.note { font-size: 13px; color: var(--muted); margin: 0; max-width: 62ch }
+.prev { display: grid; gap: 10px }
+.scroller { overflow-x: auto }
+canvas.px { image-rendering: pixelated; display: block }
+textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 10px; font: 12px/1.35 var(--f-mono) }
+.status { font-family: var(--f-mono); font-size: 12px; color: var(--sp-grn); min-height: 1.4em }
+.status.err { color: #ff6b6b }
+.edited { font-family: var(--f-mono); font-size: 11px; color: var(--sp-yel) }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <h1>Breakfast Run car editor</h1>
+    <span class="spec">16 × 16 px · black ink on white paper · 16 headings from 3 drawings</span>
+  </header>
+
+  <div class="main">
+    <section aria-label="Drawing">
+      <h2>Car</h2>
+      <div class="row" id="cars"></div>
+      <h2>Heading you are drawing</h2>
+      <div class="row" id="heads"></div>
+      <canvas id="grid" width="384" height="384" aria-label="16 by 16 drawing grid"></canvas>
+      <div class="row">
+        <button id="t-ink" aria-pressed="true"><span class="chip sw-ink"></span>Ink <kbd>1</kbd></button>
+        <button id="t-paper" aria-pressed="false"><span class="chip sw-paper"></span>Paper <kbd>2</kbd></button>
+        <button id="t-clear" aria-pressed="false"><span class="chip sw-clear"></span>Clear <kbd>3</kbd></button>
+        <button id="mirror" aria-pressed="false">Mirror <kbd>M</kbd></button>
+      </div>
+      <div class="row">
+        <button id="undo">Undo <kbd>Z</kbd></button>
+        <button id="revert">Revert this heading</button>
+        <span class="edited" id="edited"></span>
+      </div>
+      <p class="note"><b>Ink</b> is black. <b>Paper</b> is the car's white body: solid, so the road does not show through it. <b>Clear</b> leaves the road showing. Right-click also clears. <b>Mirror</b> paints both sides of the car at once, on the yellow line (straight up and 45° only). At straight up it can flip the checker on a tyre, because the checker does not mirror.</p>
+    </section>
+
+    <section aria-label="Preview">
+      <h2>All 16 headings, as the game draws them (3×)</h2>
+      <div class="scroller"><canvas class="px" id="all3"></canvas></div>
+      <h2>Real size and 2×, on the track</h2>
+      <div class="scroller"><canvas class="px" id="real"></canvas></div>
+      <p class="note">The game clears a one-pixel white halo round every car so it stays readable over the kerbs. Headings 4 to 15 are the first four turned a quarter at a time, and 67½° is the 22½° drawing mirrored, so you only draw three per car.</p>
+      <h2>Send it to Claude</h2>
+      <div class="row">
+        <button id="copy">Copy art for Claude</button>
+        <button id="load">Load pasted art</button>
+        <button id="reset">Reset all to the game's art</button>
+        <button id="older" hidden>Bring back my earlier draft</button>
+      </div>
+      <div class="status" id="status" role="status"></div>
+      <textarea id="text" aria-label="Car art as text" spellcheck="false"></textarea>
+      <p class="note">Copy the art and paste it into the chat. Claude builds it into the game and checks it. To carry on later, paste art back here and press Load. This browser also keeps your latest drawing.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+const GAME = __ART__;                       // [car][heading 0..2] = 16 strings of X o .
+const CARS = [
+  { name: 'YOU',   mark: 'notch in the nose', col: '#d70000' },
+  { name: 'CYAN',  mark: 'racing stripe',     col: '#00d7d7' },
+  { name: 'GREEN', mark: 'open cockpit',      col: '#00d700' },
+  { name: 'PINK',  mark: 'grille slot',       col: '#d700d7' },
+  { name: 'WHITE', mark: 'sunroof',           col: '#d7d7d7' }];
+const HEADS = ['Up (0°)', '22½°', '45°'];
+// A saved drawing belongs to the game art it started from: when the game's art
+// changes, the editor opens on the new art, and older drafts stay available.
+const SIG = (() => { let h = 5381; const t = JSON.stringify(GAME); for (let i = 0; i < t.length; i++) h = (h * 33 + t.charCodeAt(i)) >>> 0; return h.toString(36) })();
+const KEY = 'breakfastrun-car-art-' + SIG;
+function olderDraft() {
+  try {
+    let best = null;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('breakfastrun-car-art-') && k !== KEY) { const d = JSON.parse(localStorage.getItem(k)); if (valid(d)) best = d }
+    }
+    return best;
+  } catch (e) { return null }
+}
+const clone = a => a.map(c => c.map(g => g.map(r => r.split(''))));
+let art = clone(GAME), car = 0, head = 0, tool = 'X', mirror = false, undo = [];
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (valid(s)) art = s; } catch (e) {}
+function valid(a) { return Array.isArray(a) && a.length === 5 && a.every(c => c.length === 3 && c.every(g => g.length === 16 && g.every(r => r.length === 16 && r.every(v => 'Xo.'.includes(v))))) }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(art)) } catch (e) {} }
+
+// the game's derivations (tools/make_data.py): never rotate by angle, only mirror and quarter-turn
+const mdiag = g => g.map((row, r) => row.map((_, c) => g[15 - c][15 - r]));
+const rot = g => g.map((row, r) => row.map((_, c) => g[15 - c][r]));
+function frames(k) { const [n, nne, ne] = art[k]; const f = [n, nne, ne, mdiag(nne)]; for (let i = 4; i < 16; i++) f.push(rot(f[i - 4])); return f }
+function halo(g) { return g.map((row, y) => row.map((_, x) => { for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const v = g[y + j] && g[y + j][x + i]; if (v && v !== '.') return 1 } return 0 })) }
+
+// ---- pickers
+const carsEl = document.getElementById('cars'), headsEl = document.getElementById('heads');
+CARS.forEach((c, i) => { const b = document.createElement('button'); b.id = 'car-' + i; b.innerHTML = `<span class="chip" style="background:${c.col}"></span>${c.name}`; b.title = c.mark; b.onclick = () => { car = i; refresh() }; carsEl.append(b) });
+HEADS.forEach((h, i) => { const b = document.createElement('button'); b.id = 'head-' + i; b.textContent = h; b.onclick = () => { head = i; refresh() }; headsEl.append(b) });
+
+// ---- the drawing grid
+const grid = document.getElementById('grid'), gx = grid.getContext('2d'), CELL = 24;
+function drawGrid() {
+  const g = art[car][head];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const v = g[y][x];
+    if (v === '.') { gx.fillStyle = (x + y) % 2 ? '#3a3d46' : '#30333b'; } else gx.fillStyle = v === 'X' ? '#000' : '#fff';
+    gx.fillRect(x * CELL, y * CELL, CELL, CELL);
+  }
+  gx.strokeStyle = 'rgba(128,134,148,.35)'; gx.lineWidth = 1; gx.beginPath();
+  for (let i = 1; i < 16; i++) { gx.moveTo(i * CELL + .5, 0); gx.lineTo(i * CELL + .5, 384); gx.moveTo(0, i * CELL + .5); gx.lineTo(384, i * CELL + .5) }
+  gx.stroke();
+  gx.strokeStyle = 'rgba(255,212,0,.55)'; gx.beginPath();          // the mirror line
+  if (head === 0) { gx.moveTo(192, 0); gx.lineTo(192, 384) }
+  if (head === 2) { gx.moveTo(384, 0); gx.lineTo(0, 384) }
+  if (mirror && head !== 1) gx.stroke();
+}
+// up: mirror across the middle; 45 degrees: across the car's own line, bottom-left to top-right
+function partner(x, y) { return head === 0 ? [15 - x, y] : head === 2 ? [15 - y, 15 - x] : null }
+let painting = null, stroke = false;
+function cellAt(e) { const r = grid.getBoundingClientRect(); return [Math.floor((e.clientX - r.left) / r.width * 16), Math.floor((e.clientY - r.top) / r.height * 16)] }
+function paint(x, y, v) {
+  if (x < 0 || y < 0 || x > 15 || y > 15) return;
+  const g = art[car][head]; g[y][x] = v;
+  const p = mirror && partner(x, y); if (p) g[p[1]][p[0]] = v;
+}
+grid.addEventListener('contextmenu', e => e.preventDefault());
+grid.addEventListener('pointerdown', e => {
+  e.preventDefault(); grid.setPointerCapture(e.pointerId);
+  undo.push({ car, head, g: art[car][head].map(r => r.slice()) }); if (undo.length > 200) undo.shift();
+  painting = e.button === 2 ? '.' : tool; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false);
+});
+grid.addEventListener('pointermove', e => { if (!painting) return; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false) });
+['pointerup', 'pointercancel'].forEach(t => grid.addEventListener(t, () => { if (painting) { painting = null; save(); refresh() } }));
+
+// ---- previews: kerb chequer behind, halo cleared to white, ink on top - as the game does
+function track(x, y) { return ((x >> 2) + (y >> 2)) % 2 }
+function drawCarAt(ctx, g, ox, oy, s) {
+  const m = halo(g);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (!m[y][x]) continue;
+    ctx.fillStyle = g[y][x] === 'X' ? '#000' : '#fff'; ctx.fillRect(ox + x * s, oy + y * s, s, s);
+  }
+}
+function scene(ctx, ox, oy, n, s, f) {                               // n cars in 20x24 tiles, kerb band under them
+  const w = n * 20 + 4;
+  ctx.fillStyle = '#fff'; ctx.fillRect(ox, oy, w * s, 24 * s); ctx.fillStyle = '#000';
+  for (let y = 16; y < 24; y++) for (let x = 0; x < w; x++) if (track(x, y)) ctx.fillRect(ox + x * s, oy + y * s, s, s);
+  f.slice(0, n).forEach((g, i) => drawCarAt(ctx, g, ox + (4 + i * 20) * s, oy + 4 * s, s));
+}
+function drawPreviews() {
+  const f = frames(car), S = 3;
+  const a = document.getElementById('all3'); a.width = (8 * 20 + 4) * S; a.height = 2 * 24 * S + 8;
+  const c = a.getContext('2d'); c.fillStyle = '#1b1d23'; c.fillRect(0, 0, a.width, a.height);
+  scene(c, 0, 0, 8, S, f.slice(0, 8)); scene(c, 0, 24 * S + 8, 8, S, f.slice(8));
+  c.fillStyle = '#d70000'; c.font = '600 11px IBM Plex Mono, monospace';
+  f.forEach((_, i) => c.fillText(String(i), (i % 8) * 20 * S + 3, (i >> 3) * (24 * S + 8) + 12));
+  const r = document.getElementById('real'); r.width = 324 + 16 + 328; r.height = 48;
+  const x = r.getContext('2d'); x.fillStyle = '#1b1d23'; x.fillRect(0, 0, r.width, r.height);
+  scene(x, 0, 12, 16, 1, f); scene(x, 340, 0, 8, 2, f);
+}
+
+// ---- text in and out
+function toText() {
+  let t = 'BREAKFAST RUN CAR ART v1\nX = ink (black)   o = paper (white body)   . = empty (road shows)\n';
+  art.forEach((c, k) => c.forEach((g, h) => { t += `\n== ${CARS[k].name} heading ${['0', '22.5', '45'][h]} ==\n` + g.map(r => r.join('')).join('\n') + '\n' }));
+  return t;
+}
+function fromText(t) {
+  const out = clone(GAME); let n = 0;
+  const re = /==\s*(YOU|CYAN|GREEN|PINK|WHITE)\s+heading\s+(0|22\.5|45)\s*==\s*\n((?:[Xo.]{16}\s*\n?){16})/g; let m;
+  while ((m = re.exec(t))) { out[CARS.findIndex(c => c.name === m[1])][['0', '22.5', '45'].indexOf(m[2])] = m[3].trim().split(/\s+/).map(r => r.split('')); n++ }
+  return n ? [out, n] : [null, 0];
+}
+const text = document.getElementById('text'), status = document.getElementById('status');
+function say(s, err) { status.textContent = s; status.className = 'status' + (err ? ' err' : '') }
+document.getElementById('copy').onclick = () => {
+  text.value = toText();
+  const done = () => say('Copied. Paste it into the chat.');
+  const fail = () => { text.focus(); text.select(); say('Selected below. Press Ctrl+C (or Cmd+C) to copy.') };
+  try { navigator.clipboard.writeText(text.value).then(done, fail) } catch (e) { fail() }
+};
+document.getElementById('load').onclick = () => {
+  const [a, n] = fromText(text.value);
+  if (!a) return say('No car art found. Paste text that starts BREAKFAST RUN CAR ART, then press Load.', true);
+  undo = []; art = a; save(); refresh(); say(`Loaded ${n} drawing${n === 1 ? '' : 's'}.`);
+};
+let resetArmed = false;
+document.getElementById('reset').onclick = e => {
+  if (!resetArmed) { resetArmed = true; e.target.textContent = 'Press again to reset all'; setTimeout(() => { resetArmed = false; e.target.textContent = "Reset all to the game's art" }, 3000); return }
+  resetArmed = false; e.target.textContent = "Reset all to the game's art"; undo = []; art = clone(GAME); save(); refresh(); say("Every car is back to the game's art.");
+};
+document.getElementById('revert').onclick = () => { undo.push({ car, head, g: art[car][head].map(r => r.slice()) }); art[car][head] = GAME[car][head].map(r => r.split('')); save(); refresh() };
+function doUndo() { const u = undo.pop(); if (!u) return; art[u.car][u.head] = u.g; car = u.car; head = u.head; save(); refresh() }
+document.getElementById('undo').onclick = doUndo;
+
+// ---- tools and keys
+const tools = { X: 't-ink', o: 't-paper', '.': 't-clear' };
+function setTool(t) { tool = t; for (const k in tools) document.getElementById(tools[k]).setAttribute('aria-pressed', k === t) }
+document.getElementById('t-ink').onclick = () => setTool('X');
+document.getElementById('t-paper').onclick = () => setTool('o');
+document.getElementById('t-clear').onclick = () => setTool('.');
+document.getElementById('mirror').onclick = () => { mirror = !mirror; refresh() };
+document.addEventListener('keydown', e => {
+  if (e.target === text) return;
+  if (e.key === '1') setTool('X'); else if (e.key === '2') setTool('o'); else if (e.key === '3') setTool('.');
+  else if (e.key === 'm' || e.key === 'M') { mirror = !mirror; refresh() }
+  else if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); doUndo() }
+});
+
+function refresh(full = true) {
+  drawGrid(); drawPreviews();
+  if (!full) return;
+  CARS.forEach((_, i) => document.getElementById('car-' + i).setAttribute('aria-pressed', i === car));
+  HEADS.forEach((_, i) => document.getElementById('head-' + i).setAttribute('aria-pressed', i === head));
+  const m = document.getElementById('mirror'); m.setAttribute('aria-pressed', mirror && head !== 1); m.disabled = head === 1;
+  const changed = art.reduce((n, c, k) => n + c.filter((g, h) => g.map(r => r.join('')).join() !== GAME[k][h].join()).length, 0);
+  document.getElementById('edited').textContent = changed ? `${changed} drawing${changed === 1 ? '' : 's'} changed from the game` : '';
+  undoBtn.disabled = !undo.length;
+}
+const undoBtn = document.getElementById('undo');
+const olderBtn = document.getElementById('older');
+if (olderDraft()) olderBtn.hidden = false;
+olderBtn.onclick = () => {
+  const d = olderDraft(); if (!d) return say('No earlier draft in this browser.', true);
+  undo = []; art = d; save(); refresh(); text.value = toText();
+  say('Your earlier draft is back. Copy it for Claude if it has drawings you want to keep.');
+};
+text.value = toText();
+// a link can open on one car: #you, #cyan, #green, #pink, #white (or #car-1 .. #car-5)
+function fromHash() {
+  const h = (location.hash || '').slice(1).toLowerCase();
+  let i = CARS.findIndex(c => c.name.toLowerCase() === h);
+  const m = h.match(/^car-([1-5])$/); if (m) i = +m[1] - 1;
+  if (i >= 0) { car = i; head = 0; }
+}
+fromHash();
+window.addEventListener('hashchange', () => { fromHash(); refresh(); });
+refresh();
+</script>
