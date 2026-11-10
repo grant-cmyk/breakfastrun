@@ -647,3 +647,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   blue, twice size as in the strip; link #crew); his drawing is in tools/face_art.txt.
 - Grant: smaller text, like the numbers, to make space. 3 x 5 letters (A-Z, digits, ! . - ')
   in the same box: 3 lines of up to 15 letters (was 2 of 8). docs/design/driver_strip_small.png.
+- Grant's own crew chief (from his editor screenshot) saved in tools/face_art.txt; the strip
+  mock-ups draw him from there. His later 'updated' version came as an image only (not saved
+  as a file): waiting for it as pasted text. The live editor is left as it is, so his draft in
+  that browser is not set aside.

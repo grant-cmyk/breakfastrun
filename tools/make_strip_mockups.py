@@ -45,22 +45,7 @@ NOS = ["....XXXX....",      # valve handle
        "..X.X....X..",
        "..X......X..",
        "...XXXXXX..."]
-CREW = [".....######.....",    # the crew chief: a headset - the band over his
-        "...##......##...",    # head, big ear cups, the microphone at his mouth
-        "..#..######..#..",
-        "..#.#......#.#..",
-        ".##..........##.",
-        "####.##..##.####",
-        "####........####",
-        "####...##...####",
-        ".##..........##.",
-        "..#.........#...",
-        "..#..####..####.",
-        "...#.......#....",
-        "....#.....#.....",
-        ".....#####......",
-        "................",
-        "................"]
+CREW = re.search(r'== CREW face ==\n((?:[X.]{16}\n){16})', fa).group(1).split()   # (Grant's, in the editor)
 def text(bits, s, col, row):
     for i, ch in enumerate(s):
         g = font[(ord(ch) - 32) * 8:(ord(ch) - 32) * 8 + 8]
