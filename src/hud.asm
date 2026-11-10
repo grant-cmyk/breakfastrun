@@ -375,6 +375,7 @@ ST_ACC  equ BUFC+44             ; small text: the row being built (2)
 ST_X    equ BUFC+46             ;   where the next character goes
 ST_T    equ BUFC+47             ;   the text (2)
 ST_COL  equ BUFC+49             ;   its byte column
+PNUM    equ BUFC+56             ; the place number, 16 rows (tower_row)
 ST_X0   equ BUFC+50             ;   where the first character goes (pixels)
 gaps_reset:                     ; a new race: nothing noted, nothing shown
         ld hl,CP_G
@@ -862,16 +863,34 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ld d,2
         ld e,7
         call set_attrs
-        ld a,(tr_row)           ; the place number
-        sub TOWER_Y
-        srl a
+        ld a,(tr_row)           ; the place number, centred against the car:
+        sub TOWER_Y             ; its ROM letter 4 px down the 16-px row
+        srl a                   ; (Grant, 10 Nov 2026)
         add a,'1'
-        ld (txt_digit),a
-        ld hl,txt_digit
-        ld a,(tr_row)
-        ld b,a
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld de,0x3C00
+        add hl,de
+        ld de,PNUM
+        xor a
+        ld b,4
+trp_1:
+        ld (de),a
+        inc de
+        djnz trp_1
+        ld bc,8
+        ldir
+        ld b,4
+trp_2:
+        ld (de),a
+        inc de
+        djnz trp_2
         ld c,25
-        call print_at
+        ld de,PNUM
+        call tr_glyph16
         ld a,(tr_car)           ; the car's own picture, facing right:
         add a,a                 ; car_data + car * 1024 + heading 4 * 64
         add a,a

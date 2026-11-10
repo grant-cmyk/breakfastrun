@@ -619,3 +619,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   shows the lap (1-3) in the small font, 2 px in, until the car is in and the flag replaces it.
   The row's key (fin_key) now includes the lap, so a row redraws when its car starts a lap.
   docs/design/panel_laps.png (22 s, 42 s, 52 s). drive_test RESULT: PASS (start 15.0/s).
+
+## 2026-11-10 SAST - place numbers centred against the cars
+- Grant: centre the number against the car. The place number (1-5) was printed in the top cell of
+  its 16-px row; now its ROM letter is drawn 4 px down (tr_glyph16 from a 16-row buffer, PNUM in
+  BUFC), level with the car. docs/design/panel_place_centred.png.
+  drive_test RESULT: PASS (start 15.0/s).
