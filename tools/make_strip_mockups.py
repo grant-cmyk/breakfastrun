@@ -34,19 +34,7 @@ def render(bits, attr, s):
     return Image.fromarray(img).resize((256 * s, 192 * s), Image.NEAREST)
 fa = open(os.path.join(ROOT, 'tools', 'face_art.txt')).read()
 YOU = re.search(r'== YOU face ==\n((?:[X.]{16}\n){16})', fa).group(1).split()
-NOS = ["....XXXX....",      # valve handle
-       "......X.....",
-       "....XXXX....",      # neck
-       "...XXXXXX...",
-       "..X......X..",      # shoulders, the body white
-       "..X.X....X..",      # a highlight
-       "..XXXXXXXX..",      # the label band
-       "..XXXXXXXX..",
-       "..XXXXXXXX..",
-       "..X.X....X..",
-       "..X.X....X..",
-       "..X......X..",
-       "...XXXXXX..."]
+NOS = re.search(r'== NOS face ==\n((?:[X.]{16}\n){16})', fa).group(1).split()   # (Grant's, in the editor)
 CREW = re.search(r'== CREW face ==\n((?:[X.]{16}\n){16})', fa).group(1).split()   # (Grant's, in the editor)
 def text(bits, s, col, row):
     for i, ch in enumerate(s):
@@ -73,7 +61,7 @@ def strip(msg):
         bits[169:183, x0] = 1; bits[169:183, x0 + 15] = 1
     for y, row in enumerate(NOS):                  # slot 1: the NOS canister you start with
         for x, v in enumerate(row):
-            if v == 'X': bits[169 + 1 + y, 32 + 2 + x] = 1
+            if v == 'X': bits[168 + y, 32 + x] = 1
     x0, x1, y0, y1 = 88, 151, 160, 191             # the message box, cols 11-18: white, rounded
     for r in range(20, 24):
         for c in range(11, 19): attr[r * 32 + c] = 0x78
