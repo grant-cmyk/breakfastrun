@@ -625,3 +625,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   its 16-px row; now its ROM letter is drawn 4 px down (tr_glyph16 from a 16-row buffer, PNUM in
   BUFC), level with the car. docs/design/panel_place_centred.png.
   drive_test RESULT: PASS (start 15.0/s).
+
+## 2026-11-10 SAST - mini-map: no start tick at the top dip
+- Grant: why a line at the top section - not the start/finish. Bug in make_world.py: the start
+  tick was drawn down a whole column of the mini-map, wherever it crossed the road - and that
+  column also crosses the top dip. Now only on the bottom straight. Only the mini-map's bytes
+  changed (topdata.asm). docs/design/minimap_fixed.png. drive_test not re-run (it does not read
+  the mini-map; nothing else changed).

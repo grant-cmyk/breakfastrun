@@ -299,9 +299,9 @@ for my in range(MH):
     for mx in range(MW):
         if on_road(mx, my) and any(not on_road(mx + dx, my + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
             mm[my][mx] = 1
-smx = (256 + OFF + 4 - 64) // 8                   # the start line: a tick across the road
-for my in range(MH):
-    if on_road(smx, my): mm[my][smx] = 1
+smx = (256 + OFF + 4 - 64) // 8                   # the start line: a tick across the road -
+for my in range(MH):                              # on the bottom straight only (the same column
+    if on_road(smx, my) and 32 + my * 8 + 4 > PH // 2: mm[my][smx] = 1   # crosses the top dip too)
 obits = [[0] * W for _ in range(H)]                # where the cereal O's are: cars bounce off them
 for ox, oy in OS: obits[oy // 8][ox // 8] = 1
 with open(TOPDATA, 'a') as f:
