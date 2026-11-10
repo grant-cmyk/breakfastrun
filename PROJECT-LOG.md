@@ -421,3 +421,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the game's art (key = hash of it), so a new game version opens on its own art; older drafts stay in
   the browser behind 'Bring back my earlier draft'. Checked in headless Chromium with a stale draft:
   opens on the game art, button shown, draft restored, no errors.
+
+## 2026-11-10 06:41 SAST - CYAN redrawn by Grant
+- Editor paste (now starting from the game's art): one drawing changed, CYAN heading 0 (24 pixels).
+  22.5 and 45 rebuilt from it (sampled 16x a pixel; 45 symmetric). drive_test RESULT: PASS.
