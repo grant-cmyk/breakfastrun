@@ -524,3 +524,6 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   fringe, lashes, a smile. The old car is in tools/pool_art.txt (SPECS) and his face in
   POOL['SPECS'] in tools/make_faces.py - kept in the repo, not loaded into the 48K (no room: a car is
   1024 bytes, 80 are free). Jane drives as WHITE did (15/16 throttle, 3/256 mistakes) for now.
+
+## 2026-11-10 08:50 SAST - Jane's angled headings accepted
+- Grant: "good enough" - her hand-placed 22.5 and 45 degree drawings stay as they are.

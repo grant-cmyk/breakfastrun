@@ -24,8 +24,7 @@ driver (tools/pool_art.txt: SPECS, the old WHITE) needs 1 KB for his car - none 
 Any code moved ahead of hud.asm must not use equs defined later (pasmo first-pass values).
 Frame time: about 16k T of headroom on an average picture.
 
-**Waiting on Grant:** playtest; Jane's 22.5 and 45 headings (placed by hand - touch up in the
-editor); whether Jane should drive easier than the old WHITE; angled headings of his cars are drafts (redraw in the editor if any
+**Waiting on Grant:** playtest; whether Jane should drive easier than the old WHITE; angled headings of his cars are drafts (redraw in the editor if any
 look wrong); confirm the repo should be public; push a tag for this build from his machine (cloud
 sessions cannot push tags).
 
