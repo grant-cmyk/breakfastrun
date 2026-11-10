@@ -564,3 +564,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant's third round of all five faces in (the clown on GREEN, the dark-haired face on PINK).
 - Editor: Copy art for Claude now carries every car (15 drawings) and every face (5) in one paste;
   Load takes it back (round trip tested in Chromium: 20 drawings).
+
+## 2026-11-10 SAST - the 6-wheeled truck kept in the pool
+- Grant will redraw GREEN's car; its current design (the long 6-wheeled truck, all three drawn
+  headings) saved as TRUCK in tools/pool_art.txt for later. The game is unchanged.
