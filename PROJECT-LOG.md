@@ -613,3 +613,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   {3: 180, 4: 26, 5: 1} (was {3: 184, 4: 27}) - docs/design/cloth_f_profile.txt. GO's picture
   ran late and set the 4-frame pace for 2 s, so it no longer sets the pace (pace_skip).
   drive_test RESULT: PASS (start 15.5/s; window pixel-exact). docs/design/cloth_f.png.
+
+## 2026-11-10 SAST - each car's lap where its flag will go
+- Grant: while the chequered flag is not showing, use that space for the car's lap. Column 30
+  shows the lap (1-3) in the small font, 2 px in, until the car is in and the flag replaces it.
+  The row's key (fin_key) now includes the lap, so a row redraws when its car starts a lap.
+  docs/design/panel_laps.png (22 s, 42 s, 52 s). drive_test RESULT: PASS (start 15.0/s).

@@ -787,32 +787,51 @@ cell_addr:                      ; cell row B, column C -> HL = its top pixel row
         ld l,a
         ret
 
-fin_key:                        ; A = car -> A = car, + 8 if it is in,
-        push hl                 ; + 16 if it has the best lap
-        ld e,a
+fin_key:                        ; A = car -> A = car, + 8 if it is in, + 16 if
+        push hl                 ; it has the best lap, + 32 * (its lap AND 3)
+        push bc
+        ld e,a                  ; E = the car
+        add a,a                 ; its record: cars + car * 28
+        add a,a
+        add a,a
+        sub e
+        add a,a
+        add a,a
+        ld c,a
+        ld b,0
+        ld hl,cars+C_LAPS
+        add hl,bc
+        ld a,(hl)
+        and 3
+        rrca
+        rrca
+        rrca
+        or e
+        ld c,a                  ; C = car + lap * 32
         ld d,0
         ld hl,fin_at
         add hl,de
         ld a,(hl)
         or a
-        ld a,e
+        ld a,c
         jr z,fk_1
         or 8
 fk_1:
+        ld c,a
         ld hl,(best_lap)        ; (0xFFFF: no best lap yet)
         inc hl
-        ld d,a
         ld a,h
         or l
-        ld a,d
-        pop hl
-        ret z
-        ld d,a
+        ld a,c
+        jr z,fk_2
         ld a,(best_car)
         cp e
-        ld a,d
-        ret nz
+        ld a,c
+        jr nz,fk_2
         or 16
+fk_2:
+        pop bc
+        pop hl
         ret
 
 tower_row:                      ; place B (0..4), A = car (+ 8: finished)
@@ -891,7 +910,8 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         inc a
         ld b,a
         jp tr_face
-tr_race:                        ; the gap (columns 28-29), a flag if it is in (30),
+tr_race:                        ; the gap (columns 28-29), its lap or, once it is
+                                ; in, a flag (30),
         ld a,1                  ; a clock if it has the best lap (31)
         ld (tr_force),a
         ld a,(tr_row)
@@ -900,10 +920,24 @@ tr_race:                        ; the gap (columns 28-29), a flag if it is in (3
         call gap_draw           ; A = place
         ld a,(tr_key)
         bit 3,a
-        jr z,trr_1
+        jr z,trr_lap
         ld c,30
         ld de,flag_top
         call tr_glyph16
+        jr trr_1
+trr_lap:                        ; still racing: the lap it is on, where its flag
+        rlca                    ; will go (Grant, 10 Nov 2026)
+        rlca
+        rlca
+        and 3
+        add a,'0'
+        ld (txt_digit),a
+        ld hl,txt_digit
+        ld a,(gd_y)
+        ld b,a
+        ld c,30
+        ld a,2                  ; 2 px in: clear of the gap and the clock
+        call st_text_x
 trr_1:
         ld a,(tr_key)
         bit 4,a
