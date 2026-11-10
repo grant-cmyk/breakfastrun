@@ -3484,6 +3484,7 @@ high_src:
         include "topdata.asm"   ; the breakfast things' masks, the O map, the mini-map
         include "hudtext.asm"   ; the HUD's fixed text
         include "toprows.asm"   ; some of the map's row lists
+        include "strip_t.asm"   ; a message or two
         include "carrows.asm"   ; each heading's rows in use
         include "tdtab.asm"     ; the tile routine for each camy AND 7
 high_end:

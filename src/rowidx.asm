@@ -27,13 +27,13 @@ row_index_src:
         dw row_23 - high_src + TOPMEM
         dw row_24 - high_src + TOPMEM
         dw row_25 - high_src + TOPMEM
-        dw row_26 - high_src + TOPMEM
-        dw row_27 - high_src + TOPMEM
-        dw row_28 - high_src + TOPMEM
-        dw row_29 - high_src + TOPMEM
+        dw row_26
+        dw row_27
+        dw row_28
+        dw row_29
         dw row_30
         dw row_31
-        dw row_32
+        dw row_32 - high_src + TOPMEM
         dw row_33
         dw row_34
         dw row_35
@@ -56,4 +56,4 @@ row_index_src:
         dw row_52
         dw row_53
         dw row_54
-        dw row_55
+        dw row_55 - high_src + TOPMEM

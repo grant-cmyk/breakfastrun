@@ -60,7 +60,7 @@ msg_index_src:
         dw M_WIN_t - bufh_src + BUFH
         dw M_DONE_t - bufe_src + BUFE
         dw M_NOS_t - bufe_src + BUFE
-        dw M_BOOST_t - bufg_src + BUFG
+        dw M_BOOST_t - high_src + TOPMEM
 M_LUCK equ 0
 M_LUCK_t:
         db "GOOD LUCK!|SPACE FOR NOS",0

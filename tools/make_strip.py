@@ -51,7 +51,9 @@ MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light (stage 2
         ('M_BOOST', 'NOS!|GO GO GO')]                  # you fired it           # you finished, not first
 # the data goes in the free ends of the buffer's bottom-row strips: BUFF and BUFH
 # whole, the ends of BUFE (after the row index) and BUFG (after the waypoints)
-AREAS = [('F', 'BUFF', 160), ('H', 'BUFH', 160), ('E', 'BUFE', 160 - 112), ('G', 'BUFG', 160 - 136)]
+_nwp = int(re.search(r'NWP\s+equ\s+(\d+)', open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()).group(1))
+AREAS = [('F', 'BUFF', 160), ('H', 'BUFH', 160), ('E', 'BUFE', 160 - 112), ('G', 'BUFG', 160 - 4 * _nwp),
+         ('T', 'TOPMEM', 16)]                          # (T: a few bytes at the top of memory)
 out = {k: [] for k, _, _ in AREAS}; used = {k: 0 for k, _, _ in AREAS}
 def put(k, text, n): out[k].append(text); used[k] += n
 put('F', "; the small letters, 3 x 5: 15 bits each, top-left first (A-Z ! . - ')\nlfont_src:\n", 0)
@@ -69,7 +71,7 @@ for i, (n, t) in enumerate(MSGS):
             put(k, '%s equ %d\n%s_t:\n        db "%s",0\n' % (n, i, n, t), len(t) + 1); where[n] = k; break
     else:
         raise SystemExit('no room for message %s' % n)
-SEC = {'F': ('buff_src', 'BUFF'), 'H': ('bufh_src', 'BUFH'), 'E': ('bufe_src', 'BUFE'), 'G': ('bufg_src', 'BUFG')}
+SEC = {'F': ('buff_src', 'BUFF'), 'H': ('bufh_src', 'BUFH'), 'E': ('bufe_src', 'BUFE'), 'G': ('bufg_src', 'BUFG'), 'T': ('high_src', 'TOPMEM')}
 out['F'].insert(len(out['F']) - sum(1 for n in where if where[n] == 'F'),
     "; the crew chief's messages, by number (their addresses once copied): lines split\n; by |, ended by 0\nmsg_index_src:\n" +
     ''.join('        dw %s_t - %s + %s\n' % (n, SEC[where[n]][0], SEC[where[n]][1]) for n, _ in MSGS))

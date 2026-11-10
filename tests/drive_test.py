@@ -229,8 +229,9 @@ with Racer(headless=True) as sp:
     avg = [(lt[-1] - lt[0]) / (len(lt) - 1) for lt in lap_t]
     print('average laps (s):', ' '.join('%.1f' % a for a in avg))
     check(max(avg) - min(avg) > 1.0, 'the computer cars are not all the same speed (%s s a lap)' % ' '.join('%.1f' % a for a in avg))
-    check(13.0 < min(avg) < 15.0, 'the fastest computer car is competitive: %.1f s a lap against your ~13.5 s' % min(avg))
-    check(max(avg) < 17.5, 'even the slowest computer car is within 4 s a lap of you (%.1f s)' % max(avg))
+    LEN = NWP / 34                                  # the track's length against the first (34 waypoints)
+    check(13.0 * LEN < min(avg) < 15.0 * LEN, 'the fastest computer car is competitive: %.1f s a lap against your ~%.1f s' % (min(avg), 13.5 * LEN))
+    check(max(avg) < 17.5 * LEN, 'even the slowest computer car is within %.1f s a lap of you (%.1f s)' % (4 * LEN, max(avg)))
     cl = [car(sp, i) for i in CPUS]
     claps = [sp.read8(CARS + i * CS + 25) for i in CPUS]
     print('computer cars past the line', claps, 'race time', g(sp, 'race_time'))
@@ -259,7 +260,7 @@ with Racer(headless=True) as sp:
     check(max(d) > 40, 'the computer cars drive differently (they spread out)')
 
     # ---- your top speed on a clear road (computer cars sent far away) ----
-    for i in CPUS: put(sp, i, 20 + 25 * i, 420)
+    for i in CPUS: put(sp, i, 4 + 40 * i, 430)   # (parked apart: they bump nothing)
     put(sp, 0, 180, 344, 16)
     hold(sp, ['Q'], 1.5)
     pv = car(sp, 0)
@@ -276,7 +277,7 @@ with Racer(headless=True) as sp:
     check(abs(p2['x'] - a2['x']) >= 10 or abs(p2['y'] - a2['y']) >= 10, 'bumped cars do not end up inside each other')
     # head-on: you and a computer car coast at each other (no keys, so nothing
     # pushes back after the bump); just after they touch, each moves away
-    for i in CPUS: put(sp, i, 20 + 25 * i, 420)
+    for i in CPUS: put(sp, i, 4 + 40 * i, 430)   # (parked apart: they bump nothing)
     put(sp, 0, 200, 344, 16); put(sp, 1, 222, 344, 48)   # 22 apart: they meet in a few frames
     sp.write(CARS + 6, bytes([0x80, 0x01]))        # you rolling right at 1.5 px/frame
     sp.write(CARS + CS + 6, bytes([0x80, 0xFE]))   # CPU A rolling left at 1.5 px/frame
@@ -291,7 +292,7 @@ with Racer(headless=True) as sp:
           'cars that hit head-on bounce away from each other')
 
     # ---- finish: on your last lap, cross the line ----
-    for i in CPUS: put(sp, i, 20 + 25 * i, 420)
+    for i in CPUS: put(sp, i, 4 + 40 * i, 430)   # (parked apart: they bump nothing)
     sp.write(CARS + 25, bytes([3]))                # past the line 3 times: on lap 3
     sp.write(CARS + 13, bytes([SYM['ws']]))        # heading for the first waypoint after it
     put(sp, 0, 250, 344, 16)

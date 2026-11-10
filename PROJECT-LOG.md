@@ -741,3 +741,17 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - NOS on a clear straight: 1.75 -> 3.50 px/frame (twice); the test now moves the computer cars
   out of the way (they were in the way, which read as a weak boost).
 - drive_test PASS (adds: the bubble at the green light; no bubble when quiet), nos_test PASS.
+
+## 2026-11-10 SAST - a wider road, a longer track
+- Grant: the road a bit wider (easier), the race a bit longer, the O's spaced as before. ROAD 64
+  (was 56); the loop 10% bigger, scaled about the start line (so the bottom straight, the line, the
+  grid and canister A stay put); O's still 18 px apart: 105 (was 91); 38 waypoints (was 34); canister
+  B found at the bottom of the dip. All the breakfast things still placed. docs/design/world_bigger.png.
+- Memory: 22 more tiles and more masks; the waypoints' strip is full (the strip data generator now
+  sizes it from the waypoints) and a message moved to the top of memory; 60 bytes of row lists back
+  to low memory. Low 38 bytes spare, TOPMEM 11.
+- Laps (s): 15.4 16.8->18.6 15.8 14.6 (about 9% longer). drive_test's lap limits now scale with the
+  track (waypoints / 34); the parked cars are parked apart (they were bumping each other and fooled
+  the head-on check). drive_test PASS, nos_test PASS.
+- Speed: lap work 211.0k T a picture (3 frames = 209.7k), frames {3: 164, 4: 53} - more road tiles
+  and O's in view. To win back (with the taller window Grant asked for next).
