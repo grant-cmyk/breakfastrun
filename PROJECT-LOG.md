@@ -580,3 +580,5 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   had the same, its 22.5 and 45 still the truck's). 22.5 and 45 turned about the car's own centre
   (it sits half a pixel off the grid's middle, which made turn_car.py's draft lopsided).
   docs/design/clown_car.png. drive_test RESULT: PASS (start 16.5/s; laps unchanged).
+- Grant: the road's dots much lighter. docs/design/road_light_options.png: E road 1 in 16 (from
+  before), G 1 in 32, H 1 in 64, I only the checks' outlines dotted; the cloth off the road as now.

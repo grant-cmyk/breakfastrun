@@ -4,7 +4,8 @@ outside area - this makes the track easier to see"; "the chequered area hugs
 around the map, like the corners"). Renders the real map (world.asm and
 topdata.asm as built) through the 176 x 120 window, blue ink on cyan.
 Writes docs/design/road_options.png, and (Grant: "the dotted effect ... less
-visible in the road area") docs/design/road_dots_options.png."""
+visible in the road area") docs/design/road_dots_options.png, and (Grant: "the dots on the road area
+specifically ... much lighter") docs/design/road_light_options.png."""
 import os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -75,4 +76,28 @@ for i, (tag, what, dd) in enumerate(OPTS2):
     full = np.where(ink[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
     sheet.paste(Image.fromarray(full).resize((W // 2, H // 2), Image.BOX), (ox, 32 + len(VIEWS) * (ch + 12) + 8))
 out = os.path.join(ROOT, 'docs', 'design', 'road_dots_options.png')
+sheet.save(out); print('wrote', os.path.normpath(out))
+
+# ---- much lighter dots on the road only
+d32 = dark & (((xx % 8 == 0) & (yy % 8 == 0)) | ((xx % 8 == 4) & (yy % 8 == 4)))  # 1 in 32, staggered
+d64 = dark & (xx % 8 == 0) & (yy % 8 == 0)                                         # 1 in 64
+edge = dark & (((xx % 32 == 0) | (yy % 32 == 0)) & (xx % 4 == 0) & (yy % 4 == 0))  # each check's outline, dotted
+edge = edge | (dark & (((xx % 32 == 30) | (yy % 32 == 30)) & (xx % 4 == 2) & (yy % 4 == 2)))
+OPTS3 = [('E', 'road 1 in 16 (from before)', np.where(ROADA, d06, d25)),
+         ('G', 'road 1 in 32', np.where(ROADA, d32, d25)),
+         ('H', 'road 1 in 64', np.where(ROADA, d64, d25)),
+         ('I', 'road: only the checks\' outlines', np.where(ROADA, edge, d25))]
+sheet = Image.new('RGB', (len(OPTS3) * (cw + 16) + 16, 40 + len(VIEWS) * (ch + 12) + 12 + H // 2 + 20), (17, 18, 22))
+d = ImageDraw.Draw(sheet)
+for i, (tag, what, dd) in enumerate(OPTS3):
+    ink = world.astype(bool) | (dd & ~wmask)
+    ox = 16 + i * (cw + 16)
+    d.text((ox, 10), tag + ': ' + what, fill=(236, 235, 230), font=fnt)
+    for j, (vx, vy) in enumerate(VIEWS):
+        win = ink[vy:vy + 120, vx:vx + 176]
+        rgb = np.where(win[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
+        sheet.paste(Image.fromarray(rgb).resize((cw, ch), Image.NEAREST), (ox, 32 + j * (ch + 12)))
+    full = np.where(ink[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
+    sheet.paste(Image.fromarray(full).resize((W // 2, H // 2), Image.BOX), (ox, 32 + len(VIEWS) * (ch + 12) + 8))
+out = os.path.join(ROOT, 'docs', 'design', 'road_light_options.png')
 sheet.save(out); print('wrote', os.path.normpath(out))
