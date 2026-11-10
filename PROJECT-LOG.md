@@ -665,3 +665,5 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Grant: 'exactly'. docs/design/radio_wave.gif, radio_wave_still.png.
 - Grant shortened the NOS by one row (editor screenshot, read cell by cell): tools/face_art.txt;
   the mock-ups draw it from there.
+- Grant: centre the crew chief in his blue square. Faces in the strip are now centred by their
+  ink in their 32 x 32 squares (the crew chief 3 px lower; yours unchanged within a pixel).

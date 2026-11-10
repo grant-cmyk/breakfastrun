@@ -42,9 +42,15 @@ def text(bits, s, col, row):
         for j in range(8):
             bits[row * 8 + j, (col + i) * 8:(col + i + 1) * 8] = np.unpackbits(np.array([g[j]], np.uint8))
 def face2x(bits, art, x0):
+    # twice size, centred in its 32 x 32 square by its ink (Grant: centre the crew chief)
+    ys = [y for y in range(16) if any(v in 'X#' for v in art[y])]
+    xs = [x for x in range(16) if any(art[y][x] in 'X#' for y in range(16))]
+    dy = (32 - 2 * (ys[-1] - ys[0] + 1)) // 2 - 2 * ys[0]
+    dx = (32 - 2 * (xs[-1] - xs[0] + 1)) // 2 - 2 * xs[0]
     for y in range(16):
         for x in range(16):
-            if art[y][x] in 'X#': bits[160 + 2 * y:162 + 2 * y, x0 + 2 * x:x0 + 2 * x + 2] = 1
+            if art[y][x] in 'X#':
+                bits[160 + dy + 2 * y:162 + dy + 2 * y, x0 + dx + 2 * x:x0 + dx + 2 * x + 2] = 1
 def strip(msg):
     bits, attr = load()
     bits[160:192, 0:192] = 0                       # the old LAP / TIME / BEST lines
