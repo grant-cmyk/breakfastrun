@@ -30,11 +30,11 @@ sfont_src:
         db %11100000,%10100000,%11100000,%10100000,%11100000   ; 8
         db %11100000,%10100000,%11100000,%00100000,%11100000   ; 9
 ; the race order's little pictures and tables
-flag_top_src:                       ; a mini chequered flag, 8 x 8 (a pole, 2 x 2
-        db 0,0,0,0              ; checks), centred on the place's 2 cell rows
-        db %10110011,%10110011,%10001100,%10001100
+flag_top_src:                       ; a mini chequered flag, 6 x 6 (2 x 3 checks,
+        db 0,0,0,0              ; no pole - Grant), a pixel in from each side, centred
+        db %01100110,%01100110,%00011000,%00011000   ; on the place's 2 cell rows
 flag_bot_src:
-        db %10110011,%10110011,%10000000,%10000000
+        db %01100110,%01100110,%00000000,%00000000
         db 0,0,0,0
 clock_top_src:                      ; a little clock: the best lap is this car's
         db 0,0,0,0

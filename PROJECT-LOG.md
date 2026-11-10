@@ -582,3 +582,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   docs/design/clown_car.png. drive_test RESULT: PASS (start 16.5/s; laps unchanged).
 - Grant: the road's dots much lighter. docs/design/road_light_options.png: E road 1 in 16 (from
   before), G 1 in 32, H 1 in 64, I only the checks' outlines dotted; the cloth off the road as now.
+
+## 2026-11-10 SAST - mini flag without its pole
+- Grant: the gap time is cramped against the chequered flag; no line needed left of the flag.
+  The flag is now 6 x 6 checks only, a pixel in from each side of its cell: 4 px clear of the
+  time, 1 px clear of the clock. docs/design/panel_flags_no_pole.png. drive_test RESULT: PASS.

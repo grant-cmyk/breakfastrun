@@ -241,7 +241,7 @@ with Racer(headless=True) as sp:
     # chequered flag in column 30 for each car that is in, and the gaps to the leader in a small font
     def cellrows(row, col):
         return [sp.read8(0x4000 | ((row & 0x18) << 8) | ((row & 7) << 5) | col | (k << 8)) for k in range(8)]
-    flagwant = [0, 0, 0, 0, 0xB3, 0xB3, 0x8C, 0x8C, 0xB3, 0xB3, 0x80, 0x80, 0, 0, 0, 0]
+    flagwant = [0, 0, 0, 0, 0x66, 0x66, 0x18, 0x18, 0x66, 0x66, 0, 0, 0, 0, 0, 0]
     ok_flags = all(cellrows(5 + 2 * i, 30) + cellrows(6 + 2 * i, 30) == flagwant for i in range(4))
     gap_ink = [sum(bin(b).count('1') for c in (28, 29) for b in cellrows(5 + 2 * i, c) + cellrows(6 + 2 * i, c)) for i in range(5)]
     check(ok_flags, 'finished cars: a mini chequered flag beside the car')
