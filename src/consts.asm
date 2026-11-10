@@ -6,8 +6,8 @@ ai_styles_src:  ;  reach  line   ease fuss
                                 ;       corners, eases off at 45 degrees
         db 24, 7,4,  1,   3     ; PINK  the wild one: a wandering line, twitchy
                                 ;       steering, the most mistakes
-        db 26, 7,4,  2,   2     ; WHITE the steady one: brakes early, rarely
-                                ;       wrong
+        db 26, 7,4,  2,   2     ; WHITE Slim Jane, the fastest: full throttle (in
+                                ;       cars_init), brakes early, rarely wrong
 rev4_src:   db 0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15   ; 0..15, bits reversed
 cf_tab_src:                         ; each character row: IX for line 0, buffer row
                                 ; (WIN_H/8 of them: buffer rows 16..135)

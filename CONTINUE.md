@@ -13,7 +13,8 @@ cars finish; RACE FINISHED when all are in. Beeper engine (pitch from your speed
 interrupt routine. Real-ROM test PASS (pixel-exact window).
 Whole lap: work 193.7k T a picture; 177 pictures at 3 TV frames, 31 at 4.
 
-**Next step:** Grant plays `build/racer.tap` and says what to change next.
+**Next step:** Grant picks a plain-road option (docs/design/road_options.png: A, B or C); then build
+it and measure the frame cost.
 
 **Tools:** car editor https://claude.ai/artifact/2EqdSKs3fDfUqERTX9pTzL (tools/make_car_editor.py; hand
 cars in tools/car_art.txt; tools/turn_car.py drafts the angled headings); mock-up scripts in tools/;
@@ -24,7 +25,7 @@ driver (tools/pool_art.txt: SPECS, the old WHITE) needs 1 KB for his car - none 
 Any code moved ahead of hud.asm must not use equs defined later (pasmo first-pass values).
 Frame time: about 16k T of headroom on an average picture.
 
-**Waiting on Grant:** playtest; whether Jane should drive easier than the old WHITE; angled headings of his cars are drafts (redraw in the editor if any
+**Waiting on Grant:** playtest; angled headings of his cars are drafts (redraw in the editor if any
 look wrong); confirm the repo should be public; push a tag for this build from his machine (cloud
 sessions cannot push tags).
 

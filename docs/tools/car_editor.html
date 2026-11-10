@@ -53,15 +53,19 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
   <header>
     <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <h1>Breakfast Run car editor</h1>
-    <span class="spec">16 × 16 px · black ink on white paper · 16 headings from 3 drawings</span>
+    <span class="spec">16 × 16 px · the cars (16 headings from 3 drawings) and the drivers' faces</span>
   </header>
 
   <div class="main">
     <section aria-label="Drawing">
-      <h2>Car</h2>
+      <h2>Drawing</h2>
+      <div class="row"><button id="m-car" aria-pressed="true">Cars</button><button id="m-face" aria-pressed="false">Faces</button></div>
+      <h2 id="who-h">Car</h2>
       <div class="row" id="cars"></div>
+      <div id="headbox" style="display:grid;gap:14px">
       <h2>Heading you are drawing</h2>
       <div class="row" id="heads"></div>
+      </div>
       <canvas id="grid" width="384" height="384" aria-label="16 by 16 drawing grid"></canvas>
       <div class="row">
         <button id="t-ink" aria-pressed="true"><span class="chip sw-ink"></span>Ink <kbd>1</kbd></button>
@@ -74,15 +78,24 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
         <button id="revert">Revert this heading</button>
         <span class="edited" id="edited"></span>
       </div>
-      <p class="note"><b>Ink</b> is black. <b>Paper</b> is the car's white body: solid, so the road does not show through it. <b>Clear</b> leaves the road showing. Right-click also clears. <b>Mirror</b> paints both sides of the car at once, on the yellow line (straight up and 45° only). At straight up it can flip the checker on a tyre, because the checker does not mirror.</p>
+      <p class="note" id="facenote" hidden>A face is one colour on the driver's band in the race order, exactly as here: <b>Ink</b> draws, <b>Clear</b> (or right-click) shows the band. <b>Mirror</b> paints both halves at once. Faces show beside the cars before the race starts.</p>
+      <p class="note" id="carnote"><b>Ink</b> is black. <b>Paper</b> is the car's white body: solid, so the road does not show through it. <b>Clear</b> leaves the road showing. Right-click also clears. <b>Mirror</b> paints both sides of the car at once, on the yellow line (straight up and 45° only). At straight up it can flip the checker on a tyre, because the checker does not mirror.</p>
     </section>
 
     <section aria-label="Preview">
+      <div id="faceprev" hidden style="display:grid;gap:10px">
+      <h2>The race order, as the game shows it (3×)</h2>
+      <div class="scroller"><canvas class="px" id="faces3"></canvas></div>
+      <h2>Real size and 2×</h2>
+      <div class="scroller"><canvas class="px" id="faces1"></canvas></div>
+      </div>
+      <div id="carprev" style="display:grid;gap:10px">
       <h2>All 16 headings, as the game draws them (3×)</h2>
       <div class="scroller"><canvas class="px" id="all3"></canvas></div>
       <h2>Real size and 2×, on the track</h2>
       <div class="scroller"><canvas class="px" id="real"></canvas></div>
-      <p class="note">The game clears a one-pixel white halo round every car so it stays readable over the kerbs. Headings 4 to 15 are the first four turned a quarter at a time, and 67½° is the 22½° drawing mirrored, so you only draw three per car.</p>
+      </div>
+      <p class="note" id="carprevnote">The game clears a one-pixel white halo round every car so it stays readable over the kerbs. Headings 4 to 15 are the first four turned a quarter at a time, and 67½° is the 22½° drawing mirrored, so you only draw three per car.</p>
       <h2>Send it to Claude</h2>
       <div class="row">
         <button id="copy">Copy art for Claude</button>
@@ -105,7 +118,11 @@ const CARS = [
   { name: 'GREEN', mark: 'open cockpit',      col: '#00d700' },
   { name: 'PINK',  mark: 'grille slot',       col: '#d700d7' },
   { name: 'WHITE', mark: 'sunroof',           col: '#d7d7d7' }];
+CARS[4].label = 'WHITE · Jane';
 const HEADS = ['Up (0°)', '22½°', '45°'];
+const GFACES = [["................",".....XX..XX.....","...XXXX..XXXX...","..XXXXX..XXXXX..",".XXXXXX..XXXXXX.",".XXXXXXXXXXXXXX.","X..............X","X.XX..XXXX..XX.X","X.XXXXXXXXXXXX.X","X..............X",".X............X.",".X...XXXXXX...X.","..X..........X..","...XX......XX...",".....XXXXXX.....","................"],["................",".....XXXXXX.....","...XX......XX...","..X..........X..",".X.XX......XX.X.",".X...XX..XX...X.","X.XXXX....XXXX.X","X.XXXXX..XXXXX.X","X..XXXX..XXXX..X","X..............X",".X..XXXXXXXX..X.",".X..X.X..X.X..X.","..X.XXXXXXXX.X..","...XX......XX...",".....XXXXXX.....","................"],[".............XXX","....XXXXXX....X.","...XXXXXXXX..XXX","..XXXXXXXXXX....",".X............X.",".X............X.","X..............X","X..XXXX..XXXX..X","X..............X","X..............X",".X............X.",".X.....XX.....X.","..X...X..X...X..","...XX..XX..XX...",".....XXXXXX.....","................"],["................",".....XXXXXX.....","...XXXX..XXXX...","..XXXX....XXXX..","..XXXXX..XXXXX..","XXXXXXXXXXXXXXXX","..X..........X..","..X.XXX..XXX.X..","..X..X....X..X..","..X..........X..","..X..XXXXXX..X..","..X....XX....X..","...X........X...","....XX....XX....","......XXXX......","................"],["................","....XXXXXXXX....","..XXXXXXXXXXXX..",".XXXXXXXXXXXXXX.",".XXXX......XXXX.","XXX..........XXX","XX..X.X..X.X..XX","XX..XX....XX..XX","XX............XX","XX............XX","XX...X....X...XX","XX....XXXX....XX","XX.X........X.XX","XX..XX....XX..XX","XX....XXXX....XX","................"]];                   // [car] = 16 strings of X . (ink on the car's band)
+const BAND = [{ bg: '#d70000', ink: '#ffffff' }, { bg: '#00d7d7', ink: '#000000' }, { bg: '#00d700', ink: '#000000' },
+              { bg: '#d700d7', ink: '#000000' }, { bg: '#ffffff', ink: '#000000' }];
 // A saved drawing belongs to the game art it started from: when the game's art
 // changes, the editor opens on the new art, and older drafts stay available.
 const SIG = (() => { let h = 5381; const t = JSON.stringify(GAME); for (let i = 0; i < t.length; i++) h = (h * 33 + t.charCodeAt(i)) >>> 0; return h.toString(36) })();
@@ -121,7 +138,15 @@ function olderDraft() {
   } catch (e) { return null }
 }
 const clone = a => a.map(c => c.map(g => g.map(r => r.split(''))));
-let art = clone(GAME), car = 0, head = 0, tool = 'X', mirror = false, undo = [];
+let art = clone(GAME), car = 0, head = 0, tool = 'X', mirror = false, undo = [], mode = 'car';
+const FSIG = (() => { let h = 5381; const t = JSON.stringify(GFACES); for (let i = 0; i < t.length; i++) h = (h * 33 + t.charCodeAt(i)) >>> 0; return h.toString(36) })();
+const FKEY = 'breakfastrun-face-art-' + FSIG;
+const fclone = a => a.map(g => g.map(r => r.split('')));
+let faces = fclone(GFACES);
+function validF(a) { return Array.isArray(a) && a.length === 5 && a.every(g => g.length === 16 && g.every(r => r.length === 16 && r.every(v => 'X.'.includes(v)))) }
+try { const s = JSON.parse(localStorage.getItem(FKEY)); if (validF(s)) faces = s; } catch (e) {}
+function saveF() { try { localStorage.setItem(FKEY, JSON.stringify(faces)) } catch (e) {} }
+const cur = () => mode === 'face' ? faces[car] : art[car][head];
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (valid(s)) art = s; } catch (e) {}
 function valid(a) { return Array.isArray(a) && a.length === 5 && a.every(c => c.length === 3 && c.every(g => g.length === 16 && g.every(r => r.length === 16 && r.every(v => 'Xo.'.includes(v))))) }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(art)) } catch (e) {} }
@@ -134,43 +159,45 @@ function halo(g) { return g.map((row, y) => row.map((_, x) => { for (let j = -1;
 
 // ---- pickers
 const carsEl = document.getElementById('cars'), headsEl = document.getElementById('heads');
-CARS.forEach((c, i) => { const b = document.createElement('button'); b.id = 'car-' + i; b.innerHTML = `<span class="chip" style="background:${c.col}"></span>${c.name}`; b.title = c.mark; b.onclick = () => { car = i; refresh() }; carsEl.append(b) });
+CARS.forEach((c, i) => { const b = document.createElement('button'); b.id = 'car-' + i; b.innerHTML = `<span class="chip" style="background:${c.col}"></span>${c.label || c.name}`; b.title = c.mark; b.onclick = () => { car = i; refresh() }; carsEl.append(b) });
 HEADS.forEach((h, i) => { const b = document.createElement('button'); b.id = 'head-' + i; b.textContent = h; b.onclick = () => { head = i; refresh() }; headsEl.append(b) });
 
 // ---- the drawing grid
 const grid = document.getElementById('grid'), gx = grid.getContext('2d'), CELL = 24;
 function drawGrid() {
-  const g = art[car][head];
+  const g = cur();
   for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
     const v = g[y][x];
-    if (v === '.') { gx.fillStyle = (x + y) % 2 ? '#3a3d46' : '#30333b'; } else gx.fillStyle = v === 'X' ? '#000' : '#fff';
+    if (mode === 'face') gx.fillStyle = v === 'X' ? BAND[car].ink : BAND[car].bg;
+    else if (v === '.') { gx.fillStyle = (x + y) % 2 ? '#3a3d46' : '#30333b'; } else gx.fillStyle = v === 'X' ? '#000' : '#fff';
     gx.fillRect(x * CELL, y * CELL, CELL, CELL);
   }
   gx.strokeStyle = 'rgba(128,134,148,.35)'; gx.lineWidth = 1; gx.beginPath();
   for (let i = 1; i < 16; i++) { gx.moveTo(i * CELL + .5, 0); gx.lineTo(i * CELL + .5, 384); gx.moveTo(0, i * CELL + .5); gx.lineTo(384, i * CELL + .5) }
   gx.stroke();
   gx.strokeStyle = 'rgba(255,212,0,.55)'; gx.beginPath();          // the mirror line
-  if (head === 0) { gx.moveTo(192, 0); gx.lineTo(192, 384) }
-  if (head === 2) { gx.moveTo(384, 0); gx.lineTo(0, 384) }
-  if (mirror && head !== 1) gx.stroke();
+  if (head === 0 || mode === 'face') { gx.moveTo(192, 0); gx.lineTo(192, 384) }
+  else if (head === 2) { gx.moveTo(384, 0); gx.lineTo(0, 384) }
+  if (mirror && (head !== 1 || mode === 'face')) gx.stroke();
 }
 // up: mirror across the middle; 45 degrees: across the car's own line, bottom-left to top-right
-function partner(x, y) { return head === 0 ? [15 - x, y] : head === 2 ? [15 - y, 15 - x] : null }
+function partner(x, y) { return mode === 'face' || head === 0 ? [15 - x, y] : head === 2 ? [15 - y, 15 - x] : null }
 let painting = null, stroke = false;
 function cellAt(e) { const r = grid.getBoundingClientRect(); return [Math.floor((e.clientX - r.left) / r.width * 16), Math.floor((e.clientY - r.top) / r.height * 16)] }
 function paint(x, y, v) {
   if (x < 0 || y < 0 || x > 15 || y > 15) return;
-  const g = art[car][head]; g[y][x] = v;
+  if (mode === 'face' && v === 'o') v = 'X';
+  const g = cur(); g[y][x] = v;
   const p = mirror && partner(x, y); if (p) g[p[1]][p[0]] = v;
 }
 grid.addEventListener('contextmenu', e => e.preventDefault());
 grid.addEventListener('pointerdown', e => {
   e.preventDefault(); grid.setPointerCapture(e.pointerId);
-  undo.push({ car, head, g: art[car][head].map(r => r.slice()) }); if (undo.length > 200) undo.shift();
+  undo.push({ mode, car, head, g: cur().map(r => r.slice()) }); if (undo.length > 200) undo.shift();
   painting = e.button === 2 ? '.' : tool; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false);
 });
 grid.addEventListener('pointermove', e => { if (!painting) return; const [x, y] = cellAt(e); paint(x, y, painting); refresh(false) });
-['pointerup', 'pointercancel'].forEach(t => grid.addEventListener(t, () => { if (painting) { painting = null; save(); refresh() } }));
+['pointerup', 'pointercancel'].forEach(t => grid.addEventListener(t, () => { if (painting) { painting = null; save(); saveF(); refresh() } }));
 
 // ---- previews: kerb chequer behind, halo cleared to white, ink on top - as the game does
 function track(x, y) { return ((x >> 2) + (y >> 2)) % 2 }
@@ -187,7 +214,26 @@ function scene(ctx, ox, oy, n, s, f) {                               // n cars i
   for (let y = 16; y < 24; y++) for (let x = 0; x < w; x++) if (track(x, y)) ctx.fillRect(ox + x * s, oy + y * s, s, s);
   f.slice(0, n).forEach((g, i) => drawCarAt(ctx, g, ox + (4 + i * 20) * s, oy + 4 * s, s));
 }
+function drawBand(ctx, k, ox, oy, s, place) {      // one race-order row: place, car facing right, face
+  const b = BAND[k];
+  ctx.fillStyle = b.bg; ctx.fillRect(ox, oy, 56 * s, 16 * s);
+  ctx.fillStyle = b.ink;
+  const pic = frames(k)[4];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (pic[y][x] === 'X') ctx.fillRect(ox + (8 + x) * s, oy + y * s, s, s);
+  const f = faces[k];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (f[y][x] === 'X') ctx.fillRect(ox + (32 + x) * s, oy + y * s, s, s);
+  ctx.font = `600 ${7 * s}px IBM Plex Mono, monospace`; ctx.fillText(String(place), ox + s, oy + 7 * s);
+}
+function drawFaces() {
+  const a = document.getElementById('faces3'), S = 3; a.width = 56 * S; a.height = 5 * 16 * S;
+  const c = a.getContext('2d'); [0, 1, 4, 3, 2].forEach((k, i) => drawBand(c, k, 0, i * 16 * S, S, i + 1));
+  if (car >= 0) { c.strokeStyle = '#ffd400'; c.lineWidth = 2; c.strokeRect(32 * S - 2, [0, 1, 4, 3, 2].indexOf(car) * 16 * S + 1, 16 * S + 4, 16 * S - 2) }
+  const r = document.getElementById('faces1'); r.width = 56 + 16 + 112; r.height = 5 * 32;
+  const x = r.getContext('2d'); x.fillStyle = '#1b1d23'; x.fillRect(0, 0, r.width, r.height);
+  [0, 1, 4, 3, 2].forEach((k, i) => { drawBand(x, k, 0, i * 16, 1, i + 1); drawBand(x, k, 72, i * 32, 2, i + 1) });
+}
 function drawPreviews() {
+  if (mode === 'face') return drawFaces();
   const f = frames(car), S = 3;
   const a = document.getElementById('all3'); a.width = (8 * 20 + 4) * S; a.height = 2 * 24 * S + 8;
   const c = a.getContext('2d'); c.fillStyle = '#1b1d23'; c.fillRect(0, 0, a.width, a.height);
@@ -201,6 +247,11 @@ function drawPreviews() {
 
 // ---- text in and out
 function toText() {
+  if (mode === 'face') {
+    let t = 'BREAKFAST RUN FACE ART v1\nX = ink   . = the band shows\n';
+    faces.forEach((g, k) => { t += `\n== ${CARS[k].name} face ==\n` + g.map(r => r.join('')).join('\n') + '\n' });
+    return t;
+  }
   let t = 'BREAKFAST RUN CAR ART v1\nX = ink (black)   o = paper (white body)   . = empty (road shows)\n';
   art.forEach((c, k) => c.forEach((g, h) => { t += `\n== ${CARS[k].name} heading ${['0', '22.5', '45'][h]} ==\n` + g.map(r => r.join('')).join('\n') + '\n' }));
   return t;
@@ -209,7 +260,10 @@ function fromText(t) {
   const out = clone(GAME); let n = 0;
   const re = /==\s*(YOU|CYAN|GREEN|PINK|WHITE)\s+heading\s+(0|22\.5|45)\s*==\s*\n((?:[Xo.]{16}\s*\n?){16})/g; let m;
   while ((m = re.exec(t))) { out[CARS.findIndex(c => c.name === m[1])][['0', '22.5', '45'].indexOf(m[2])] = m[3].trim().split(/\s+/).map(r => r.split('')); n++ }
-  return n ? [out, n] : [null, 0];
+  const fo = faces.map(g => g.map(r => r.slice()));
+  const fre = /==\s*(YOU|CYAN|GREEN|PINK|WHITE)\s+face\s*==\s*\n((?:[X.]{16}\s*\n?){16})/g; let fm, nf = 0;
+  while ((fm = fre.exec(t))) { fo[CARS.findIndex(c => c.name === fm[1])] = fm[2].trim().split(/\s+/).map(r => r.split('')); nf++ }
+  return n || nf ? [n ? out : art, n + nf, nf ? fo : faces] : [null, 0];
 }
 const text = document.getElementById('text'), status = document.getElementById('status');
 function say(s, err) { status.textContent = s; status.className = 'status' + (err ? ' err' : '') }
@@ -220,17 +274,23 @@ document.getElementById('copy').onclick = () => {
   try { navigator.clipboard.writeText(text.value).then(done, fail) } catch (e) { fail() }
 };
 document.getElementById('load').onclick = () => {
-  const [a, n] = fromText(text.value);
-  if (!a) return say('No car art found. Paste text that starts BREAKFAST RUN CAR ART, then press Load.', true);
-  undo = []; art = a; save(); refresh(); say(`Loaded ${n} drawing${n === 1 ? '' : 's'}.`);
+  const [a, n, fa] = fromText(text.value);
+  if (!a) return say('No art found. Paste text that starts BREAKFAST RUN CAR ART or FACE ART, then press Load.', true);
+  undo = []; art = a; faces = fa; save(); saveF(); refresh(); say(`Loaded ${n} drawing${n === 1 ? '' : 's'}.`);
 };
 let resetArmed = false;
 document.getElementById('reset').onclick = e => {
   if (!resetArmed) { resetArmed = true; e.target.textContent = 'Press again to reset all'; setTimeout(() => { resetArmed = false; e.target.textContent = "Reset all to the game's art" }, 3000); return }
-  resetArmed = false; e.target.textContent = "Reset all to the game's art"; undo = []; art = clone(GAME); save(); refresh(); say("Every car is back to the game's art.");
+  resetArmed = false; e.target.textContent = "Reset all to the game's art"; undo = []; art = clone(GAME); faces = fclone(GFACES); save(); saveF(); refresh(); say("Every car and face is back to the game's art.");
 };
-document.getElementById('revert').onclick = () => { undo.push({ car, head, g: art[car][head].map(r => r.slice()) }); art[car][head] = GAME[car][head].map(r => r.split('')); save(); refresh() };
-function doUndo() { const u = undo.pop(); if (!u) return; art[u.car][u.head] = u.g; car = u.car; head = u.head; save(); refresh() }
+document.getElementById('revert').onclick = () => {
+  undo.push({ mode, car, head, g: cur().map(r => r.slice()) });
+  if (mode === 'face') faces[car] = GFACES[car].map(r => r.split('')); else art[car][head] = GAME[car][head].map(r => r.split(''));
+  save(); saveF(); refresh() };
+function doUndo() { const u = undo.pop(); if (!u) return; if (u.mode === 'face') faces[u.car] = u.g; else art[u.car][u.head] = u.g; mode = u.mode; car = u.car; head = u.head; save(); saveF(); refresh() }
+function setMode(m) { mode = m; if (m === 'face' && tool === 'o') setTool('X'); text.value = toText(); refresh() }
+document.getElementById('m-car').onclick = () => setMode('car');
+document.getElementById('m-face').onclick = () => setMode('face');
 document.getElementById('undo').onclick = doUndo;
 
 // ---- tools and keys
@@ -242,7 +302,7 @@ document.getElementById('t-clear').onclick = () => setTool('.');
 document.getElementById('mirror').onclick = () => { mirror = !mirror; refresh() };
 document.addEventListener('keydown', e => {
   if (e.target === text) return;
-  if (e.key === '1') setTool('X'); else if (e.key === '2') setTool('o'); else if (e.key === '3') setTool('.');
+  if (e.key === '1') setTool('X'); else if (e.key === '2') { if (mode !== 'face') setTool('o') } else if (e.key === '3') setTool('.');
   else if (e.key === 'm' || e.key === 'M') { mirror = !mirror; refresh() }
   else if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); doUndo() }
 });
@@ -252,8 +312,19 @@ function refresh(full = true) {
   if (!full) return;
   CARS.forEach((_, i) => document.getElementById('car-' + i).setAttribute('aria-pressed', i === car));
   HEADS.forEach((_, i) => document.getElementById('head-' + i).setAttribute('aria-pressed', i === head));
-  const m = document.getElementById('mirror'); m.setAttribute('aria-pressed', mirror && head !== 1); m.disabled = head === 1;
-  const changed = art.reduce((n, c, k) => n + c.filter((g, h) => g.map(r => r.join('')).join() !== GAME[k][h].join()).length, 0);
+  const face = mode === 'face';
+  const m = document.getElementById('mirror'); m.setAttribute('aria-pressed', mirror && (face || head !== 1)); m.disabled = !face && head === 1;
+  document.getElementById('m-car').setAttribute('aria-pressed', !face); document.getElementById('m-face').setAttribute('aria-pressed', face);
+  document.getElementById('headbox').hidden = face; document.getElementById('headbox').style.display = face ? 'none' : 'grid';
+  document.getElementById('who-h').textContent = face ? 'Face' : 'Car';
+  document.getElementById('t-paper').disabled = face;
+  ['facenote', 'faceprev'].forEach(id => document.getElementById(id).hidden = !face);
+  ['carnote', 'carprev', 'carprevnote'].forEach(id => document.getElementById(id).hidden = face);
+  document.getElementById('carprev').style.display = face ? 'none' : 'grid';
+  document.getElementById('faceprev').style.display = face ? 'grid' : 'none';
+  document.getElementById('revert').textContent = face ? 'Revert this face' : 'Revert this heading';
+  const changed = art.reduce((n, c, k) => n + c.filter((g, h) => g.map(r => r.join('')).join() !== GAME[k][h].join()).length, 0)
+    + faces.filter((g, k) => g.map(r => r.join('')).join() !== GFACES[k].join()).length;
   document.getElementById('edited').textContent = changed ? `${changed} drawing${changed === 1 ? '' : 's'} changed from the game` : '';
   undoBtn.disabled = !undo.length;
 }
@@ -266,9 +337,14 @@ olderBtn.onclick = () => {
   say('Your earlier draft is back. Copy it for Claude if it has drawings you want to keep.');
 };
 text.value = toText();
-// a link can open on one car: #you, #cyan, #green, #pink, #white (or #car-1 .. #car-5)
+// a link can open on one car: #you, #cyan, #green, #pink, #white (or #car-1 .. #car-5);
+// on a face: #jane, #white-face, #face-white, ...
 function fromHash() {
-  const h = (location.hash || '').slice(1).toLowerCase();
+  let h = (location.hash || '').slice(1).toLowerCase();
+  if (h === 'jane') h = 'white-face';
+  const fm = h.match(/^(?:face-)?(you|cyan|green|pink|white)(?:-face)?$/);
+  if (fm && h.includes('face')) { mode = 'face'; car = CARS.findIndex(c => c.name.toLowerCase() === fm[1]); text.value = toText(); return }
+  mode = 'car';
   let i = CARS.findIndex(c => c.name.toLowerCase() === h);
   const m = h.match(/^car-([1-5])$/); if (m) i = +m[1] - 1;
   if (i >= 0) { car = i; head = 0; }

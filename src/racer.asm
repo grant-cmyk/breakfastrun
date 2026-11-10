@@ -2817,7 +2817,7 @@ cars_init:
         db 0
         dw CPU3Y
         dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 15,0,3, 4,0,0, 0, 0,0     ; WHITE: 15/16, hardly ever wrong (brakes early)
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 16,0,3, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
 cars_init_end:
 
 ; ---------------------------------------------------------------------

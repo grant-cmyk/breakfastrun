@@ -532,3 +532,15 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant: the best time looked cut off ("d2.8": the clock's right edge ran into the 1). st_text_x
   takes a start offset; the best lap now starts 2 px right of the clock (14 px of text + 2 = 16,
   still two columns). docs/design/best_lap_panel.png. drive_test RESULT: PASS (start 16.5/s).
+
+## 2026-11-10 SAST - Jane the fastest; faces in the editor; plain-road mock-ups
+- Grant: Jane should be the fastest computer car. Her throttle 16/16 (was 15): laps (drive_test)
+  Jane 13.6, CYAN 13.9, PINK 14.9, GREEN 16.8 s; never over your top speed. RESULT: PASS.
+- Grant: share her face in the pixel editor. The editor has a Faces mode: each driver's face in ink
+  on their race-order colour, the five rows previewed as the game shows them, copied as "BREAKFAST
+  RUN FACE ART". Link #jane opens on her face. tools/make_car_editor.py reads tools/make_faces.py.
+- Grant: mock-ups of a road without the cloth's checks, the checks only off the track ("hugs around
+  the map, like the corners"): tools/make_road_mockups.py -> docs/design/road_options.png. NOW,
+  A plain road only, B plain out past the O's, C checks only in the corners and infield. Not built:
+  the engine fills the cloth over the whole window, so a plain road means clearing the dots on the
+  road tiles each picture - a cost to measure once Grant picks one.
