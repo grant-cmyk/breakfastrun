@@ -391,3 +391,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Test checks the name. drive_test RESULT: PASS. Other verified names for later tracks: The Breakfast
   Club, Green Eggs and Ham, The Dish Ran Away with the Spoon, Paddington's Marmalade, Goldilocks'
   Porridge, Breakfast in America.
+
+## 2026-11-10 06:26 SAST - fix: garbled faces once cars finish
+- Grant's screenshot: faces garbled in the race order. Cause: the flag code fell through into
+  tr_glyph for the bottom half; tr_face was added between them, so finished cars got half a face
+  drawn from the flag's bytes. Fixed with an explicit JR. New test: every finished car shows the
+  flag and its face matches the face data byte for byte. drive_test RESULT: PASS.
+  docs/design/flags_fixed.png.

@@ -629,6 +629,7 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ld b,a
         ld c,30
         ld de,flag_bot
+        jr tr_glyph             ; (not falling through: tr_face is in between)
 tr_face:                        ; 8 rows x 2 bytes at DE into cells B, 28-29
         ld c,28
         call cell_addr
