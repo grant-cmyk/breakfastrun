@@ -4,7 +4,8 @@ start with one NOS canister), and a message box ("GREAT DRIVING!" when you
 overtake, "SUPERB LAP!", "GET IT TOGETHER" when you hit the O's) - spoken by your
 crew chief on the right (Grant: the messages come from the pits). Drawn on a real
 race screen (docs/design/mock_screen.bin, from the game) with the Spectrum's own colours
-and ROM letters. Writes docs/design/driver_strip.png."""
+and ROM letters. Writes docs/design/driver_strip.png; and (Grant: "a set of text that is smaller - like the
+numbers - to make more space") the same with 3 x 5 letters: docs/design/driver_strip_small.png."""
 import os, re
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -112,3 +113,41 @@ d.text((16, 12), 'The driver strip: you, your inventory (3), the message, your c
 out.paste(full, (16, 36)); y = 36 + full.height + 24
 for s in strips: out.paste(s, (16, y)); y += s.height + 16
 o = os.path.join(ROOT, 'docs', 'design', 'driver_strip.png'); out.save(o); print('wrote', os.path.normpath(o))
+
+# ---- small letters, 3 x 5 like the race order's numbers (4 px a letter, 6 a line)
+SMALL = {'A': ".X.X.XXXXX.XX.X", 'B': "XX.X.XXX.X.XXX.", 'C': ".XXX..X..X...XX", 'D': "XX.X.XX.XX.XXX.",
+         'E': "XXXX..XX.X..XXX", 'F': "XXXX..XX.X..X..", 'G': ".XXX..X.XX.X.XX", 'H': "X.XX.XXXXX.XX.X",
+         'I': "XXX.X..X..X.XXX", 'J': "..X..X..XX.X.X.", 'K': "X.XX.XXX.X.XX.X", 'L': "X..X..X..X..XXX",
+         'M': "X.XXXXXXXX.XX.X", 'N': "XX.X.XX.XX.XX.X", 'O': ".X.X.XX.XX.X.X.", 'P': "XX.X.XXX.X..X..",
+         'Q': ".X.X.XX.XXX..XX", 'R': "XX.X.XXX.X.XX.X", 'S': ".XXX...X...XXX.", 'T': "XXX.X..X..X..X.",
+         'U': "X.XX.XX.XX.XXXX", 'V': "X.XX.XX.XX.X.X.", 'W': "X.XX.XXXXXXXX.X", 'X': "X.XX.X.X.X.XX.X",
+         'Y': "X.XX.X.X..X..X.", 'Z': "XXX..X.X.X..XXX", '!': ".X..X..X.....X.", ' ': "...............",
+         '.': ".............X.", '-': "......XXX......", "'": ".X..X..........", '0': "XXXX.XX.XX.XXXX",
+         '1': ".X.XX..X..X.XXX", '2': "XX...X.X.X..XXX", '3': "XX...X.X...XXX.", '4': "X.XX.XXXX..X..X",
+         '5': "XXXX..XX...XXX.", '6': ".XXX..XXXX.XXXX", '7': "XXX..X.X..X..X.", '8': "XXXX.XXXXX.XXXX",
+         '9': "XXXX.XXXX..XXX."}
+def stext(bits, s, x, y):
+    for i, ch in enumerate(s):
+        g = SMALL[ch]
+        for j in range(5):
+            for k in range(3):
+                if g[j * 3 + k] == 'X': bits[y + j, x + i * 4 + k] = 1
+def strip_small(lines):
+    bits, attr = strip(())
+    x0, x1 = 88, 151                                # the box's inside: 62 px, 15 letters
+    top = 160 + (32 - (len(lines) * 7 - 2)) // 2
+    for i, line in enumerate(lines):
+        w = len(line) * 4 - 1
+        stext(bits, line, x0 + 1 + (62 - w) // 2, top + i * 7)
+    return bits, attr
+SMSGS = [('GREAT DRIVING!', 'YOU PASSED', 'JANE.'), ('SUPERB LAP!', '13.5 - BEST', 'SO FAR'), ('GET IT', 'TOGETHER!', 'MIND THE OS')]
+b, a = strip_small(SMSGS[0])
+full = render(b, a, 2)
+strips = [render(*strip_small(m), 3).crop((0, 152 * 3, 196 * 3, 192 * 3)) for m in SMSGS]
+W = max(full.width, strips[0].width) + 32
+H = 40 + full.height + 24 + sum(s.height + 16 for s in strips)
+out = Image.new('RGB', (W, H), (17, 18, 22)); d = ImageDraw.Draw(out)
+d.text((16, 12), 'The driver strip with small letters (3 x 5, like the numbers): 3 lines of up to 15  -  the whole screen (2x), then the strip (3x)', fill=(236, 235, 230), font=fnt)
+out.paste(full, (16, 36)); y = 36 + full.height + 24
+for s in strips: out.paste(s, (16, y)); y += s.height + 16
+o = os.path.join(ROOT, 'docs', 'design', 'driver_strip_small.png'); out.save(o); print('wrote', os.path.normpath(o))

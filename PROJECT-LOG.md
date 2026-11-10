@@ -643,3 +643,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant: the messages come from the pits - a crew chief on the right of the message. Re-laid in 24
   columns: you (cols 0-3, red), inventory (4-9), the message box (11-18, 8 letters a line) with its
   tail out to the crew chief (20-23, white on blue: a headset - band, ear cups, microphone).
+- Grant: the crew chief's picture to edit. The editor's Faces mode has a sixth face, CREW (on
+  blue, twice size as in the strip; link #crew); his drawing is in tools/face_art.txt.
+- Grant: smaller text, like the numbers, to make space. 3 x 5 letters (A-Z, digits, ! . - ')
+  in the same box: 3 lines of up to 15 letters (was 2 of 8). docs/design/driver_strip_small.png.

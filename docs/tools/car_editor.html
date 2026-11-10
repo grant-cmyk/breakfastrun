@@ -120,9 +120,10 @@ const CARS = [
   { name: 'WHITE', mark: 'sunroof',           col: '#d7d7d7' }];
 CARS[4].label = 'WHITE · Jane';
 const HEADS = ['Up (0°)', '22½°', '45°'];
-const GFACES = [["................",".....XX..XX.....","...XXXX..XXXX...","...XXXX..XXXX...","..XXXXX..XXXXX..","..X.XXXXXXXX.X..","..X..........X..","..X.XXX..XXX.X..","..X..XX...XX.X..","..X..........X..","..X....XX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....XXXXXX.....","................"],["................","...XXXXXXXXXX...","..XXXX.X.X.XXX..","..XX........XX..","..XX.X....X.XX..","...X..X..X..X...","...X........X...","..X...X..X...X..","..XX........XX..","...XXX.XX.XXX...","...XX......XX...","....X.XXXX.X....","....XX....XX....","....XXXXXXXX....",".....XXXXXX.....","................"],["................",".X.X........X.X.","..X.X.XXXX.X.X..",".X.X.X....X.X.X.","..X.X......X.X..","...X.X....X.X...","..X.XXX..XXX.X..","..X..X....X..X..",".X.....XX.....X.","..X....XX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","....XXXXXXXX....","...XXXXXXXXXX...","...XXXXXXXXXX...","..XX.XXXXXX.XX..","..X..........X..","..X.XXX..XXX.X..",".X...XX..XX...X.",".XX...X......XX.","..X...XXX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","......XXXX......",".....XXXXXX.....","....XXX..XXX....","....XX....XX....","...XX......XX...","...XX.X..X.XX...","....X......X....","...X...XX...X...","..XXX......XXX..",".XXX.X.XX.X.XXX.",".XXX.X....X.XXX.","..XX..X..X..XX..",".......XX.......","................","................"]];                   // [car] = 16 strings of X . (ink on the car's band)
+const GFACES = [["................",".....XX..XX.....","...XXXX..XXXX...","...XXXX..XXXX...","..XXXXX..XXXXX..","..X.XXXXXXXX.X..","..X..........X..","..X.XXX..XXX.X..","..X..XX...XX.X..","..X..........X..","..X....XX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....XXXXXX.....","................"],["................","...XXXXXXXXXX...","..XXXX.X.X.XXX..","..XX........XX..","..XX.X....X.XX..","...X..X..X..X...","...X........X...","..X...X..X...X..","..XX........XX..","...XXX.XX.XXX...","...XX......XX...","....X.XXXX.X....","....XX....XX....","....XXXXXXXX....",".....XXXXXX.....","................"],["................",".X.X........X.X.","..X.X.XXXX.X.X..",".X.X.X....X.X.X.","..X.X......X.X..","...X.X....X.X...","..X.XXX..XXX.X..","..X..X....X..X..",".X.....XX.....X.","..X....XX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","....XXXXXXXX....","...XXXXXXXXXX...","...XXXXXXXXXX...","..XX.XXXXXX.XX..","..X..........X..","..X.XXX..XXX.X..",".X...XX..XX...X.",".XX...X......XX.","..X...XXX....X..","...X........X...","...X..XXXX..X...","....X......X....",".....X....X.....","......XXXX......","................"],["................","......XXXX......",".....XXXXXX.....","....XXX..XXX....","....XX....XX....","...XX......XX...","...XX.X..X.XX...","....X......X....","...X...XX...X...","..XXX......XXX..",".XXX.X.XX.X.XXX.",".XXX.X....X.XXX.","..XX..X..X..XX..",".......XX.......","................","................"],[".....XXXXXX.....","...XX......XX...","..X..XXXXXX..X..","..X.X......X.X..",".XX..........XX.","XXXX.XX..XX.XXXX","XXXX........XXXX","XXXX...XX...XXXX",".XX..........XX.","..X.........X...","..X..XXXX..XXXX.","...X.......X....","....X.....X.....",".....XXXXX......","................","................"]];                   // [car] = 16 strings of X . (ink on the car's band)
 const BAND = [{ bg: '#d70000', ink: '#ffffff' }, { bg: '#00d7d7', ink: '#000000' }, { bg: '#00d700', ink: '#000000' },
-              { bg: '#d700d7', ink: '#000000' }, { bg: '#ffffff', ink: '#000000' }];
+              { bg: '#d700d7', ink: '#000000' }, { bg: '#ffffff', ink: '#000000' }, { bg: '#0000ff', ink: '#ffffff' }];
+const FACE_NAMES = ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE', 'CREW'];   // CREW: the pit crew chief (faces only)
 // A saved drawing belongs to the game art it started from: when the game's art
 // changes, the editor opens on the new art, and older drafts stay available.
 const SIG = (() => { let h = 5381; const t = JSON.stringify(GAME); for (let i = 0; i < t.length; i++) h = (h * 33 + t.charCodeAt(i)) >>> 0; return h.toString(36) })();
@@ -143,7 +144,7 @@ const FSIG = (() => { let h = 5381; const t = JSON.stringify(GFACES); for (let i
 const FKEY = 'breakfastrun-face-art-' + FSIG;
 const fclone = a => a.map(g => g.map(r => r.split('')));
 let faces = fclone(GFACES);
-function validF(a) { return Array.isArray(a) && a.length === 5 && a.every(g => g.length === 16 && g.every(r => r.length === 16 && r.every(v => 'X.'.includes(v)))) }
+function validF(a) { return Array.isArray(a) && a.length === GFACES.length && a.every(g => g.length === 16 && g.every(r => r.length === 16 && r.every(v => 'X.'.includes(v)))) }
 try { const s = JSON.parse(localStorage.getItem(FKEY)); if (validF(s)) faces = s; } catch (e) {}
 function saveF() { try { localStorage.setItem(FKEY, JSON.stringify(faces)) } catch (e) {} }
 const cur = () => mode === 'face' ? faces[car] : art[car][head];
@@ -159,7 +160,7 @@ function halo(g) { return g.map((row, y) => row.map((_, x) => { for (let j = -1;
 
 // ---- pickers
 const carsEl = document.getElementById('cars'), headsEl = document.getElementById('heads');
-CARS.forEach((c, i) => { const b = document.createElement('button'); b.id = 'car-' + i; b.innerHTML = `<span class="chip" style="background:${c.col}"></span>${c.label || c.name}`; b.title = c.mark; b.onclick = () => { car = i; refresh() }; carsEl.append(b) });
+[...CARS, { name: 'CREW', label: 'CREW · pits', col: '#0000ff' }].forEach((c, i) => { const b = document.createElement('button'); b.id = 'car-' + i; b.innerHTML = `<span class="chip" style="background:${c.col}"></span>${c.label || c.name}`; b.title = c.mark; b.onclick = () => { car = i; refresh() }; carsEl.append(b) });
 HEADS.forEach((h, i) => { const b = document.createElement('button'); b.id = 'head-' + i; b.textContent = h; b.onclick = () => { head = i; refresh() }; headsEl.append(b) });
 
 // ---- the drawing grid
@@ -225,13 +226,23 @@ function drawBand(ctx, k, ox, oy, s, place) {      // one race-order row: place,
   for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (f[y][x] === 'X') ctx.fillRect(ox + (32 + x) * s, oy + y * s, s, s);
   ctx.font = `600 ${7 * s}px IBM Plex Mono, monospace`; ctx.fillText(String(place), ox + s, oy + 7 * s);
 }
+function drawCrew(ctx, ox, oy, s) {          // the crew chief, on his blue, as the driver strip shows him
+  ctx.fillStyle = BAND[5].bg; ctx.fillRect(ox, oy, 16 * s, 16 * s); ctx.fillStyle = BAND[5].ink;
+  const f = faces[5];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if (f[y][x] === 'X') ctx.fillRect(ox + x * s, oy + y * s, s, s);
+}
 function drawFaces() {
-  const a = document.getElementById('faces3'), S = 3; a.width = 56 * S; a.height = 5 * 16 * S;
-  const c = a.getContext('2d'); [0, 1, 4, 3, 2].forEach((k, i) => drawBand(c, k, 0, i * 16 * S, S, i + 1));
-  if (car >= 0) { c.strokeStyle = '#ffd400'; c.lineWidth = 2; c.strokeRect(32 * S - 2, [0, 1, 4, 3, 2].indexOf(car) * 16 * S + 1, 16 * S + 4, 16 * S - 2) }
-  const r = document.getElementById('faces1'); r.width = 56 + 16 + 112; r.height = 5 * 32;
+  const a = document.getElementById('faces3'), S = 3; a.width = 56 * S; a.height = 5 * 16 * S + 8 + 32 * S;
+  const c = a.getContext('2d'); c.fillStyle = '#1b1d23'; c.fillRect(0, 0, a.width, a.height);
+  [0, 1, 4, 3, 2].forEach((k, i) => drawBand(c, k, 0, i * 16 * S, S, i + 1));
+  drawCrew(c, 0, 5 * 16 * S + 8, 2 * S);       // the crew chief: twice size, as in the strip
+  c.strokeStyle = '#ffd400'; c.lineWidth = 2;
+  if (car === 5) c.strokeRect(1, 5 * 16 * S + 9, 32 * S - 2, 32 * S - 2);
+  else c.strokeRect(32 * S - 2, [0, 1, 4, 3, 2].indexOf(car) * 16 * S + 1, 16 * S + 4, 16 * S - 2)
+  const r = document.getElementById('faces1'); r.width = 56 + 16 + 112; r.height = 5 * 32 + 8;
   const x = r.getContext('2d'); x.fillStyle = '#1b1d23'; x.fillRect(0, 0, r.width, r.height);
   [0, 1, 4, 3, 2].forEach((k, i) => { drawBand(x, k, 0, i * 16, 1, i + 1); drawBand(x, k, 72, i * 32, 2, i + 1) });
+  drawCrew(x, 20, 5 * 16 + 4, 1);
 }
 function drawPreviews() {
   if (mode === 'face') return drawFaces();
@@ -249,7 +260,7 @@ function drawPreviews() {
 // ---- text in and out
 function faceText() {
   let t = 'BREAKFAST RUN FACE ART v1\nX = ink   . = the band shows\n';
-  faces.forEach((g, k) => { t += `\n== ${CARS[k].name} face ==\n` + g.map(r => r.join('')).join('\n') + '\n' });
+  faces.forEach((g, k) => { t += `\n== ${FACE_NAMES[k]} face ==\n` + g.map(r => r.join('')).join('\n') + '\n' });
   return t;
 }
 function toText() { return carText() + '\n' + faceText() }   // one paste carries every car and face
@@ -263,8 +274,8 @@ function fromText(t) {
   const re = /==\s*(YOU|CYAN|GREEN|PINK|WHITE)\s+heading\s+(0|22\.5|45)\s*==\s*\n((?:[Xo.]{16}\s*\n?){16})/g; let m;
   while ((m = re.exec(t))) { out[CARS.findIndex(c => c.name === m[1])][['0', '22.5', '45'].indexOf(m[2])] = m[3].trim().split(/\s+/).map(r => r.split('')); n++ }
   const fo = faces.map(g => g.map(r => r.slice()));
-  const fre = /==\s*(YOU|CYAN|GREEN|PINK|WHITE)\s+face\s*==\s*\n((?:[X.]{16}\s*\n?){16})/g; let fm, nf = 0;
-  while ((fm = fre.exec(t))) { fo[CARS.findIndex(c => c.name === fm[1])] = fm[2].trim().split(/\s+/).map(r => r.split('')); nf++ }
+  const fre = /==\s*(YOU|CYAN|GREEN|PINK|WHITE|CREW)\s+face\s*==\s*\n((?:[X.]{16}\s*\n?){16})/g; let fm, nf = 0;
+  while ((fm = fre.exec(t))) { fo[FACE_NAMES.indexOf(fm[1])] = fm[2].trim().split(/\s+/).map(r => r.split('')); nf++ }
   return n || nf ? [n ? out : art, n + nf, nf ? fo : faces] : [null, 0];
 }
 const text = document.getElementById('text'), status = document.getElementById('status');
@@ -290,7 +301,7 @@ document.getElementById('revert').onclick = () => {
   if (mode === 'face') faces[car] = GFACES[car].map(r => r.split('')); else art[car][head] = GAME[car][head].map(r => r.split(''));
   save(); saveF(); refresh() };
 function doUndo() { const u = undo.pop(); if (!u) return; if (u.mode === 'face') faces[u.car] = u.g; else art[u.car][u.head] = u.g; mode = u.mode; car = u.car; head = u.head; save(); saveF(); refresh() }
-function setMode(m) { mode = m; if (m === 'face' && tool === 'o') setTool('X'); text.value = toText(); refresh() }
+function setMode(m) { mode = m; if (m === 'face' && tool === 'o') setTool('X'); if (m === 'car' && car > 4) car = 0; text.value = toText(); refresh() }
 document.getElementById('m-car').onclick = () => setMode('car');
 document.getElementById('m-face').onclick = () => setMode('face');
 document.getElementById('undo').onclick = doUndo;
@@ -312,7 +323,8 @@ document.addEventListener('keydown', e => {
 function refresh(full = true) {
   drawGrid(); drawPreviews();
   if (!full) return;
-  CARS.forEach((_, i) => document.getElementById('car-' + i).setAttribute('aria-pressed', i === car));
+  FACE_NAMES.forEach((_, i) => document.getElementById('car-' + i).setAttribute('aria-pressed', i === car));
+  document.getElementById('car-5').hidden = mode !== 'face';
   HEADS.forEach((_, i) => document.getElementById('head-' + i).setAttribute('aria-pressed', i === head));
   const face = mode === 'face';
   const m = document.getElementById('mirror'); m.setAttribute('aria-pressed', mirror && (face || head !== 1)); m.disabled = !face && head === 1;
@@ -344,8 +356,9 @@ text.value = toText();
 function fromHash() {
   let h = (location.hash || '').slice(1).toLowerCase();
   if (h === 'jane') h = 'white-face';
-  const fm = h.match(/^(?:face-)?(you|cyan|green|pink|white)(?:-face)?$/);
-  if (fm && h.includes('face')) { mode = 'face'; car = CARS.findIndex(c => c.name.toLowerCase() === fm[1]); text.value = toText(); return }
+  if (h === 'crew' || h === 'pits') h = 'crew-face';
+  const fm = h.match(/^(?:face-)?(you|cyan|green|pink|white|crew)(?:-face)?$/);
+  if (fm && h.includes('face')) { mode = 'face'; car = FACE_NAMES.indexOf(fm[1].toUpperCase()); text.value = toText(); return }
   mode = 'car';
   let i = CARS.findIndex(c => c.name.toLowerCase() === h);
   const m = h.match(/^car-([1-5])$/); if (m) i = +m[1] - 1;
