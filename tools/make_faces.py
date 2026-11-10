@@ -2,8 +2,8 @@
 One-bit-art skill: line, not mass; open contours; paper doing the work. Each
 face says its driver's way of driving (Grant, 10 Nov 2026):
   YOU    a racing helmet, visor down, a stripe over the top
-  CYAN   the racer: shades and a grin
-  GREEN  the smooth one: a cap, eyes closed, content
+  CYAN   the racer: shades, angry brows, gritted teeth
+  GREEN  the slow truck: asleep - a cap, eyes shut, a snoring o, a z
   PINK   the tank commander: a steel helmet with a star, stern brows, a moustache
   WHITE  the steady one: round glasses, a straight mouth
 Shown ink on the car's colour band. Writes src/faces.asm (16 rows x 2 bytes a
@@ -39,13 +39,42 @@ F['YOU'] = face(ink=box(3, 2, 12, 4) + line(2, 13, 3) + line(1, 14, 4) + line(1,
                 paper=[(7, 1), (8, 1), (7, 2), (8, 2), (7, 3), (8, 3), (7, 4), (8, 4), (4, 7), (5, 7), (10, 7), (11, 7)]
                       + line(5, 10, 11))
 F['YOU'][11] = F['YOU'][11][:5] + '######' + F['YOU'][11][11:]       # a firm mouth
-# CYAN: shades (two lenses and a bridge, a glint in each) and a wide grin
-F['CYAN'] = face(ink=box(3, 5, 6, 7) + box(9, 5, 12, 7) + [(7, 5), (8, 5)] + [(2, 6), (13, 6)]
-                     + [(3, 10), (4, 11), (5, 12), (6, 12), (7, 12), (8, 12), (9, 12), (10, 12), (11, 11), (12, 10)],
-                 paper=[(4, 5), (10, 5)])
-# GREEN: a cap (solid crown, peak to the right), closed happy eyes, small smile
-F['GREEN'] = face(ink=box(4, 1, 11, 2) + line(3, 15, 3) + [(3, 7), (4, 6), (5, 6), (6, 7), (9, 7), (10, 6), (11, 6), (12, 7)]
-                      + [(5, 10), (6, 11), (7, 11), (8, 11), (9, 11), (10, 10)])
+# CYAN: shades - and angry (Grant, 10 Nov 2026): brows slanting down to the
+# middle, the lenses' inner tops lower, teeth gritted
+F['CYAN'] = ["................",
+             ".....######.....",
+             "...##......##...",
+             "..#..........#..",
+             ".#.##......##.#.",
+             ".#...##..##...#.",
+             "#.####....####.#",
+             "#.#####..#####.#",
+             "#..####..####..#",
+             "#..............#",
+             ".#..########..#.",
+             ".#..#.#..#.#..#.",
+             "..#.########.#..",
+             "...##......##...",
+             ".....######.....",
+             "................"]
+# GREEN: the slow truck - asleep (Grant, 10 Nov 2026): the cap, eyes shut, a
+# snoring o, and a z floating up beside it
+F['GREEN'] = [".............###",
+              "....######....#.",
+              "...########..###",
+              "..##########....",
+              ".#............#.",
+              ".#............#.",
+              "#..............#",
+              "#..####..####..#",
+              "#..............#",
+              "#..............#",
+              ".#............#.",
+              ".#.....##.....#.",
+              "..#...#..#...#..",
+              "...##..##..##...",
+              ".....######.....",
+              "................"]
 # PINK: drives the tracked car - a tank commander (Grant, 10 Nov 2026): a steel
 # helmet (solid dome, a paper star badge, a wide brim), stern brows, a moustache
 F['PINK'] = ["................",

@@ -3,18 +3,18 @@
 ; waypoints for the computer cars: centre line, racing order (x, y)
 NWP     equ 34
 WS      equ 31          ; first waypoint after the start line
-PLAYERWP equ 29
-CPU0X   equ 224
-CPU0Y   equ 328
-CPU0WP  equ 29
-CPU1X   equ 224
-CPU1Y   equ 360
-CPU1WP  equ 29
-CPU2X   equ 196
-CPU2Y   equ 336
+PLAYERWP equ 30
+CPU0X   equ 232
+CPU0Y   equ 355
+CPU0WP  equ 30
+CPU1X   equ 184
+CPU1Y   equ 333
+CPU1WP  equ 28
+CPU2X   equ 200
+CPU2Y   equ 355
 CPU2WP  equ 29
-CPU3X   equ 196
-CPU3Y   equ 352
+CPU3X   equ 216
+CPU3Y   equ 333
 CPU3WP  equ 29
 waypoints:
         dw 412,352

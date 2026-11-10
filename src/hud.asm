@@ -46,15 +46,18 @@ hud_init:
         ld b,0                  ; the tower in grid order, all at once
 hi_tw:
         push bc
-        ld hl,order
         ld e,b
         ld d,0
+        ld hl,grid_order        ; the car in this place on the grid
         add hl,de
-        ld (hl),b
+        ld c,(hl)
+        ld hl,order
+        add hl,de
+        ld (hl),c
         ld de,shown_order-order
         add hl,de
-        ld (hl),b
-        ld a,b
+        ld (hl),c
+        ld a,c
         call tower_row
         pop bc
         inc b
@@ -1082,23 +1085,8 @@ show_best:
         ld c,1
         jp print_at
 
+grid_order:   db 0, 1, 4, 3, 2  ; the starting grid: YOU, CYAN, WHITE, PINK, GREEN
 car_colours:  db A_MSG, 0x68, 0x60, 0x58, 0x78  ; you red; cyan, green, magenta, white
-txt_race:     db " RACE  ",0
-txt_lapw:     db "LAP  /",'0'+LAPS,0
-txt_of:       db "/",'0'+LAPS,0
-txt_time:     db "TIME",0
-txt_ready:    db "GET READY",0
-txt_pressq:   db "PRESS Q",0
-txt_lamp:     db "O",0
-txt_go:       db "GO!",0
-txt_final:    db "FINAL LAP!",0
-txt_finished: db "FINISHED",0
-txt_places:   db "1ST",0, "2ND",0, "3RD",0, "4TH",0, "5TH",0
-txt_track:    db "BREAKFAST AT TIFFANY'S",0   ; track 1 (Grant, 10 Nov 2026): 22 = the window's width
-txt_best:     db "BEST",0
-txt_nobest:   db "--.-",0
-txt_lapword:  db "LAP",0
-car_names:    db "YOU  ",0, "CYAN ",0, "GREEN",0, "PINK ",0, "WHITE",0
-txt_again:    db "RACE FINISHED  PRESS Q",0
+; (the HUD's fixed text is in hudtext.asm, kept at the top of memory)
 txt_digit:    db "0",0
 time_txt:     db "0:00.0",0

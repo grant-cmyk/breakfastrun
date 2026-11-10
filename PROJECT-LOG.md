@@ -480,3 +480,16 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   than the road; all items placed; 91 O's; 22 masked tiles. drive_test RESULT: PASS; laps 13.8 16.9
   14.2 14.9 s. Commits now as Claude <noreply@anthropic.com> (GitHub showed the earlier ones as
   Unverified; history not rewritten - Grant to decide).
+
+## 2026-11-10 08:00 SAST - staggered grid, true leaderboard, faces; memory moves
+- Grant: a classic staggered grid with grid positions. Two lanes 11 px either side of the middle;
+  P1 (you) inside/upper at x 248, P2 lower 16 px back, P3..P5 behind (CYAN, WHITE, PINK, GREEN);
+  a [ grid box painted behind each (x on the tile grid so the boxes share tiles). The race order
+  starts in grid order (grid_order).
+- Grant: the race order should show positions as places change. It did, but cars level on waypoints
+  (32 px apart) fell back to car number; ties now go to the car nearer its next waypoint (pdist).
+- Grant: GREEN (the slow truck) asleep - eyes shut, snoring o, a z; CYAN aggressive - slanted brows,
+  gritted teeth. docs/design/faces.png, docs/design/start_grid.png.
+- Memory: code had reached 0xC000 exactly. The HUD's fixed text moved to TOPMEM; faces and logo
+  moved into the back buffer's unused bottom rows (152..191: BUFA, BUFB), copied by start. Low
+  memory free: 178 bytes; TOPMEM free: about 180. drive_test RESULT: PASS.

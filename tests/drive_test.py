@@ -175,7 +175,7 @@ with Racer(headless=True) as sp:
     print('message bar %r  panel labels %r' % (msg, labels))
     check(msg == 'GET READY/PRESS Q', 'before the start: GET READY, PRESS Q in the message bar')
     check(labels == 'LAP/TIME/BEST', 'under the window: LAP, TIME and BEST')
-    check(all(attr(5 + 2 * i, 26) == [0x57, 0x68, 0x60, 0x58, 0x78][i] for i in range(5)), 'the whole race order is drawn at the start, each car on its colour')
+    check(all(attr(5 + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(5 + 2 * i, 25) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
     check(len(CPUS) == 4, 'there are four computer cars')

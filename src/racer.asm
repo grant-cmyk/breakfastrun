@@ -74,8 +74,16 @@ CT_BRK  equ 8
 
 start:                          ; once, when the program is loaded
         ld hl,high_src          ; the data that lives at the top of memory,
-        ld de,TOPMEM              ; out of the way: copied up there first,
+        ld de,TOPMEM            ; out of the way: copied up there first,
         ld bc,high_end-high_src ; before the back buffer it loads into is used
+        ldir
+        ld hl,bufa_src          ; and into the buffer's unused bottom rows
+        ld de,BUFA
+        ld bc,bufa_end-bufa_src
+        ldir
+        ld hl,bufb_src
+        ld de,BUFB
+        ld bc,bufb_end-bufb_src
         ldir
         call make_tables
         call make_copier        ; the program writes its own copy routine
@@ -2545,6 +2553,23 @@ rp_now:
         ld b,0                  ; passed this lap (passed)
 rp_p:
         push bc
+        call wp_delta           ; how far to its next waypoint: for cars level
+        call manhattan          ; on waypoints, the nearer one is ahead
+        srl h                   ; (HL / 2, kept to a byte)
+        rr l
+        ld a,h
+        or a
+        jr z,rp_d1
+        ld l,255
+rp_d1:
+        pop bc
+        push bc
+        ld e,b
+        ld d,0
+        ld a,l
+        ld hl,pdist
+        add hl,de
+        ld (hl),a
         call progress           ; A = progress, L = passed
         ld (rp_rank),a
         ld a,l
@@ -2576,6 +2601,14 @@ rp_i:
         inc h
 rp_i1:
         ld e,(hl)               ; E = progress of car i
+        push de
+        ld e,c
+        ld d,0
+        ld hl,pdist
+        add hl,de
+        ld a,(hl)
+        ld (rp_di),a            ; and its distance to its next waypoint
+        pop de
         ld d,0                  ; D = its place, counted
         ld hl,prog
         ld b,0
@@ -2587,7 +2620,19 @@ rp_j:
         cp e
         jr c,rp_jn              ; j is behind
         jr nz,rp_ahead          ; j is ahead
-        ld a,b                  ; level: ahead only if j < i
+        push hl                 ; level on waypoints: the nearer its next one
+        push de                 ; is ahead
+        ld e,b
+        ld d,0
+        ld hl,pdist
+        add hl,de
+        ld a,(rp_di)
+        cp (hl)                 ; i's distance - j's
+        pop de
+        pop hl
+        jr c,rp_jn              ; i nearer: j behind
+        jr nz,rp_ahead          ; j nearer: ahead
+        ld a,b                  ; the same: ahead only if j < i
         cp c
         jr nc,rp_jn
 rp_ahead:
@@ -2913,6 +2958,8 @@ fin_count:   db 0               ; cars in so far
 you_done:    db 0
 you_time:    dw 0               ; your race time, kept on the clock
 tr_key:      db 0
+pdist:       defs NCARS         ; each car's distance to its next waypoint / 2
+rp_di:       db 0
 q_free:      db 0               ; Q has been let go since this race was set up
 race_vars_end:
 last_shown: db 0
@@ -3136,19 +3183,45 @@ im2_on:
 ; data kept at the top of memory (TOPMEM, above the generated copy routine),
 ; loaded here and copied up by start; use the names below, not the _src ones
 high_src:
-        include "logo.asm"
-        include "topdata.asm"   ; the breakfast things' masks, the mini-map
-        include "faces.asm"     ; the drivers' faces for the race order
+        include "topdata.asm"   ; the breakfast things' masks, the O map, the mini-map
+        include "hudtext.asm"   ; the HUD's fixed text
 high_end:
+; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn
+; or shown: cars reach row 151 at most), copied there by start too
+bufa_src:
+        include "faces.asm"     ; the drivers' faces for the race order
+bufa_end:
+bufb_src:
+        include "logo.asm"
+bufb_end:
 init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
-logo_bits equ TOPMEM + logo_bits_src - high_src
-logo_attr equ TOPMEM + logo_attr_src - high_src
+BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
+BUFB      equ BUF+0x1160        ; the same, the next pixel line down
+logo_bits equ BUFB + logo_bits_src - bufb_src
+logo_attr equ BUFB + logo_attr_src - bufb_src
+txt_race  equ TOPMEM + txt_race_src - high_src
+txt_lapw  equ TOPMEM + txt_lapw_src - high_src
+txt_of    equ TOPMEM + txt_of_src - high_src
+txt_time  equ TOPMEM + txt_time_src - high_src
+txt_ready equ TOPMEM + txt_ready_src - high_src
+txt_pressq equ TOPMEM + txt_pressq_src - high_src
+txt_lamp  equ TOPMEM + txt_lamp_src - high_src
+txt_go    equ TOPMEM + txt_go_src - high_src
+txt_final equ TOPMEM + txt_final_src - high_src
+txt_finished equ TOPMEM + txt_finished_src - high_src
+txt_places equ TOPMEM + txt_places_src - high_src
+txt_track equ TOPMEM + txt_track_src - high_src
+txt_best  equ TOPMEM + txt_best_src - high_src
+txt_nobest equ TOPMEM + txt_nobest_src - high_src
+txt_lapword equ TOPMEM + txt_lapword_src - high_src
+car_names equ TOPMEM + car_names_src - high_src
+txt_again equ TOPMEM + txt_again_src - high_src
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
 minimap   equ TOPMEM + minimap_src - high_src
 omap      equ TOPMEM + omap_src - high_src
-faces     equ TOPMEM + faces_src - high_src
+faces     equ BUFA + faces_src - bufa_src
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
@@ -3167,6 +3240,12 @@ faces     equ TOPMEM + faces_src - high_src
         endif
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
+        endif
+        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161
+        .error a block for the buffer's bottom rows is over 160 bytes
+        endif
+        if init_end > BUFA
+        .error the start-up area runs into where the buffer blocks are copied
         endif
         if init_end > TAB_HI*256
         .error the start-up routines run into the shift tables they build
