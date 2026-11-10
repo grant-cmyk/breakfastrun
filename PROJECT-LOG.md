@@ -640,3 +640,6 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   screen: docs/design/driver_strip.png (tools/make_strip_mockups.py; ROM letters read from the
   emulator's ROM, not kept in the repo). Face twice size on red; 3 white framed slots, the NOS in
   the first; a white rounded box with a speech tail back at the face, 2 lines of 9 letters.
+- Grant: the messages come from the pits - a crew chief on the right of the message. Re-laid in 24
+  columns: you (cols 0-3, red), inventory (4-9), the message box (11-18, 8 letters a line) with its
+  tail out to the crew chief (20-23, white on blue: a headset - band, ear cups, microphone).

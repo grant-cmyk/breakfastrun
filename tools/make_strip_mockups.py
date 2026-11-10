@@ -1,7 +1,8 @@
 """Mock-up: the driver strip under the window (Grant, 10 Nov 2026): the LAP / TIME /
 BEST lines go; in their place your face on the left, your inventory (3 slots - you
 start with one NOS canister), and a message box ("GREAT DRIVING!" when you
-overtake, "SUPERB LAP!", "GET IT TOGETHER!" when you hit the O's). Drawn on a real
+overtake, "SUPERB LAP!", "GET IT TOGETHER" when you hit the O's) - spoken by your
+crew chief on the right (Grant: the messages come from the pits). Drawn on a real
 race screen (docs/design/mock_screen.bin, from the game) with the Spectrum's own colours
 and ROM letters. Writes docs/design/driver_strip.png."""
 import os, re
@@ -43,50 +44,71 @@ NOS = ["....XXXX....",      # valve handle
        "..X.X....X..",
        "..X......X..",
        "...XXXXXX..."]
+CREW = [".....######.....",    # the crew chief: a headset - the band over his
+        "...##......##...",    # head, big ear cups, the microphone at his mouth
+        "..#..######..#..",
+        "..#.#......#.#..",
+        ".##..........##.",
+        "####.##..##.####",
+        "####........####",
+        "####...##...####",
+        ".##..........##.",
+        "..#.........#...",
+        "..#..####..####.",
+        "...#.......#....",
+        "....#.....#.....",
+        ".....#####......",
+        "................",
+        "................"]
 def text(bits, s, col, row):
     for i, ch in enumerate(s):
         g = font[(ord(ch) - 32) * 8:(ord(ch) - 32) * 8 + 8]
         for j in range(8):
             bits[row * 8 + j, (col + i) * 8:(col + i + 1) * 8] = np.unpackbits(np.array([g[j]], np.uint8))
+def face2x(bits, art, x0):
+    for y in range(16):
+        for x in range(16):
+            if art[y][x] in 'X#': bits[160 + 2 * y:162 + 2 * y, x0 + 2 * x:x0 + 2 * x + 2] = 1
 def strip(msg):
     bits, attr = load()
     bits[160:192, 0:192] = 0                       # the old LAP / TIME / BEST lines
     for r in range(20, 24):
         for c in range(24): attr[r * 32 + c] = 0x30
-    for y in range(16):                            # your face, twice size, on your red
-        for x in range(16):
-            if YOU[y][x] == 'X': bits[160 + 2 * y:162 + 2 * y, 8 + 2 * x:10 + 2 * x] = 1
+    face2x(bits, YOU, 0)                           # you, twice size, on your red: cols 0-3
     for r in range(20, 24):
-        for c in range(1, 5): attr[r * 32 + c] = 0x57
-    for k in range(3):                             # the inventory: 3 slots, white, framed
-        x0 = 48 + k * 16
+        for c in range(0, 4): attr[r * 32 + c] = 0x57
+    for k in range(3):                             # the inventory: 3 slots, cols 4-9
+        x0 = 32 + k * 16
         for r in (21, 22):
-            for c in (6 + 2 * k, 7 + 2 * k): attr[r * 32 + c] = 0x78
+            for c in (4 + 2 * k, 5 + 2 * k): attr[r * 32 + c] = 0x78
         bits[168, x0 + 1:x0 + 15] = 1; bits[183, x0 + 1:x0 + 15] = 1
         bits[169:183, x0] = 1; bits[169:183, x0 + 15] = 1
     for y, row in enumerate(NOS):                  # slot 1: the NOS canister you start with
         for x, v in enumerate(row):
-            if v == 'X': bits[169 + 1 + y, 48 + 2 + x] = 1
-    x0, x1, y0, y1 = 104, 191, 160, 191            # the message box: white, rounded
+            if v == 'X': bits[169 + 1 + y, 32 + 2 + x] = 1
+    x0, x1, y0, y1 = 88, 151, 160, 191             # the message box, cols 11-18: white, rounded
     for r in range(20, 24):
-        for c in range(13, 24): attr[r * 32 + c] = 0x78
+        for c in range(11, 19): attr[r * 32 + c] = 0x78
     bits[y0, x0 + 2:x1 - 1] = 1; bits[y1, x0 + 2:x1 - 1] = 1
     bits[y0 + 2:y1 - 1, x0] = 1; bits[y0 + 2:y1 - 1, x1] = 1
     for (x, y) in ((x0 + 1, y0 + 1), (x1 - 1, y0 + 1), (x0 + 1, y1 - 1), (x1 - 1, y1 - 1)): bits[y, x] = 1
-    bits[y0 + 13:y0 + 19, x0] = 0                  # a speech tail, pointing back at you
-    for i in range(4):                             # (wide at the box, a point at the left)
-        bits[y0 + 12 + i, x0 - 1 - i] = 1; bits[y0 + 19 - i, x0 - 1 - i] = 1
-    bits[y0 + 15:y0 + 17, x0 - 5] = 1
-    for i, line in enumerate(msg): text(bits, line, 14 + (9 - len(line)) // 2, 21 + i)
+    bits[y0 + 13:y0 + 19, x1] = 0                  # a speech tail out to the crew chief
+    for i in range(4):
+        bits[y0 + 12 + i, x1 + 1 + i] = 1; bits[y0 + 19 - i, x1 + 1 + i] = 1
+    bits[y0 + 15:y0 + 17, x1 + 5] = 1
+    face2x(bits, CREW, 160)                        # the crew chief, cols 20-23, on blue
+    for r in range(20, 24):
+        for c in range(20, 24): attr[r * 32 + c] = 0x4F
+    for i, line in enumerate(msg): text(bits, line, 11 + (8 - len(line)) // 2, 21 + i)
     return bits, attr
-MSGS = [('GREAT', 'DRIVING!'), ('SUPERB', 'LAP!'), ('GET IT', 'TOGETHER!')]
+MSGS = [('GREAT', 'DRIVING!'), ('SUPERB', 'LAP!'), ('GET IT', 'TOGETHER')]
 b, a = strip(MSGS[0])
 full = render(b, a, 2)
 strips = [render(*strip(m), 3).crop((0, 152 * 3, 196 * 3, 192 * 3)) for m in MSGS]
 W = max(full.width, strips[0].width) + 32
 H = 40 + full.height + 24 + sum(s.height + 16 for s in strips)
 out = Image.new('RGB', (W, H), (17, 18, 22)); d = ImageDraw.Draw(out); fnt = ImageFont.load_default()
-d.text((16, 12), 'The driver strip: your face, your inventory (3), a message box  -  the whole screen (2x), then the strip (3x) with three messages', fill=(236, 235, 230), font=fnt)
+d.text((16, 12), 'The driver strip: you, your inventory (3), the message, your crew chief  -  the whole screen (2x), then the strip (3x)', fill=(236, 235, 230), font=fnt)
 out.paste(full, (16, 36)); y = 36 + full.height + 24
 for s in strips: out.paste(s, (16, y)); y += s.height + 16
 o = os.path.join(ROOT, 'docs', 'design', 'driver_strip.png'); out.save(o); print('wrote', os.path.normpath(o))
