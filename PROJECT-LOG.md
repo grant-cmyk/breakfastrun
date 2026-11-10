@@ -667,3 +667,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the mock-ups draw it from there.
 - Grant: centre the crew chief in his blue square. Faces in the strip are now centred by their
   ink in their 32 x 32 squares (the crew chief 3 px lower; yours unchanged within a pixel).
+- Grant's updated face for YOU (editor screenshot, read cell by cell) - in the game's race order
+  and the strip. Checked on the grid.
+- Grant: the wave much smaller, just vertical lines (no dotted ones): 13 one-pixel lines up to
+  7 px tall; 3 lines of small letters fit again. docs/design/radio_wave.gif.

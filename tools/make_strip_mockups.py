@@ -133,37 +133,29 @@ out.paste(full, (16, 36)); y = 36 + full.height + 24
 for s in strips: out.paste(s, (16, y)); y += s.height + 16
 o = os.path.join(ROOT, 'docs', 'design', 'driver_strip_small.png'); out.save(o); print('wrote', os.path.normpath(o))
 
-# ---- the radio wave, as TV shows team radio (Grant's reference: tall bars of varied
-# heights about a mid line, rounded ends, dark and grey): 2-px bars, the grey ones
-# dotted, moving while the crew chief talks, then flat. 2 lines of small letters below.
+# ---- the radio wave, as TV shows team radio (Grant: small, just vertical lines): 13
+# one-pixel lines about a mid line, up to 7 px tall, moving while the crew chief
+# talks, then flat. 3 lines of small letters below.
 import random
-def strip_radio(lines, bars):
+def strip_radio(lines, heights):
     bits, attr = strip(())
-    x0 = 88
-    mid = 168
-    n = len(bars)
-    left = x0 + 1 + (62 - (n * 3 - 1)) // 2
-    for i, (h, grey) in enumerate(bars):
-        x = left + i * 3
-        for y in range(mid - h, mid + h + 1):
-            for dx in (0, 1):
-                if abs(y - mid) == h and h > 0 and dx == 1: continue      # rounded ends
-                if grey and (y + dx) % 2: continue                          # grey: dotted
-                bits[y, x + dx] = 1
-    top = 179
+    x0, mid, n = 88, 165, len(heights)
+    left = x0 + 1 + (62 - (n * 2 - 1)) // 2
+    for i, h in enumerate(heights):
+        bits[mid - h:mid + h + 1, left + i * 2] = 1
     for i, line in enumerate(lines):
         w = len(line) * 4 - 1
-        stext(bits, line, x0 + 1 + (62 - w) // 2, top + i * 6)
+        stext(bits, line, x0 + 1 + (62 - w) // 2, 171 + i * 6)
     return bits, attr
 random.seed(11)
 frames = []
 for f in range(18):                                 # talking: 14 pictures, then quiet
     if f < 14:
-        bars = [(random.choice((1, 2, 3, 4, 5, 6)), random.random() < 0.55) for _ in range(20)]
-        bars = [(min(h, 2 + min(i, 19 - i)), g) for i, (h, g) in enumerate(bars)]
+        hs = [random.choice((0, 1, 1, 2, 2, 3)) for _ in range(13)]
+        hs = [min(h, 1 + min(i, 12 - i)) for i, h in enumerate(hs)]
     else:
-        bars = [(0, False)] * 20
-    frames.append(render(*strip_radio(('PUSH! PUSH!', 'HE IS 0.4 AHEAD'), bars), 3).crop((0, 152 * 3, 196 * 3, 192 * 3)))
+        hs = [0] * 13
+    frames.append(render(*strip_radio(('PUSH! PUSH!', 'HE IS 0.4 AHEAD', 'GO GET HIM'), hs), 3).crop((0, 152 * 3, 196 * 3, 192 * 3)))
 o = os.path.join(ROOT, 'docs', 'design', 'radio_wave.gif')
 frames[0].save(o, save_all=True, append_images=frames[1:], duration=[90] * 14 + [400] * 4, loop=0)
 print('wrote', os.path.normpath(o))
