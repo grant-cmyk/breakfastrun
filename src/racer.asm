@@ -344,17 +344,6 @@ physics:
         ld e,(ix+C_CTRL)
         ld a,(ph_steps)         ; steering: one heading step per frame
         ld d,a
-        ld a,(ix+C_KIND)        ; you, in a hard slide (step 2 or more, last
-        or a                    ; frame): the car swings round twice as fast -
-        jr nz,ph_st             ; a controlled skid gets you round a corner
-        ld a,(snd_skid)         ; (Grant, 10 Nov 2026) - half as fast again:
-        cp 2                    ; an extra step on every other frame (double
-        jr c,ph_st              ; spun the car round while it slid straight on)
-        ld a,(ticks)
-        and 1
-        jr z,ph_st
-        inc d
-ph_st:
         bit 0,e
         jr z,ph_nl
         ld a,(ix+C_ANG)
@@ -544,26 +533,112 @@ ph_yok:
 ; frame, then 1/64 - a long slide (Grant asked for more). No multiplying; only while
 ; turning fast.
 ; ---------------------------------------------------------------------
-SKID_V    equ 160               ; slides from 0.625 px a frame (top speed 1.75; it was
-                                ; 1.0 - Grant, 10 Nov 2026: skid at any decent speed)
+SKID_V    equ 160               ; you: slides from 0.625 px a frame (top speed 1.75)
 SKID_VC   equ 256               ; the computer cars: from 1.0 px a frame, as before
 SKID_STEP equ 64                ; and more for each 0.25 faster (Grant: more skid)
 SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
-SKID_NY   equ 2                 ; you: at most 2 (1/32) - with the slide starting
-                                ; sooner, 1/64 spun the car out of control
+SKID_HOLD equ 25                ; you: a slide goes on this many frames after you let
+                                ; go of the steering (Grant, 10 Nov 2026: "turns very
+                                ; sharply but does not actually skid" - the grip came
+                                ; back the moment you let go, so the car never slid)
 skid:
-        ld a,(ix+C_KIND)        ; you: how hard you slide, for the sound and the
-        or a                    ; steering (0 = gripping, 1-3 = the slide's steps)
-        jr nz,sk_0
-        ld (snd_skid),a
-sk_0:
-        ld a,(ix+C_CTRL)        ; only while turning: that is when it slides
-        and CT_L+CT_R           ; (let go, and the grip comes back)
+        ld a,(ix+C_KIND)
+        or a
+        jr z,skid_you
+        ld a,(ix+C_CTRL)        ; a computer car: only while turning fast
+        and CT_L+CT_R
         ret z
-        push bc
+        call sk_speed           ; HL = speed
         push de
-        ld l,(ix+C_VX)          ; speed, roughly: the larger of |vx|, |vy|
-        ld h,(ix+C_VX+1)        ; plus half the smaller
+        ld de,SKID_VC
+        or a
+        sbc hl,de
+        pop de
+        ret c                   ; slow: it grips
+        ld a,SKID_N             ; up to SKID_N steps, each SKID_STEP faster
+skc_lv:
+        call sk_half
+        push de
+        ld de,SKID_STEP
+        or a
+        sbc hl,de
+        pop de
+        ret c
+        dec a
+        jr nz,skc_lv
+        ret
+skid_you:                       ; you: turning fast starts a slide (1-3 steps by
+        ld a,(ix+C_CTRL)        ; speed), and it goes on SKID_HOLD frames after
+        and CT_L+CT_R           ; you let go - the car carries on the way it was
+        jr z,sy_free            ; going while it points into the corner
+        call sk_speed
+        push de
+        ld de,SKID_V
+        or a
+        sbc hl,de
+        pop de
+        jr c,sy_grip            ; slow: it grips
+        ld a,1
+sy_lv:
+        cp SKID_N
+        jr nc,sy_set
+        push de
+        ld de,SKID_STEP
+        or a
+        sbc hl,de
+        pop de
+        jr c,sy_set
+        inc a
+        jr sy_lv
+sy_set:
+        ld (snd_skid),a
+        ld a,SKID_HOLD
+        ld (skid_t),a
+        jr sy_apply
+sy_free:
+        ld a,(skid_t)           ; let go: still sliding for a while, the grip
+        or a                    ; coming back a step at a time (the frames left
+        jr z,sy_grip            ; / 8, rounded up: 3, then 2, then 1) - the path
+        dec a                   ; curves round to where the car points instead
+        ld (skid_t),a           ; of snapping to it
+        add a,7
+        rrca
+        rrca
+        rrca
+        and 31
+        ld hl,snd_skid
+        cp (hl)
+        jr nc,sy_apply
+        ld (hl),a
+sy_apply:
+        ld a,(snd_skid)
+        or a
+        ret z
+sy_l:
+        call sk_half
+        dec a
+        jr nz,sy_l
+        ret
+sy_grip:
+        xor a
+        ld (snd_skid),a
+        ld (skid_t),a
+        ret
+sk_half:                        ; half the push (DE, BC) and half the friction
+        sra d
+        rr e
+        sra b
+        rr c
+        push hl
+        ld hl,fshift
+        inc (hl)
+        pop hl
+        ret
+sk_speed:                       ; HL = speed, roughly: the larger of |vx|, |vy|
+        push bc                 ; plus half the smaller (BC, DE kept)
+        push de
+        ld l,(ix+C_VX)
+        ld h,(ix+C_VX+1)
         call abs_hl
         push hl
         ld l,(ix+C_VY)
@@ -573,56 +648,14 @@ sk_0:
         or a
         sbc hl,de
         add hl,de
-        jr nc,sk_1
+        jr nc,sks_1
         ex de,hl
-sk_1:
+sks_1:
         srl d
         rr e
         add hl,de
-        ld de,SKID_V
-        ld a,(ix+C_KIND)        ; computer cars slide from SKID_VC (they are tuned
-        or a                    ; to it, and wider slides took them off the world)
-        jr z,sk_v
-        ld de,SKID_VC
-sk_v:
-        or a
-        sbc hl,de
         pop de
         pop bc
-        ret c                   ; slow: it grips
-        ld a,(ix+C_KIND)        ; up to SKID_N steps (you: SKID_NY): each
-        or a                    ; SKID_STEP faster,
-        ld a,SKID_N
-        jr nz,sk_lv
-        ld a,SKID_NY
-sk_lv:                          ; half the push and half the friction again
-        push af
-        neg                     ; you: the slide's step, SKID_NY+1-A
-        add a,SKID_NY+1
-        ld (sk_lvl),a
-        ld a,(ix+C_KIND)
-        or a
-        jr nz,sk_lv1
-        ld a,(sk_lvl)
-        ld (snd_skid),a
-sk_lv1:
-        pop af
-        sra d
-        rr e
-        sra b
-        rr c
-        push hl
-        ld hl,fshift
-        inc (hl)
-        pop hl
-        push de
-        ld de,SKID_STEP
-        or a
-        sbc hl,de
-        pop de
-        ret c                   ; not that much faster: done
-        dec a
-        jr nz,sk_lv
         ret
 
 ; heading_push: A = heading 0..63 -> DE = push x, BC = push y (8.8)
@@ -3030,7 +3063,7 @@ snd_bump: db 0                  ; crash noise: pictures left
 snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
 snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
 snd_fxk:  db 0                  ; ... which: 0 NOS picked up, 1 NOS fired, 2 up: a beep
-sk_lvl:   db 0
+skid_t:   db 0                  ; you: frames the slide goes on after you let go
 snd_port: db 6                  ; what port 254 last had: border yellow
 ai_s:     db 0
 ph_cnt:   db 0

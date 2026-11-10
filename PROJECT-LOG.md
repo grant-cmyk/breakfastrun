@@ -871,3 +871,23 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   and GO! shows beside them. Holding Q before green moves nothing (your car's buttons are cleared
   until race_on). Tests: the lights, nobody moving on red, green.
 - drive_test: 1 FAIL (12.0 pictures a second off the grid, asks 13); nos_test PASS.
+
+## 2026-11-10 SAST - the skid: "turns sharply but does not skid"; the Skid Lab
+- Grant: "the car now turns very sharply but does not actually skid". Measured: the 1.5x steering
+  turned the car fast, and the slide ended the moment the steering was let go - grip came back at
+  once, so the car never carried on sideways. In the game now (interim): steering back to 1x; your
+  slide (from 0.625 px a frame, up to 3 steps) goes on SKID_HOLD = 25 frames after you let go,
+  easing back a step every 8 frames. Measured after a 0.3 s turn at top speed: slip 79 degrees,
+  then 69, 58, 39, 13, 2 over the next half second - a slide that fades, no snap.
+- Grant: research how a car skids (momentum, grip), and test it outside the game. Research: a tyre
+  makes sideways force only with a slip angle, rising to a peak and then falling to sliding
+  friction; the friction circle - braking/driving and cornering share one grip budget; a drift is
+  controlled oversteer, balanced with counter-steer and throttle.
+- Skid Lab (docs/tools/skid_lab.html, tools/make_skid_lab.py; published
+  https://claude.ai/artifact/XWjkAzJ9kFKki9naPic3V8): your big car on an open cloth with a ring of
+  O's, the game's units (px, 50 frames a second, top speed 1.75), skid marks, a slip readout. Two
+  models: GAME NOW (racer.asm's slide) and GRIP LIMIT (speed split into forwards and sideways; the
+  tyres cancel sideways speed up to their grip a frame; past it the car slides and holds less grip
+  while sliding; Q uses part of the grip; a slide never adds speed). Sliders for grip, sliding grip,
+  throttle share, steering and top speed; "Copy settings for Claude".
+- Tests: drive_test 1 FAIL (12.0 pictures a second off the grid, asks 13); nos_test PASS.

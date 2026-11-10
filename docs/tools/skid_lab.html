@@ -1,0 +1,301 @@
+<title>Breakfast Run Skid Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: the test track on the left (the game's window, 3x), the handling desk on the right; one column on a phone.
+   One look: the Spectrum's blue-on-cyan window on a dark bezel, like the game. */
+:root {
+  --bg: #15161c; --panel: #1f2129; --line: #343745; --fg: #e8e9ef; --muted: #9da1b3;
+  --ink: #0000d7; --paper: #00d7d7; --yel: #d7d700; --red: #ff5a4f; --grn: #3ad46a;
+  --f-disp: "Silkscreen", "Courier New", monospace; --f-body: "Inter", system-ui, sans-serif; --f-mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--fg) }
+body { font: 14px/1.5 var(--f-body); padding-block: 20px 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 18px }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px }
+h1 { font: 400 26px/1.1 var(--f-disp); letter-spacing: .02em; margin: 0; color: var(--yel); text-wrap: balance }
+.sub { color: var(--muted); max-width: 70ch; margin: 0 }
+.main { display: grid; grid-template-columns: minmax(0, 552px) minmax(0, 1fr); gap: 18px; align-items: start }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr) } }
+.bezel { background: #000; padding: 12px; border-radius: 10px; display: grid; gap: 10px }
+canvas#view { width: 100%; max-width: 528px; aspect-ratio: 176 / 120; image-rendering: pixelated; display: block; background: var(--paper); outline: none }
+canvas#view:focus-visible { box-shadow: 0 0 0 2px var(--yel) }
+.hud { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px }
+.hud div { background: #0b0b10; border: 1px solid #22242e; border-radius: 6px; padding: 6px 8px; min-width: 0 }
+.hud b { display: block; font: 600 18px/1.2 var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+.hud span { font: 11px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em }
+.state-grip { color: var(--grn) } .state-slide { color: var(--red) }
+.slipbar { height: 8px; background: #0b0b10; border-radius: 4px; position: relative; overflow: hidden; border: 1px solid #22242e }
+.slipbar i { position: absolute; top: 0; bottom: 0; left: 50%; background: var(--red); width: 0 }
+.slipbar em { position: absolute; top: -2px; bottom: -2px; left: 50%; width: 1px; background: var(--muted) }
+.keys { font: 12px var(--f-mono); color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px }
+kbd { font: 600 11px var(--f-mono); color: var(--fg); background: #2a2d38; border: 1px solid #444858; border-bottom-width: 2px; border-radius: 4px; padding: 0 5px }
+.desk { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; min-width: 0 }
+.desk h2 { font: 400 14px var(--f-disp); color: var(--yel); margin: 0; letter-spacing: .04em }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.seg button { font: 600 13px var(--f-body); padding: 9px 10px; border-radius: 6px; border: 1px solid var(--line); background: #2a2d38; color: var(--fg); cursor: pointer; text-align: left }
+.seg button small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; margin-top: 2px }
+.seg button[aria-pressed="true"] { background: var(--paper); color: #001; border-color: var(--paper) }
+.seg button[aria-pressed="true"] small { color: #034 }
+.seg button:focus-visible, .row button:focus-visible { outline: 2px solid var(--yel); outline-offset: 2px }
+.sl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center }
+.sl label { font-weight: 600; font-size: 13px }
+.sl output { font: 600 13px var(--f-mono); font-variant-numeric: tabular-nums; color: var(--paper) }
+.sl input { grid-column: 1 / -1; width: 100%; accent-color: var(--paper) }
+.sl p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4 }
+.sliders { display: grid; gap: 12px }
+.row { display: flex; flex-wrap: wrap; gap: 8px }
+.row button { font: 600 13px var(--f-body); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: #2a2d38; color: var(--fg); cursor: pointer }
+.row button.primary { background: var(--yel); color: #111; border-color: var(--yel) }
+.note { color: var(--muted); font-size: 12.5px; margin: 0; max-width: 65ch }
+textarea { width: 100%; box-sizing: border-box; min-height: 92px; font: 12px var(--f-mono); background: #0b0b10; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 8px }
+.how { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 8px }
+.how h2 { font: 400 14px var(--f-disp); color: var(--yel); margin: 0 }
+.how ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; max-width: 80ch }
+.status { font: 12px var(--f-mono); color: var(--grn); min-height: 1.2em }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Skid Lab</h1>
+    <p class="sub">Your Breakfast Run car alone on an open tablecloth, to find a slide that feels right before it goes into the game. Same units as the game: pixels, and 50 frames a second.</p>
+  </header>
+
+  <div class="main">
+    <section class="bezel" aria-label="Test area">
+      <canvas id="view" width="528" height="360" tabindex="0" aria-label="The test area: your car on the tablecloth. Click here, then drive with O, P, Q and A."></canvas>
+      <div class="slipbar" aria-hidden="true"><em></em><i id="slipfill"></i></div>
+      <div class="hud" role="status" aria-live="off">
+        <div><span>Speed px/fr</span><b id="h-speed">0.00</b></div>
+        <div><span>Slip</span><b id="h-slip">0°</b></div>
+        <div><span>Sideways</span><b id="h-side">0.00</b></div>
+        <div><span>Tyres</span><b id="h-state" class="state-grip">GRIP</b></div>
+      </div>
+      <div class="keys"><span><kbd>O</kbd> <kbd>P</kbd> steer</span><span><kbd>Q</kbd> accelerate</span><span><kbd>A</kbd> brake</span><span><kbd>R</kbd> back to the middle</span><span><kbd>C</kbd> clear the skid marks</span><span>(arrow keys work too)</span></div>
+    </section>
+
+    <section class="desk" aria-label="Handling">
+      <h2>Model</h2>
+      <div class="seg">
+        <button id="m-grip" aria-pressed="true">Grip limit<small>Tyres hold up to a limit, then slide</small></button>
+        <button id="m-game" aria-pressed="false">Game now<small>The slide in the game today</small></button>
+      </div>
+      <div class="sliders" id="sliders"></div>
+      <div class="row">
+        <button id="copy" class="primary">Copy settings for Claude</button>
+        <button id="defaults">Back to the starting settings</button>
+      </div>
+      <div class="status" id="status" role="status"></div>
+      <textarea id="out" aria-label="Settings as text" spellcheck="false" readonly></textarea>
+      <p class="note">When a slide feels right, copy the settings and paste them into the chat. Claude builds that model into the game.</p>
+    </section>
+  </div>
+
+  <section class="how" aria-label="How the grip model works">
+    <h2>How the grip model works</h2>
+    <ol>
+      <li>Each frame the car's speed is split two ways: <b>forwards</b> (where it points) and <b>sideways</b>.</li>
+      <li>The engine and drag only change the forwards part: top speed is the same as the game's, 1.75 px a frame.</li>
+      <li>The tyres cancel sideways speed, but only up to their <b>grip</b> each frame. Under that, all of it goes and the car follows its nose.</li>
+      <li>Steer faster than the grip can follow and the car <b>slides</b>. Sliding tyres hold less than gripping ones, so the slide goes on and fades out gradually.</li>
+      <li>The more you steer, the more it slides; ease off, or steer the other way, and it gathers itself up. Holding Q uses up part of the grip as well, so power in a corner swings the back out.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const CAR = [["....................", "........XXX.........", ".......XXXXX........", "....XXXXXoXXXXX.....", "...XooXXooXXXooX....", "...XooXXXoXXXooX....", "...XooXXXoXXXooX....", "....XXXXoooXXXX.....", "......XXXXXXX.......", "......XXXXXXX.......", "....XXXXXXXXXXX.....", "....XXXXoooXXXX.....", "....XXXoooooXXX.....", ".XXXXXXoXXXoXXXXXX..", ".XoooXXoXXXoXXoooX..", ".XoooXXoooooXXoooX..", ".XoooXXXXXXXXXoooX..", ".XXXXXXXXXXXXXXXXX..", "....XXXXXXXXXXX.....", "...................."], ["....................", "............X.......", "......XoXXXXXX......", ".....XoooXXXXXX.....", ".....XooXXooXXX.....", ".....XXXXXXoXXXX....", ".......XXXXXXXXoX...", ".......XXooXXXooo...", "....XXXXXXXXXXooX...", "XX.XXXXXXXXXXXXXX...", "XXXXXXXXXXXXX.......", "oooXXXooooXXX.......", "oooXXoXXooXXXX......", "XoXXXoXXXoXXXX......", "XXXXXooXXoXXX.......", ".XXXXXXooXXXXX......", "..XXXXXXXXXooXX.....", "....XXXXXXXoooX.....", "......XXXXXooXX.....", "...................."], ["....................", "........XXX.........", ".......XXoXX........", ".......XoooXXXXX....", ".......XooXXXXXX....", "........XXXXXoXX....", "XX...X..XXXXoXXX....", "XXX.XXXXXXooXXXXX...", "ooXXXXXXXXXoXXXoXX..", "oooXXXXXXXXXXXoooX..", "ooXXXoooXXXXXXooXX..", "XXXXoXXooXXX..XXX...", "XXXooXXXoXXX........", "XXXXooXXoXXXX.......", ".XXXXoooXXXX........", "..XXXXoXXXX.........", "...XXXXXXoXX........", "....XXXXoooXX.......", ".....XXXoooXX.......", "...................."]];                       // your big car: headings 0, 22.5, 45 (20 x 20, X o .)
+const VW = 176, VH = 120, S = 3;           // the game's window, shown 3x
+const WORLD = 1024;                        // the open area (px), wrapping round
+
+// ---- the game's 16 headings from the three drawings (as make_data.py makes them)
+const b19 = g => g.slice(0, 19).map(r => r.slice(0, 19).split(''));
+const bdiag = g => g.map((row, r) => row.map((_, c) => g[18 - c][18 - r]));
+const brot = g => g.map((row, r) => row.map((_, c) => g[18 - c][r]));
+const base = CAR.map(b19);
+const FR = [base[0], base[1], base[2], bdiag(base[1])];
+for (let i = 4; i < 16; i++) FR.push(brot(FR[i - 4]));
+const SPR = FR.map(g => {                 // each heading drawn once: blue ink, cyan body, 1px halo
+  const c = document.createElement('canvas'); c.width = c.height = 21; const x = c.getContext('2d');
+  const solid = (y, X) => y >= 0 && y < 19 && X >= 0 && X < 19 && g[y][X] !== '.';
+  for (let y = -1; y < 20; y++) for (let X = -1; X < 20; X++) {
+    let halo = false; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if (solid(y + j, X + i)) halo = true;
+    if (!halo) continue;
+    x.fillStyle = solid(y, X) && g[y][X] === 'X' ? '#0000d7' : '#00d7d7'; x.fillRect(X + 1, y + 1, 1, 1);
+  }
+  return c;
+});
+
+// ---- settings
+const DEF = {
+  grip:  { v: 0.085, min: 0.02, max: 0.30, step: 0.005, f: v => v.toFixed(3), label: 'Grip', unit: 'px/fr² sideways', help: 'How much sideways speed the tyres can cancel each frame. Lower: slides start at lower speed.' },
+  slide: { v: 65, min: 20, max: 100, step: 1, f: v => v + '%', label: 'Grip while sliding', help: 'Sliding tyres hold this share of their grip. Lower: longer, wider slides that fade out slowly.' },
+  throttle: { v: 35, min: 0, max: 80, step: 1, f: v => v + '%', label: 'Throttle uses grip', help: 'Holding Q takes this share of the grip (the friction circle): power in a corner swings the back out.' },
+  steer: { v: 5.6, min: 2, max: 10, step: 0.1, f: v => v.toFixed(1) + '°', label: 'Steering per frame', help: 'How fast the car turns. The game turns 5.6° a frame (64 steps a circle).' },
+  top:   { v: 1.75, min: 1, max: 3, step: 0.05, f: v => v.toFixed(2), label: 'Top speed', unit: 'px/fr', help: 'The game: 1.75 px a frame (NOS doubles it).' },
+};
+let P = {}; const resetP = () => { for (const k in DEF) P[k] = DEF[k].v };
+resetP();
+try { const s = JSON.parse(localStorage.getItem('skidlab-settings')); if (s) for (const k in DEF) if (typeof s[k] === 'number') P[k] = s[k] } catch (e) {}
+let model = 'grip';
+try { const m = localStorage.getItem('skidlab-model'); if (m === 'game' || m === 'grip') model = m } catch (e) {}
+const slEl = document.getElementById('sliders');
+function buildSliders() {
+  slEl.innerHTML = '';
+  for (const k in DEF) {
+    const d = DEF[k], w = document.createElement('div'); w.className = 'sl';
+    const gameOnly = model === 'game' && k !== 'top';
+    w.innerHTML = `<label for="s-${k}">${d.label}</label><output id="o-${k}">${d.f(P[k])}${d.unit ? ' ' + d.unit : ''}</output>
+      <input type="range" id="s-${k}" min="${d.min}" max="${d.max}" step="${d.step}" value="${P[k]}" ${gameOnly ? 'disabled' : ''}>
+      <p>${gameOnly ? 'Not used by the game\'s current slide.' : d.help}</p>`;
+    slEl.append(w);
+    w.querySelector('input').addEventListener('input', e => { P[k] = +e.target.value; w.querySelector('output').textContent = d.f(P[k]) + (d.unit ? ' ' + d.unit : ''); save(); text() });
+  }
+}
+function save() { try { localStorage.setItem('skidlab-settings', JSON.stringify(P)); localStorage.setItem('skidlab-model', model) } catch (e) {} }
+
+// ---- the car (x, y = its middle; heading in degrees, 0 = up, clockwise)
+let car;
+function resetCar() { car = { x: WORLD / 2, y: WORLD / 2, vx: 0, vy: 0, h: 90, ang: 16, slideT: 0, lvl: 0, sliding: false } }
+resetCar();
+const keys = new Set();
+const down = k => keys.has(k);
+
+// GRIP LIMIT: forwards / sideways, grip up to a limit, less when sliding, throttle shares it
+function stepGrip() {
+  const L = down('O') || down('ArrowLeft'), R = down('P') || down('ArrowRight');
+  const Q = down('Q') || down('ArrowUp'), A = down('A') || down('ArrowDown');
+  if (L) car.h -= P.steer; if (R) car.h += P.steer;
+  const th = car.h * Math.PI / 180, fx = Math.sin(th), fy = -Math.cos(th), rx = Math.cos(th), ry = Math.sin(th);
+  let vf = car.vx * fx + car.vy * fy, vs = car.vx * rx + car.vy * ry;
+  const drag = 1 / 8, push = P.top * drag / (1 - drag);           // the game's: push 0.25, drag 1/8 -> 1.75
+  if (Q && !A) vf += push; else if (A && !Q) vf -= push / 2; else if (Q && A) vf += push / 2;
+  vf -= vf * drag;
+  let g = P.grip * (Q ? 1 - P.throttle / 100 : 1);
+  if (car.sliding) g *= P.slide / 100;                               // sliding tyres hold less
+  if (Math.abs(vs) <= g) { vs = 0; car.sliding = false }
+  else { vs -= Math.sign(vs) * g; car.sliding = true }
+  if (Math.abs(vf) < 0.01 && !Q && !A) vf = 0;
+  car.vx = vf * fx + vs * rx; car.vy = vf * fy + vs * ry;
+  const sp = Math.hypot(car.vx, car.vy);                             // a slide never makes you faster:
+  if (sp > P.top) { car.vx *= P.top / sp; car.vy *= P.top / sp; vs *= P.top / sp }   // the tyres scrub it off
+  car.side = vs;
+}
+// GAME NOW: racer.asm's skid - turning fast halves push and friction up to 3 times; it goes on
+// 25 frames after you let go, easing back a step every 8 frames
+function stepGame() {
+  const L = down('O') || down('ArrowLeft'), R = down('P') || down('ArrowRight');
+  const Q = down('Q') || down('ArrowUp'), A = down('A') || down('ArrowDown');
+  if (L) car.ang = (car.ang + 63) & 63; if (R) car.ang = (car.ang + 1) & 63;
+  car.h = car.ang * 5.625;
+  const hd = (car.ang >> 2) * 22.5 * Math.PI / 180, k = P.top / 1.75;
+  let px = 0.25 * k * Math.sin(hd), py = -0.25 * k * Math.cos(hd);
+  if (!Q && !A) px = py = 0; else if (A && !Q) { px *= -0.5; py *= -0.5 } else if (Q && A) { px *= 0.5; py *= 0.5 }
+  const ax = Math.abs(car.vx), ay = Math.abs(car.vy), sp = Math.max(ax, ay) + Math.min(ax, ay) / 2;
+  if (L || R) {
+    if (sp < 0.625) { car.lvl = 0; car.slideT = 0 }
+    else { car.lvl = Math.min(3, 1 + Math.floor((sp - 0.625) / 0.25)); car.slideT = 25 }
+  } else if (car.slideT > 0) { car.slideT--; car.lvl = Math.min(car.lvl, Math.ceil(car.slideT / 8)) }
+  else car.lvl = 0;
+  const f = 1 / Math.pow(2, 3 + car.lvl), pk = 1 / Math.pow(2, car.lvl);
+  car.vx += px * pk; car.vy += py * pk; car.vx -= car.vx * f; car.vy -= car.vy * f;
+  if (Math.abs(car.vx) < 8 / 256) car.vx = 0; if (Math.abs(car.vy) < 8 / 256) car.vy = 0;
+  car.sliding = car.lvl > 0;
+  const th = car.h * Math.PI / 180; car.side = car.vx * Math.cos(th) + car.vy * Math.sin(th);
+}
+
+// ---- the world: cloth, skid marks (a big canvas the marks stay on), a ring of O's for corners
+const marks = document.createElement('canvas'); marks.width = marks.height = WORLD;
+const mx = marks.getContext('2d'); mx.fillStyle = '#0000d7';
+const RING = []; for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2; RING.push([WORLD / 2 + Math.cos(a) * 150, WORLD / 2 + 230 + Math.sin(a) * 90]) }
+const O_RING = ["..####..", ".#.####.", "###..###", "##....##", "##....##", "###..###", ".######.", "..####.."];
+const off = document.createElement('canvas'); off.width = VW; off.height = VH; const ox = off.getContext('2d');
+const view = document.getElementById('view'), vx = view.getContext('2d'); vx.imageSmoothingEnabled = false;
+function wrap(v) { return ((v % WORLD) + WORLD) % WORLD }
+function draw() {
+  const camx = Math.round(car.x) - VW / 2, camy = Math.round(car.y) - VH / 2;
+  const img = ox.createImageData(VW, VH), d = img.data;
+  for (let y = 0; y < VH; y++) for (let x = 0; x < VW; x++) {        // the game's cloth: 32-px checks, dark ones 1 dot in 8
+    const X = wrap(camx + x), Y = wrap(camy + y), dark = ((X >> 5) + (Y >> 5)) & 1;
+    const dot = dark && ((Y % 4 === 0 && X % 4 === 0) || (Y % 4 === 2 && X % 4 === 2));
+    const i = (y * VW + x) * 4; d[i] = 0; d[i + 1] = dot ? 0 : 215; d[i + 2] = 215; d[i + 3] = 255;
+  }
+  ox.putImageData(img, 0, 0);
+  for (let dy = -WORLD; dy <= WORLD; dy += WORLD) for (let dx = -WORLD; dx <= WORLD; dx += WORLD)
+    ox.drawImage(marks, -camx + dx, -camy + dy);
+  ox.fillStyle = '#0000d7';
+  for (const [rx, ry] of RING) { const sx = Math.round(rx - camx - 4), sy = Math.round(ry - camy - 4);
+    if (sx < -8 || sy < -8 || sx > VW || sy > VH) continue;
+    O_RING.forEach((r, j) => [...r].forEach((c, i) => { if (c === '#') ox.fillRect(sx + i, sy + j, 1, 1) })) }
+  const hi = (((Math.floor(car.h / 22.5) % 16) + 16) % 16);
+  ox.drawImage(SPR[model === 'game' ? (car.ang >> 2) : hi], VW / 2 - 10, VH / 2 - 10);
+  vx.drawImage(off, 0, 0, VW * S, VH * S);
+}
+function skidMark() {                       // the rear tyres leave marks while sliding
+  const th = car.h * Math.PI / 180, fx = Math.sin(th), fy = -Math.cos(th), rx = Math.cos(th), ry = Math.sin(th);
+  for (const s of [-6, 6]) { const x = wrap(car.x - fx * 7 + rx * s), y = wrap(car.y - fy * 7 + ry * s); mx.fillRect(Math.floor(x), Math.floor(y), 1, 1) }
+}
+
+// ---- HUD
+const $ = id => document.getElementById(id);
+function hud() {
+  const sp = Math.hypot(car.vx, car.vy);
+  let slip = 0;
+  if (sp > 0.05) { const trav = Math.atan2(car.vx, -car.vy) * 180 / Math.PI; slip = ((car.h - trav + 540) % 360) - 180 }
+  $('h-speed').textContent = sp.toFixed(2);
+  $('h-slip').textContent = Math.round(slip) + '°';
+  $('h-side').textContent = Math.abs(car.side || 0).toFixed(2);
+  const st = $('h-state'); st.textContent = car.sliding ? 'SLIDE' : 'GRIP'; st.className = car.sliding ? 'state-slide' : 'state-grip';
+  const f = $('slipfill'), w = Math.min(50, Math.abs(slip) / 90 * 50);
+  f.style.width = w + '%'; f.style.left = slip < 0 ? (50 - w) + '%' : '50%';
+}
+
+// ---- the loop: 50 steps a second, like the game
+let acc = 0, last = performance.now();
+function frame(now) {
+  acc += Math.min(200, now - last); last = now;
+  while (acc >= 20) {
+    acc -= 20;
+    if (model === 'grip') stepGrip(); else stepGame();
+    car.x = wrap(car.x + car.vx); car.y = wrap(car.y + car.vy);
+    if (car.sliding) skidMark();
+  }
+  draw(); hud(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---- keys (only while the test area has focus, so the sliders still work)
+const KEYMAP = { o: 'O', p: 'P', q: 'Q', a: 'A', ArrowLeft: 'ArrowLeft', ArrowRight: 'ArrowRight', ArrowUp: 'ArrowUp', ArrowDown: 'ArrowDown' };
+view.addEventListener('keydown', e => {
+  const k = KEYMAP[e.key] || KEYMAP[e.key.toLowerCase?.()];
+  if (k) { keys.add(k); e.preventDefault() }
+  if (e.key === 'r' || e.key === 'R') resetCar();
+  if (e.key === 'c' || e.key === 'C') mx.clearRect(0, 0, WORLD, WORLD);
+});
+view.addEventListener('keyup', e => { const k = KEYMAP[e.key] || KEYMAP[e.key.toLowerCase?.()]; if (k) keys.delete(k) });
+view.addEventListener('blur', () => keys.clear());
+view.addEventListener('pointerdown', () => view.focus());
+
+// ---- model switch, copy
+function setModel(m) {
+  model = m; $('m-grip').setAttribute('aria-pressed', m === 'grip'); $('m-game').setAttribute('aria-pressed', m === 'game');
+  car.ang = (Math.round(car.h / 5.625) % 64 + 64) % 64; car.sliding = false; car.lvl = 0; car.slideT = 0;
+  buildSliders(); save(); text(); view.focus();
+}
+$('m-grip').onclick = () => setModel('grip');
+$('m-game').onclick = () => setModel('game');
+$('defaults').onclick = () => { resetP(); buildSliders(); save(); text(); $('status').textContent = 'Back to the starting settings.' };
+function text() {
+  $('out').value = 'BREAKFAST RUN SKID LAB v1\nmodel: ' + (model === 'grip' ? 'grip limit' : 'game now') + '\n' +
+    Object.keys(DEF).map(k => `${k}: ${P[k]}`).join('\n') + '\n';
+}
+$('copy').onclick = () => {
+  text(); const t = $('out').value;
+  const done = () => $('status').textContent = 'Copied. Paste it into the chat.';
+  const fail = () => { $('out').focus(); $('out').select(); $('status').textContent = 'Selected below: press Ctrl+C (or Cmd+C) to copy.' };
+  try { navigator.clipboard.writeText(t).then(done, fail) } catch (e) { fail() }
+};
+setModel(model);
+</script>
