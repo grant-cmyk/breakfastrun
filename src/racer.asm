@@ -901,7 +901,7 @@ ai_style:
 ai_styles:  ;  reach  line   ease fuss
         db 24, 3,2,  1,   2     ; CYAN  the racer: full throttle, a tidy
                                 ;       line, eases off at 45 degrees
-        db 30, 3,2,  1,   2     ; GREEN the smooth one: turns in early, cuts
+        db 30, 3,2,  1,   2     ; GREEN the smooth one (and slowest): turns in early, cuts
                                 ;       corners, eases off at 45 degrees
         db 24, 15,8, 0,   3     ; PINK  the wild one: full throttle, late
                                 ;       brakes, wide wandering line, twitchy
@@ -2472,7 +2472,7 @@ cars_init:
         db 0
         dw CPU1Y
         dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 14,0,6, 2,0,0, 0, 0,0     ; GREEN: 14/16, few mistakes
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 12,0,6, 2,0,0, 0, 0,0     ; GREEN: 12/16 - the slowest (a long 3-axle truck), few mistakes
         db 0
         dw CPU2X
         db 0

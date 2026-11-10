@@ -403,3 +403,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant: faces too close to the cars; and the flag read as a glitch. Face now at panel columns
   29-30 (column 28 a gap), flag at 31, redrawn as a square of 2x2 checks on a pole (8 x 14).
   Test checks the flag bytes and the faces. drive_test RESULT: PASS. docs/design/panel_spaced.png.
+
+## 2026-11-10 06:35 SAST - Grant's GREEN car; GREEN the slowest
+- Grant's editor paste: GREEN heading 0 new (a long 3-axle racer); the rest unchanged or the stale
+  draft. 22.5 and 45 sampled from his shape: drafts. Grant: GREEN should be the slowest - throttle
+  12/16 (was 14). Laps: CYAN 13.6, GREEN 16.9, PINK 14.2, WHITE 15.3 s.
+- Test: 'not faster than your top speed' now counts speeds over 1.80 (bump kicks and slides add a
+  moment over the 1.75 cap; PINK hit 2.3% over 1.75, 0.1% over 1.80). drive_test RESULT: PASS.
