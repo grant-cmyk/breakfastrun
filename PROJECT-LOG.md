@@ -335,3 +335,19 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 ## 2026-11-09 21:53 SAST - measured option, not applied
 - O's 18 px apart (106, not 131): tiles 45.2k, work 181.9k, 191 at 3 frames / 26 at 4. Reverted to 15 px
   pending Grant (it changes the look). CONTINUE.md rewritten for the branch.
+
+## 2026-11-10 05:50 SAST - skids, wider road, the finish, flags, shorter bottom text
+- Grant: cars skid when turning fast; road a little wider; a car that finishes stops a little over the
+  line; the race is Finished when every car is in; a chequered flag in the race order per finished car;
+  bottom text cut off by the map, drop the 0: from times.
+- skid (physics): above 1.25 px/frame, give back half of the sideways friction (sideways/16 a frame,
+  /8 for a computer car's 2-frame step) using the quarter-square multiply; slow cars grip as before.
+- ROAD 52 (was 48); the clear band for breakfast things kept at 76 px so the plate stays. 132 O's.
+- Finish: car_in records each car's place (fin_at, fin_count); finished cars get no buttons and roll
+  to a stop; ranking puts finished cars first in the order they came in; your time freezes on the
+  clock; race over when all 5 are in (or 30 s after you); RACE FINISHED  PRESS Q. Flag 8x8 at panel
+  column 30, centred on the two rows. A new race waits for Q to be let go first.
+- Bottom text: times without a leading 0: ('  14.2'); BEST 14.3 CYAN  LAP 3 fits in 21 columns.
+- Memory: start-up-only code (make_tables, make_copier, im2_on) moved past code_end into the back
+  buffer (runs once before the buffer is used; guarded below TAB_HI). start does them once; new_race
+  is where Q comes back to. drive_test RESULT: PASS.

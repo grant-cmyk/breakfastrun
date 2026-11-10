@@ -72,7 +72,11 @@ CT_BRK  equ 8
 
         org 32768
 
-start:
+start:                          ; once, when the program is loaded
+        call make_tables
+        call make_copier        ; the program writes its own copy routine
+        call im2_on
+new_race:                       ; every race (Q after the finish comes here)
         ld a,6
         out (254),a             ; BORDER 6 (yellow: the kitchen table)
         ld hl,0x4000            ; clear the pixels
@@ -117,15 +121,12 @@ st_so:
         ld hl,0xFFFF
         ld (best_lap),hl
         call hud_init
-        call make_tables
         ld hl,cars_init         ; copy the starting records into place
         ld de,cars
         ld bc,NCARS*C_SIZE
         ldir
-        call make_copier        ; the program writes its own copy routine
         ld a,(FRAMES)
         ld (last_frame),a
-        call im2_on
 
 ; ---------------------------------------------------------------------
 ; MAIN LOOP
@@ -219,6 +220,12 @@ tick:
         ld (race_time),hl
 tk_clock:
         call read_keys          ; your buttons -> your car's C_CTRL
+        ld a,(cars+C_LAPS)      ; finished: no more buttons - your car rolls
+        cp LAPS+1               ; to a stop a little over the line
+        jr c,tk_you
+        xor a
+        ld (cars+C_CTRL),a
+tk_you:
         ld ix,cars              ; you: every TV frame
         ld a,1
         ld (ph_steps),a
@@ -233,7 +240,14 @@ tk_ai:
         add a,(ix+C_KIND)
         and 1
         jr nz,tk_rest
+        ld a,(ix+C_LAPS)        ; a computer car that has finished rolls to a
+        cp LAPS+1               ; stop too, while the others come in
+        jr nc,tk_in
         call ai_drive
+        jr tk_phys
+tk_in:
+        ld (ix+C_CTRL),0
+tk_phys:
         call physics
 tk_rest:
         ld de,C_SIZE
@@ -260,10 +274,17 @@ rk2:
         ld a,0xFB               ; Q
         in a,(0xFE)
         bit 0,a
-        jr nz,rk3
+        jr nz,rk_qup
         set 2,c
+        ld a,(q_free)           ; first press of Q starts the race - a new
+        or a                    ; press: the Q that started this race (after
+        jr z,rk3                ; the last one finished) has to be let go
         ld a,1
-        ld (race_on),a          ; first press of Q starts the race
+        ld (race_on),a
+        jr rk3
+rk_qup:
+        ld a,1
+        ld (q_free),a
 rk3:
         ld a,0xFD               ; A
         in a,(0xFE)
@@ -273,48 +294,6 @@ rk3:
 rk4:
         ld a,c
         ld (cars+C_CTRL),a
-        ret
-
-; ---------------------------------------------------------------------
-; make_tables: for each shift s = 0..7, two 256-byte tables:
-;   page TAB_HI+2s   : A[b] = b >> (8-s)   (part in the left byte)
-;   page TAB_HI+2s+1 : B[b] = b << s       (part in the right byte)
-; ---------------------------------------------------------------------
-make_tables:
-        ld d,TAB_HI
-        ld c,0
-mt_s:
-        ld e,0
-mt_b:
-        ld a,8
-        sub c
-        ld b,a
-        ld a,e
-mt_r:
-        srl a
-        djnz mt_r
-        ld h,d
-        ld l,e
-        ld (hl),a
-        ld a,c
-        or a
-        ld a,e
-        jr z,mt_l_done
-        ld b,c
-mt_l:
-        add a,a
-        djnz mt_l
-mt_l_done:
-        inc h
-        ld (hl),a
-        inc e
-        jr nz,mt_b
-        inc d
-        inc d
-        inc c
-        ld a,c
-        cp 8
-        jr nz,mt_s
         ret
 
 ; ---------------------------------------------------------------------
@@ -385,6 +364,11 @@ ph_push_set:
         pop bc
         ld (ix+C_FSH),a
 ph_surf_kept:
+        push bc
+        push de
+        call skid               ; fast: the car slides sideways through turns
+        pop de
+        pop bc
         ld a,(ix+C_FSH)
         ld (fshift),a
         ld (ph_px),de           ; the pushes, kept for the second frame
@@ -485,6 +469,144 @@ ph_yset:
         ld (ix+C_VY),a
         ld (ix+C_VY+1),a
 ph_yok:
+        ret
+
+; ---------------------------------------------------------------------
+; SKID (IX = car): friction takes 1/8 of the speed each frame, sideways as
+; much as forwards, so a car grips. Going fast (over SKID_V), give back half
+; of what it took sideways: the car keeps sliding the way it was going while
+; it turns, and drifts round the corner (Grant, 10 Nov 2026).
+; Sideways = the speed along n, the unit vector to the car's right:
+;   n = (-hy, hx), where (hx, hy) is the push table's heading (64 = 1).
+;   P = (vx/8)(nx/2) + (vy/8)(ny/2) = 4 x (sideways speed)
+;   speed += (P/32)(n/2) / 64 = sideways/16 along n  (/8 for a computer car,
+;   which moves 2 frames a call)
+; ---------------------------------------------------------------------
+SKID_V  equ 320                 ; 1.25 px a frame (top speed is 1.75)
+skid:
+        ld l,(ix+C_VX)          ; speed, roughly: the larger of |vx|, |vy|
+        ld h,(ix+C_VX+1)        ; plus half the smaller
+        call abs_hl
+        push hl
+        ld l,(ix+C_VY)
+        ld h,(ix+C_VY+1)
+        call abs_hl
+        pop de
+        or a
+        sbc hl,de
+        add hl,de
+        jr nc,sk_1
+        ex de,hl
+sk_1:
+        srl d
+        rr e
+        add hl,de
+        ld de,SKID_V
+        or a
+        sbc hl,de
+        ret c                   ; slow: it grips
+        ld a,(ix+C_ANG)         ; n / 2 from the heading's push
+        rrca
+        rrca
+        and 15
+        add a,a
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,thrust_tab
+        add hl,de
+        ld a,(hl)               ; hx
+        sra a
+        ld (sk_ny),a            ; ny = hx / 2
+        inc hl
+        inc hl
+        ld a,(hl)               ; hy
+        sra a
+        neg
+        ld (sk_nx),a            ; nx = -hy / 2
+        ld l,(ix+C_VX)
+        ld h,(ix+C_VX+1)
+        call sk_v8
+        ld b,a
+        ld a,(sk_nx)
+        ld c,a
+        call mul8s
+        push hl
+        ld l,(ix+C_VY)
+        ld h,(ix+C_VY+1)
+        call sk_v8
+        ld b,a
+        ld a,(sk_ny)
+        ld c,a
+        call mul8s
+        pop de
+        add hl,de               ; HL = P
+        ld b,5                  ; P / 32, kept to -63..63
+sk_2:
+        sra h
+        rr l
+        djnz sk_2
+        call sk_clamp
+        or a
+        ret z                   ; not sliding
+        ld (sk_m),a
+        ld b,a
+        ld a,(sk_nx)
+        ld c,a
+        call mul8s
+        call sk_shift
+        ld e,(ix+C_VX)
+        ld d,(ix+C_VX+1)
+        add hl,de
+        ld (ix+C_VX),l
+        ld (ix+C_VX+1),h
+        ld a,(sk_m)
+        ld b,a
+        ld a,(sk_ny)
+        ld c,a
+        call mul8s
+        call sk_shift
+        ld e,(ix+C_VY)
+        ld d,(ix+C_VY+1)
+        add hl,de
+        ld (ix+C_VY),l
+        ld (ix+C_VY+1),h
+        ret
+sk_shift:                       ; HL / 64 for you, / 32 for a computer car
+        ld a,(ph_steps)
+        ld b,a
+        ld a,7
+        sub b
+        ld b,a
+sk_3:
+        sra h
+        rr l
+        djnz sk_3
+        ret
+sk_v8:                          ; HL = a speed -> A = HL / 8, kept to -63..63
+        sra h
+        rr l
+        sra h
+        rr l
+        sra h
+        rr l
+sk_clamp:                       ; HL -> A, kept to -63..63
+        ld a,h
+        or a
+        jr z,sk_pos
+        inc a
+        jr nz,sk_neg            ; below -256: as low as allowed
+        ld a,l
+        cp 0xC1
+        ret nc                  ; -63..-1
+sk_neg:
+        ld a,0xC1
+        ret
+sk_pos:
+        ld a,l
+        cp 64
+        ret c
+        ld a,63
         ret
 
 ; heading_push: A = heading 0..63 -> DE = push x, BC = push y (8.8)
@@ -870,6 +992,9 @@ lap_and_inc:
         jr nz,wp_inc
         inc (ix+C_LAPS)
         call lap_timed
+        ld a,(ix+C_LAPS)        ; over the line for the last time: note the
+        cp LAPS+1               ; order the cars come in
+        call z,car_in
 wp_inc:                         ; (also used just to look one waypoint ahead)
         ld a,(ix+C_WP)
         inc a
@@ -1553,19 +1678,6 @@ copy_done:
 ; byte (0xF3, -13), landing at 0xFFF4: a JP to isr. (0xFFF4.. is BASIC's
 ; user-graphics area, unused here.)
 ; ---------------------------------------------------------------------
-im2_on:
-        di
-        ld a,0x18               ; JR
-        ld (0xFFFF),a
-        ld a,0xC3               ; JP isr
-        ld (0xFFF4),a
-        ld hl,isr
-        ld (0xFFF5),hl
-        ld a,0x39
-        ld i,a
-        im 2
-        ei
-        ret
 isr:
         push af
         push hl
@@ -1998,19 +2110,43 @@ rp_pos:
 rp_all:
         ld a,(race_over)
         or a
-        ret nz                  ; finished: everything stays as it ended
-        ld a,(cars+C_LAPS)      ; finished?  checked every picture
+        ret nz                  ; the race is over: everything stays as it ended
+        ld a,(you_done)
+        or a
+        jr nz,rp_wait
+        ld a,(cars+C_LAPS)      ; you finished?  checked every picture
         cp LAPS+1
         jr c,rp_go_on
         ld a,1
-        ld (race_over),a
+        ld (you_done),a
+        ld hl,(race_time)       ; your time stays on the clock
+        ld (you_time),hl
+        ld a,(fin_at)           ; your place: the order you came in
+        ld (position),a
         call msg_finished
-        jp show_best
+rp_wait:                        ; the race is over when every car is in (or
+        ld a,(fin_count)        ; 30 s after you, in case one is stuck)
+        cp NCARS
+        jr nc,rp_end
+        ld hl,(race_time)
+        ld de,(you_time)
+        or a
+        sbc hl,de
+        ld de,1500
+        or a
+        sbc hl,de
+        jr c,rp_go_on
+rp_end:
+        ld a,1
+        ld (race_over),a
+        call show_best
+        jr rp_now               ; and the final order, straight away
 rp_go_on:
         ld a,(renders)          ; the order one picture in four (4 times a
         and 3                   ; second; the tower shows it one in four)
         cp 3
         ret nz
+rp_now:
         ld ix,cars              ; every car's progress (prog) and waypoints
         ld b,0                  ; passed this lap (passed)
 rp_p:
@@ -2090,9 +2226,33 @@ rp_in:
         ret
 
 
+; car_in (IX = a car crossing the line for the last time): its place
+car_in:
+        ld hl,fin_count
+        inc (hl)
+        ld a,(hl)
+        ld e,(ix+C_KIND)
+        ld d,0
+        ld hl,fin_at
+        add hl,de
+        ld (hl),a
+        ret
+
 ; progress (IX = car): A = laps * NWP + passed (stops at 255; a 3-lap race
 ; needs about 170), L = passed = waypoints since the line, 0..NWP-1
 progress:
+        ld a,(ix+C_LAPS)        ; finished: ahead of every car still racing,
+        cp LAPS+1               ; in the order they came in
+        jr c,pr_run
+        ld e,(ix+C_KIND)
+        ld d,0
+        ld hl,fin_at
+        add hl,de
+        ld a,250
+        sub (hl)
+        ld l,0
+        ret
+pr_run:
         ld a,(ix+C_WP)          ; passed = (target - WS - 1) MOD NWP
         sub WS+1
         jr nc,pr1
@@ -2215,6 +2375,244 @@ df_corn:                        ; left, right edge bytes for the 4 rounded rows
         db 0x07,0xE0, 0x1F,0xF8, 0x3F,0xFC, 0x3F,0xFC
 
 ; ---------------------------------------------------------------------
+; the starting line-up (copied into "cars" at the start)
+;   x frac, x, y frac, y, vx, vy, heading, buttons, friction,
+;   waypoint, offset x, offset y, mistake, kind of mistake, think,
+;   PACE, REACT, ERR, picture, steering, ease off, laps, lap start
+; Tuned on the real ROM (tests/tune_ai.py) to race round your pace:
+; CPU A: 7 of 8, fewest mistakes  (laps ~13.9 s)
+; CPU B: 7 of 8, more mistakes    (~14.2 s)
+; CPU C: 7 of 8, some mistakes    (~14.2 s)
+; CPU D: 6 of 8, the most mistakes (~16.0 s)
+; Everyone thinks every 4 frames. Your autopilot lap: ~13.5 s.
+; ---------------------------------------------------------------------
+cars_init:
+        db 0
+        dw STARTX
+        db 0
+        dw STARTY
+        dw 0,0
+        db STARTA,0,3, PLAYERWP,0,0, 0,0,0, 8,0,0, 0,0,0, 0, 0,0
+        db 0
+        dw CPU0X
+        db 0
+        dw CPU0Y
+        dw 0,0
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 7,0,8, 1,0,0, 0, 0,0
+        db 0
+        dw CPU1X
+        db 0
+        dw CPU1Y
+        dw 0,0
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 7,0,14, 2,0,0, 0, 0,0
+        db 0
+        dw CPU2X
+        db 0
+        dw CPU2Y
+        dw 0,0
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 7,0,10, 3,0,0, 0, 0,0
+        db 0
+        dw CPU3X
+        db 0
+        dw CPU3Y
+        dw 0,0
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 6,0,20, 4,0,0, 0, 0,0
+cars_init_end:
+
+; ---------------------------------------------------------------------
+; variables
+; ---------------------------------------------------------------------
+cars:     defs NCARS*C_SIZE     ; you, CPU A, B, C, D
+camx:     dw 0
+camy:     dw 0
+fshift:   db 3
+last_frame: db 0
+dt:       db 0
+renders:  dw 0
+seed:     dw 0x1234
+hx:       db 0
+hy:       db 0
+tdx:      db 0
+tdy:      db 0
+cross:    dw 0
+dot:      dw 0
+msign:    db 0
+bu_off:   db 0
+wxu:      db 0
+bump_b:   dw 0
+bdx:      dw 0
+bdy:      dw 0
+tb:       defs 9
+dc_row0:  db 0
+dc_ink:   db 0
+dc_first: db 0
+dc_count: db 0
+dist_cur: dw 0
+bo_n:     db 0
+mc_y:     db 0
+mc_h:     db 0
+mc_n:     db 0
+dc_n:     db 0
+dt_rows:  db 0
+save_sp:  dw 0
+cf_sp:    dw 0
+cf_ixv:   dw 0
+cf_tp:    dw 0
+cf_pf:    dw cf_dummy
+cf_y0:    db 0
+cf_n:     db 0
+cf_kk:    db 0
+cf_th:    db 0
+cf_dummy: db 0,0,0
+        defs (32 - ($ AND 31)) AND 31
+cloth_pat: defs 32              ; 4 kinds of cloth line (aligned: index by bits)
+pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
+pace_hold: db 0
+ph_steps: db 1
+sk_nx:    db 0
+sk_ny:    db 0
+sk_m:     db 0
+ph_cnt:   db 0
+ph_px:    dw 0
+ph_py:    dw 0
+; ---- reset to zero at the start of every race ----
+race_vars:
+race_on:     db 0
+race_over:   db 0
+ticks:       dw 0
+mistakes:    dw 0
+bumps:       dw 0
+position:    db 0
+shown_lap:   db 0
+prog:        defs NCARS         ; each car's progress (laps * NWP + passed)
+passed:      defs NCARS         ; waypoints each car has passed this lap
+order:       defs NCARS         ; car in each place
+shown_order: defs NCARS
+shown_on:    db 0
+shown_final: db 0
+msg_timer:   db 0
+race_time:   dw 0               ; TV frames since your first Q
+lap_start:   dw 0
+best_lap:    dw 0
+q_up:        db 0
+time_shown:  defs 6
+rp_rank:     db 0
+rp_ptr:      dw 0
+tr_car:      db 0
+tr_row:      db 0
+mk_x:        db 0
+pb_attr:     db 0
+blink:       db 0
+best_car:    db 0
+best_lapno:  db 0
+best_seq:    db 0
+shown_best_seq: db 0
+shown_dot:   defs 2*NCARS
+md_pat:      dw 0
+fin_at:      defs NCARS         ; each car's finishing place (0 = still racing)
+fin_count:   db 0               ; cars in so far
+you_done:    db 0
+you_time:    dw 0               ; your race time, kept on the clock
+tr_key:      db 0
+q_free:      db 0               ; Q has been let go since this race was set up
+race_vars_end:
+last_shown: db 0
+tr_base:  dw 0
+dt_rowp:  dw 0
+dc_tab:   db 0
+
+; buf_addr: B = buffer row, C = x  ->  HL = address (screen layout at BUF)
+buf_addr:
+        call scr_addr
+        ld a,h
+        add a,BUF_HI-0x40
+        ld h,a
+        ret
+
+scr_addr:
+        ld a,b
+        and 7
+        or 0x40
+        ld h,a
+        ld a,b
+        rrca
+        rrca
+        rrca
+        and 0x18
+        or h
+        ld h,a
+        ld a,b
+        rlca
+        rlca
+        and 0xE0
+        ld l,a
+        ld a,c
+        rrca
+        rrca
+        rrca
+        and 0x1F
+        or l
+        ld l,a
+        ret
+
+        include "data.asm"
+        include "waypoints.asm"   ; (fills the gap before sq4's page)
+        include "sq4.asm"
+        include "world.asm"
+        include "logo.asm"
+        include "hud.asm"
+        include "gen_tiles.asm"
+        include "gen_bumps.asm"
+code_end:
+
+; ---------------------------------------------------------------------
+; START-UP ONLY: these run once, before the first picture, so they can sit
+; in the back buffer (from 0xC000), which nothing uses until then. They
+; must end before the shift tables at TAB_HI*256, which they build.
+; ---------------------------------------------------------------------
+; ---------------------------------------------------------------------
+; make_tables: for each shift s = 0..7, two 256-byte tables:
+;   page TAB_HI+2s   : A[b] = b >> (8-s)   (part in the left byte)
+;   page TAB_HI+2s+1 : B[b] = b << s       (part in the right byte)
+; ---------------------------------------------------------------------
+make_tables:
+        ld d,TAB_HI
+        ld c,0
+mt_s:
+        ld e,0
+mt_b:
+        ld a,8
+        sub c
+        ld b,a
+        ld a,e
+mt_r:
+        srl a
+        djnz mt_r
+        ld h,d
+        ld l,e
+        ld (hl),a
+        ld a,c
+        or a
+        ld a,e
+        jr z,mt_l_done
+        ld b,c
+mt_l:
+        add a,a
+        djnz mt_l
+mt_l_done:
+        inc h
+        ld (hl),a
+        inc e
+        jr nz,mt_b
+        inc d
+        inc d
+        inc c
+        ld a,c
+        cp 8
+        jr nz,mt_s
+        ret
+
+; ---------------------------------------------------------------------
 ; MAKE_COPIER: write the screen-copy routine into memory at COPIER.
 ; Code is just bytes, so a program can write code. Each 22-byte window row
 ; is 12 bytes (pop 6 pairs off the buffer, push them onto the screen), then
@@ -2324,187 +2722,20 @@ mc_ldsp:                        ; write "ld sp,HL"
 mc_pops:   db 0xF1,0xC1,0xD1,0xE1,0xDD,0xE1,0xFD,0xE1   ; pop af,bc,de,hl,ix,iy
 mc_pushes: db 0xFD,0xE5,0xDD,0xE5,0xE5,0xD5,0xC5,0xF5   ; push iy,ix,hl,de,bc,af
 
-; buf_addr: B = buffer row, C = x  ->  HL = address (screen layout at BUF)
-buf_addr:
-        call scr_addr
-        ld a,h
-        add a,BUF_HI-0x40
-        ld h,a
+im2_on:
+        di
+        ld a,0x18               ; JR
+        ld (0xFFFF),a
+        ld a,0xC3               ; JP isr
+        ld (0xFFF4),a
+        ld hl,isr
+        ld (0xFFF5),hl
+        ld a,0x39
+        ld i,a
+        im 2
+        ei
         ret
-
-scr_addr:
-        ld a,b
-        and 7
-        or 0x40
-        ld h,a
-        ld a,b
-        rrca
-        rrca
-        rrca
-        and 0x18
-        or h
-        ld h,a
-        ld a,b
-        rlca
-        rlca
-        and 0xE0
-        ld l,a
-        ld a,c
-        rrca
-        rrca
-        rrca
-        and 0x1F
-        or l
-        ld l,a
-        ret
-
-; ---------------------------------------------------------------------
-; the starting line-up (copied into "cars" at the start)
-;   x frac, x, y frac, y, vx, vy, heading, buttons, friction,
-;   waypoint, offset x, offset y, mistake, kind of mistake, think,
-;   PACE, REACT, ERR, picture, steering, ease off, laps, lap start
-; Tuned on the real ROM (tests/tune_ai.py) to race round your pace:
-; CPU A: 7 of 8, fewest mistakes  (laps ~13.9 s)
-; CPU B: 7 of 8, more mistakes    (~14.2 s)
-; CPU C: 7 of 8, some mistakes    (~14.2 s)
-; CPU D: 6 of 8, the most mistakes (~16.0 s)
-; Everyone thinks every 4 frames. Your autopilot lap: ~13.5 s.
-; ---------------------------------------------------------------------
-cars_init:
-        db 0
-        dw STARTX
-        db 0
-        dw STARTY
-        dw 0,0
-        db STARTA,0,3, PLAYERWP,0,0, 0,0,0, 8,0,0, 0,0,0, 0, 0,0
-        db 0
-        dw CPU0X
-        db 0
-        dw CPU0Y
-        dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 7,0,8, 1,0,0, 0, 0,0
-        db 0
-        dw CPU1X
-        db 0
-        dw CPU1Y
-        dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 7,0,14, 2,0,0, 0, 0,0
-        db 0
-        dw CPU2X
-        db 0
-        dw CPU2Y
-        dw 0,0
-        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 7,0,10, 3,0,0, 0, 0,0
-        db 0
-        dw CPU3X
-        db 0
-        dw CPU3Y
-        dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 6,0,20, 4,0,0, 0, 0,0
-cars_init_end:
-
-; ---------------------------------------------------------------------
-; variables
-; ---------------------------------------------------------------------
-cars:     defs NCARS*C_SIZE     ; you, CPU A, B, C, D
-camx:     dw 0
-camy:     dw 0
-fshift:   db 3
-last_frame: db 0
-dt:       db 0
-renders:  dw 0
-seed:     dw 0x1234
-hx:       db 0
-hy:       db 0
-tdx:      db 0
-tdy:      db 0
-cross:    dw 0
-dot:      dw 0
-msign:    db 0
-bu_off:   db 0
-wxu:      db 0
-bump_b:   dw 0
-bdx:      dw 0
-bdy:      dw 0
-tb:       defs 9
-dc_row0:  db 0
-dc_ink:   db 0
-dc_first: db 0
-dc_count: db 0
-dist_cur: dw 0
-bo_n:     db 0
-mc_y:     db 0
-mc_h:     db 0
-mc_n:     db 0
-dc_n:     db 0
-dt_rows:  db 0
-save_sp:  dw 0
-cf_sp:    dw 0
-cf_ixv:   dw 0
-cf_tp:    dw 0
-cf_pf:    dw cf_dummy
-cf_y0:    db 0
-cf_n:     db 0
-cf_kk:    db 0
-cf_th:    db 0
-cf_dummy: db 0,0,0
-        defs (32 - ($ AND 31)) AND 31
-cloth_pat: defs 32              ; 4 kinds of cloth line (aligned: index by bits)
-pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
-pace_hold: db 0
-ph_steps: db 1
-ph_cnt:   db 0
-ph_px:    dw 0
-ph_py:    dw 0
-; ---- reset to zero at the start of every race ----
-race_vars:
-race_on:     db 0
-race_over:   db 0
-ticks:       dw 0
-mistakes:    dw 0
-bumps:       dw 0
-position:    db 0
-shown_lap:   db 0
-prog:        defs NCARS         ; each car's progress (laps * NWP + passed)
-passed:      defs NCARS         ; waypoints each car has passed this lap
-order:       defs NCARS         ; car in each place
-shown_order: defs NCARS
-shown_on:    db 0
-shown_final: db 0
-msg_timer:   db 0
-race_time:   dw 0               ; TV frames since your first Q
-lap_start:   dw 0
-best_lap:    dw 0
-q_up:        db 0
-time_shown:  defs 6
-rp_rank:     db 0
-rp_ptr:      dw 0
-tr_car:      db 0
-tr_row:      db 0
-mk_x:        db 0
-pb_attr:     db 0
-blink:       db 0
-best_car:    db 0
-best_lapno:  db 0
-best_seq:    db 0
-shown_best_seq: db 0
-shown_dot:   defs 2*NCARS
-md_pat:      dw 0
-race_vars_end:
-last_shown: db 0
-tr_base:  dw 0
-dt_rowp:  dw 0
-dc_tab:   db 0
-
-        include "data.asm"
-        include "waypoints.asm"   ; (fills the gap before sq4's page)
-        include "sq4.asm"
-        include "world.asm"
-        include "logo.asm"
-        include "hud.asm"
-        include "gen_tiles.asm"
-        include "gen_bumps.asm"
-code_end:
+init_end:
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
@@ -2520,6 +2751,9 @@ code_end:
         endif
         if code_end > BUF_HI*256
         .error code and data run into the back buffer
+        endif
+        if init_end > TAB_HI*256
+        .error the start-up routines run into the shift tables they build
         endif
 
         end start

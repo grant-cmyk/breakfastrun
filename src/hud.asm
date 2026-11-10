@@ -423,10 +423,10 @@ hu_order:
         jp time_update
 
 ; print_best: BEST m:ss.t NAME LAP n on row BAND_Y+1 (the name on the car's colour)
-print_best:
+print_best:                     ; BEST 14.2 GREEN LAP 2 (cols 1..21)
         ld hl,(best_lap)
         call time_fmt
-        ld hl,time_txt
+        ld hl,time_txt+2        ; seconds and tenths: a lap is under a minute
         ld b,BAND_Y+1
         ld c,6
         call print_at
@@ -442,7 +442,7 @@ print_best:
         ld hl,car_names
         add hl,de
         ld b,BAND_Y+1
-        ld c,13
+        ld c,11
         call print_at
         ld a,(best_car)
         ld e,a
@@ -451,23 +451,24 @@ print_best:
         add hl,de
         ld a,(hl)
         ld b,BAND_Y+1
-        ld c,13
+        ld c,11
         ld d,1
         ld e,5
         call set_attrs
-        ld hl,txt_lapw
+        ld hl,txt_lapword
         ld b,BAND_Y+1
-        ld c,19
+        ld c,17
         call print_at
         ld a,(best_lapno)
         add a,'0'
         ld (txt_digit),a
         ld hl,txt_digit
         ld b,BAND_Y+1
-        ld c,23
+        ld c,21
         jp print_at
 
-hud_over:                       ; after the finish: wait for Q to be let go,
+hud_over:                       ; after the finish: the last flags, then
+        call tower_update       ; wait for Q to be let go,
         ld a,0xFB               ; then pressed again - a new race
         in a,(0xFE)
         and 1
@@ -480,7 +481,7 @@ ho_down:
         or a
         ret z
         pop hl                  ; leave the main loop: back to the start
-        jp start
+        jp new_race
 
 ; ---------------------------------------------------------------------
 ; THE RACE ORDER (the tower): rows 6-15 of the panel, 2 rows a place
@@ -490,6 +491,7 @@ tower_update:                   ; redraw the first place whose car changed
         ld hl,order
 tu_place:
         ld a,(hl)
+        call fin_key            ; + 8 if that car has finished (its flag)
         push hl
         ld de,shown_order-order
         add hl,de
@@ -521,7 +523,23 @@ cell_addr:                      ; cell row B, column C -> HL = its top pixel row
         ld l,a
         ret
 
-tower_row:                      ; place B (0..4), car A
+fin_key:                        ; A = car -> A = car, + 8 if it is in
+        push hl
+        ld e,a
+        ld d,0
+        ld hl,fin_at
+        add hl,de
+        ld a,(hl)
+        or a
+        ld a,e
+        pop hl
+        ret z
+        or 8
+        ret
+
+tower_row:                      ; place B (0..4), A = car (+ 8: finished)
+        ld (tr_key),a
+        and 7
         ld (tr_car),a
         ld a,b
         add a,a
@@ -573,6 +591,36 @@ tower_row:                      ; place B (0..4), car A
         inc a
         ld b,a
         ld c,27
+        call tr_pic
+        ld a,(tr_key)           ; finished: a chequered flag beside the car
+        bit 3,a
+        ret z
+        ld a,(tr_row)
+        ld b,a
+        ld c,30
+        ld de,flag_top
+        call tr_glyph
+        ld a,(tr_row)
+        inc a
+        ld b,a
+        ld c,30
+        ld de,flag_bot
+tr_glyph:                       ; 8 bytes at DE into cell B, C
+        call cell_addr
+        ld b,8
+tg_row:
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        djnz tg_row
+        ret
+flag_top:                       ; the flag, 8 x 8, centred on the 2 cell rows:
+        db 0,0,0,0              ; a pole, and 2 x 2 checks
+        db %11100110,%11100110,%10011000,%10011000
+flag_bot:
+        db %11100110,%11100110,%10000000,%10000000
+        db 0,0,0,0
 tr_pic:                         ; 8 rows of the picture (ink only) into cell B, C
         call cell_addr
         ld b,8
@@ -872,6 +920,11 @@ mr_done:
 ; ---------------------------------------------------------------------
 time_update:
         ld hl,(race_time)
+        ld a,(you_done)         ; finished: your own time stays up
+        or a
+        jr z,tmu_1
+        ld hl,(you_time)
+tmu_1:
         call time_fmt
         jr tm_print
 time_fmt:                       ; HL = frames (50 a second) -> time_txt "m:ss.t"
@@ -929,6 +982,17 @@ tm_d1:
         ld a,e
         add a,'0'
         ld (time_txt+5),a
+        ld a,(time_txt)         ; under a minute: no "0:", and no leading 0
+        cp '0'                  ; ("  14.2", "   9.8")
+        ret nz
+        ld a,' '
+        ld (time_txt),a
+        ld (time_txt+1),a
+        ld a,(time_txt+2)
+        cp '0'
+        ret nz
+        ld a,' '
+        ld (time_txt+2),a
         ret
 tm_print:
         ld hl,time_txt          ; print what differs from what is shown
@@ -986,8 +1050,9 @@ txt_final:    db "FINAL LAP!",0
 txt_finished: db "FINISHED",0
 txt_places:   db "1ST",0, "2ND",0, "3RD",0, "4TH",0, "5TH",0
 txt_best:     db "BEST",0
-txt_nobest:   db "-:--.-",0
+txt_nobest:   db "--.-",0
+txt_lapword:  db "LAP",0
 car_names:    db "YOU  ",0, "CYAN ",0, "GREEN",0, "PINK ",0, "WHITE",0
-txt_again:    db "PRESS Q TO RACE AGAIN",0
+txt_again:    db "RACE FINISHED  PRESS Q",0
 txt_digit:    db "0",0
 time_txt:     db "0:00.0",0

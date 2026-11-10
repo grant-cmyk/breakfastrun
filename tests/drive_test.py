@@ -223,7 +223,7 @@ with Racer(headless=True) as sp:
     check(min(claps) >= 3, 'the computer cars\' laps are counted (%s)' % claps)
     best = screen_text(sp, 21, 1, 23)
     print('best lap line %r' % best)
-    check(best.startswith('BEST 0:1') and best[12:17].strip() in ('CYAN', 'GREEN', 'PINK', 'WHITE') and best[18:21] == 'LAP',
+    check(best.startswith('BEST 1') and best[10:15].strip() in ('CYAN', 'GREEN', 'PINK', 'WHITE') and best[16:19] == 'LAP',
           'the best lap shows its time, the car that set it and the lap')
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
     check(g(sp, 'race_time') > 50 * 85, 'the race clock is running (%.1f s)' % (g(sp, 'race_time') / 50))
@@ -271,10 +271,10 @@ with Racer(headless=True) as sp:
     put(sp, 0, 250, 344, 16)
     hold(sp, ['Q'], 1.5)
     sp.run(duration=0.3, fast_forward=True)
-    again = screen_text(sp, 20, 1, 21)
+    again = screen_text(sp, 20, 1, 22)
     print('after crossing the line on lap 3:', repr(again), 'race_over', sp.read8(SYM['race_over']))
     check(sp.read8(SYM['race_over']) == 1 and attr(1, 0) == 0x57, 'crossing the line on the last lap: FINISHED in the message bar')
-    check(again == 'PRESS Q TO RACE AGAIN', 'and PRESS Q TO RACE AGAIN under the window')
+    check(again == 'RACE FINISHED  PRESS Q', 'every car in: RACE FINISHED  PRESS Q under the window')
     sp.run(duration=0.3, fast_forward=True)
     hold(sp, ['Q'], 0.3)                           # let go, then press: a new race
     sp.run(duration=1.5, fast_forward=True)
