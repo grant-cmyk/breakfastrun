@@ -101,3 +101,27 @@ for i, (tag, what, dd) in enumerate(OPTS3):
     sheet.paste(Image.fromarray(full).resize((W // 2, H // 2), Image.BOX), (ox, 32 + len(VIEWS) * (ch + 12) + 8))
 out = os.path.join(ROOT, 'docs', 'design', 'road_light_options.png')
 sheet.save(out); print('wrote', os.path.normpath(out))
+
+# ---- H as the game can build it cheaply: the road map it already keeps (whole 8 x 8
+# tiles, the road itself) decides where the dots thin out
+surf = np.array(ns['surf'], dtype=np.uint8).reshape(H // 8, W // 8)
+RT = np.repeat(np.repeat(surf == 0, 8, 0), 8, 1)
+_t = ROADA.reshape(H // 8, 8, W // 8, 8).sum(axis=(1, 3)) >= 32           # road + the O's, whole tiles
+RT3 = np.repeat(np.repeat(_t, 8, 0), 8, 1)
+OPTS4 = [('H', 'road 1 in 64 (as approved)', np.where(ROADA, d64, d25)),
+         ('H2', 'on the road map as it is', np.where(RT, d64, d25)),
+         ('H3', 'road map out to the O\'s (to build)', np.where(RT3, d64, d25))]
+sheet = Image.new('RGB', (len(OPTS4) * (cw + 16) + 16, 40 + len(VIEWS) * (ch + 12) + 12 + H // 2 + 20), (17, 18, 22))
+d = ImageDraw.Draw(sheet)
+for i, (tag, what, dd) in enumerate(OPTS4):
+    ink = world.astype(bool) | (dd & ~wmask)
+    ox = 16 + i * (cw + 16)
+    d.text((ox, 10), tag + ': ' + what, fill=(236, 235, 230), font=fnt)
+    for j, (vx, vy) in enumerate(VIEWS):
+        win = ink[vy:vy + 120, vx:vx + 176]
+        rgb = np.where(win[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
+        sheet.paste(Image.fromarray(rgb).resize((cw, ch), Image.NEAREST), (ox, 32 + j * (ch + 12)))
+    full = np.where(ink[..., None], np.array(INK, np.uint8), np.array(PAPER, np.uint8)).astype(np.uint8)
+    sheet.paste(Image.fromarray(full).resize((W // 2, H // 2), Image.BOX), (ox, 32 + len(VIEWS) * (ch + 12) + 8))
+out = os.path.join(ROOT, 'docs', 'design', 'road_h_build.png')
+sheet.save(out); print('wrote', os.path.normpath(out))

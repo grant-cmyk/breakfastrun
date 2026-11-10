@@ -92,6 +92,18 @@ start:                          ; once, when the program is loaded
         ld de,BUFD
         ld bc,bufd_end-bufd_src
         ldir
+        ld hl,bufe_src
+        ld de,BUFE
+        ld bc,bufe_end-bufe_src
+        ldir
+        ld hl,buff_src
+        ld de,BUFF
+        ld bc,buff_end-buff_src
+        ldir
+        ld hl,bufg_src
+        ld de,BUFG
+        ld bc,bufg_end-bufg_src
+        ldir
         call make_tables
         call make_copier        ; the program writes its own copy routine
         call im2_on
@@ -178,6 +190,7 @@ tick_loop:
         call hud_update         ; the panel, message bar and lap strip
         call camera
         call cloth_fill         ; the tablecloth, as the camera sees it
+        call road_clear         ; the road: the cloth much lighter
         call draw_tiles
         ld ix,cars+(NCARS-1)*C_SIZE ; computer cars first, yours last (on top)
         ld b,NCARS
@@ -1036,7 +1049,7 @@ wp_delta:
         add a,a
         ld l,a
         ld h,0
-        ld de,waypoints
+        ld de,wp_tab
         add hl,de
         ld e,(hl)
         inc hl
@@ -2787,38 +2800,7 @@ df_corn:                        ; left, right edge bytes for the 4 rounded rows
 ; CPU D: 6 of 8, the most mistakes (~16.0 s)
 ; Everyone thinks every 4 frames. Your autopilot lap: ~13.5 s.
 ; ---------------------------------------------------------------------
-cars_init:
-        db 0
-        dw STARTX
-        db 0
-        dw STARTY
-        dw 0,0
-        db STARTA,0,3, PLAYERWP,0,0, 0,0,0, 8,0,0, 0,0,0, 0, 0,0
-        db 0
-        dw CPU0X
-        db 0
-        dw CPU0Y
-        dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 15,0,8, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
-        db 0
-        dw CPU1X
-        db 0
-        dw CPU1Y
-        dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 12,0,6, 2,0,0, 0, 0,0     ; GREEN: 12/16 - the slowest (a long 3-axle truck), few mistakes
-        db 0
-        dw CPU2X
-        db 0
-        dw CPU2Y
-        dw 0,0
-        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 15,0,12, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
-        db 0
-        dw CPU3X
-        db 0
-        dw CPU3Y
-        dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 16,0,3, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
-cars_init_end:
+        ; (cars_init: the starting records - kept in the buffer's bottom rows, BUFF)
 
 ; ---------------------------------------------------------------------
 ; variables
@@ -2933,7 +2915,7 @@ dt_rowp:  dw 0
 dc_tab:   db 0
 
         include "data.asm"
-        include "waypoints.asm"   ; (fills the gap before sq4's page)
+        include "roadclear2.asm"  ; (fills the gap before sq4's page)
 ; buf_addr: B = buffer row, C = x  ->  HL = address (screen layout at BUF)
 buf_addr:
         call scr_addr
@@ -3033,6 +3015,7 @@ gd_2:
         include "hud.asm"
         include "gen_tiles.asm"
         include "gen_bumps.asm"
+        include "roadclear.asm"
 code_end:
 
 ; ---------------------------------------------------------------------
@@ -3225,11 +3208,57 @@ bufd_src:
         include "thrust.asm"    ; the push for each heading
         include "consts.asm"    ; driving styles, the throttle spread, the cloth's rows
 bufd_end:
+bufe_src:
+        include "rowidx.asm"    ; the map: each tile row's list
+bufe_end:
+bufg_src:
+        include "waypoints.asm" ; the centre line, for the computer cars
+bufg_end:
+buff_src:
+cars_init_src:
+        db 0
+        dw STARTX
+        db 0
+        dw STARTY
+        dw 0,0
+        db STARTA,0,3, PLAYERWP,0,0, 0,0,0, 8,0,0, 0,0,0, 0, 0,0
+        db 0
+        dw CPU0X
+        db 0
+        dw CPU0Y
+        dw 0,0
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 15,0,8, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
+        db 0
+        dw CPU1X
+        db 0
+        dw CPU1Y
+        dw 0,0
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 12,0,6, 2,0,0, 0, 0,0     ; GREEN: 12/16 - the slowest (a long 3-axle truck), few mistakes
+        db 0
+        dw CPU2X
+        db 0
+        dw CPU2Y
+        dw 0,0
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 15,0,12, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
+        db 0
+        dw CPU3X
+        db 0
+        dw CPU3Y
+        dw 0,0
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 16,0,3, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
+cars_init_end_src:
+buff_end:
 init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
+BUFE      equ BUF+0x1460        ; the map's row index
+BUFF      equ BUF+0x1560        ; the cars' starting records
+BUFG      equ BUF+0x1660        ; the waypoints
+wp_tab    equ BUFG + waypoints - bufg_src
+row_index equ BUFE + row_index_src - bufe_src
+cars_init equ BUFF + cars_init_src - buff_src
 thrust_tab equ BUFD + thrust_tab_src - bufd_src
 ai_styles equ BUFD + ai_styles_src - bufd_src
 rev4      equ BUFD + rev4_src - bufd_src
@@ -3279,7 +3308,7 @@ faces     equ BUFA + faces_src - bufa_src
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide
         endif
-        if NCARS*C_SIZE - (cars_init_end - cars_init)
+        if NCARS*C_SIZE - (cars_init_end_src - cars_init_src)
         .error cars_init does not hold NCARS records
         endif
         if code_end > BUF_HI*256
@@ -3288,7 +3317,7 @@ faces     equ BUFA + faces_src - bufa_src
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
-        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161
+        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161 + (bufe_end - bufe_src) / 161 + (buff_end - buff_src) / 161 + (bufg_end - bufg_src) / 161
         .error a block for the buffer's bottom rows is over 160 bytes
         endif
         if init_end > BUFA

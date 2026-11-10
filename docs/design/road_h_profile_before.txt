@@ -1,0 +1,12 @@
+ticks (AI, physics, bumps)       65003 T
+cloth_fill                       35326 T
+copy_to_screen                   35018 T
+draw_tiles                       34837 T
+draw_car                         17890 T
+waiting for the 3rd frame        17624 T
+hud_update                        7216 T
+race_progress                     3593 T
+camera                             354 T
+frames to step                      95 T
+work per picture 199332 T (3 frames = 209,664)
+TV frames per picture over the lap: {2: 8, 3: 184, 4: 27}  lap 13.9 s
