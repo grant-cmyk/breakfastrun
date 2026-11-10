@@ -587,3 +587,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant: the gap time is cramped against the chequered flag; no line needed left of the flag.
   The flag is now 6 x 6 checks only, a pixel in from each side of its cell: 4 px clear of the
   time, 1 px clear of the clock. docs/design/panel_flags_no_pole.png. drive_test RESULT: PASS.
+
+## 2026-11-10 SAST - road option H tried in the engine: too slow
+- Grant: happy with H (road dots 1 in 64). Built as a pass after cloth_fill that thins the dots on
+  road tiles on dark checks, using the surface map widened to the O's (docs/design/road_h_build.png:
+  H3, how it looks on whole tiles). Memory found by moving row_index, cars_init and the waypoints
+  into spare bottom-row strips. Result pixel-exact, but the pass costs ~84k T a picture on the start
+  straight (44 runs): 11.0 pictures/s off the start (was 16.5); lap work 275k T a picture (was 199k;
+  3 frames = 209.7k), pictures mostly 4-5 frames. An optimised pass would still cost ~20k T, more
+  than the ~10k of headroom. Kept on branch trial-road-h, not merged. Main unchanged.
