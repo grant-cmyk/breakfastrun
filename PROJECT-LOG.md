@@ -568,3 +568,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 ## 2026-11-10 SAST - the 6-wheeled truck kept in the pool
 - Grant will redraw GREEN's car; its current design (the long 6-wheeled truck, all three drawn
   headings) saved as TRUCK in tools/pool_art.txt for later. The game is unchanged.
+
+## 2026-11-10 SAST - mock-ups: lighter dots on the road
+- Grant: the dotted / chequered effect less visible in the road area. docs/design/road_dots_options.png:
+  NOW (1 pixel in 4), D road 1 in 8 (staggered), E road 1 in 16, F 1 in 8 everywhere. D and E need
+  the road told apart from the cloth each picture (cost unmeasured); F only changes the cloth's
+  line patterns (expected no extra cost - to confirm when built).
