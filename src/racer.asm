@@ -368,13 +368,9 @@ ph_push_set:
         pop bc
         ld (ix+C_FSH),a
 ph_surf_kept:
-        push bc
-        push de
-        call skid               ; fast: the car slides sideways through turns
-        pop de
-        pop bc
         ld a,(ix+C_FSH)
         ld (fshift),a
+        call skid               ; fast and turning: it slides (DE, BC, fshift)
         ld (ph_px),de           ; the pushes, kept for the second frame
         ld (ph_py),bc
         ; ---- x: speed += push, friction, position += speed; each value is
@@ -476,18 +472,20 @@ ph_yok:
         ret
 
 ; ---------------------------------------------------------------------
-; SKID (IX = car): friction takes 1/8 of the speed each frame, sideways as
-; much as forwards, so a car grips. Going fast (over SKID_V), give back half
-; of what it took sideways: the car keeps sliding the way it was going while
-; it turns, and drifts round the corner (Grant, 10 Nov 2026).
-; Sideways = the speed along n, the unit vector to the car's right:
-;   n = (-hy, hx), where (hx, hy) is the push table's heading (64 = 1).
-;   P = (vx/8)(nx/2) + (vy/8)(ny/2) = 4 x (sideways speed)
-;   speed += (P/32)(n/2) / 64 = sideways/16 along n  (/8 for a computer car,
-;   which moves 2 frames a call)
+; SKID (IX = car; DE, BC = this frame's push): friction takes 1/8 of the speed
+; each frame, sideways as much as forwards, so a car grips. Fast and turning,
+; halve both the friction and the push: the top speed is the same (push /
+; friction), but the sideways speed now dies away half as fast - the car
+; keeps sliding the way it was going and drifts round the corner (Grant,
+; 10 Nov 2026). No multiplying: about 200 T, and only while turning fast.
 ; ---------------------------------------------------------------------
 SKID_V  equ 320                 ; 1.25 px a frame (top speed is 1.75)
 skid:
+        ld a,(ix+C_CTRL)        ; only while turning: that is when it slides
+        and CT_L+CT_R           ; (let go, and the grip comes back)
+        ret z
+        push bc
+        push de
         ld l,(ix+C_VX)          ; speed, roughly: the larger of |vx|, |vy|
         ld h,(ix+C_VX+1)        ; plus half the smaller
         call abs_hl
@@ -508,109 +506,15 @@ sk_1:
         ld de,SKID_V
         or a
         sbc hl,de
-        ret c                   ; slow: it grips
-        ld a,(ix+C_ANG)         ; n / 2 from the heading's push
-        rrca
-        rrca
-        and 15
-        add a,a
-        add a,a
-        ld l,a
-        ld h,0
-        ld de,thrust_tab
-        add hl,de
-        ld a,(hl)               ; hx
-        sra a
-        ld (sk_ny),a            ; ny = hx / 2
-        inc hl
-        inc hl
-        ld a,(hl)               ; hy
-        sra a
-        neg
-        ld (sk_nx),a            ; nx = -hy / 2
-        ld l,(ix+C_VX)
-        ld h,(ix+C_VX+1)
-        call sk_v8
-        ld b,a
-        ld a,(sk_nx)
-        ld c,a
-        call mul8s
-        push hl
-        ld l,(ix+C_VY)
-        ld h,(ix+C_VY+1)
-        call sk_v8
-        ld b,a
-        ld a,(sk_ny)
-        ld c,a
-        call mul8s
         pop de
-        add hl,de               ; HL = P
-        ld b,5                  ; P / 32, kept to -63..63
-sk_2:
-        sra h
-        rr l
-        djnz sk_2
-        call sk_clamp
-        or a
-        ret z                   ; not sliding
-        ld (sk_m),a
-        ld b,a
-        ld a,(sk_nx)
-        ld c,a
-        call mul8s
-        call sk_shift
-        ld e,(ix+C_VX)
-        ld d,(ix+C_VX+1)
-        add hl,de
-        ld (ix+C_VX),l
-        ld (ix+C_VX+1),h
-        ld a,(sk_m)
-        ld b,a
-        ld a,(sk_ny)
-        ld c,a
-        call mul8s
-        call sk_shift
-        ld e,(ix+C_VY)
-        ld d,(ix+C_VY+1)
-        add hl,de
-        ld (ix+C_VY),l
-        ld (ix+C_VY+1),h
-        ret
-sk_shift:                       ; HL / 64 for you, / 32 for a computer car
-        ld a,(ph_steps)
-        ld b,a
-        ld a,7
-        sub b
-        ld b,a
-sk_3:
-        sra h
-        rr l
-        djnz sk_3
-        ret
-sk_v8:                          ; HL = a speed -> A = HL / 8, kept to -63..63
-        sra h
-        rr l
-        sra h
-        rr l
-        sra h
-        rr l
-sk_clamp:                       ; HL -> A, kept to -63..63
-        ld a,h
-        or a
-        jr z,sk_pos
-        inc a
-        jr nz,sk_neg            ; below -256: as low as allowed
-        ld a,l
-        cp 0xC1
-        ret nc                  ; -63..-1
-sk_neg:
-        ld a,0xC1
-        ret
-sk_pos:
-        ld a,l
-        cp 64
-        ret c
-        ld a,63
+        pop bc
+        ret c                   ; slow: it grips
+        sra d                   ; half the push...
+        rr e
+        sra b
+        rr c
+        ld hl,fshift            ; ...and half the friction
+        inc (hl)
         ret
 
 ; heading_push: A = heading 0..63 -> DE = push x, BC = push y (8.8)
@@ -658,14 +562,18 @@ av_pos:
 friction:
         ld d,h
         ld e,l
-        sra d                   ; DE = HL / 4 ...
-        rr e
+        sra d                   ; DE = HL / 4 off the road, / 8 on it,
+        rr e                    ; / 8 or / 16 while sliding
         sra d
         rr e
-        ld a,(fshift)
-        cp 2
-        jr z,fr_div
-        sra d                   ; ... or / 8 on the road
+        ld a,(fshift)           ; (RR sets the flags: compare after each)
+        cp 3
+        jr c,fr_div             ; 2: / 4
+        sra d
+        rr e
+        cp 3
+        jr z,fr_div             ; 3: / 8
+        sra d                   ; 4: / 16
         rr e
 fr_div:
         or a
@@ -1502,6 +1410,8 @@ dt_tile:
         ld a,(hl)               ; tile number
         inc hl
         exx
+        cp TM_FIRST             ; a breakfast thing: drawn with its mask
+        jr nc,dt_mask
         rlca                    ; DE = tiles + number * 8
         rlca
         rlca
@@ -1518,6 +1428,7 @@ dt_tile:
         ld l,a
 dt_call:
         call 0                  ; (patched) tdraw_0 .. tdraw_7
+dt_back:
         exx
         dec b
         jr nz,dt_tile
@@ -1526,6 +1437,40 @@ dt_skip:
         inc hl
         dec b
         jr nz,dt_tile
+        jr dt_row_done
+dt_mask:                        ; IX = its mask, DE = its picture, HL = where
+        ld l,a
+        sub TM_FIRST
+        ld e,a
+        ld d,0
+        ld ix,tmask_idx
+        add ix,de
+        ld a,l
+        ld l,(ix+0)             ; which mask
+        ld h,d
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld de,tmask
+        add hl,de
+        push hl
+        pop ix
+        rlca                    ; DE = tiles + number * 8
+        rlca
+        rlca
+        ld d,a
+        and 0xF8
+        ld e,a
+        ld a,d
+        and 7
+        add a,tiles/256
+        ld d,a
+        ex af,af'
+        ld hl,(tr_base)
+        add a,l
+        ld l,a
+        call tdraw_m
+        jr dt_back
 dt_row_done:
         exx
         ld hl,(tr_base)         ; next tile row: 8 pixel rows = 32 bytes on,
@@ -1541,6 +1486,64 @@ dt_nt:
         ld a,(dt_rows)
         dec a
         jp nz,dt_row
+        ret
+
+; TDRAW_M: one masked tile - a breakfast thing on the tablecloth.
+; IX = its mask, DE = its picture, HL = top-left byte, B = shift page.
+;   buffer = (buffer AND NOT mask) OR picture, both shifted, 8 lines
+; Not unrolled like tdraw_0..7: only a few are ever in view.
+tdraw_m:
+        ld a,8
+tdm_line:
+        ex af,af'
+        ld a,(de)
+        or (ix+0)
+        jr z,tdm_next           ; nothing on this line
+        ld c,(ix+0)             ; left byte: clear under the mask...
+        ld a,(bc)
+        cpl
+        and (hl)
+        ld (hl),a
+        ld a,(de)               ; ...then the picture
+        ld c,a
+        ld a,(bc)
+        or (hl)
+        ld (hl),a
+        inc b                   ; right byte, the same
+        inc l
+        ld c,(ix+0)
+        ld a,(bc)
+        cpl
+        and (hl)
+        ld (hl),a
+        ld a,(de)
+        ld c,a
+        ld a,(bc)
+        or (hl)
+        ld (hl),a
+        dec b
+        dec l
+tdm_next:
+        inc de
+        inc ix
+        inc h                   ; next pixel line; past a character row's
+        ld a,h                  ; 8th, on to the next row (or third)
+        and 7
+        jr nz,tdm_ok
+        ld a,h
+        sub 8
+        ld h,a
+        ld a,l
+        add a,32
+        ld l,a
+        jr nc,tdm_ok
+        ld a,h
+        add a,8
+        ld h,a
+tdm_ok:
+        ex af,af'
+        dec a
+        jr nz,tdm_line
         ret
 
 ; ---------------------------------------------------------------------
@@ -2535,9 +2538,6 @@ pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
 pace_hold: db 0
 ph_steps: db 1
 ai_s:     db 0
-sk_nx:    db 0
-sk_ny:    db 0
-sk_m:     db 0
 ph_cnt:   db 0
 ph_px:    dw 0
 ph_py:    dw 0
@@ -2804,11 +2804,15 @@ im2_on:
 ; loaded here and copied up by start; use the names below, not the _src ones
 high_src:
         include "logo.asm"
+        include "topdata.asm"   ; the breakfast things' masks, the mini-map
 high_end:
 init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
 logo_bits equ TOPMEM + logo_bits_src - high_src
 logo_attr equ TOPMEM + logo_attr_src - high_src
+tmask_idx equ TOPMEM + tmask_idx_src - high_src
+tmask     equ TOPMEM + tmask_src - high_src
+minimap   equ TOPMEM + minimap_src - high_src
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row

@@ -361,3 +361,15 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Laps (90 s watch): 13.6 14.8 15.8 14.5 s (were 14.7 15.5 15.3 17.2). drive_test RESULT: PASS.
 - Memory: TOPMEM 0xFAD0..0xFFF3 (above the generated copier, which ends 0xFAC3) holds read-only data
   loaded in the start-up area and copied up by start; the logo first. HIGH is a pasmo keyword.
+
+## 2026-11-10 06:06 SAST - breakfast things on top of the cloth; frame rate back
+- Grant: the egg etc. on top of the chequered cloth, masked. make_world: mask = 1-px halo + solid
+  inside; a tile carries a mask only where it hides dithered cloth (28 tiles, 10 masks); items placed
+  within 3 tiles of where wanted at the spot needing fewest masked tiles (the 2nd plate fits again).
+  Masked tiles numbered from TM_FIRST, drawn by tdraw_m ((buf AND NOT mask) OR ink, shifted);
+  masks and the mini-map in TOPMEM (src/topdata.asm). Pixel test includes the masks: PASS.
+- Speed: skid now halves push and friction while turning fast (same top speed, sideways speed dies
+  half as fast) - no multiplies; O's on the 8-px tile grid (one tile each: tiles 56k -> 37k); friction
+  bug (RR resets flags after CP) caught by the top-speed test and fixed.
+- Measured, whole lap: work 183.8k T; 160 pictures at 3 frames, 48 at 4. Laps 13.7 14.5 13.7 15.0 s.
+  docs/design/items_on_cloth.png.

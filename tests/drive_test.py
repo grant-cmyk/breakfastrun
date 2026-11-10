@@ -38,13 +38,23 @@ for l in sect('surface_map:', 'waypoints').splitlines():
     if 'defb' in l:
         for b in l.split('defb')[1].split(','):
             surf += [int(c) for c in b.strip().lstrip('%')]
+TM_FIRST = int(re.search(r'TM_FIRST\s+equ\s+(\d+)', src).group(1))
+top = open(os.path.join(ROOT, 'src', 'topdata.asm')).read()
+tsect = lambda a, b: [int(v, 0) for l in top[top.index(a):top.index(b)].splitlines() if 'defb' in l
+                      for v in l.split('defb')[1].split(';')[0].split(',')]
+midx = tsect('tmask_idx_src:', 'tmask_src:')
+mbytes = tsect('tmask_src:', 'minimap_src:')
 world = np.zeros((MAPH * 8, MAPW * 8), dtype=np.uint8)
+wmask = np.zeros((MAPH * 8, MAPW * 8), dtype=bool)    # breakfast things: cover the cloth
 for ty in range(MAPH):
     for tx in range(MAPW):
-        t = tiles[wmap[ty * MAPW + tx]]
+        n = wmap[ty * MAPW + tx]
+        t = tiles[n]
+        m = mbytes[midx[n - TM_FIRST] * 8:midx[n - TM_FIRST] * 8 + 8] if n >= TM_FIRST else [0] * 8
         for j in range(8):
             for i in range(8):
                 world[ty * 8 + j, tx * 8 + i] = (t[j] >> (7 - i)) & 1
+                wmask[ty * 8 + j, tx * 8 + i] = (m[j] >> (7 - i)) & 1
 
 def screen_bits(sp):
     scr = sp.read(0x4000, 6144)
@@ -131,7 +141,7 @@ def window_bad(sp):
     at_copy_done(sp)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
     bits = screen_bits(sp)[32:152, 8:184]            # the window: cells 1-22, rows 4-18
-    want = world[camy:camy + 120, camx:camx + 176] | cloth(camx, camy)
+    want = world[camy:camy + 120, camx:camx + 176] | (cloth(camx, camy) & ~wmask[camy:camy + 120, camx:camx + 176])
     mask = np.ones_like(want, dtype=bool)
     for n in range(N):
         c = car(sp, n)
