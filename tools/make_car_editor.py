@@ -19,7 +19,10 @@ faces = [[r.replace('#', 'X') for r in fns['F'][n]] for n in ['YOU', 'CYAN', 'GR
 bsrc = open(os.path.join(HERE, 'make_big_cars.py')).read()
 bns = {'__file__': os.path.join(HERE, 'make_big_cars.py')}
 exec(bsrc[:bsrc.index("if __name__ == '__main__':")], bns)  # the 20 x 20 big-car drafts (editor order)
-bigart = [bns['BIG'][n] for n in ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE']]
+import re as _re
+_bt = open(os.path.join(HERE, 'big_car_art.txt')).read()
+_bg = {(m.group(1), m.group(2)): m.group(3).split() for m in _re.finditer(r'== (\w+) big heading ([\d.]+) ==\n((?:[Xo.]{20}\n){20})', _bt)}
+bigart = [[_bg[(n, h)] for h in ('0', '22.5', '45')] for n in ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE']]
 docs = os.path.join(HERE, '..', 'docs', 'tools')
 page = open(os.path.join(docs, 'car_editor.template.html')).read().replace('__ART__', json.dumps(art, separators=(',', ':'))).replace('__FACES__', json.dumps(faces, separators=(',', ':'))).replace('__BIG__', json.dumps(bigart, separators=(',', ':')))
 open(os.path.join(docs, 'car_editor.html'), 'w').write(page); print('ok')

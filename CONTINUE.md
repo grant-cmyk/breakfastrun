@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-10 18:06 SAST · machine: Claude cloud container · branch: main · commit: see `git log -1`
+**Stamped:** 2026-11-10 19:30 SAST · machine: Claude cloud container · branch: main · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 120 in an arcade bezel; blue-on-cyan
@@ -13,7 +13,9 @@ SPACE = 1 s of twice the push; canisters A (behind the grid) and B (top area). R
 FLAG! box in the window, everything stops, Q for a new race. Real-ROM tests PASS (drive, NOS).
 Sound: an engine putter from the interrupt (9-49 flips a second by speed) plus the spare-time note
 and the crash; hear it in docs/design/engine_sound.wav (tools/record_sound.py).
-Whole lap: work 212.3k T a picture (3 frames = 209.7k); 170 pictures at 3 TV frames, 49 at 4.
+Big cars (Grant's 20 x 20; 22.5/45 are drafts). Lap record kept across races (hi-score).
+Whole lap: work 221.2k T a picture (3 frames = 209.7k); 114 pictures at 3 TV frames, 88 at 4.
+Open: a speed pass (drive_test fails 13/s off the start: 12.5); Grant to touch up the big cars' 22.5/45.
 
 **Next step:** Grant plays `build/racer.tap` and says what to change next.
 

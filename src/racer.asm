@@ -78,6 +78,11 @@ CT_R    equ 2
 CT_GO   equ 4
 CT_BRK  equ 8
 
+        org 0x5F00              ; the big cars 0-3, below the program (8 KB, loaded
+        include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
+        if $ > 0x7F00
+        .error the big cars run past 0x7F00
+        endif
         org 32768
 
 start:                          ; once, when the program is loaded: the set-up
@@ -1375,9 +1380,11 @@ TB_Y    equ tb+3
 TB_VX   equ tb+5
 TB_VY   equ tb+7
 KICK    equ 0x00C0          ; bounce speed: 0.75 pixels a frame
+TOUCH   equ 15              ; cars touch closer than this in x and y (12 for the 16 x 16
+                            ; cars; 15 for the 20 x 20 ones, Grant 10 Nov 2026)
 bump:
         ld (bump_b),hl
-        inc hl                  ; quick look: are they within 11 pixels in x?
+        inc hl                  ; quick look: are they within TOUCH-1 pixels in x?
         ld a,(ix+C_X)
         sub (hl)
         ld e,a
@@ -1386,13 +1393,13 @@ bump:
         sbc a,(hl)
         ld d,a                  ; DE = ax - bx
         ld a,e
-        add a,11                ; within 11 means 0..22 after adding 11
+        add a,TOUCH-1           ; within TOUCH-1 means 0..2*TOUCH-2 after adding it
         ld e,a
         ld a,d
         adc a,0
         ret nz
         ld a,e
-        cp 23
+        cp 2*TOUCH-1
         ret nc
         inc hl                  ; ... and in y?
         inc hl
@@ -1404,13 +1411,13 @@ bump:
         sbc a,(hl)
         ld d,a
         ld a,e
-        add a,11
+        add a,TOUCH-1
         ld e,a
         ld a,d
         adc a,0
         ret nz
         ld a,e
-        cp 23
+        cp 2*TOUCH-1
         ret nc
         ld hl,(bump_b)          ; touching: copy car b out to work on it
         inc hl
@@ -1424,10 +1431,10 @@ bump:
         sbc hl,de
         ld (bdx),hl
         call abs_hl
-        ld de,12
+        ld de,TOUCH
         or a
         sbc hl,de
-        ret nc                  ; 12 or more apart sideways: not touching
+        ret nc                  ; TOUCH or more apart sideways: not touching
         ld l,(ix+C_Y)           ; dy = a - b
         ld h,(ix+C_Y+1)
         ld de,(TB_Y)
@@ -1435,7 +1442,7 @@ bump:
         sbc hl,de
         ld (bdy),hl
         call abs_hl
-        ld de,12
+        ld de,TOUCH
         or a
         sbc hl,de
         ret nc
@@ -1779,7 +1786,13 @@ tdm_ok:
 
 ; ---------------------------------------------------------------------
 ; DRAW_CAR (IX = car): masked, into the back buffer, if it is in view.
-;   buffer = (buffer AND NOT mask) OR ink, for each of 16 rows
+;   buffer = (buffer AND NOT mask) OR ink, for each row
+; The big cars (Grant, 10 Nov 2026): a 21 x 21 frame - the 20 x 20 car and its
+; 1px halo - at car position - 2, so the car's middle stays at position + 8.
+; Each row is 3 bytes of picture over 4 of buffer. Rows above the buffer or
+; into the driver strip's blocks (buffer row 152 on) are cut off; a car more
+; than 14 px out of the window's left edge is not drawn (its last few columns
+; would fall before the start of the buffer row).
 ; ---------------------------------------------------------------------
 draw_car:
         ld l,(ix+C_X)           ; window x = car x - camx
@@ -1787,53 +1800,55 @@ draw_car:
         ld de,(camx)
         or a
         sbc hl,de
-        ld de,15                ; visible if -15 <= wx <= 191
-        add hl,de
+        ld de,13                ; u = wx + 13: the frame's buffer x - 1
+        add hl,de               ; (frame at wx - 2, buffer x 0 = window x -16)
         ld a,h
         or a
         ret nz
         ld a,l
-        cp 191+15+1
+        cp 190                  ; wx -13..176
         ret nc
-        ld (wxu),a              ; u = wx + 15, 0..206 (never negative)
+        ld (wxu),a
         ld l,(ix+C_Y)
         ld h,(ix+C_Y+1)
         ld de,(camy)
         or a
         sbc hl,de
-        ld de,15                ; visible if -15 <= wy <= WIN_H-1 (it was 127, from
-        add hl,de               ; the 128-line window: a car just below the 120
-        ld a,h                  ; drew into rows 136..158 - and the tables kept in
-        or a                    ; the buffer's bottom rows)
+        ld de,34                ; w = wy + 34 = the frame's buffer row + 20
+        add hl,de               ; (frame at wy - 2, window row 0 = buffer row 16)
+        ld a,h
+        or a
         ret nz
         ld a,l
-        cp WIN_H-1+15+1
+        cp 172                  ; buffer rows -20..151
         ret nc
-        inc a                   ; buffer row = 16 + wy = 1 + (wy + 15)
         ld (dc_row0),a
-        ; picture: car_data + kind*1024 + heading*64
+        ; picture: big_base[kind] + heading * 128
         ld a,(ix+C_ANG)
         rrca
         rrca
         and 15
-        ld l,a
-        ld h,0
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        add hl,hl
+        ld h,a
+        ld l,0
+        srl h
+        rr l
         ld a,(ix+C_KIND)
         add a,a
-        add a,a
-        add a,h
-        ld h,a
-        ld de,car_data
-        add hl,de
-        ex de,hl                ; DE = this car's rows
-        ld a,(ix+C_ANG)         ; skip the empty rows at the top: car_rows
-        rrca                    ; says the first row and how many
+        add a,big_base AND 255
+        ld e,a
+        ld a,0
+        adc a,big_base/256
+        ld d,a
+        ld a,(de)
+        add a,l
+        ld l,a
+        inc de
+        ld a,(de)
+        adc a,h
+        ld d,a
+        ld e,l                  ; DE = this heading's rows
+        ld a,(ix+C_ANG)         ; skip the empty rows: car_rows says the
+        rrca                    ; first row and how many
         rrca
         and 15
         add a,a
@@ -1847,16 +1862,46 @@ draw_car:
         inc hl
         ld a,(hl)
         ld (dc_count),a
-        ld a,(dc_first)
+        ld a,(dc_row0)          ; buffer row of the first row, + 20
+        ld hl,dc_first
+        add a,(hl)
+        sub 20
+        jr nc,dc_top
+        neg                     ; above the buffer: skip that many rows
+        ld b,a
+        add a,(hl)
+        ld (hl),a
+        ld a,(dc_count)
+        sub b
+        ret c
+        ret z
+        ld (dc_count),a
+        xor a
+dc_top:
+        ld (dc_row0),a          ; now the buffer row itself
+        ld b,a
+        ld a,152                ; stop before the driver strip's blocks
+        sub b
+        ret z
+        ret c
+        ld b,a
+        ld a,(dc_count)
+        cp b
+        jr c,dc_cnt
+        ld a,b
+        ld (dc_count),a
+dc_cnt:
+        ld a,(dc_first)         ; DE += first * 6
+        ld l,a
         add a,a
+        add a,l
         add a,a
-        add a,e                 ; DE += first * 4
+        add a,e
         ld e,a
         jr nc,dc_f1
         inc d
 dc_f1:
-        ; shift table t = (-wx) AND 7 = (15 - u) AND 7
-        ; first byte = window column (wx - 1) DIV 8, + 2 = u DIV 8
+        ; shift table t = (15 - u) AND 7; first byte = u DIV 8
         ld a,(wxu)
         ld c,a
         ld a,15
@@ -1868,10 +1913,7 @@ dc_f1:
         ld a,c                  ; C = byte * 8 for buf_addr
         and 0xF8
         ld c,a
-        ld a,(dc_first)         ; buffer row = 1 + (wy + 15) + first
-        ld b,a
         ld a,(dc_row0)
-        add a,b
         ld b,a
         call buf_addr
         ld a,(dc_tab)
@@ -1879,7 +1921,6 @@ dc_f1:
         ld a,(dc_count)
 dc_loop:
         ld (dc_n),a
-        ; left byte of the row: columns k and k+1
         ld a,(de)               ; mask byte
         inc de
         ld c,a
@@ -1904,8 +1945,7 @@ dc_loop:
         ld a,(bc)               ;   ... and column k
         or (hl)
         ld (hl),a
-        inc l
-        ; right byte of the row: columns k+1 and k+2
+        inc l                   ; on to the next byte
         ld a,(de)               ; mask byte
         inc de
         ld c,a
@@ -1930,6 +1970,32 @@ dc_loop:
         ld a,(bc)               ;   ... and column k
         or (hl)
         ld (hl),a
+        inc l                   ; on to the next byte
+        ld a,(de)               ; mask byte
+        inc de
+        ld c,a
+        ld a,(bc)               ;   cut the hole: column k ...
+        cpl
+        and (hl)
+        ld (hl),a
+        inc b
+        inc l
+        ld a,(bc)               ;   ... and column k+1
+        cpl
+        and (hl)
+        ld (hl),a
+        ld a,(de)               ; ink byte
+        inc de
+        ld c,a
+        ld a,(bc)               ;   ink: column k+1 ...
+        or (hl)
+        ld (hl),a
+        dec b
+        dec l
+        ld a,(bc)               ;   ... and column k
+        or (hl)
+        ld (hl),a
+        dec l                   ; back to the row's first byte
         dec l
         inc h                   ; next pixel row down (screen layout)
         ld a,h
@@ -1947,6 +2013,8 @@ dc_same:
         dec a
         jp nz,dc_loop
         ret
+big_base:                       ; each car's 16 big headings
+        dw bigcars_lo, bigcars_lo+2048, bigcars_lo+4096, bigcars_lo+6144, bigcar_4
 
 ; ---------------------------------------------------------------------
 ; COPY_TO_SCREEN: the window part of the buffer -> the screen, with the
@@ -2499,6 +2567,14 @@ lap_timed:
         pop hl
         ret nc
         ld (best_lap),hl
+        ld de,(rec_lap)         ; and the lap record, kept from race to race?
+        push hl
+        or a
+        sbc hl,de
+        pop hl
+        jr nc,lt_rec
+        ld (rec_lap),hl
+lt_rec:
         ld a,(ix+C_KIND)
         ld (best_car),a
         ld a,(ix+C_LAPS)
@@ -2900,6 +2976,8 @@ ph_cnt:   db 0
 ph_px:    dw 0
 ph_py:    dw 0
 ; ---- reset to zero at the start of every race ----
+rec_lap:     dw 0xFFFF          ; the lap record: the best lap of any race since
+                                ; loading (not cleared by a new race; 0xFFFF none)
 race_vars:
 race_on:     db 0
 race_over:   db 0

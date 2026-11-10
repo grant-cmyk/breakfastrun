@@ -24,11 +24,16 @@ A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 ; HUD_INIT: the whole surround, once at the start of a race
 ; ---------------------------------------------------------------------
 hud_init:                       ; a new race: what changes (the rest: screen_once)
-        ld b,TOWER_Y+2*NCARS    ; the best lap under the order: none yet
-        ld c,25
+        ld b,TOWER_Y+2*NCARS    ; the lap record under the order: cleared,
+        ld c,25                 ; then shown if there is one from an earlier race
         ld d,1
-        ld e,4
+        ld e,7
         call clear_cells
+        ld hl,(rec_lap)
+        inc hl
+        ld a,h
+        or l
+        call nz,best_panel
         call strip_reset        ; the driver strip: inventory, the radio
         call map_init
         ld b,0                  ; the tower in grid order, all at once
@@ -410,16 +415,16 @@ gu_1:
         jr nc,gu_1
         add a,NCARS
         jp gap_draw             ; (it sits in racer.asm, in the gap before sq4's page)
-best_panel:                     ; under the racers: a clock and the best lap
-        ld b,TOWER_Y+2*NCARS
-        ld c,25
-        ld de,CLOCK8
-        call tr_glyph
-        ld hl,(best_lap)
+best_panel:                     ; under the racers: a clock and the lap RECORD - the
+        ld b,TOWER_Y+2*NCARS    ; best lap of any race since the game was loaded (a
+        ld c,27                 ; hi-score, Grant 10 Nov 2026), centred under the
+        ld de,CLOCK8            ; order (the clock in column 27, the time 2 px into
+        call tr_glyph           ; 28: x 216-238 against the panel's 200-255)
+        ld hl,(rec_lap)
         call time_fmt
         ld hl,time_txt+2
         ld b,(TOWER_Y+2*NCARS)*8+1
-        ld c,26
+        ld c,28
         ld a,2                  ; 2 px clear of the clock (Grant: it read "d2.8")
         jr st_text_x
 ; ST_TEXT: HL = text (digits, '.', ' '), B = top pixel row, C = byte column:
@@ -756,12 +761,15 @@ trp_2:
         ld c,25
         ld de,PNUM
         call tr_glyph16
-        ld a,(tr_car)           ; the car's own picture, facing right:
-        add a,a                 ; car_data + car * 1024 + heading 4 * 64
-        add a,a
+        ld a,(tr_car)           ; the car's own picture, facing right, at
+        rrca                    ; 16 x 16: tower_cars + car * 64
+        rrca
+        ld l,a
+        and 0x3F
         ld h,a
-        ld l,0
-        ld de,car_data+4*64
+        xor l
+        ld l,a
+        ld de,tower_cars
         add hl,de
         ex de,hl
         ld a,(tr_row)

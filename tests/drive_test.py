@@ -146,8 +146,8 @@ def window_bad(sp):
     for n in range(N):
         c = car(sp, n)
         cx, cy = c['x'] - camx, c['y'] - camy
-        m = 1                                   # the car's 1px halo
-        mask[max(cy - m, 0):max(cy + 16 + m, 0), max(cx - m, 0):max(cx + 16 + m, 0)] = False
+        # the big car's 21 x 21 frame (the car and its 1px halo) at position - 2
+        mask[max(cy - 2, 0):max(cy + 19, 0), max(cx - 2, 0):max(cx + 19, 0)] = False
     bad = int(((bits != want) & mask).sum())
     if bad:                                 # save what differs, to look at
         im = np.stack([want * 255, bits * 255, ((bits != want) & mask) * 255], axis=-1).astype(np.uint8)
@@ -239,8 +239,11 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)
     bl = sp.read16(SYM['best_lap'])
     print('best lap', bl, 'frames')
-    check(bl < 0xFFFF and sb[(TOWER_Y + 10) * 8:(TOWER_Y + 10) * 8 + 8, 208:224].any(),
-          'the best lap is set, and shown under the race order beside its clock')
+    band = sb[(TOWER_Y + 10) * 8:(TOWER_Y + 10) * 8 + 8, 200:256]
+    xs = np.nonzero(band.any(axis=0))[0] + 200
+    print('lap record panel ink x', xs.min() if len(xs) else None, xs.max() if len(xs) else None)
+    check(bl < 0xFFFF and sp.read16(SYM['rec_lap']) == bl and len(xs) and abs((xs.min() + xs.max()) / 2 - 227.5) <= 1.5,
+          'the best lap is the lap record, shown with its clock, centred under the race order (x %s-%s)' % (xs.min() if len(xs) else '-', xs.max() if len(xs) else '-'))
     check(sp.read8(SYM['bufc'] + 130) == 0 and not sb[160:192, 88:160].any() and attr(21, 12) == 0x30,
           'the crew chief quiet: no speech bubble')
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
@@ -310,6 +313,10 @@ with Racer(headless=True) as sp:
     p5 = car(sp, 0)
     check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0 and screen_text(sp, 1, 12, 9) == 'GET READY'
           and (p5['x'], p5['y']) == (car(sp, 0)['x'], car(sp, 0)['y']), 'Q after the finish starts a new race on the grid')
+    sb = screen_bits(sp)
+    check(sp.read16(SYM['rec_lap']) == bl and sp.read16(SYM['best_lap']) == 0xFFFF
+          and sb[(TOWER_Y + 10) * 8:(TOWER_Y + 10) * 8 + 8, 216:240].any(),
+          'the lap record stays for the new race (a hi-score), shown from the start; the race best starts again')
     hold(sp, ['Q'], 0.2)
 
     # ---- the picture: pixel check with cars masked out, after a stop ----

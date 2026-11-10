@@ -801,3 +801,28 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   double-click is one undo step). Fixed: [hidden] did not hide buttons (the CREW/NOS pickers showed
   in car mode). Tested in Chromium: every mode, both buttons, double-click, undo, copy/load.
   Published as version 19 of https://claude.ai/artifact/2EqdSKs3fDfUqERTX9pTzL.
+
+## 2026-11-10 SAST - Grant's 20 x 20 cars in the game; the lap record (hi-score)
+- Grant: "use my 20x20 cars" (his heading-0 drawings from the editor; a second paste redrew CYAN).
+  tools/big_car_art.txt holds them; Jane's axle row came 22 characters wide in the first paste and
+  was read as cols 2-16 (his second paste agrees). 22.5 and 45: Claude's drafts from his heading 0
+  (tools/turn_car.py, now any grid size) - for him to touch up in the editor; the carved numbers
+  turn with the car.
+- Memory: the big cars are 21 x 21 frames (car + halo), 21 rows x 3 (mask, ink) bytes, 128 a
+  heading, 2 KB a car, 10 KB in all. Cars 0-3 (8 KB) sit BELOW the program at 0x5F00-0x7EFF, in the
+  same tape block (pasmo's loader now CLEARs 24319); car 4 is in data.asm with the race order's
+  16 x 16 pictures (tower_cars, 320 bytes). The old 5 KB of car pictures are gone: ~2.5 KB freed in
+  the main area (code_end 0xB606). The tape is 26 KB, about 2 min 45 s to load.
+- draw_car: frame at position - 2 (the car's middle stays at position + 8); 3 bytes over 4 a row;
+  rows above the buffer or into the strip blocks (row 152+) cut off; a car over 14 px out at the left
+  is not drawn. Cars touch at 15 px (TOUCH, was 12). The O's still bounce at 8 px from the middle.
+- Cost, measured: draw_car 31.4k T a picture (was ~17k); lap work 221.2k (was 212.3k; 3 frames =
+  209.7k); frames {2:24, 3:114, 4:88, 5:1}. drive_test: 1 FAIL - 12.5 pictures a second off the start
+  with all five cars bunched (the test asks 13): the cost Grant accepted; a speed pass is next
+  (physics/ticks 73k is the biggest). nos_test PASS. Window pixel check: PASS (car frames excluded).
+- Editor: Big cars mode has headings 0 / 22.5 / 45 and all 16 as the game makes them (version 20).
+- Grant: the best-lap clock centred, and kept as a hi-score - "best time for any race". rec_lap (outside
+  race_vars, 0xFFFF none) takes any lap that beats it, never cleared by a new race; the panel shows
+  it from a race's start, centred (clock col 27, time 2 px into col 28: ink x 216-238, the panel
+  200-255). The race order's clock icon still marks this race's fastest car. Kept until the Spectrum
+  is reset (not saved to tape). Tests added for both.
