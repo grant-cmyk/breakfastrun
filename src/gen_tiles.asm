@@ -1147,12 +1147,3 @@ td7_6:
         dec l
 td7_7:
         ret
-tdraw_table:
-        dw tdraw_0
-        dw tdraw_1
-        dw tdraw_2
-        dw tdraw_3
-        dw tdraw_4
-        dw tdraw_5
-        dw tdraw_6
-        dw tdraw_7

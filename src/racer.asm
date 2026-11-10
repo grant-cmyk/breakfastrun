@@ -25,6 +25,9 @@ BUF_HI  equ 0xC0        ; (so the next pixel row down is INC H, and a row
                         ; copies to the screen as one block). Window pixel
                         ; (0,0) is buffer row 16, byte 2; the rows and bytes
                         ; around it are margins for cars half out of view.
+BUFC    equ BUF+0x1260  ; race-order variables, in the buffer's unused bottom rows
+        ; (defined up here: code before hud.asm uses equs built on it, and pasmo
+        ; would give that code a stale first-pass value)
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
 NCARS   equ 5           ; you + 4 computer cars
@@ -137,6 +140,7 @@ st_so:
         djnz st_so
         ld hl,0xFFFF
         ld (best_lap),hl
+        call gaps_reset
         call hud_init
         ld hl,cars_init         ; copy the starting records into place
         ld de,cars
@@ -1006,6 +1010,7 @@ nw_k:
 ; lap_and_inc: the car has reached its waypoint - count a lap if it is the
 ; first one after the start line, then aim at the next
 lap_and_inc:
+        call cp_hook            ; a checkpoint?  the gap to the leader
         ld a,(ix+C_WP)
         cp WS
         jr nz,wp_inc
@@ -2236,14 +2241,10 @@ CF_LOAD macro mainp, altp       ; the alternate set first, then the main
         ld bc,(mainp+6)
         ret
         endm
-cf_loaders:                     ; by (dither phase * 8 + check row) * 2
-        dw cf_l00,cf_l01,0,0,0,0,0,0,cf_l10,cf_l11
 cf_l00: CF_LOAD cloth_pat+0,  cloth_pat+16   ; main: phase 0, check row 0
 cf_l01: CF_LOAD cloth_pat+8,  cloth_pat+24   ; main: phase 0, check row 1
 cf_l10: CF_LOAD cloth_pat+16, cloth_pat+0    ; main: phase 1, check row 0
 cf_l11: CF_LOAD cloth_pat+24, cloth_pat+8    ; main: phase 1, check row 1
-cf_slots:
-        dw cf_s0,cf_s1,cf_s2,cf_s3,cf_s4,cf_s5,cf_s6,cf_s7
 CF_ROW macro                    ; bytes 23..0 of a line: 3 x 8, as 4 pairs each
         rept 3
         push bc
@@ -2921,13 +2922,18 @@ you_time:    dw 0               ; your race time, kept on the clock
 tr_key:      db 0
 pdist:       defs NCARS         ; each car's distance to its next waypoint / 2
 rp_di:       db 0
-q_free:      db 0               ; Q has been let go since this race was set up
+q_free:      db 0
+tr_force:    db 0               ; gap_draw: draw even if it looks unchanged
+gd_place:    db 0
+gd_y:        db 0               ; Q has been let go since this race was set up
 race_vars_end:
 last_shown: db 0
 tr_base:  dw 0
 dt_rowp:  dw 0
 dc_tab:   db 0
 
+        include "data.asm"
+        include "waypoints.asm"   ; (fills the gap before sq4's page)
 ; buf_addr: B = buffer row, C = x  ->  HL = address (screen layout at BUF)
 buf_addr:
         call scr_addr
@@ -2962,8 +2968,66 @@ scr_addr:
         ld l,a
         ret
 
-        include "data.asm"
-        include "waypoints.asm"   ; (fills the gap before sq4's page)
+        ; (buf_addr and scr_addr sit here too, in the gap before sq4's page)
+
+gap_draw:                       ; A = place: draw its car's gap, note it
+        ld (gd_place),a
+        ld e,a
+        ld d,0
+        ld hl,order
+        add hl,de
+        ld a,(hl)               ; its car
+        add a,a
+        ld e,a
+        ld hl,GAPS
+        add hl,de
+        ld c,(hl)
+        inc hl
+        ld b,(hl)               ; BC = the gap
+        ld a,(gd_place)
+        add a,a
+        ld e,a
+        ld hl,SHGAP
+        add hl,de
+        ld a,(tr_force)         ; (tower_row: always draw)
+        or a
+        jr nz,gd_1
+        ld a,(hl)
+        cp c
+        jr nz,gd_1
+        inc hl
+        ld a,(hl)
+        cp b
+        ret z                   ; as shown already
+        dec hl
+gd_1:
+        xor a
+        ld (tr_force),a
+        ld (hl),c
+        inc hl
+        ld (hl),b
+        ld a,(gd_place)         ; pixel row: the place's band + 5
+        add a,a
+        add a,TOWER_Y
+        add a,a
+        add a,a
+        add a,a
+        add a,5
+        ld (gd_y),a
+        ld a,b
+        or c
+        ld hl,txt_none          ; the leader (or no gap yet): nothing
+        jr z,gd_2
+        ld h,b
+        ld l,c
+        call time_fmt           ; "  1.2" -> " 1.2" at time_txt+2
+        ld hl,time_txt+2
+gd_2:
+        ld a,(gd_y)
+        ld b,a
+        ld c,28
+        jp st_text
+        ; (gap_draw, from hud.asm, also fills the gap)
         include "sq4.asm"
         include "world.asm"
         include "hud.asm"
@@ -3146,6 +3210,8 @@ im2_on:
 high_src:
         include "topdata.asm"   ; the breakfast things' masks, the O map, the mini-map
         include "hudtext.asm"   ; the HUD's fixed text
+        include "carrows.asm"   ; each heading's rows in use
+        include "tdtab.asm"     ; the tile routine for each camy AND 7
 high_end:
 ; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn
 ; or shown: cars reach row 151 at most), copied there by start too
@@ -3163,7 +3229,6 @@ init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
-BUFC      equ BUF+0x1260        ; variables (nothing to copy): race-order gaps
 BUFD      equ BUF+0x1360        ; constant tables
 thrust_tab equ BUFD + thrust_tab_src - bufd_src
 ai_styles equ BUFD + ai_styles_src - bufd_src
@@ -3188,6 +3253,17 @@ txt_nobest equ TOPMEM + txt_nobest_src - high_src
 txt_lapword equ TOPMEM + txt_lapword_src - high_src
 car_names equ TOPMEM + car_names_src - high_src
 txt_again equ TOPMEM + txt_again_src - high_src
+txt_none  equ TOPMEM + txt_none_src - high_src
+sfont     equ TOPMEM + sfont_src - high_src
+flag_top  equ TOPMEM + flag_top_src - high_src
+clock_top equ TOPMEM + clock_top_src - high_src
+CLOCK8    equ clock_top+4       ; the clock in one cell (8 rows straight)
+grid_order equ TOPMEM + grid_order_src - high_src
+car_colours equ TOPMEM + car_colours_src - high_src
+cf_loaders equ TOPMEM + cf_loaders_src - high_src
+cf_slots  equ TOPMEM + cf_slots_src - high_src
+car_rows  equ TOPMEM + car_rows_src - high_src
+tdraw_table equ TOPMEM + tdraw_table_src - high_src
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
 minimap   equ TOPMEM + minimap_src - high_src

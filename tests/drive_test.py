@@ -237,21 +237,15 @@ with Racer(headless=True) as sp:
     check(best.startswith('BEST 1') and best[10:15].strip() in ('CYAN', 'GREEN', 'PINK', 'WHITE') and best[16:19] == 'LAP',
           'the best lap shows its time, the car that set it and the lap')
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
-    # the four computer cars are in by now: each has a flag beside its face (column 31), and the face
-    # itself is untouched (columns 29-30 match the face data)
-    faces = [int(v, 2) for l in open(os.path.join(ROOT, 'src', 'faces.asm')) if 'defb' in l for v in l.split('defb')[1].replace('%', '').split(',')]
+    # the four computer cars are in by now: the race order shows no faces while racing - a mini
+    # chequered flag in column 30 for each car that is in, and the gaps to the leader in a small font
     def cellrows(row, col):
         return [sp.read8(0x4000 | ((row & 0x18) << 8) | ((row & 7) << 5) | col | (k << 8)) for k in range(8)]
-    ok_flags = ok_faces = True
-    for i in range(4):
-        r = 5 + 2 * i
-        flag = cellrows(r, 31) + cellrows(r + 1, 31)
-        ok_flags &= flag == [0, 0, 0, 0x33, 0x33, 0x0C, 0x0C, 0x33, 0x33, 0x20, 0x20, 0x20, 0x20, 0, 0, 0]
-        cn = sp.read8(SYM['order'] + i)
-        want = faces[cn * 32:cn * 32 + 32]
-        got = [b for k in range(2) for pair in zip(cellrows(r + k, 29), cellrows(r + k, 30)) for b in pair]
-        ok_faces &= got == want
-    check(ok_flags and ok_faces, 'finished cars: a chequered flag beside the face, and the face intact')
+    flagwant = [0, 0, 0, 0, 0xB3, 0xB3, 0x8C, 0x8C, 0xB3, 0xB3, 0x80, 0x80, 0, 0, 0, 0]
+    ok_flags = all(cellrows(5 + 2 * i, 30) + cellrows(6 + 2 * i, 30) == flagwant for i in range(4))
+    gap_ink = [sum(bin(b).count('1') for c in (28, 29) for b in cellrows(5 + 2 * i, c) + cellrows(6 + 2 * i, c)) for i in range(5)]
+    check(ok_flags, 'finished cars: a mini chequered flag beside the car')
+    check(gap_ink[0] == 0 and all(g > 0 for g in gap_ink[1:4]), 'the race order shows gaps to the leader (ink per place %s: none for the leader)' % gap_ink)
     check(g(sp, 'race_time') > 50 * 85, 'the race clock is running (%.1f s)' % (g(sp, 'race_time') / 50))
     check(min(o / samples for o in onroad) > 0.8, 'computer cars stay mostly on the road')
     check(mistakes >= 6, 'computer cars make mistakes (%d in 90 s)' % mistakes)

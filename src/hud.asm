@@ -361,6 +361,251 @@ msg_finished:                   ; FINISHED nTH, which stays
         ret
 
 ; ---------------------------------------------------------------------
+; THE GAPS TO THE LEADER (Grant, 10 Nov 2026). Every 4th waypoint of the first
+; 32 is a checkpoint: 8 a lap. The first car to reach a checkpoint on a lap
+; notes the time; each car after it gets its gap from that. Shown in the race
+; order in a small font; the faces are only for the grid.
+; Kept in the buffer's bottom rows (BUFC): nothing in low memory.
+; ---------------------------------------------------------------------
+CP_G    equ BUFC                ; each checkpoint: lap * 8 + n last noted
+CP_T    equ BUFC+8              ; and when (2 bytes each)
+GAPS    equ BUFC+24             ; each car's gap, frames (2 bytes each)
+SHGAP   equ BUFC+34             ; each place's gap as shown (2 bytes each)
+ST_ACC  equ BUFC+44             ; small text: the row being built (2)
+ST_X    equ BUFC+46             ;   where the next character goes
+ST_T    equ BUFC+47             ;   the text (2)
+ST_COL  equ BUFC+49             ;   its byte column
+gaps_reset:                     ; a new race: nothing noted, nothing shown
+        ld hl,CP_G
+        ld b,8
+grs_1:
+        ld (hl),0xF0            ; (older than any lap * 8 + n)
+        inc hl
+        djnz grs_1
+        ld hl,GAPS
+        ld b,20
+grs_2:
+        ld (hl),0
+        inc hl
+        djnz grs_2
+        ret
+cp_hook:                        ; IX = a car reaching its waypoint
+        ld a,(race_on)
+        or a
+        ret z
+        ld a,(ix+C_WP)
+        ld c,a
+        and 3
+        ret nz
+        ld a,c
+        cp 32
+        ret nc
+        push bc
+        push de
+        push hl
+        rrca
+        rrca
+        and 7
+        ld c,a                  ; C = checkpoint 0..7
+        ld a,(ix+C_LAPS)
+        add a,a
+        add a,a
+        add a,a
+        add a,c
+        ld b,a                  ; B = lap * 8 + checkpoint
+        ld e,c
+        ld d,0
+        ld hl,CP_G
+        add hl,de
+        sub (hl)
+        jr z,cph_gap            ; someone was here first, this lap
+        jp m,cph_done           ; an older lap than noted: a lapped car
+        ld (hl),b               ; the first here: note the time
+        ld hl,CP_T
+        add hl,de
+        add hl,de
+        ld de,(race_time)
+        ld (hl),e
+        inc hl
+        ld (hl),d
+        ld de,0
+        jr cph_store
+cph_gap:
+        ld hl,CP_T
+        add hl,de
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ld hl,(race_time)
+        or a
+        sbc hl,de
+        ex de,hl
+cph_store:
+        ld a,(ix+C_KIND)
+        add a,a
+        ld l,a
+        ld h,0
+        ld bc,GAPS
+        add hl,bc
+        ld (hl),e
+        inc hl
+        ld (hl),d
+cph_done:
+        pop hl
+        pop de
+        pop bc
+        ret
+hu_go:                          ; GO: the race order redraws without the faces
+        ld hl,shown_order
+        ld b,NCARS
+hg_1:
+        ld (hl),0xFF
+        inc hl
+        djnz hg_1
+        jp msg_go
+gap_update:                     ; one place a time: its gap, if it changed
+        ld a,(race_on)
+        or a
+        ret z
+        ld a,(renders)          ; place = (renders / 4) MOD 5
+        rrca
+        rrca
+        and 63
+gu_1:
+        sub NCARS
+        jr nc,gu_1
+        add a,NCARS
+        jp gap_draw             ; (it sits in racer.asm, in the gap before sq4's page)
+best_panel:                     ; under the racers: a clock and the best lap
+        ld b,TOWER_Y+2*NCARS
+        ld c,25
+        ld de,CLOCK8
+        call tr_glyph
+        ld hl,(best_lap)
+        call time_fmt
+        ld hl,time_txt+2
+        ld b,(TOWER_Y+2*NCARS)*8+1
+        ld c,26
+; ST_TEXT: HL = text (digits, '.', ' '), B = top pixel row, C = byte column:
+; the text in the small font (3 x 5, 4 px a digit), 5 rows x 2 bytes, written
+; over what was there - so more numbers fit (Grant, 10 Nov 2026)
+st_text:
+        ld (ST_T),hl
+        ld a,c
+        ld (ST_COL),a
+        ld c,0                  ; C = the font row, 0..4
+st_r:
+        push bc
+        ld hl,0
+        ld (ST_ACC),hl
+        xor a
+        ld (ST_X),a
+        ld hl,(ST_T)
+st_ch:
+        ld a,(hl)
+        or a
+        jr z,st_put
+        inc hl
+        push hl
+        ld e,4                  ; a digit: 3 px and a gap
+        cp '.'
+        jr z,st_dot
+        cp '0'
+        jr c,st_sp              ; a space (anything else): blank
+        sub '0'
+        ld l,a                  ; its row: sfont + digit * 5 + row
+        add a,a
+        add a,a
+        add a,l
+        add a,c
+        ld l,a
+        ld h,0
+        push de
+        ld de,sfont
+        add hl,de
+        pop de
+        ld a,(hl)
+        jr st_place
+st_dot:
+        ld e,2                  ; a point: 1 px and a gap, on the bottom row
+        ld a,c
+        cp 4
+        ld a,0x80
+        jr z,st_place
+st_sp:
+        xor a
+st_place:                       ; row |= glyph bits >> x (16 bits), through the
+        push de                 ; shift tables (page TAB_HI+2s: b >> (8-s), and
+        ld e,a                  ; the next page b << s)
+        ld d,0
+        ld a,(ST_X)
+        sub 8
+        jr nc,st_low            ; x 8..15: the right byte only
+        add a,8
+        jr z,st_x0              ; x 0: as it is
+        neg
+        add a,8                 ; s = 8 - x
+        add a,a
+        add a,TAB_HI
+        ld h,a
+        ld l,e
+        ld d,(hl)               ; left: g >> x
+        inc h
+        ld e,(hl)               ; right: g << (8 - x)
+        jr st_p2
+st_x0:
+        ld d,e
+        ld e,0
+        jr st_p2
+st_low:
+        jr z,st_p2              ; x 8: the right byte is g
+        neg
+        add a,8
+        add a,a
+        add a,TAB_HI
+        ld h,a
+        ld l,e
+        ld e,(hl)               ; right: g >> (x - 8)
+st_p2:
+        ld hl,(ST_ACC)
+        ld a,h
+        or d
+        ld h,a
+        ld a,l
+        or e
+        ld l,a
+        ld (ST_ACC),hl
+        pop de
+        ld a,(ST_X)
+        add a,e
+        ld (ST_X),a
+        pop hl
+        jr st_ch
+st_put:
+        pop bc
+        push bc
+        ld a,b
+        add a,c
+        ld b,a
+        ld a,(ST_COL)
+        add a,a
+        add a,a
+        add a,a
+        ld c,a
+        call scr_addr
+        ld de,(ST_ACC)
+        ld (hl),d
+        inc l
+        ld (hl),e
+        pop bc
+        inc c
+        ld a,c
+        cp 5
+        jp nz,st_r
+        ret
+
+; ---------------------------------------------------------------------
 ; HUD_UPDATE: once per picture, after race_progress
 ; ---------------------------------------------------------------------
 hud_update:
@@ -370,7 +615,7 @@ hud_update:
         jr z,hu_msg
         ld (hl),a
         or a
-        call nz,msg_go
+        jp nz,hu_go             ; (GO's picture does nothing else: a busy one)
 hu_msg:
         ld a,(msg_timer)        ; a message whose time is up goes
         or a
@@ -422,6 +667,7 @@ hu_best:
         jr z,hu_order
         ld (hl),a
         call print_best
+        call best_panel
 hu_order:
         ld a,(renders)          ; spread the HUD out: the order on one
         and 3                   ; picture in four, the map on another, the
@@ -517,7 +763,7 @@ tu_same:
         ld a,b
         cp NCARS
         jr nz,tu_place
-        ret
+        jp gap_update           ; nothing moved: bring one place's gap up to date
 
 cell_addr:                      ; cell row B, column C -> HL = its top pixel row
         ld a,b
@@ -533,8 +779,8 @@ cell_addr:                      ; cell row B, column C -> HL = its top pixel row
         ld l,a
         ret
 
-fin_key:                        ; A = car -> A = car, + 8 if it is in
-        push hl
+fin_key:                        ; A = car -> A = car, + 8 if it is in,
+        push hl                 ; + 16 if it has the best lap
         ld e,a
         ld d,0
         ld hl,fin_at
@@ -542,9 +788,23 @@ fin_key:                        ; A = car -> A = car, + 8 if it is in
         ld a,(hl)
         or a
         ld a,e
+        jr z,fk_1
+        or 8
+fk_1:
+        ld hl,(best_lap)        ; (0xFFFF: no best lap yet)
+        inc hl
+        ld d,a
+        ld a,h
+        or l
+        ld a,d
         pop hl
         ret z
-        or 8
+        ld d,a
+        ld a,(best_car)
+        cp e
+        ld a,d
+        ret nz
+        or 16
         ret
 
 tower_row:                      ; place B (0..4), A = car (+ 8: finished)
@@ -602,6 +862,9 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ld b,a
         ld c,26
         call tr_pic
+        ld a,(race_on)          ; racing: the gap to the leader, not the face
+        or a
+        jp nz,tr_race
         ld a,(tr_car)           ; the driver's face, beside the car:
         add a,a                 ; faces + car * 32
         add a,a
@@ -619,21 +882,34 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ld a,(tr_row)
         inc a
         ld b,a
-        call tr_face
-        ld a,(tr_key)           ; finished: a chequered flag beside the car
+        jp tr_face
+tr_race:                        ; the gap (columns 28-29), a flag if it is in (30),
+        ld a,1                  ; a clock if it has the best lap (31)
+        ld (tr_force),a
+        ld a,(tr_row)
+        sub TOWER_Y
+        srl a
+        call gap_draw           ; A = place
+        ld a,(tr_key)
         bit 3,a
-        ret z
-        ld a,(tr_row)
-        ld b,a
-        ld c,31
+        jr z,trr_1
+        ld c,30
         ld de,flag_top
-        call tr_glyph
-        ld a,(tr_row)
-        inc a
-        ld b,a
+        call tr_glyph16
+trr_1:
+        ld a,(tr_key)
+        bit 4,a
+        ret z
         ld c,31
-        ld de,flag_bot
-        jr tr_glyph             ; (not falling through: tr_face is in between)
+        ld de,clock_top
+tr_glyph16:                     ; 16 rows at DE into cells tr_row and below, column C
+        ld a,(tr_row)
+        ld b,a
+        push bc
+        call tr_glyph
+        pop bc
+        inc b
+        jr tr_glyph
 tr_face:                        ; 8 rows x 2 bytes at DE into cells B, 29-30
         ld c,29                 ; (column 28 left clear: a gap after the car)
         call cell_addr
@@ -660,15 +936,6 @@ tg_row:
         inc h
         djnz tg_row
         ret
-flag_top:                       ; the chequered flag, small: a 6 x 6 square of
-        db 0,0,0                ; 2 x 2 checks on a pole, 2 px clear of the
-        db %00110011,%00110011  ; face, centred on the place's 2 cell rows
-        db %00001100,%00001100
-        db %00110011
-flag_bot:
-        db %00110011
-        db %00100000,%00100000,%00100000,%00100000
-        db 0,0,0
 tr_pic:                         ; 8 rows of the picture (ink only) into cell B, C
         call cell_addr
         ld b,8
@@ -744,7 +1011,7 @@ mi_b:
         ld c,25
         ld d,6
         ld e,7
-        ld a,0x78               ; black on bright white
+        ld a,0x30               ; black on yellow, like the background (Grant: no white box)
         call set_attrs
         ld hl,shown_dot         ; no dots drawn yet
         ld b,2*NCARS
@@ -1085,8 +1352,6 @@ show_best:
         ld c,1
         jp print_at
 
-grid_order:   db 0, 1, 4, 3, 2  ; the starting grid: YOU, CYAN, WHITE, PINK, GREEN
-car_colours:  db A_MSG, 0x68, 0x60, 0x58, 0x78  ; you red; cyan, green, magenta, white
 ; (the HUD's fixed text is in hudtext.asm, kept at the top of memory)
 txt_digit:    db "0",0
 time_txt:     db "0:00.0",0

@@ -1371,23 +1371,3 @@ car_data:
         defb %00111111,%00001101,%11111110,%11111000
         defb %00011111,%00001110,%11111100,%11100000
         defb %00011111,%00000110,%11110000,%00000000
-
-; the rows of each heading that are not empty: first row, how many
-; (over every car, as hand-drawn cars can differ in shape)
-car_rows:
-        defb 0,16   ; heading 0
-        defb 0,16   ; heading 1
-        defb 0,16   ; heading 2
-        defb 0,16   ; heading 3
-        defb 1,14   ; heading 4
-        defb 0,16   ; heading 5
-        defb 0,16   ; heading 6
-        defb 0,16   ; heading 7
-        defb 0,16   ; heading 8
-        defb 0,16   ; heading 9
-        defb 0,16   ; heading 10
-        defb 0,16   ; heading 11
-        defb 1,14   ; heading 12
-        defb 0,16   ; heading 13
-        defb 0,16   ; heading 14
-        defb 0,16   ; heading 15
