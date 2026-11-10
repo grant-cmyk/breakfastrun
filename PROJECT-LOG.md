@@ -763,3 +763,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   start-up area (~190 bytes). Options put to Grant: taller as asked (remove something to make room
   and run at 4 frames more often until the speed work lands), or taller and one column narrower
   (168 x 128: the same memory and speed as now).
+
+## 2026-11-10 SAST - mock-up: numbers on the cars
+- Grant: bigger cars, just enough for their number. Bigger does not fit (24 x 24 = 2.25x the
+  memory - ~11 KB of car pictures against 5 KB - and the drawing time). Instead: the number on a
+  5 x 7 plate stamped upright into every heading of each car's 16 x 16 pictures at build time -
+  no cost in the game. docs/design/car_numbers.png: A dark number on a light plate, B light on
+  dark; A reads better at real size; on Jane's slim car the plate covers most of the body.
