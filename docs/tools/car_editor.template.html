@@ -245,5 +245,14 @@ function refresh(full = true) {
 }
 const undoBtn = document.getElementById('undo');
 text.value = toText();
+// a link can open on one car: #you, #cyan, #green, #pink, #white (or #car-1 .. #car-5)
+function fromHash() {
+  const h = (location.hash || '').slice(1).toLowerCase();
+  let i = CARS.findIndex(c => c.name.toLowerCase() === h);
+  const m = h.match(/^car-([1-5])$/); if (m) i = +m[1] - 1;
+  if (i >= 0) { car = i; head = 0; }
+}
+fromHash();
+window.addEventListener('hashchange', () => { fromHash(); refresh(); });
 refresh();
 </script>
