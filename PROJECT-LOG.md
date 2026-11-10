@@ -673,3 +673,25 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   7 px tall; 3 lines of small letters fit again. docs/design/radio_wave.gif.
 - Grant: the NOS in the middle of its slot, not touching the frame. Centred by its ink inside the
   14 x 14 inside of the slot (1 px clear top and bottom, 3 px each side).
+
+## 2026-11-10 SAST - the driver strip in the game; the race over screen
+- The LAP / TIME / BEST lines are gone. Under the window: the driver strip (Grant's design) - you,
+  your inventory (the NOS canister you start with), the crew chief's radio, the crew chief. Its
+  fixed picture is generated from the approved mock-up (tools/make_strip.py -> strip_img.asm) and
+  drawn once at the start, with everything else on the screen that never changes (screen_once:
+  the colours, bezel, logo, track name, RACE heading) - that code now sits in the start-up area,
+  and a new race only redraws what changes.
+- The radio (src/strip.asm): messages in the 3 x 5 letters, typed out 4 letters a picture, the
+  wave (13 lines) moving while the chief talks, then flat. What he says: GOOD LUCK at the green
+  light; a pass, the lead, a place lost (3 s apart); PUSH! PUSH! second and within 0.5 s of the
+  leader; SUPERB LAP on your best lap yet; GET IT TOGETHER on hitting the O's; LAST LAP; GET IN
+  THERE / WELL DRIVEN at your finish. Letters, NOS icon and messages live in the buffer's bottom
+  strips (BUFF, BUFH, and the ends of BUFE and BUFG).
+- Grant: race completed - a message in the game area, timers and everything stop, Q for a new
+  game. CHEQUERED FLAG! / YOU FINISHED nTH / PRESS Q in a framed box in the window; the main loop
+  stops (no pictures, the clock still) until Q.
+- Memory: the strip code is 792 bytes. bump_all (every pair of cars) is now a loop (60 bytes, was
+  560 written out); low memory 62 bytes spare. Lap: work 207.9k T a picture (was 205.9k); frames
+  {3: 170, 4: 31} (was {3: 180, 4: 26}) - docs/design/strip_profile.txt.
+- drive_test updated (the strip, the best lap under the order, the radio, the race-over box, the
+  freeze): RESULT PASS (start 15.0/s). Screens: docs/design/strip_in_game.png, race_over.png.

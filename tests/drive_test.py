@@ -16,7 +16,7 @@ for line in open(SYMF):
     p = line.split()
     if len(p) >= 3 and p[1] == 'EQU':
         SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
-CS = SYM['c_size']; CARS = SYM['cars']; N = SYM['ncars']; CPUS = list(range(1, N))
+CS = SYM['c_size']; CARS = SYM['cars']; N = SYM['ncars']; CPUS = list(range(1, N)); TOWER_Y = SYM['tower_y']
 
 src = open(os.path.join(ROOT, 'src', 'world.asm')).read() + open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()
 MAPW = int(re.search(r'MAPW\s+equ\s+(\d+)', src).group(1))
@@ -171,10 +171,12 @@ with Racer(headless=True) as sp:
     msg = screen_text(sp, 1, 12, 9) + '/' + screen_text(sp, 2, 12, 7)
     check(screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
-    labels = screen_text(sp, 20, 1, 3) + '/' + screen_text(sp, 20, 12, 4) + '/' + screen_text(sp, 21, 1, 4)
-    print('message bar %r  panel labels %r' % (msg, labels))
+    print('message bar %r' % msg)
     check(msg == 'GET READY/PRESS Q', 'before the start: GET READY, PRESS Q in the message bar')
-    check(labels == 'LAP/TIME/BEST', 'under the window: LAP, TIME and BEST')
+    sb = screen_bits(sp)                            # the driver strip under the window
+    check(attr(20, 0) == 0x57 and attr(23, 3) == 0x57 and attr(20, 20) == 0x4F and attr(23, 23) == 0x4F
+          and sb[170:182, 33:47].any() and not sb[170:182, 49:63].any(),
+          'under the window, the driver strip: you on red, your NOS in slot 1, the crew chief on blue')
     check(all(attr(5 + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(5 + 2 * i, 25) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
@@ -232,10 +234,12 @@ with Racer(headless=True) as sp:
     claps = [sp.read8(CARS + i * CS + 25) for i in CPUS]
     print('computer cars past the line', claps, 'race time', g(sp, 'race_time'))
     check(min(claps) >= 3, 'the computer cars\' laps are counted (%s)' % claps)
-    best = screen_text(sp, 21, 1, 23)
-    print('best lap line %r' % best)
-    check(best.startswith('BEST 1') and best[10:15].strip() in ('CYAN', 'GREEN', 'PINK', 'WHITE') and best[16:19] == 'LAP',
-          'the best lap shows its time, the car that set it and the lap')
+    sb = screen_bits(sp)
+    bl = sp.read16(SYM['best_lap'])
+    print('best lap', bl, 'frames')
+    check(bl < 0xFFFF and sb[(TOWER_Y + 10) * 8:(TOWER_Y + 10) * 8 + 8, 208:224].any(),
+          'the best lap is set, and shown under the race order beside its clock')
+    check(sb[171:188, 90:150].any(), 'the crew chief has said something in the radio box')
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
     # the four computer cars are in by now: the race order shows no faces while racing - a mini
     # chequered flag in column 30 for each car that is in, and the gaps to the leader in a small font
@@ -291,11 +295,13 @@ with Racer(headless=True) as sp:
     put(sp, 0, 250, 344, 16)
     hold(sp, ['Q'], 1.5)
     sp.run(duration=0.3, fast_forward=True)
-    again = screen_text(sp, 20, 1, 22)
-    print('after crossing the line on lap 3:', repr(again), 'race_over', sp.read8(SYM['race_over']))
-    check(sp.read8(SYM['race_over']) == 1 and attr(1, 0) == 0x57, 'crossing the line on the last lap: FINISHED in the message bar')
-    check(again == 'RACE FINISHED  PRESS Q', 'every car in: RACE FINISHED  PRESS Q under the window')
-    sp.run(duration=0.3, fast_forward=True)
+    flag, pq = screen_text(sp, 10, 4, 15), screen_text(sp, 12, 8, 7)
+    print('after crossing the line on lap 3:', repr(flag), repr(pq), 'race_over', sp.read8(SYM['race_over']))
+    check(sp.read8(SYM['race_over']) != 0 and attr(1, 0) == 0x57, 'crossing the line on the last lap: FINISHED in the message bar')
+    check(flag == 'CHEQUERED FLAG!' and pq == 'PRESS Q', 'every car in: CHEQUERED FLAG! and PRESS Q in the window')
+    r1 = g(sp, 'renders'); t1 = g(sp, 'race_time')
+    sp.run(duration=0.5, fast_forward=True)
+    check(g(sp, 'renders') == r1 and g(sp, 'race_time') == t1, 'the race over: everything stops (no pictures, the clock still)')
     hold(sp, ['Q'], 0.3)                           # let go, then press: a new race
     sp.run(duration=1.5, fast_forward=True)
     p5 = car(sp, 0)

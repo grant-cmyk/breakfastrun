@@ -102,41 +102,19 @@ start:                          ; once, when the program is loaded
         ld de,BUFE
         ld bc,bufe_end-bufe_src
         ldir
+        ld hl,buff_src
+        ld de,BUFF
+        ld bc,buff_end-buff_src
+        ldir
+        ld hl,bufh_src
+        ld de,BUFH
+        ld bc,bufh_end-bufh_src
+        ldir
         call make_tables
         call make_copier        ; the program writes its own copy routine
+        call screen_once        ; everything on the screen that never changes
         call im2_on
 new_race:                       ; every race (Q after the finish comes here)
-        ld a,6
-        out (254),a             ; BORDER 6 (yellow: the kitchen table)
-        ld hl,0x4000            ; clear the pixels
-        ld de,0x4001
-        ld bc,6143
-        ld (hl),0
-        ldir
-        ld hl,0x5800            ; whole screen yellow paper...
-        ld de,0x5801
-        ld bc,767
-        ld (hl),0x30
-        ldir
-        ld hl,0x5800+4*32+WIN_COL   ; ...and the window blue ink on cyan paper
-                                    ; (Grant, 10 Nov 2026: no white - easier on
-                                    ; the eyes, and less flicker)
-        ld b,WIN_H/8
-win_attr:
-        push bc
-        push hl
-        ld d,h
-        ld e,l
-        inc de
-        ld (hl),0x29
-        ld bc,WIN_W-1
-        ldir
-        pop hl
-        ld de,32
-        add hl,de
-        pop bc
-        djnz win_attr
-
         ld hl,race_vars         ; every race starts from zero (a new race
         ld de,race_vars+1       ; after FINISHED jumps back to here)
         ld bc,race_vars_end-race_vars-1
@@ -163,6 +141,18 @@ st_so:
 ; MAIN LOOP
 ; ---------------------------------------------------------------------
 main:
+        ld a,(race_over)        ; the race is over: the chequered flag, once,
+        cp 1                    ; then everything stops until Q (Grant)
+        jr c,main_go
+        jr nz,main_wait
+        inc a
+        ld (race_over),a
+        call race_box
+main_wait:
+        call hud_over           ; Q: a new race
+        halt
+        jr main
+main_go:
         ld a,(last_frame)       ; how many TV frames since last time?
         ld b,a
         ld a,(FRAMES)
@@ -298,6 +288,12 @@ tk_rest:
 tk_o:
         push bc
         call o_check
+        jr nc,tk_o1
+        ld a,b                  ; you (the first): the crew chief may say so
+        cp NCARS
+        jr nz,tk_o1
+        ld (HIT_O),a
+tk_o1:
         ld de,C_SIZE
         add ix,de
         pop bc
@@ -2588,6 +2584,13 @@ rp_all:
         ld a,(fin_at)           ; your place: the order you came in
         ld (position),a
         call msg_finished
+        ld a,(position)         ; and on the radio
+        cp 1
+        ld a,M_WIN
+        jr z,rp_say
+        ld a,M_DONE
+rp_say:
+        call msg_say
 rp_wait:                        ; the race is over when every car is in (or
         ld a,(fin_count)        ; 30 s after you, in case one is stuck)
         cp NCARS
@@ -2602,8 +2605,7 @@ rp_wait:                        ; the race is over when every car is in (or
         jr c,rp_go_on
 rp_end:
         ld a,1
-        ld (race_over),a
-        call show_best
+        ld (race_over),a        ; (the main loop puts up the flag and stops)
         jr rp_now               ; and the final order, straight away
 rp_go_on:
         ld a,(renders)          ; the order one picture in four (4 times a
@@ -2813,68 +2815,6 @@ pa_line:
         inc e
         jr pa_char
 
-; DRAW_FRAME: an arcade bezel round the window - a 7-pixel black band, its
-; outer corners rounded, with no line of its own against the picture.
-; Drawn once; the scroller never writes outside the window, so it stays.
-; Each row: the left edge byte (column WIN_COL-1), then 22 solid bytes on the
-; top and bottom bands only, then the right edge byte (column WIN_COL+WIN_W).
-draw_frame:
-        ld b,WIN_Y-7
-df_row:
-        ld c,(WIN_COL-1)*8
-        call scr_addr
-        ld de,0xFE7F            ; D right edge, E left edge: 7 pixels each
-        ld a,b
-        sub WIN_Y-7             ; rows 0..3 of the top band are rounded
-        cp 4
-        jr c,df_round
-        ld a,WIN_Y+WIN_H+6
-        sub b                   ; and rows 0..3 up from the bottom
-        cp 4
-        jr nc,df_put
-df_round:
-        push hl
-        add a,a
-        ld hl,df_corn
-        add a,l
-        ld l,a
-        jr nc,df_r1
-        inc h
-df_r1:
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        pop hl
-df_put:
-        ld (hl),e
-        ld a,b
-        cp WIN_Y
-        jr c,df_fill
-        cp WIN_Y+WIN_H
-        jr c,df_skip
-df_fill:                        ; top and bottom bands: solid across the window
-        inc l
-        ld a,WIN_W
-df_f1:
-        ld (hl),0xFF
-        inc l
-        dec a
-        jr nz,df_f1
-        jr df_right
-df_skip:                        ; beside the window: jump over it
-        ld a,l
-        add a,WIN_W+1
-        ld l,a
-df_right:
-        ld (hl),d
-        inc b
-        ld a,b
-        cp WIN_Y+WIN_H+7
-        jr nz,df_row
-        ret
-df_corn:                        ; left, right edge bytes for the 4 rounded rows
-        db 0x07,0xE0, 0x1F,0xF8, 0x3F,0xFC, 0x3F,0xFC
-
 ; ---------------------------------------------------------------------
 ; the starting line-up (copied into "cars" at the start)
 ;   x frac, x, y frac, y, vx, vy, heading, buttons, friction,
@@ -2988,7 +2928,6 @@ ticks:       dw 0
 mistakes:    dw 0
 bumps:       dw 0
 position:    db 0
-shown_lap:   db 0
 prog:        defs NCARS         ; each car's progress (laps * NWP + passed)
 passed:      defs NCARS         ; waypoints each car has passed this lap
 order:       defs NCARS         ; car in each place
@@ -3000,7 +2939,6 @@ race_time:   dw 0               ; TV frames since your first Q
 lap_start:   dw 0
 best_lap:    dw 0
 q_up:        db 0
-time_shown:  defs 6
 rp_rank:     db 0
 rp_ptr:      dw 0
 tr_car:      db 0
@@ -3133,6 +3071,7 @@ gd_2:
         include "gen_tiles.asm"
         include "gen_bumps.asm"
         include "clothmini2.asm"
+        include "strip.asm"     ; the driver strip: inventory, the radio, the flag
 code_end:
 
 ; ---------------------------------------------------------------------
@@ -3140,6 +3079,202 @@ code_end:
 ; in the back buffer (from 0xC000), which nothing uses until then. They
 ; must end before the shift tables at TAB_HI*256, which they build.
 ; ---------------------------------------------------------------------
+; ---------------------------------------------------------------------
+; SCREEN_ONCE: everything on the screen that never changes - the colours, the
+; bezel, the logo, the track's name, the RACE heading and the driver strip.
+; Drawn once at the start (from here, the start-up area); a new race only
+; redraws what changes, so none of this needs a place in the program.
+; ---------------------------------------------------------------------
+screen_once:
+        ld a,6
+        out (254),a             ; BORDER 6 (yellow: the kitchen table)
+        ld hl,0x4000            ; clear the pixels
+        ld de,0x4001
+        ld bc,6143
+        ld (hl),0
+        ldir
+        ld hl,0x5800            ; whole screen yellow paper...
+        ld de,0x5801
+        ld bc,767
+        ld (hl),0x30
+        ldir
+        ld hl,0x5800+4*32+WIN_COL   ; ...and the window blue ink on cyan paper
+                                    ; (Grant, 10 Nov 2026: no white - easier on
+                                    ; the eyes, and less flicker)
+        ld b,WIN_H/8
+win_attr:
+        push bc
+        push hl
+        ld d,h
+        ld e,l
+        inc de
+        ld (hl),0x29
+        ld bc,WIN_W-1
+        ldir
+        pop hl
+        ld de,32
+        add hl,de
+        pop bc
+        djnz win_attr
+
+        call draw_frame
+        ld b,1                  ; logo, 7 x 2 cells at the top of the panel
+        ld c,25
+        call draw_logo
+        ld hl,txt_track         ; the track's name, along the top
+        ld b,0
+        ld c,1
+        call print_at
+        ld hl,txt_race
+        ld b,TOWER_Y-1
+        ld c,25
+        call print_at
+        ld b,TOWER_Y-1          ; RACE: white on blue across the panel
+        ld c,25
+        ld d,1
+        ld e,7
+        ld a,A_LAP
+        call set_attrs
+        ld hl,strip_img         ; the driver strip: you, your inventory, the
+        ld b,160                ; crew chief's radio, the crew chief (rows
+so_row:                         ; 160-191, columns 0-23)
+        push bc
+        push hl
+        ld c,0
+        call scr_addr
+        ex de,hl
+        pop hl
+        ld bc,24
+        ldir
+        pop bc
+        inc b
+        ld a,b
+        cp 192
+        jr nz,so_row
+        ld de,0x5800+20*32      ; and its colours
+        ld b,4
+so_attr:
+        push bc
+        ld bc,24
+        ldir
+        ex de,hl
+        ld bc,8
+        add hl,bc
+        ex de,hl
+        pop bc
+        djnz so_attr
+        ret
+
+; DRAW_FRAME: an arcade bezel round the window - a 7-pixel black band, its
+; outer corners rounded, with no line of its own against the picture.
+; Drawn once; the scroller never writes outside the window, so it stays.
+; Each row: the left edge byte (column WIN_COL-1), then 22 solid bytes on the
+; top and bottom bands only, then the right edge byte (column WIN_COL+WIN_W).
+draw_frame:
+        ld b,WIN_Y-7
+df_row:
+        ld c,(WIN_COL-1)*8
+        call scr_addr
+        ld de,0xFE7F            ; D right edge, E left edge: 7 pixels each
+        ld a,b
+        sub WIN_Y-7             ; rows 0..3 of the top band are rounded
+        cp 4
+        jr c,df_round
+        ld a,WIN_Y+WIN_H+6
+        sub b                   ; and rows 0..3 up from the bottom
+        cp 4
+        jr nc,df_put
+df_round:
+        push hl
+        add a,a
+        ld hl,df_corn
+        add a,l
+        ld l,a
+        jr nc,df_r1
+        inc h
+df_r1:
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        pop hl
+df_put:
+        ld (hl),e
+        ld a,b
+        cp WIN_Y
+        jr c,df_fill
+        cp WIN_Y+WIN_H
+        jr c,df_skip
+df_fill:                        ; top and bottom bands: solid across the window
+        inc l
+        ld a,WIN_W
+df_f1:
+        ld (hl),0xFF
+        inc l
+        dec a
+        jr nz,df_f1
+        jr df_right
+df_skip:                        ; beside the window: jump over it
+        ld a,l
+        add a,WIN_W+1
+        ld l,a
+df_right:
+        ld (hl),d
+        inc b
+        ld a,b
+        cp WIN_Y+WIN_H+7
+        jr nz,df_row
+        ret
+df_corn:                        ; left, right edge bytes for the 4 rounded rows
+        db 0x07,0xE0, 0x1F,0xF8, 0x3F,0xFC, 0x3F,0xFC
+
+
+; draw_logo: the 56 x 24 logo at cell row B, column C, with its colours
+draw_logo:
+        ld a,b
+        add a,a
+        add a,a
+        add a,a
+        ld b,a                  ; B = pixel row
+        ld a,c
+        add a,a
+        add a,a
+        add a,a
+        ld c,a                  ; C = pixel x
+        ld de,logo_bits
+        ld a,16
+dl_row:
+        push af
+        push bc
+        call scr_addr
+        ld b,7
+dl_byte:
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc l
+        djnz dl_byte
+        pop bc
+        inc b
+        pop af
+        dec a
+        jr nz,dl_row
+        ld hl,logo_attr         ; 2 rows of 7 attributes
+        ld de,0x5800+1*32+25
+        ld b,2
+dl_attr:
+        push bc
+        ld bc,7
+        ldir
+        ex de,hl
+        ld bc,32-7
+        add hl,bc
+        ex de,hl
+        pop bc
+        djnz dl_attr
+        ret
+
+        include "strip_img.asm" ; the driver strip's fixed picture and colours
+
 ; ---------------------------------------------------------------------
 ; make_tables: for each shift s = 0..7, two 256-byte tables:
 ;   page TAB_HI+2s   : A[b] = b >> (8-s)   (part in the left byte)
@@ -3325,11 +3460,19 @@ bufd_src:
         include "thrust.asm"    ; the push for each heading
         include "consts.asm"    ; driving styles, the throttle spread, the cloth's rows
 bufd_end:
+buff_src:
+        include "strip_f.asm"   ; the small letters, the NOS icon, messages
+buff_end:
+bufh_src:
+        include "strip_h.asm"   ; more messages
+bufh_end:
 bufg_src:
         include "waypoints.asm" ; the centre line, for the computer cars
+        include "strip_g.asm"
 bufg_end:
 bufe_src:
         include "rowidx.asm"    ; the map: each tile row's list
+        include "strip_e.asm"
 bufe_end:
 init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
@@ -3337,6 +3480,11 @@ BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 byte
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
 BUFG      equ BUF+0x1660        ; the waypoints
+BUFF      equ BUF+0x1560        ; the strip's letters, NOS icon, messages
+BUFH      equ BUF+0x1760        ; more messages
+LFONT     equ BUFF + lfont_src - buff_src
+NOS_ICON  equ BUFF + nos_icon_src - buff_src
+MSG_INDEX equ BUFF + msg_index_src - buff_src
 BUFE      equ BUF+0x1460        ; the map's row index
 row_index equ BUFE + row_index_src - bufe_src
 wp_tab    equ BUFG + waypoints - bufg_src
@@ -3347,9 +3495,6 @@ cf_tab    equ BUFD + cf_tab_src - bufd_src
 logo_bits equ BUFB + logo_bits_src - bufb_src
 logo_attr equ BUFB + logo_attr_src - bufb_src
 txt_race  equ TOPMEM + txt_race_src - high_src
-txt_lapw  equ TOPMEM + txt_lapw_src - high_src
-txt_of    equ TOPMEM + txt_of_src - high_src
-txt_time  equ TOPMEM + txt_time_src - high_src
 txt_ready equ TOPMEM + txt_ready_src - high_src
 txt_pressq equ TOPMEM + txt_pressq_src - high_src
 txt_lamp  equ TOPMEM + txt_lamp_src - high_src
@@ -3357,12 +3502,9 @@ txt_go    equ TOPMEM + txt_go_src - high_src
 txt_final equ TOPMEM + txt_final_src - high_src
 txt_finished equ TOPMEM + txt_finished_src - high_src
 txt_places equ TOPMEM + txt_places_src - high_src
+txt_flag  equ TOPMEM + txt_flag_src - high_src
+txt_youfin equ TOPMEM + txt_youfin_src - high_src
 txt_track equ TOPMEM + txt_track_src - high_src
-txt_best  equ TOPMEM + txt_best_src - high_src
-txt_nobest equ TOPMEM + txt_nobest_src - high_src
-txt_lapword equ TOPMEM + txt_lapword_src - high_src
-car_names equ TOPMEM + car_names_src - high_src
-txt_again equ TOPMEM + txt_again_src - high_src
 txt_none  equ TOPMEM + txt_none_src - high_src
 sfont     equ TOPMEM + sfont_src - high_src
 flag_top  equ TOPMEM + flag_top_src - high_src
@@ -3398,7 +3540,7 @@ faces     equ BUFA + faces_src - bufa_src
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
-        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161 + (bufg_end - bufg_src) / 161 + (bufe_end - bufe_src) / 161
+        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161 + (bufg_end - bufg_src) / 161 + (bufe_end - bufe_src) / 161 + (buff_end - buff_src) / 161 + (bufh_end - bufh_src) / 161
         .error a block for the buffer's bottom rows is over 160 bytes
         endif
         if init_end > BUFA

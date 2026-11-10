@@ -23,25 +23,13 @@ A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 ; ---------------------------------------------------------------------
 ; HUD_INIT: the whole surround, once at the start of a race
 ; ---------------------------------------------------------------------
-hud_init:
-        call draw_frame
-        ld b,1                  ; logo, 7 x 2 cells at the top of the panel
-        ld c,25
-        call draw_logo
-        ld hl,txt_track         ; the track's name, along the top
-        ld b,0
-        ld c,1
-        call print_at
-        ld hl,txt_race
-        ld b,TOWER_Y-1
-        ld c,25
-        call print_at
-        ld b,TOWER_Y-1          ; RACE: white on blue across the panel
+hud_init:                       ; a new race: what changes (the rest: screen_once)
+        ld b,TOWER_Y+2*NCARS    ; the best lap under the order: none yet
         ld c,25
         ld d,1
-        ld e,7
-        ld a,A_LAP
-        call set_attrs
+        ld e,4
+        call clear_cells
+        call strip_reset        ; the driver strip: inventory, the radio
         call map_init
         ld b,0                  ; the tower in grid order, all at once
 hi_tw:
@@ -64,68 +52,7 @@ hi_tw:
         ld a,b
         cp NCARS
         jr nz,hi_tw
-        ld hl,txt_lapw          ; bottom band, row BAND_Y: LAP n/3 and TIME
-        ld b,BAND_Y
-        ld c,1
-        call print_at
-        ld hl,txt_time
-        ld b,BAND_Y
-        ld c,12
-        call print_at
-        ld hl,txt_best          ; row BAND_Y+1: BEST -:--.-
-        ld b,BAND_Y+1
-        ld c,1
-        call print_at
-        ld hl,txt_nobest
-        ld b,BAND_Y+1
-        ld c,6
-        call print_at
         jp msg_lights
-
-; draw_logo: the 56 x 24 logo at cell row B, column C, with its colours
-draw_logo:
-        ld a,b
-        add a,a
-        add a,a
-        add a,a
-        ld b,a                  ; B = pixel row
-        ld a,c
-        add a,a
-        add a,a
-        add a,a
-        ld c,a                  ; C = pixel x
-        ld de,logo_bits
-        ld a,16
-dl_row:
-        push af
-        push bc
-        call scr_addr
-        ld b,7
-dl_byte:
-        ld a,(de)
-        ld (hl),a
-        inc de
-        inc l
-        djnz dl_byte
-        pop bc
-        inc b
-        pop af
-        dec a
-        jr nz,dl_row
-        ld hl,logo_attr         ; 2 rows of 7 attributes
-        ld de,0x5800+1*32+25
-        ld b,2
-dl_attr:
-        push bc
-        ld bc,7
-        ldir
-        ex de,hl
-        ld bc,32-7
-        add hl,bc
-        ex de,hl
-        pop bc
-        djnz dl_attr
-        ret
 
 ; ---------------------------------------------------------------------
 ; set_attrs: A = attribute for D rows x E columns from cell (B, C)
@@ -459,6 +386,8 @@ cph_done:
         pop bc
         ret
 hu_go:                          ; GO: the race order redraws without the faces
+        ld a,M_LUCK             ; the crew chief: good luck
+        call msg_say
         ld a,1
         ld (pace_skip),a        ; (a busy picture: it does not set the pace)
         ld hl,shown_order
@@ -650,85 +579,21 @@ hu_final:
         ld (hl),a
         call msg_final
 hu_lap:
-        ld a,(cars+C_LAPS)      ; the lap shown: 1..LAPS
-        or a
-        jr nz,hu_l1
-        inc a
-hu_l1:
-        cp LAPS+1
-        jr c,hu_l2
-        ld a,LAPS
-hu_l2:
-        ld hl,shown_lap
-        cp (hl)
-        jr z,hu_best
-        ld (hl),a
-        add a,'0'
-        ld (txt_digit),a
-        ld hl,txt_digit
-        ld b,BAND_Y
-        ld c,5
-        call print_at
 hu_best:
         ld a,(best_seq)         ; a new best lap (by anyone)
         ld hl,shown_best_seq
         cp (hl)
         jr z,hu_order
         ld (hl),a
-        call print_best
         call best_panel
 hu_order:
+        call strip_triggers     ; what the crew chief says
         ld a,(renders)          ; spread the HUD out: the order on one
         and 3                   ; picture in four, the map on another, the
         jp z,tower_update       ; clock on the other two
         cp 2
         jp z,map_update
-        jp time_update
-
-; print_best: BEST m:ss.t NAME LAP n on row BAND_Y+1 (the name on the car's colour)
-print_best:                     ; BEST 14.2 GREEN LAP 2 (cols 1..21)
-        ld hl,(best_lap)
-        call time_fmt
-        ld hl,time_txt+2        ; seconds and tenths: a lap is under a minute
-        ld b,BAND_Y+1
-        ld c,6
-        call print_at
-        ld a,(best_car)         ; the name, 5 letters
-        ld l,a
-        add a,a
-        add a,a
-        add a,a
-        sub l
-        sub l                   ; car * 6
-        ld e,a
-        ld d,0
-        ld hl,car_names
-        add hl,de
-        ld b,BAND_Y+1
-        ld c,11
-        call print_at
-        ld a,(best_car)
-        ld e,a
-        ld d,0
-        ld hl,car_colours
-        add hl,de
-        ld a,(hl)
-        ld b,BAND_Y+1
-        ld c,11
-        ld d,1
-        ld e,5
-        call set_attrs
-        ld hl,txt_lapword
-        ld b,BAND_Y+1
-        ld c,17
-        call print_at
-        ld a,(best_lapno)
-        add a,'0'
-        ld (txt_digit),a
-        ld hl,txt_digit
-        ld b,BAND_Y+1
-        ld c,21
-        jp print_at
+        jp strip_tick           ; the radio on the other two
 
 hud_over:                       ; after the finish: the last flags, then
         call tower_update       ; wait for Q to be let go,
@@ -949,6 +814,9 @@ trr_lap:                        ; still racing: the lap it is on, where its flag
         rlca
         rlca
         and 3
+        jr nz,trr_l1            ; (behind the line at the start: lap 1)
+        inc a
+trr_l1:
         add a,'0'
         ld (txt_digit),a
         ld hl,txt_digit
@@ -1292,17 +1160,8 @@ mr_done:
         ret
 
 ; ---------------------------------------------------------------------
-; THE TIME: m:ss.t on row BAND_Y, only the characters that changed
+; TIME_FMT: frames -> m:ss.t (the gaps and the best lap use it)
 ; ---------------------------------------------------------------------
-time_update:
-        ld hl,(race_time)
-        ld a,(you_done)         ; finished: your own time stays up
-        or a
-        jr z,tmu_1
-        ld hl,(you_time)
-tmu_1:
-        call time_fmt
-        jr tm_print
 time_fmt:                       ; HL = frames (50 a second) -> time_txt "m:ss.t"
         ld de,0
         ld bc,3000              ; minutes
@@ -1370,49 +1229,6 @@ tm_d1:
         ld a,' '
         ld (time_txt+2),a
         ret
-tm_print:
-        ld hl,time_txt          ; print what differs from what is shown
-        ld de,time_shown
-        ld c,17
-tm_cmp:
-        ld a,(hl)
-        or a
-        ret z
-        ex de,hl
-        cp (hl)
-        ex de,hl
-        jr z,tm_skip
-        ld (de),a
-        push hl
-        push de
-        push bc
-        ld (txt_digit),a
-        ld hl,txt_digit
-        ld b,BAND_Y
-        call print_at
-        pop bc
-        pop de
-        pop hl
-tm_skip:
-        inc hl
-        inc de
-        inc c
-        jr tm_cmp
-
-; ---------------------------------------------------------------------
-; the finish: best lap and PRESS Q under the window
-; ---------------------------------------------------------------------
-show_best:
-        ld b,BAND_Y
-        ld c,0
-        ld d,1
-        ld e,24
-        call clear_cells
-        ld hl,txt_again
-        ld b,BAND_Y
-        ld c,1
-        jp print_at
-
 ; (the HUD's fixed text is in hudtext.asm, kept at the top of memory)
 txt_digit:    db "0",0
 time_txt:     db "0:00.0",0
