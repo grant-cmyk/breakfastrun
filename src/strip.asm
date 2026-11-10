@@ -7,7 +7,7 @@
 ; other moves the wave.
 ; ---------------------------------------------------------------------
 MSG_P   equ BUFC+128            ; the next letter (2)
-MSG_ST  equ BUFC+130            ; 0 quiet, 1-2 wiping the box, 3 typing, 4 shown
+MSG_ST  equ BUFC+130            ; 0 quiet, 1 wipe the box, 3 typing, 4 shown
 MSG_Y   equ BUFC+131            ; pixel row of the line being typed
 MSG_X   equ BUFC+132            ; pixel x of the next letter
 WAVE_T  equ BUFC+133            ; wave updates of talking left
@@ -38,6 +38,11 @@ srs_1:
         ld (TRG_POS),a
         ld a,1                  ; you start with one NOS canister
         ld (INV),a
+        ld (SPACE_UP),a
+        xor a                   ; canister A on the track, no boost
+        ld (NOS_SHOW),a
+        ld (BOOST_T),a
+        call nos_place
         ld a,1
         ld (MSG_ST),a           ; wipe the box,
         ld (WAVE_T),a           ; and the wave goes flat
@@ -68,9 +73,7 @@ strip_tick:
         jp nz,wave_tick
         ld a,(MSG_ST)
         cp 1
-        jr z,st_wipe1
-        cp 2
-        jr z,st_wipe2
+        jr z,st_wipe
         cp 3
         ret nz
         ld b,4                  ; typing: 4 letters a time
@@ -105,16 +108,9 @@ stt_end:
         ld a,4
         ld (MSG_ST),a
         ret
-st_wipe1:                       ; the box's lines 1-2 (rows 171-181)
+st_wipe:                        ; the box's 3 lines (rows 171-188): then type
         ld b,171
-        ld c,11
-        call box_wipe
-        ld a,2
-        ld (MSG_ST),a
-        ret
-st_wipe2:                       ; line 3 (rows 182-188): then type, if any
-        ld b,182
-        ld c,7
+        ld c,18
         call box_wipe
         ld hl,(MSG_P)
         ld a,h
@@ -152,29 +148,7 @@ bw_1:
         jr nz,box_wipe
         ret
 
-line_x:                         ; MSG_P at a line: MSG_X = its centred start
-        ld hl,(MSG_P)
-        ld b,0
-lx_1:
-        ld a,(hl)
-        or a
-        jr z,lx_2
-        cp '|'
-        jr z,lx_2
-        inc b
-        inc hl
-        jr lx_1
-lx_2:
-        ld a,b                  ; x = BOX_X + (62 - (4n - 1)) / 2
-        add a,a
-        add a,a
-        dec a
-        neg
-        add a,62
-        srl a
-        add a,BOX_X
-        ld (MSG_X),a
-        ret
+        ; (line_x: in clothmini.asm, the gap before sq4's page)
 
 ; GLYPH: A = a letter (A-Z ! . - '; anything else is a gap), drawn at
 ; MSG_X, MSG_Y in the 3 x 5 letters: 15 bits, top row first
@@ -275,11 +249,11 @@ wave_tick:
         ret z
         dec a
         ld (WAVE_T),a
-        ld b,WAVE_MID-3         ; wipe its 7 rows (4 bytes from x 104)
-wt_1:
-        push bc
-        ld c,104
+        ld b,WAVE_MID-3         ; wipe its 7 rows (4 bytes from x 104): one
+        ld c,104                ; character row, so the next row is INC H
         call scr_addr
+        ld b,7
+wt_1:
         xor a
         ld (hl),a
         inc l
@@ -288,11 +262,11 @@ wt_1:
         ld (hl),a
         inc l
         ld (hl),a
-        pop bc
-        inc b
-        ld a,b
-        cp WAVE_MID+4
-        jr nz,wt_1
+        dec l
+        dec l
+        dec l
+        inc h
+        djnz wt_1
         ld c,0                  ; C = line 0..12
 wt_line:
         ld a,(WAVE_T)
@@ -349,72 +323,12 @@ wt_px:
         jr nz,wt_line
         ret
 
-; INV_DRAW: each slot whose item changed: its icon (or empty)
-inv_draw:
-        ld hl,INV
-        ld de,INV_SH
-        ld c,32                 ; slot 0 at x 32 (columns 4-5), then 48, 64
-id_1:
-        ld a,(de)
-        cp (hl)
-        jr z,id_next
-        ld a,(hl)
-        ld (de),a
-        push hl
-        push de
-        push bc
-        ld b,170                ; the icon's rows: 170.. (centred in 169-182)
-        ld e,a                  ; E = the item
-        ld hl,NOS_ICON
-id_row:
-        push bc
-        push hl
-        push de
-        call scr_addr           ; HL = the slot's left byte (C = its x)
-        ex de,hl
-        pop bc                  ; C = the item
-        pop hl
-        ld a,(de)               ; keep the frame: bit 7 left, bit 0 right
-        and 0x80
-        bit 0,c
-        jr z,id_e1
-        or (hl)
-id_e1:
-        ld (de),a
-        inc hl
-        inc e
-        ld a,(de)
-        and 0x01
-        bit 0,c
-        jr z,id_e2
-        or (hl)
-id_e2:
-        ld (de),a
-        inc hl
-        ld e,c
-        pop bc
-        inc b
-        ld a,b
-        cp 170+NOS_ROWS
-        jr nz,id_row
-        pop bc
-        pop de
-        pop hl
-id_next:
-        inc hl
-        inc de
-        ld a,c
-        add a,16
-        ld c,a
-        cp 32+48
-        jr nz,id_1
-        ret
-
 ; STRIP_TRIGGERS: what the chief says (each picture, racing)
 strip_triggers:
         ld a,(race_on)
         or a
         ret z
+        call nos_take           ; over a canister?
         ld hl,COOL
         ld a,(hl)
         or a
@@ -491,25 +405,10 @@ race_box:
         ld d,5
         ld e,18
         call clear_cells
-        ld b,74                 ; a frame: top and bottom lines
+        ld b,74                 ; lines above and below (a banner)
         call rb_line
         ld b,109
         call rb_line
-        ld b,75                 ; the sides
-rb_side:
-        push bc
-        ld c,3*8
-        call scr_addr
-        set 5,(hl)
-        ld a,l
-        add a,17
-        ld l,a
-        set 2,(hl)
-        pop bc
-        inc b
-        ld a,b
-        cp 109
-        jr nz,rb_side
         ld hl,txt_flag          ; CHEQUERED FLAG!
         ld b,10
         ld c,4
@@ -533,15 +432,109 @@ rb_side:
         ld b,12
         ld c,8
         jp print_at
-rb_line:
-        ld c,3*8
-        call scr_addr
-        ld (hl),0x3F
-        ld b,16
-rbl_1:
-        inc l
-        ld (hl),0xFF
-        djnz rbl_1
-        inc l
-        ld (hl),0xFC
+        ; (rb_line: in clothmini.asm, the gap before sq4's page)
+
+; ---------------------------------------------------------------------
+; NOS (Grant, 10 Nov 2026): you start with one canister; SPACE fires one -
+; 1 second (50 TV frames) of twice the push, so twice the top speed, then
+; it fades as usual. Canisters on the track: A just behind the grid, then B
+; in the middle of the top area, one at a time; driving over one puts it in
+; your first empty slot (none taken if all 3 are full).
+; ---------------------------------------------------------------------
+NOS_SHOW equ BUFC+145           ; 0: canister A on the track, 1: B
+BOOST_T  equ BUFC+146           ; TV frames of boost left
+SPACE_UP equ BUFC+147           ; SPACE was up (so a press is new)
+BOOST_FR equ 50
+
+nos_place:                      ; show the canister NOS_SHOW names, hide the other
+        ld a,(NOS_SHOW)
+        or a
+        ld a,NOS_A_V0
+        ld b,NOS_A_V1
+        ld c,0
+        ld d,c
+        jr z,np_1
+        ld c,NOS_B_V0
+        ld d,NOS_B_V1
+        ld a,0
+        ld b,a
+np_1:
+        ld (NOS_A_T0),a
+        ld a,b
+        ld (NOS_A_T1),a
+        ld a,c
+        ld (NOS_B_T0),a
+        ld a,d
+        ld (NOS_B_T1),a
         ret
+
+nos_take:                       ; each picture: are you over the canister?
+        ld a,(NOS_SHOW)
+        or a
+        ld de,8+10-NOS_A_X
+        ld bc,8+10-NOS_A_Y
+        jr z,nt_1
+        ld de,8+10-NOS_B_X
+        ld bc,8+10-NOS_B_Y
+nt_1:
+        ld hl,(cars+C_X)        ; within 10 pixels of its centre, both ways
+        add hl,de
+        ld a,h
+        or a
+        ret nz
+        ld a,l
+        cp 21
+        ret nc
+        ld hl,(cars+C_Y)
+        add hl,bc
+        ld a,h
+        or a
+        ret nz
+        ld a,l
+        cp 21
+        ret nc
+        ld hl,INV               ; your first empty slot
+        ld b,3
+nt_2:
+        ld a,(hl)
+        or a
+        jr z,nt_3
+        inc hl
+        djnz nt_2
+        ret                     ; all full: it stays
+nt_3:
+        inc (hl)
+        ld a,(NOS_SHOW)         ; the other canister comes out
+        xor 1
+        ld (NOS_SHOW),a
+        call nos_place
+        call inv_draw
+        ld a,M_NOS
+        jp msg_say
+
+nos_fire:                       ; SPACE: one canister, if racing and you have one
+        ld a,(race_on)
+        or a
+        ret z
+        ld a,(you_done)
+        or a
+        ret nz
+        ld a,(BOOST_T)
+        or a
+        ret nz
+        ld hl,INV+2             ; your last full slot
+        ld b,3
+nf_1:
+        ld a,(hl)
+        or a
+        jr nz,nf_2
+        dec hl
+        djnz nf_1
+        ret                     ; none
+nf_2:
+        ld (hl),0
+        ld a,BOOST_FR
+        ld (BOOST_T),a
+        call inv_draw
+        ld a,M_BOOST
+        jp msg_say

@@ -77,43 +77,8 @@ CT_BRK  equ 8
 
         org 32768
 
-start:                          ; once, when the program is loaded
-        ld hl,high_src          ; the data that lives at the top of memory,
-        ld de,TOPMEM            ; out of the way: copied up there first,
-        ld bc,high_end-high_src ; before the back buffer it loads into is used
-        ldir
-        ld hl,bufa_src          ; and into the buffer's unused bottom rows
-        ld de,BUFA
-        ld bc,bufa_end-bufa_src
-        ldir
-        ld hl,bufb_src
-        ld de,BUFB
-        ld bc,bufb_end-bufb_src
-        ldir
-        ld hl,bufd_src
-        ld de,BUFD
-        ld bc,bufd_end-bufd_src
-        ldir
-        ld hl,bufg_src
-        ld de,BUFG
-        ld bc,bufg_end-bufg_src
-        ldir
-        ld hl,bufe_src
-        ld de,BUFE
-        ld bc,bufe_end-bufe_src
-        ldir
-        ld hl,buff_src
-        ld de,BUFF
-        ld bc,buff_end-buff_src
-        ldir
-        ld hl,bufh_src
-        ld de,BUFH
-        ld bc,bufh_end-bufh_src
-        ldir
-        call make_tables
-        call make_copier        ; the program writes its own copy routine
-        call screen_once        ; everything on the screen that never changes
-        call im2_on
+start:                          ; once, when the program is loaded: the set-up
+        jp start_once           ; runs from the start-up area (it is needed once)
 new_race:                       ; every race (Q after the finish comes here)
         ld hl,race_vars         ; every race starts from zero (a new race
         ld de,race_vars+1       ; after FINISHED jumps back to here)
@@ -247,6 +212,12 @@ tick:
         inc hl
         ld (race_time),hl
 tk_clock:
+        ld hl,BOOST_T           ; the NOS burns down, a frame at a time
+        ld a,(hl)
+        or a
+        jr z,tk_nb
+        dec (hl)
+tk_nb:
         call read_keys          ; your buttons -> your car's C_CTRL
         ld a,(cars+C_LAPS)      ; finished: no more buttons - your car rolls
         cp LAPS+1               ; to a stop a little over the line
@@ -335,6 +306,17 @@ rk3:
 rk4:
         ld a,c
         ld (cars+C_CTRL),a
+        ld a,0x7F               ; SPACE: fire a NOS canister (a new press)
+        in a,(0xFE)
+        and 1
+        ld hl,SPACE_UP
+        jr nz,rk_spup
+        cp (hl)                 ; (A = 0: was it up?)
+        ret z
+        ld (hl),a
+        jp nos_fire
+rk_spup:
+        ld (hl),a
         ret
 
 ; ---------------------------------------------------------------------
@@ -408,6 +390,17 @@ ph_surf_kept:
         ld a,(ix+C_FSH)
         ld (fshift),a
         call skid               ; fast and turning: it slides (DE, BC, fshift)
+        ld a,(ix+C_KIND)        ; NOS: you, twice the push (so twice the top
+        or a                    ; speed while it burns)
+        jr nz,ph_nb
+        ld a,(BOOST_T)
+        or a
+        jr z,ph_nb
+        sla e
+        rl d
+        sla c
+        rl b
+ph_nb:
         ld (ph_px),de           ; the pushes, kept for the second frame
         ld (ph_py),bc
         ; ---- x: speed += push, friction, position += speed; each value is
@@ -3079,6 +3072,47 @@ code_end:
 ; in the back buffer (from 0xC000), which nothing uses until then. They
 ; must end before the shift tables at TAB_HI*256, which they build.
 ; ---------------------------------------------------------------------
+; START_ONCE: the data copied up out of the way, the tables, the copy routine,
+; the screen, the interrupts - then the first race
+start_once:                     ; (start, from the start-up area)
+        ld hl,high_src          ; the data that lives at the top of memory,
+        ld de,TOPMEM            ; out of the way: copied up there first,
+        ld bc,high_end-high_src ; before the back buffer it loads into is used
+        ldir
+        ld hl,bufa_src          ; and into the buffer's unused bottom rows
+        ld de,BUFA
+        ld bc,bufa_end-bufa_src
+        ldir
+        ld hl,bufb_src
+        ld de,BUFB
+        ld bc,bufb_end-bufb_src
+        ldir
+        ld hl,bufd_src
+        ld de,BUFD
+        ld bc,bufd_end-bufd_src
+        ldir
+        ld hl,bufg_src
+        ld de,BUFG
+        ld bc,bufg_end-bufg_src
+        ldir
+        ld hl,bufe_src
+        ld de,BUFE
+        ld bc,bufe_end-bufe_src
+        ldir
+        ld hl,buff_src
+        ld de,BUFF
+        ld bc,buff_end-buff_src
+        ldir
+        ld hl,bufh_src
+        ld de,BUFH
+        ld bc,bufh_end-bufh_src
+        ldir
+        call make_tables
+        call make_copier        ; the program writes its own copy routine
+        call screen_once        ; everything on the screen that never changes
+        call im2_on
+        jp new_race
+
 ; ---------------------------------------------------------------------
 ; SCREEN_ONCE: everything on the screen that never changes - the colours, the
 ; bezel, the logo, the track's name, the RACE heading and the driver strip.

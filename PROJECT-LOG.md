@@ -695,3 +695,18 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   {3: 170, 4: 31} (was {3: 180, 4: 26}) - docs/design/strip_profile.txt.
 - drive_test updated (the strip, the best lap under the order, the radio, the race-over box, the
   freeze): RESULT PASS (start 15.0/s). Screens: docs/design/strip_in_game.png, race_over.png.
+
+## 2026-11-10 SAST - NOS
+- You start with one canister (slot 1). SPACE fires one (a new press, racing, not finished):
+  50 TV frames of twice your push - top speed 1.75 -> 3.05 px/frame in that second - then it fades.
+- Canisters on the map (tools/make_world.py: two masked tiles each, Grant's NOS art): A just behind
+  the grid (tile 19,43), B at the bottom of the dip in the top area (35,18). One at a time: driving
+  over the one out puts it in your first empty slot (none if all 3 are full) and brings out the
+  other - the game sets their tiles in the row lists (NOS_*_T*) to their numbers or 0.
+  The crew chief: NOS READY! SPACE TO BOOST on a pick-up, NOS! GO GO GO when fired.
+- Memory: the set-up (start) moved to the start-up area; line_x, inv_draw and rb_line into the gap
+  before sq4; the box's wipe in one go; the race box a banner (lines above and below). Low memory
+  15 bytes spare, TOPMEM 61.
+- tests/nos_test.py (new): RESULT PASS. drive_test RESULT PASS (start 15.0/s). Lap: work 209.4k T
+  a picture (3 frames = 209.7k), frames {3: 162, 4: 34} - the sweep should win this back.
+  docs/design/nos_pickup.png.

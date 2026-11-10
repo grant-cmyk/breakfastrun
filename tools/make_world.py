@@ -162,6 +162,20 @@ for name, tx, ty in wanted:
         place(shape, best[1], best[2]); placed.append(name)
 print('placed:', ' '.join(placed)); print('cereal Os:', len(OS))
 
+# the NOS canisters (Grant, 10 Nov 2026): A just behind the grid, B in the middle of
+# the top area (the bottom of the dip). On plain road tiles, as two masked tiles each
+# (it sits on the cloth like the breakfast things); the game shows one at a time by
+# setting their tiles in the row lists (NOS_*_T*) to their numbers or to 0.
+import re as _re
+_fa = open(os.path.join(HERE, 'face_art.txt')).read()
+_nos = _re.search(r'== NOS face ==\n((?:[X.]{16}\n){16})', _fa).group(1).split()
+_ys = [y for y in range(16) if 'X' in _nos[y]]
+NOS_ART = [_nos[y][4:12] for y in _ys]                # 8 wide x 12 tall
+CANS = {'A': (19, 43, 2), 'B': (35, 18, 2)}            # tile x, tile y, row offset in it
+for k, (tx, ty, dy) in CANS.items():
+    for y, row in enumerate(NOS_ART):
+        for x, c in enumerate(row):
+            if c == 'X': px[tx * 8 + x, ty * 8 + dy + y] = 1; ipx[tx * 8 + x, ty * 8 + dy + y] = 1
 # masks: the breakfast things sit ON the tablecloth (Grant, 10 Nov 2026) - a 1-px
 # white halo round each, and solid inside its outline. Drawn (cloth AND NOT mask) OR ink.
 import numpy as np
@@ -241,9 +255,19 @@ with open(OUT, 'w') as f:
         for ty in range(H):
             g.write('        dw row_%d\n' % ty)
     f.write('; each list: how many tiles, then (column, tile number) pairs, left to right\n')
+    nosq = []
     for ty in range(H):
         ent = [(tx, mapb[ty * W + tx]) for tx in range(W) if mapb[ty * W + tx]]
         f.write('row_%d:  defb %d' % (ty, len(ent)) + ''.join(',%d,%d' % e for e in ent) + '\n')
+        for k, (ctx, cty, dy) in CANS.items():
+            for j in (0, 1):
+                if ty == cty + j:
+                    i = [e[0] for e in ent].index(ctx)
+                    nosq.append('NOS_%s_T%d equ row_%d + %d   ; its tile in the list\nNOS_%s_V%d equ %d\n'
+                                % (k, j, ty, 2 + 2 * i, k, j, ent[i][1]))
+    f.write('\n; the NOS canisters: where their tiles sit in the row lists, and their numbers\n' + ''.join(nosq))
+    for k, (ctx, cty, dy) in CANS.items():
+        f.write('NOS_%s_X equ %d\nNOS_%s_Y equ %d   ; its centre\n' % (k, ctx * 8 + 4, k, cty * 8 + dy + 6))
     f.write('\n; surface: one BIT per tile, 1 = off-road (slower); %d bytes a row,\n' % (W // 8))
     f.write('; leftmost tile in the top bit\nsurface_map:\n')
     for ty in range(H):
