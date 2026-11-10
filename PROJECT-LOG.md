@@ -468,3 +468,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Checked: you driving into an O stop 8 px short and bounce. 2 O bounces in 20 s of computer racing.
 - Measured, whole lap: work 193.7k T (was 181.5k: cars moving every frame + O checks); 177 pictures
   at 3 frames, 31 at 4, 14 at 2. drive_test RESULT: PASS.
+
+## 2026-11-10 07:35 SAST - merged to main
+- Grant: merge it. trial-window-22 merged into main (main was an ancestor: no conflicts).
+  CONTINUE.md rewritten for main. build/racer.tap is the current build.
