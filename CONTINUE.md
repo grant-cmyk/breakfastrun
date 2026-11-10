@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-10 14:10 SAST · machine: Claude cloud container · branch: main (trial-window-22 merged) · commit: see `git log -1`
+**Stamped:** 2026-11-10 13:50 SAST · machine: Claude cloud container · branch: main (trial-window-22 merged) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 22 x 15 cells (176 x 120) in an arcade bezel; the
