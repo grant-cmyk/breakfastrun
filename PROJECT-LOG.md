@@ -601,3 +601,15 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   so H adds a second job that finds it and rubs the dots out byte by byte. Free lighter cloths (one
   pattern for even lines, one for odd): docs/design/cloth_free_options.png J, K, L - all read as
   vertical stripes; the even, staggered look (F) needs a 4-line pattern, a small engine change.
+
+## 2026-11-10 SAST - cloth F: 1 dot in 8, staggered
+- Grant: go F. The dark checks' dots are now 1 in 8 (x AND 3 = 0 on lines y AND 3 = 0, = 2 on
+  y AND 3 = 2). The fill alternates two register sets, so the dotted lines' two kinds take turns
+  through minis: on the 3 dotted lines after line 0 of each character row a slot calls one (same
+  slots all picture: camy AND 3); loaders keyed by y AND 3 and check row (cf_lidx). cloth_pat to
+  BUFC; waypoints and row_index to bottom-row strips (BUFG, BUFE) to make room; new code in the
+  gap before sq4 (clothmini.asm) and after it (clothmini2.asm).
+- Cost: cloth_fill 35.3k -> 45.7k T a picture; lap work 199.3k -> 205.9k; frames over a lap
+  {3: 180, 4: 26, 5: 1} (was {3: 184, 4: 27}) - docs/design/cloth_f_profile.txt. GO's picture
+  ran late and set the 4-frame pace for 2 s, so it no longer sets the pace (pace_skip).
+  drive_test RESULT: PASS (start 15.5/s; window pixel-exact). docs/design/cloth_f.png.

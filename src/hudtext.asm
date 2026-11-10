@@ -45,7 +45,7 @@ clock_bot_src:
 grid_order_src:   db 0, 1, 4, 3, 2  ; the starting grid: YOU, CYAN, WHITE, PINK, GREEN
 car_colours_src:  db A_MSG, 0x68, 0x60, 0x58, 0x78  ; you red; cyan, green, magenta, white
 ; the cloth fill's tables of its own routines' addresses
-cf_loaders_src:                     ; by (dither phase * 8 + check row) * 2
-        dw cf_l00,cf_l01,0,0,0,0,0,0,cf_l10,cf_l11
+cf_loaders_src:                     ; by (check row * 4 + y AND 3) * 2
+        dw cf_l00,cf_l10,cf_l20,cf_l30,cf_l01,cf_l11,cf_l21,cf_l31
 cf_slots_src:
         dw cf_s0,cf_s1,cf_s2,cf_s3,cf_s4,cf_s5,cf_s6,cf_s7

@@ -458,6 +458,8 @@ cph_done:
         pop bc
         ret
 hu_go:                          ; GO: the race order redraws without the faces
+        ld a,1
+        ld (pace_skip),a        ; (a busy picture: it does not set the pace)
         ld hl,shown_order
         ld b,NCARS
 hg_1:

@@ -25,7 +25,7 @@ NWP = int(re.search(r'NWP\s+equ\s+(\d+)', src).group(1))
 CPU0X = int(re.search(r'CPU0X\s+equ\s+(\d+)', src).group(1))
 sect = lambda a, b: src[src.index(a):src.index(b)]
 tiles = [[int(v, 16) for v in l.split('defb')[1].split(';')[0].split(',')]
-         for l in sect('tiles:', 'row_index:').splitlines() if 'defb' in l]
+         for l in sect('tiles:', 'row_0:').splitlines() if 'defb' in l]
 wmap = [0] * (MAPW * MAPH)                  # rebuilt from each row's list of tiles
 for l in src.splitlines():
     m = re.match(r'row_(\d+):\s+defb\s+(.*)', l)
@@ -135,7 +135,7 @@ def at_copy_done(sp):
 def cloth(camx, camy):
     # the tablecloth: 32-px checks, the dark ones 25% dots, locked to the table
     y, x = np.mgrid[camy:camy + 120, camx:camx + 176]
-    return ((((x >> 5) + (y >> 5)) & 1) == 1) & ((x & 1) == 0) & ((y & 1) == 0)   # dark checks: 25% dots
+    return ((((x >> 5) + (y >> 5)) & 1) == 1) & ((y & 1) == 0) & ((x & 3) == (y & 2))   # dark checks: 1 in 8, staggered
 
 def window_bad(sp):
     at_copy_done(sp)

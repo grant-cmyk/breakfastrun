@@ -28,6 +28,8 @@ BUF_HI  equ 0xC0        ; (so the next pixel row down is INC H, and a row
 BUFC    equ BUF+0x1260  ; race-order variables, in the buffer's unused bottom rows
         ; (defined up here: code before hud.asm uses equs built on it, and pasmo
         ; would give that code a stale first-pass value)
+cloth_pat equ BUFC+96    ; 4 kinds of dotted cloth line, 8 bytes each (32-aligned)
+CFT     equ BUFC+80     ; the 3 mini slots' loaders, check row 0 then 1 (12)
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
 NCARS   equ 5           ; you + 4 computer cars
@@ -91,6 +93,14 @@ start:                          ; once, when the program is loaded
         ld hl,bufd_src
         ld de,BUFD
         ld bc,bufd_end-bufd_src
+        ldir
+        ld hl,bufg_src
+        ld de,BUFG
+        ld bc,bufg_end-bufg_src
+        ldir
+        ld hl,bufe_src
+        ld de,BUFE
+        ld bc,bufe_end-bufe_src
         ldir
         call make_tables
         call make_copier        ; the program writes its own copy routine
@@ -196,10 +206,16 @@ draw_all:
         cp (hl)
         jr c,ws_in_time
         jr z,ws_in_time
+        ld a,(pace_skip)        ; GO's picture is a busy one-off: late or not,
+        or a                    ; it does not set the pace
+        jr nz,ws_skip
         ld (hl),PACE_FR+1       ; yes: settle on 4 frames for a while (a
         ld a,25                 ; steady 4 looks smoother than 3,4,3,4)
         ld (pace_hold),a
         jr wait_show
+ws_skip:
+        xor a
+        ld (pace_skip),a
 ws_in_time:
         ld a,(pace_hold)        ; in time: after a while at 4, try 3 again
         or a
@@ -1036,7 +1052,7 @@ wp_delta:
         add a,a
         ld l,a
         ld h,0
-        ld de,waypoints
+        ld de,wp_tab
         add hl,de
         ld e,(hl)
         inc hl
@@ -2113,6 +2129,7 @@ isr:
 ; ---------------------------------------------------------------------
 cloth_fill:
         call cloth_pats
+        call cf_init            ; which slots call minis, and which minis
         ld a,(camy)
         sub 16
         ld (cf_y0),a            ; low byte of the world y of buffer row 0
@@ -2148,6 +2165,14 @@ cf_cr:                          ; one character row
         ld (hl),0
         ld hl,cf_dummy
         ld (cf_pf),hl
+        ld a,c                  ; this row's minis, for its check row
+        and 32
+        ld hl,CFT
+        jr z,cfr_1
+        ld hl,CFT+6
+cfr_1:
+cf_wcall:
+        call cfw_e              ; (patched: cfw_e or cfw_o)
         ld a,c                  ; does the check row change in this row?
         and 31                  ; at line 32 - (y AND 31), if that is 1..7
         neg
@@ -2175,6 +2200,40 @@ cf_cr:                          ; one character row
         ld (hl),e
         inc hl
         ld (hl),d
+        ld a,(cf_kk)            ; the minis after it: the other check row's
+cfx_1:
+        add a,2
+        cp 8
+        jr nc,cf_go
+        push af
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,cf_slots
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        inc de
+        ex de,hl                ; HL -> the slot's address
+        ld e,(hl)
+        inc hl
+        ld d,(hl)               ; DE = its mini
+        push hl
+        ex de,hl
+        ld de,17                ; check row 0 -> 1: 17 on, 1 -> 0: 17 back
+        bit 5,c
+        jr z,cfx_2
+        ld de,-17
+cfx_2:
+        add hl,de
+        ex de,hl
+        pop hl
+        ld (hl),d
+        dec hl
+        ld (hl),e
+        pop af
+        jr cfx_1
 cf_go:
         ld ix,(cf_ixv)
         jp cf_r0
@@ -2182,7 +2241,7 @@ cf_crnext:
         ld sp,(cf_sp)
         ld hl,cf_n
         dec (hl)
-        jr nz,cf_cr
+        jp nz,cf_cr
         ret
 
 ; CF_PAGES: D = a third's first page: lines 1..7 use the 7 pages after it
@@ -2208,12 +2267,16 @@ cf_pages:
 ; CF_LIDX: A = world y (low byte) of a line -> HL = the loader that puts its
 ; kind of line in the main set and the other dither phase in the alternate
 cf_lidx:
-        and 0x21                ; dither phase (bit 0), check row (bit 5)
-        rlca                    ; bit 5 -> bit 0, bit 0 -> bit 3
-        rlca
-        rlca
-        and 9
-        add a,a                 ; 0, 2, 16, 18
+        ld l,a
+        and 3
+        ld h,a                  ; y AND 3
+        ld a,l
+        and 32                  ; check row -> 4
+        rrca
+        rrca
+        rrca
+        or h
+        add a,a
         ld l,a
         ld h,0
         ld de,cf_loaders
@@ -2224,27 +2287,53 @@ cf_lidx:
         ex de,hl
         ret
 
-CF_LOAD macro mainp, altp       ; the alternate set first, then the main
-        ld hl,(altp)
+; The kinds of line (y AND 3, check row): lines y AND 3 = 1 and 3 are blank
+; (Z); 0 and 2 dotted (P0, P2). A loader puts its line's kind in the main set
+; and the next line's in the alternate (the alternate first, then EXX). The
+; dotted lines take turns between P0 and P2, so on the dotted lines after line 0
+; a slot calls a mini (CF_M..), which loads a kind into the set in use: see
+; cf_minis. Each mini is 17 bytes, check row 1's just after check row 0's.
+CF_MINI macro pat
+        ld hl,(pat)
         push hl
         pop af
-        ld hl,(altp+2)
-        ld de,(altp+4)
-        ld bc,(altp+6)
-        exx
-        ex af,af'
-        ld hl,(mainp)
-        push hl
-        pop af
-        ld hl,(mainp+2)
-        ld de,(mainp+4)
-        ld bc,(mainp+6)
+        ld hl,(pat+2)
+        ld de,(pat+4)
+        ld bc,(pat+6)
         ret
         endm
-cf_l00: CF_LOAD cloth_pat+0,  cloth_pat+16   ; main: phase 0, check row 0
-cf_l01: CF_LOAD cloth_pat+8,  cloth_pat+24   ; main: phase 0, check row 1
-cf_l10: CF_LOAD cloth_pat+16, cloth_pat+0    ; main: phase 1, check row 0
-cf_l11: CF_LOAD cloth_pat+24, cloth_pat+8    ; main: phase 1, check row 1
+cf_m00: CF_MINI cloth_pat+0     ; P0, check row 0
+cf_m01: CF_MINI cloth_pat+8     ; P0, check row 1
+cf_m20: CF_MINI cloth_pat+16    ; P2, check row 0
+cf_m21: CF_MINI cloth_pat+24    ; P2, check row 1
+cf_z:   ld hl,0                 ; Z: a blank line
+        push hl
+        pop af
+        ld d,h
+        ld e,l
+        ld b,h
+        ld c,l
+        ret
+CF_PZ macro mini                ; this line dotted, the next blank
+        call cf_z
+        exx
+        ex af,af'
+        jp mini
+        endm
+CF_ZP macro mini                ; this line blank, the next dotted
+        call mini
+        exx
+        ex af,af'
+        jp cf_z
+        endm
+cf_l00: CF_PZ cf_m00            ; y AND 3 = 0, check row 0
+cf_l10: CF_ZP cf_m20            ; 1
+cf_l20: CF_PZ cf_m20            ; 2
+cf_l30: CF_ZP cf_m00            ; 3
+cf_l01: CF_PZ cf_m01            ; 0, check row 1
+cf_l11: CF_ZP cf_m21            ; 1
+cf_l21: CF_PZ cf_m21            ; 2
+cf_l31: CF_ZP cf_m01            ; 3
 CF_ROW macro                    ; bytes 23..0 of a line: 3 x 8, as 4 pairs each
         rept 3
         push bc
@@ -2370,32 +2459,43 @@ cpt_b:
         inc hl
         inc d
         djnz cpt_j
-        ld c,0xAA               ; the dither on even rows: pixel when x + y
-        ld a,(camx)             ; is even
-        and 1
+        ld a,(camx)             ; the dots, 1 in 8 and staggered (Grant, option
+        neg                     ; F): x AND 3 = 0 on lines y AND 3 = 0, x AND 3
+        and 3                   ; = 2 on lines y AND 3 = 2, none on odd lines.
+        ld b,a                  ; Bit b of byte j is x = camx - 16 + 8j + b
+        ld a,0x88
         jr z,cpt_c
-        ld c,0x55
+cpt_r:
+        rrca
+        djnz cpt_r
 cpt_c:
+        ld c,a                  ; C = the dots of lines y AND 3 = 0
         ld hl,cloth_pat
         ld b,8
 cpt_k:
-        ld d,(hl)               ; D = dark mask, row 0
+        ld d,(hl)               ; D = dark mask, check row 0
         ld a,d
         cpl
-        ld e,a                  ; E = dark mask, row 1
-        xor a                   ; odd rows: nothing - the dark checks are 25%
-        set 4,l                 ; dots (every other pixel of every other row),
-        ld (hl),a               ; not a 50% checker, which shimmered as it
-        set 3,l                 ; scrolled a pixel at a time
-        ld (hl),a
+        ld e,a                  ; E = dark mask, check row 1
+        ld a,c
+        rrca
+        rrca                    ; lines y AND 3 = 2
+        push af
+        and d
+        set 4,l
+        ld (hl),a               ; y AND 3 = 2, check row 0
+        pop af
+        and e
+        set 3,l
+        ld (hl),a               ; y AND 3 = 2, check row 1
         ld a,c
         and e
         res 4,l
-        ld (hl),a               ; even rows, check row 1
+        ld (hl),a               ; y AND 3 = 0, check row 1
         ld a,c
         and d
         res 3,l
-        ld (hl),a               ; even rows, check row 0
+        ld (hl),a               ; y AND 3 = 0, check row 0
         inc l
         djnz cpt_k
         ret
@@ -2865,10 +2965,9 @@ cf_n:     db 0
 cf_kk:    db 0
 cf_th:    db 0
 cf_dummy: db 0,0,0
-        defs (32 - ($ AND 31)) AND 31
-cloth_pat: defs 32              ; 4 kinds of cloth line (aligned: index by bits)
 pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
 pace_hold: db 0
+pace_skip: db 0          ; 1: this picture does not set the pace (GO's)
 ph_steps: db 1
 oc_x:     dw 0                  ; o_check: car centre - 4, and its distances
 oc_y:     dw 0
@@ -2933,7 +3032,7 @@ dt_rowp:  dw 0
 dc_tab:   db 0
 
         include "data.asm"
-        include "waypoints.asm"   ; (fills the gap before sq4's page)
+        include "clothmini.asm"   ; (fills the gap before sq4's page)
 ; buf_addr: B = buffer row, C = x  ->  HL = address (screen layout at BUF)
 buf_addr:
         call scr_addr
@@ -3033,6 +3132,7 @@ gd_2:
         include "hud.asm"
         include "gen_tiles.asm"
         include "gen_bumps.asm"
+        include "clothmini2.asm"
 code_end:
 
 ; ---------------------------------------------------------------------
@@ -3225,11 +3325,21 @@ bufd_src:
         include "thrust.asm"    ; the push for each heading
         include "consts.asm"    ; driving styles, the throttle spread, the cloth's rows
 bufd_end:
+bufg_src:
+        include "waypoints.asm" ; the centre line, for the computer cars
+bufg_end:
+bufe_src:
+        include "rowidx.asm"    ; the map: each tile row's list
+bufe_end:
 init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
+BUFG      equ BUF+0x1660        ; the waypoints
+BUFE      equ BUF+0x1460        ; the map's row index
+row_index equ BUFE + row_index_src - bufe_src
+wp_tab    equ BUFG + waypoints - bufg_src
 thrust_tab equ BUFD + thrust_tab_src - bufd_src
 ai_styles equ BUFD + ai_styles_src - bufd_src
 rev4      equ BUFD + rev4_src - bufd_src
@@ -3288,7 +3398,7 @@ faces     equ BUFA + faces_src - bufa_src
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
-        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161
+        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161 + (bufg_end - bufg_src) / 161 + (bufe_end - bufe_src) / 161
         .error a block for the buffer's bottom rows is over 160 bytes
         endif
         if init_end > BUFA
