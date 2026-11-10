@@ -105,7 +105,7 @@ textarea { width: 100%; min-height: 150px; resize: vertical; background: var(--b
       </div>
       <div class="status" id="status" role="status"></div>
       <textarea id="text" aria-label="Car art as text" spellcheck="false"></textarea>
-      <p class="note">Copy the art and paste it into the chat. Claude builds it into the game and checks it. To carry on later, paste art back here and press Load. This browser also keeps your latest drawing.</p>
+      <p class="note">Copy the art and paste it into the chat: it carries every car and every face in one go. Claude builds it into the game and checks it. To carry on later, paste art back here and press Load. This browser also keeps your latest drawing.</p>
     </section>
   </div>
 </div>
@@ -247,12 +247,13 @@ function drawPreviews() {
 }
 
 // ---- text in and out
-function toText() {
-  if (mode === 'face') {
-    let t = 'BREAKFAST RUN FACE ART v1\nX = ink   . = the band shows\n';
-    faces.forEach((g, k) => { t += `\n== ${CARS[k].name} face ==\n` + g.map(r => r.join('')).join('\n') + '\n' });
-    return t;
-  }
+function faceText() {
+  let t = 'BREAKFAST RUN FACE ART v1\nX = ink   . = the band shows\n';
+  faces.forEach((g, k) => { t += `\n== ${CARS[k].name} face ==\n` + g.map(r => r.join('')).join('\n') + '\n' });
+  return t;
+}
+function toText() { return carText() + '\n' + faceText() }   // one paste carries every car and face
+function carText() {
   let t = 'BREAKFAST RUN CAR ART v1\nX = ink (black)   o = paper (white body)   . = empty (road shows)\n';
   art.forEach((c, k) => c.forEach((g, h) => { t += `\n== ${CARS[k].name} heading ${['0', '22.5', '45'][h]} ==\n` + g.map(r => r.join('')).join('\n') + '\n' }));
   return t;

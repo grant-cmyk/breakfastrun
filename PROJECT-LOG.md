@@ -561,3 +561,6 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Checked in the game's race order: docs/design/panel_grants_faces.png.
 - Grant's updated clown face (round eyes in rings): pasted still under PINK (from an editor draft
   made before the swap); put on GREEN to keep the swap. PINK keeps the dark-haired face.
+- Grant's third round of all five faces in (the clown on GREEN, the dark-haired face on PINK).
+- Editor: Copy art for Claude now carries every car (15 drawings) and every face (5) in one paste;
+  Load takes it back (round trip tested in Chromium: 20 drawings).
