@@ -671,3 +671,5 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   and the strip. Checked on the grid.
 - Grant: the wave much smaller, just vertical lines (no dotted ones): 13 one-pixel lines up to
   7 px tall; 3 lines of small letters fit again. docs/design/radio_wave.gif.
+- Grant: the NOS in the middle of its slot, not touching the frame. Centred by its ink inside the
+  14 x 14 inside of the slot (1 px clear top and bottom, 3 px each side).

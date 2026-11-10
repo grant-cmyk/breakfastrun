@@ -65,9 +65,13 @@ def strip(msg):
             for c in (4 + 2 * k, 5 + 2 * k): attr[r * 32 + c] = 0x78
         bits[168, x0 + 1:x0 + 15] = 1; bits[183, x0 + 1:x0 + 15] = 1
         bits[169:183, x0] = 1; bits[169:183, x0 + 15] = 1
-    for y, row in enumerate(NOS):                  # slot 1: the NOS canister you start with
+    ys = [y for y in range(16) if 'X' in NOS[y]]   # slot 1: the NOS canister you start with,
+    xs = [x for x in range(16) if any(r[x] == 'X' for r in NOS)]   # centred inside its frame
+    dy = 169 + (14 - (ys[-1] - ys[0] + 1)) // 2 - ys[0]
+    dx = 33 + (14 - (xs[-1] - xs[0] + 1)) // 2 - xs[0]
+    for y, row in enumerate(NOS):
         for x, v in enumerate(row):
-            if v == 'X': bits[168 + y, 32 + x] = 1
+            if v == 'X': bits[dy + y, dx + x] = 1
     x0, x1, y0, y1 = 88, 151, 160, 191             # the message box, cols 11-18: white, rounded
     for r in range(20, 24):
         for c in range(11, 19): attr[r * 32 + c] = 0x78
