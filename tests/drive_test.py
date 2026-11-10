@@ -169,6 +169,7 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)
     check((sb[8:24, 200:256] == np.array(logo)).all(), 'the BREAKFAST RUN logo is at the top of the panel')
     msg = screen_text(sp, 1, 12, 9) + '/' + screen_text(sp, 2, 12, 7)
+    check(screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
     labels = screen_text(sp, 20, 1, 3) + '/' + screen_text(sp, 20, 12, 4) + '/' + screen_text(sp, 21, 1, 4)
     print('message bar %r  panel labels %r' % (msg, labels))

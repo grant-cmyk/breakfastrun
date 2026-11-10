@@ -384,3 +384,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   generated art from a stale browser draft (not taken - would have undone his first car as CYAN).
   PINK/WHITE 22.5 and 45 sampled 16x a pixel from his shapes, 45 made symmetric: drafts.
   drive_test RESULT: PASS. Laps 13.6 14.4 13.8 14.9 s.
+
+## 2026-11-10 06:15 SAST - track 1 named
+- Grant: the first track is Breakfast at Tiffany's. BREAKFAST AT TIFFANY'S (22 characters, the
+  window's width) along row 0; msg_clear now clears only the message bar (rows 1-2), not row 0.
+  Test checks the name. drive_test RESULT: PASS. Other verified names for later tracks: The Breakfast
+  Club, Green Eggs and Ham, The Dish Ran Away with the Spoon, Paddington's Marmalade, Goldilocks'
+  Porridge, Breakfast in America.

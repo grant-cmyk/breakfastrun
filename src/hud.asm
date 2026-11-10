@@ -28,6 +28,10 @@ hud_init:
         ld b,1                  ; logo, 7 x 2 cells at the top of the panel
         ld c,25
         call draw_logo
+        ld hl,txt_track         ; the track's name, along the top
+        ld b,0
+        ld c,1
+        call print_at
         ld hl,txt_race
         ld b,TOWER_Y-1
         ld c,25
@@ -271,15 +275,15 @@ pb_b0:
 ; ---------------------------------------------------------------------
 ; THE MESSAGE BAR
 ; ---------------------------------------------------------------------
-msg_clear:
-        ld b,0
+msg_clear:                      ; the message bar: rows 1-2 (row 0 is the
+        ld b,1                  ; track's name)
         ld c,0
-        ld d,3
+        ld d,2
         ld e,24
         call clear_cells
-        ld b,0
+        ld b,1
         ld c,0
-        ld d,3
+        ld d,2
         ld e,24
         ld a,A_YEL
         jp set_attrs
@@ -1085,6 +1089,7 @@ txt_go:       db "GO!",0
 txt_final:    db "FINAL LAP!",0
 txt_finished: db "FINISHED",0
 txt_places:   db "1ST",0, "2ND",0, "3RD",0, "4TH",0, "5TH",0
+txt_track:    db "BREAKFAST AT TIFFANY'S",0   ; track 1 (Grant, 10 Nov 2026): 22 = the window's width
 txt_best:     db "BEST",0
 txt_nobest:   db "--.-",0
 txt_lapword:  db "LAP",0
