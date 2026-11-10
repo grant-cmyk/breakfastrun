@@ -660,3 +660,6 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   2014 ban on 'push hard' / 'push now' confirmed; 'hammer time' (Hamilton's team) confirmed by one
   glossary. Mock-up: the wave (15 bars about a mid line, moving while the chief talks, then flat)
   above the small letters: docs/design/radio_wave.gif, radio_wave_still.png.
+- Grant's reference for the wave (tall bars, varied heights, rounded ends, dark and grey): 20 bars,
+  2 px wide, up to 13 px tall, rounded ends, the grey ones dotted; 2 lines of small letters below.
+  Grant: 'exactly'. docs/design/radio_wave.gif, radio_wave_still.png.
