@@ -373,3 +373,14 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   bug (RR resets flags after CP) caught by the top-speed test and fixed.
 - Measured, whole lap: work 183.8k T; 160 pictures at 3 frames, 48 at 4. Laps 13.7 14.5 13.7 15.0 s.
   docs/design/items_on_cloth.png.
+
+## 2026-11-10 06:11 SAST - faces, shorter logo, PINK and WHITE cars
+- Grant: little cartoon faces for each car in the race order; RUN less tall to make room.
+  tools/make_faces.py: 16x16 line faces (YOU helmet+visor, CYAN shades+grin, GREEN cap+closed eyes,
+  PINK spikes+ring eyes+O mouth, WHITE glasses+straight mouth), kept in TOPMEM; tower_row draws place,
+  car (cols 26-27), face (28-29), flag (30). Logo 7x2 cells: RUN 8 px tall in the second row, egg
+  flattened beside it. Race order from row 5 (TOWER_Y). docs/design/panel_faces.png.
+- Grant's editor paste: PINK and WHITE heading 0 new (taken); his other headings were the old
+  generated art from a stale browser draft (not taken - would have undone his first car as CYAN).
+  PINK/WHITE 22.5 and 45 sampled 16x a pixel from his shapes, 45 made symmetric: drafts.
+  drive_test RESULT: PASS. Laps 13.6 14.4 13.8 14.9 s.

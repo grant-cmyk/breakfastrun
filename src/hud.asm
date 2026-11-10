@@ -17,6 +17,7 @@ A_MSG   equ 0x57                ; bright white on red
 A_GO    equ 0x67                ; bright white on green
 A_LAMP  equ 0x42                ; bright red on black: a start light
 A_LAP   equ 0x4F                ; bright white on blue
+TOWER_Y equ 5                   ; first row of the race order (RACE above it)
 A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 
 ; ---------------------------------------------------------------------
@@ -24,14 +25,14 @@ A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 ; ---------------------------------------------------------------------
 hud_init:
         call draw_frame
-        ld b,1                  ; logo, 7 x 3 cells at the top of the panel
+        ld b,1                  ; logo, 7 x 2 cells at the top of the panel
         ld c,25
         call draw_logo
         ld hl,txt_race
-        ld b,5
+        ld b,TOWER_Y-1
         ld c,25
         call print_at
-        ld b,5                  ; RACE: white on blue across the panel
+        ld b,TOWER_Y-1          ; RACE: white on blue across the panel
         ld c,25
         ld d,1
         ld e,7
@@ -87,7 +88,7 @@ draw_logo:
         add a,a
         ld c,a                  ; C = pixel x
         ld de,logo_bits
-        ld a,24
+        ld a,16
 dl_row:
         push af
         push bc
@@ -104,9 +105,9 @@ dl_byte:
         pop af
         dec a
         jr nz,dl_row
-        ld hl,logo_attr         ; 3 rows of 7 attributes
+        ld hl,logo_attr         ; 2 rows of 7 attributes
         ld de,0x5800+1*32+25
-        ld b,3
+        ld b,2
 dl_attr:
         push bc
         ld bc,7
@@ -484,7 +485,8 @@ ho_down:
         jp new_race
 
 ; ---------------------------------------------------------------------
-; THE RACE ORDER (the tower): rows 6-15 of the panel, 2 rows a place
+; THE RACE ORDER (the tower): rows TOWER_Y.. of the panel, 2 rows a place:
+; the place, the car, its driver's face, and a flag when it is in
 ; ---------------------------------------------------------------------
 tower_update:                   ; redraw the first place whose car changed
         ld b,0                  ; (one a picture at most: no spikes)
@@ -543,7 +545,7 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ld (tr_car),a
         ld a,b
         add a,a
-        add a,6
+        add a,TOWER_Y
         ld (tr_row),a           ; its first cell row
         ld b,a                  ; clear 2 cell rows x 7 bytes, INC H per pixel row
         ld c,25
@@ -566,7 +568,7 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ld e,7
         call set_attrs
         ld a,(tr_row)           ; the place number
-        sub 6
+        sub TOWER_Y
         srl a
         add a,'1'
         ld (txt_digit),a
@@ -585,13 +587,31 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ex de,hl
         ld a,(tr_row)
         ld b,a
-        ld c,27
+        ld c,26
         call tr_pic
         ld a,(tr_row)
         inc a
         ld b,a
-        ld c,27
+        ld c,26
         call tr_pic
+        ld a,(tr_car)           ; the driver's face, beside the car:
+        add a,a                 ; faces + car * 32
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,faces
+        add hl,de
+        ex de,hl
+        ld a,(tr_row)
+        ld b,a
+        call tr_face
+        ld a,(tr_row)
+        inc a
+        ld b,a
+        call tr_face
         ld a,(tr_key)           ; finished: a chequered flag beside the car
         bit 3,a
         ret z
@@ -605,6 +625,22 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         ld b,a
         ld c,30
         ld de,flag_bot
+tr_face:                        ; 8 rows x 2 bytes at DE into cells B, 28-29
+        ld c,28
+        call cell_addr
+        ld b,8
+tf_row:
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc l
+        ld a,(de)
+        ld (hl),a
+        inc de
+        dec l
+        inc h
+        djnz tf_row
+        ret
 tr_glyph:                       ; 8 bytes at DE into cell B, C
         call cell_addr
         ld b,8

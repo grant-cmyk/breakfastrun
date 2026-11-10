@@ -2805,6 +2805,7 @@ im2_on:
 high_src:
         include "logo.asm"
         include "topdata.asm"   ; the breakfast things' masks, the mini-map
+        include "faces.asm"     ; the drivers' faces for the race order
 high_end:
 init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
@@ -2813,6 +2814,7 @@ logo_attr equ TOPMEM + logo_attr_src - high_src
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
 minimap   equ TOPMEM + minimap_src - high_src
+faces     equ TOPMEM + faces_src - high_src
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
