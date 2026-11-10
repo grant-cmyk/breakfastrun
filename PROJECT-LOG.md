@@ -632,3 +632,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   column also crosses the top dip. Now only on the bottom straight. Only the mini-map's bytes
   changed (topdata.asm). docs/design/minimap_fixed.png. drive_test not re-run (it does not read
   the mini-map; nothing else changed).
+
+## 2026-11-10 SAST - mock-up: the driver strip
+- Grant: start with one NOS canister; the LAP / TIME / BEST lines are not needed - use the space
+  for the player: his face on the left, his inventory (3 things), a message box ("great driving!"
+  on an overtake, "superb lap", "get it together" on hitting the O's). Mock-up on a real race
+  screen: docs/design/driver_strip.png (tools/make_strip_mockups.py; ROM letters read from the
+  emulator's ROM, not kept in the repo). Face twice size on red; 3 white framed slots, the NOS in
+  the first; a white rounded box with a speech tail back at the face, 2 lines of 9 letters.
