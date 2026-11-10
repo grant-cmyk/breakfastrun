@@ -85,6 +85,10 @@ start:                          ; once, when the program is loaded
         ld de,BUFB
         ld bc,bufb_end-bufb_src
         ldir
+        ld hl,bufd_src
+        ld de,BUFD
+        ld bc,bufd_end-bufd_src
+        ldir
         call make_tables
         call make_copier        ; the program writes its own copy routine
         call im2_on
@@ -939,15 +943,6 @@ ai_style:
         ld de,ai_styles-5
         add hl,de
         ret
-ai_styles:  ;  reach  line   ease fuss
-        db 24, 3,2,  1,   2     ; CYAN  the racer: full throttle, a tidy
-                                ;       line, eases off at 45 degrees
-        db 30, 3,2,  1,   2     ; GREEN the smooth one (and slowest): turns in early, cuts
-                                ;       corners, eases off at 45 degrees
-        db 24, 7,4,  1,   3     ; PINK  the wild one: a wandering line, twitchy
-                                ;       steering, the most mistakes
-        db 26, 7,4,  2,   2     ; WHITE the steady one: brakes early, rarely
-                                ;       wrong
 ; pace_gate (IX): A = CT_GO on PACE of every 16 frames, else 0
 pace_gate:
         ld a,(ticks)            ; counted in the car's own frames (it thinks
@@ -969,7 +964,6 @@ pace_gate:
         ld a,CT_GO
         ret
 
-rev4:   db 0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15   ; 0..15, bits reversed
 
 ; next_waypoint: move on, pick a new aiming offset, maybe start a mistake
 next_waypoint:
@@ -1815,13 +1809,13 @@ draw_car:
         ld de,(camy)
         or a
         sbc hl,de
-        ld de,15                ; visible if -15 <= wy <= 127
-        add hl,de
-        ld a,h
-        or a
+        ld de,15                ; visible if -15 <= wy <= WIN_H-1 (it was 127, from
+        add hl,de               ; the 128-line window: a car just below the 120
+        ld a,h                  ; drew into rows 136..158 - and the tables kept in
+        or a                    ; the buffer's bottom rows)
         ret nz
         ld a,l
-        cp 127+15+1
+        cp WIN_H-1+15+1
         ret nc
         inc a                   ; buffer row = 16 + wy = 1 + (wy + 15)
         ld (dc_row0),a
@@ -2250,39 +2244,6 @@ cf_l10: CF_LOAD cloth_pat+16, cloth_pat+0    ; main: phase 1, check row 0
 cf_l11: CF_LOAD cloth_pat+24, cloth_pat+8    ; main: phase 1, check row 1
 cf_slots:
         dw cf_s0,cf_s1,cf_s2,cf_s3,cf_s4,cf_s5,cf_s6,cf_s7
-cf_tab:                         ; each character row: IX for line 0, buffer row
-                                ; (WIN_H/8 of them: buffer rows 16..135)
-        dw 0xD018
-        db 128
-        dw 0xC8F8
-        db 120
-        dw 0xC8D8
-        db 112
-        dw 0xC8B8
-        db 104
-        dw 0xC898
-        db 96
-        dw 0xC878
-        db 88
-        dw 0xC858
-        db 80
-        dw 0xC838
-        db 72
-        dw 0xC818
-        db 64
-        dw 0xC0F8
-        db 56
-        dw 0xC0D8
-        db 48
-        dw 0xC0B8
-        db 40
-        dw 0xC098
-        db 32
-        dw 0xC078
-        db 24
-        dw 0xC058
-        db 16
-
 CF_ROW macro                    ; bytes 23..0 of a line: 3 x 8, as 4 pairs each
         rept 3
         push bc
@@ -3194,10 +3155,20 @@ bufa_end:
 bufb_src:
         include "logo.asm"
 bufb_end:
+bufd_src:
+        include "thrust.asm"    ; the push for each heading
+        include "consts.asm"    ; driving styles, the throttle spread, the cloth's rows
+bufd_end:
 init_end:
 TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
+BUFC      equ BUF+0x1260        ; variables (nothing to copy): race-order gaps
+BUFD      equ BUF+0x1360        ; constant tables
+thrust_tab equ BUFD + thrust_tab_src - bufd_src
+ai_styles equ BUFD + ai_styles_src - bufd_src
+rev4      equ BUFD + rev4_src - bufd_src
+cf_tab    equ BUFD + cf_tab_src - bufd_src
 logo_bits equ BUFB + logo_bits_src - bufb_src
 logo_attr equ BUFB + logo_attr_src - bufb_src
 txt_race  equ TOPMEM + txt_race_src - high_src
@@ -3241,7 +3212,7 @@ faces     equ BUFA + faces_src - bufa_src
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
-        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161
+        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161
         .error a block for the buffer's bottom rows is over 160 bytes
         endif
         if init_end > BUFA

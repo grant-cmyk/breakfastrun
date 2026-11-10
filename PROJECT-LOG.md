@@ -493,3 +493,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Memory: code had reached 0xC000 exactly. The HUD's fixed text moved to TOPMEM; faces and logo
   moved into the back buffer's unused bottom rows (152..191: BUFA, BUFB), copied by start. Low
   memory free: 178 bytes; TOPMEM free: about 180. drive_test RESULT: PASS.
+
+## 2026-11-10 08:07 SAST - tables to the buffer's bottom rows; fix: cars drawn below the window
+- Memory: thrust_tab (make_data -> src/thrust.asm), ai_styles, rev4, cf_tab moved to BUFD (buffer
+  row 155 on), copied by start; BUFC reserved for variables. Low memory free: 434 bytes.
+- Bug found by the move: draw_car still clipped at window row 127 (the 128-line window), so a car just
+  below the 120-line window drew into buffer rows 136..158 - harmless until tables lived there
+  (thrust_tab bytes 16-17 overwritten after ~20 s: computer cars lost their steering). Now WIN_H-1.
+  drive_test RESULT: PASS; laps 14.1 17.2 15.0 14.1 s.
