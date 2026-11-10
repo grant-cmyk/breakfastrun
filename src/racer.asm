@@ -30,6 +30,7 @@ BUFC    equ BUF+0x1260  ; race-order variables, in the buffer's unused bottom ro
         ; would give that code a stale first-pass value)
 cloth_pat equ BUFC+96    ; 4 kinds of dotted cloth line, 8 bytes each (32-aligned)
 CFT     equ BUFC+80     ; the 3 mini slots' loaders, check row 0 then 1 (12)
+CFW_CR  equ BUFC+92     ; the check row (0 or 32) the mini slots hold; 0xFF: rewrite
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
 NCARS   equ 5           ; you + 4 computer cars
@@ -581,27 +582,6 @@ heading_push:
         ld c,(hl)
         inc hl
         ld b,(hl)
-        ret
-
-; add_v: the 3-byte position at HL (fraction, pixel low, pixel high)
-; plus the speed DE (can be negative)
-add_v:
-        ld a,(hl)
-        add a,e
-        ld (hl),a
-        inc hl
-        ld c,0
-        bit 7,d
-        jr z,av_pos
-        dec c
-av_pos:
-        ld a,(hl)
-        adc a,d
-        ld (hl),a
-        inc hl
-        ld a,(hl)
-        adc a,c
-        ld (hl),a
         ret
 
 ; friction: HL = HL - HL/2^fshift; tiny speeds become exactly 0
@@ -2154,14 +2134,20 @@ cf_cr:                          ; one character row
         ld (hl),0
         ld hl,cf_dummy
         ld (cf_pf),hl
-        ld a,c                  ; this row's minis, for its check row
-        and 32
+        ld a,c                  ; this row's minis, for its check row - only
+        and 32                  ; if the slots hold another (CFW_CR: what they
+        ld hl,CFW_CR            ; hold; 0xFF after a mid-row change)
+        cp (hl)
+        jr z,cfr_2
+        ld (hl),a
         ld hl,CFT
+        or a
         jr z,cfr_1
         ld hl,CFT+6
 cfr_1:
 cf_wcall:
         call cfw_e              ; (patched: cfw_e or cfw_o)
+cfr_2:
         ld a,c                  ; does the check row change in this row?
         and 31                  ; at line 32 - (y AND 31), if that is 1..7
         neg
@@ -2189,6 +2175,8 @@ cf_wcall:
         ld (hl),e
         inc hl
         ld (hl),d
+        ld a,0xFF               ; (the slots are mixed now: rewrite next row)
+        ld (CFW_CR),a
         ld a,(cf_kk)            ; the minis after it: the other check row's
 cfx_1:
         add a,2
@@ -2870,19 +2858,15 @@ tdx:      db 0
 tdy:      db 0
 cross:    dw 0
 dot:      dw 0
-msign:    db 0
-bu_off:   db 0
 wxu:      db 0
 bump_b:   dw 0
 bdx:      dw 0
 bdy:      dw 0
 tb:       defs 9
 dc_row0:  db 0
-dc_ink:   db 0
 dc_first: db 0
 dc_count: db 0
 dist_cur: dw 0
-bo_n:     db 0
 mc_y:     db 0
 mc_h:     db 0
 mc_n:     db 0
@@ -2929,14 +2913,11 @@ shown_on:    db 0
 shown_final: db 0
 msg_timer:   db 0
 race_time:   dw 0               ; TV frames since your first Q
-lap_start:   dw 0
 best_lap:    dw 0
 q_up:        db 0
 rp_rank:     db 0
-rp_ptr:      dw 0
 tr_car:      db 0
 tr_row:      db 0
-mk_x:        db 0
 pb_attr:     db 0
 blink:       db 0
 best_car:    db 0

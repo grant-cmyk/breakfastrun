@@ -710,3 +710,19 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tests/nos_test.py (new): RESULT PASS. drive_test RESULT PASS (start 15.0/s). Lap: work 209.4k T
   a picture (3 frames = 209.7k), frames {3: 162, 4: 34} - the sweep should win this back.
   docs/design/nos_pickup.png.
+
+## 2026-11-10 SAST - memory and speed sweep (first pass)
+- Dead code and data removed: add_v (unused routine), 7 unused variables (msign, bu_off, dc_ink,
+  bo_n, lap_start, rp_ptr, mk_x); earlier today the old LAP/TIME/BEST code and its 8 texts.
+- The fixed screen is drawn once from the start-up area (screen_once), and the set-up (start) runs
+  from there too: ~400 bytes of one-off code out of the program.
+- Cloth F: the 3 mini slots are rewritten only when their check row changes (CFW_CR), not on every
+  character row: cloth_fill 46.2k -> 45.0k T a picture.
+- Memory now: low 15 bytes spare + 141 in the gap before sq4; TOPMEM 61; bottom-row strips: BUFB
+  34, BUFD 15, BUFE 9, BUFF 5, BUFG 10, BUFH 8 (BUFA full); start-up area 426 bytes to spare.
+- Speed now (whole lap): work 207.5k T a picture (3 frames = 209.7k), frames {3: 164, 4: 32}.
+  Per picture: ticks (physics, AI, bumps) 69k, cloth 45k, tiles 35k, copy 29k, cars 17k, HUD 8k.
+- Next candidates (not done): physics per car (the biggest share), the pair loop (+~1.4k T over the
+  written-out version), F's minis (~5k). Graphics: 12 of each car's 16 headings are quarter-turns
+  of the first 4 (3.8 KB) - only worth making at the start if a 4 KB space is ever free.
+- drive_test PASS (start 15.0/s), nos_test PASS.

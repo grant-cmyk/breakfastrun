@@ -6,6 +6,8 @@
 ; take turns, P(a), P(b), P(a); only their check row changes, row by row.
 ; ---------------------------------------------------------------------
 cf_init:
+        ld a,0xFF               ; the mini slots: written afresh this picture
+        ld (CFW_CR),a
         ld hl,cf_slots+2        ; every slot back to nops
         ld b,7
 cfi_1:
