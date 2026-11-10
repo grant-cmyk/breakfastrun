@@ -246,7 +246,7 @@ with Racer(headless=True) as sp:
     for i in range(4):
         r = 5 + 2 * i
         flag = cellrows(r, 31) + cellrows(r + 1, 31)
-        ok_flags &= flag == [0, 0, 0xCC, 0xCC, 0x33, 0x33, 0xCC, 0xCC, 0x33, 0x33, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]
+        ok_flags &= flag == [0, 0, 0, 0x33, 0x33, 0x0C, 0x0C, 0x33, 0x33, 0x20, 0x20, 0x20, 0x20, 0, 0, 0]
         cn = sp.read8(SYM['order'] + i)
         want = faces[cn * 32:cn * 32 + 32]
         got = [b for k in range(2) for pair in zip(cellrows(r + k, 29), cellrows(r + k, 30)) for b in pair]

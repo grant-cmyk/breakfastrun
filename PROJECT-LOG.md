@@ -410,3 +410,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   12/16 (was 14). Laps: CYAN 13.6, GREEN 16.9, PINK 14.2, WHITE 15.3 s.
 - Test: 'not faster than your top speed' now counts speeds over 1.80 (bump kicks and slides add a
   moment over the 1.75 cap; PINK hit 2.3% over 1.75, 0.1% over 1.80). drive_test RESULT: PASS.
+
+## 2026-11-10 06:37 SAST - smaller flag
+- Grant: flags smaller to fit in better. Now a 6x6 square of 2x2 checks on a 4-px pole, 2 px clear
+  of the face, centred on the place. Test updated. drive_test RESULT: PASS.
+  docs/design/panel_flags_small.png.

@@ -657,15 +657,15 @@ tg_row:
         inc h
         djnz tg_row
         ret
-flag_top:                       ; the chequered flag: a square of 2 x 2 checks
-        db 0,0                  ; on a pole, 8 wide and 14 tall, centred on the
-        db %11001100,%11001100  ; place's 2 cell rows
-        db %00110011,%00110011
-        db %11001100,%11001100
+flag_top:                       ; the chequered flag, small: a 6 x 6 square of
+        db 0,0,0                ; 2 x 2 checks on a pole, 2 px clear of the
+        db %00110011,%00110011  ; face, centred on the place's 2 cell rows
+        db %00001100,%00001100
+        db %00110011
 flag_bot:
-        db %00110011,%00110011
-        db %10000000,%10000000,%10000000,%10000000
-        db %10000000,%10000000
+        db %00110011
+        db %00100000,%00100000,%00100000,%00100000
+        db 0,0,0
 tr_pic:                         ; 8 rows of the picture (ink only) into cell B, C
         call cell_addr
         ld b,8
