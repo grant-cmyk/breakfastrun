@@ -501,3 +501,26 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   below the 120-line window drew into buffer rows 136..158 - harmless until tables lived there
   (thrust_tab bytes 16-17 overwritten after ~20 s: computer cars lost their steering). Now WIN_H-1.
   drive_test RESULT: PASS; laps 14.1 17.2 15.0 14.1 s.
+
+## 2026-11-10 08:40 SAST - race order while racing: gaps, best-lap clock, flags, small font
+- Grant: when the race starts the faces go and each car shows its gap to the leader, timed at 8
+  checkpoints (every 4th waypoint); a 3x5 number font so more numbers fit (columns 28-29). Under the
+  order: a clock and the best lap (no "BEST" label). The best-lap holder gets a clock at the right of
+  its row (column 31); a finished car a mini chequered flag (column 30). Mini-map black on yellow.
+- Memory: car_rows and tdraw_table moved to TOPMEM; buf_addr, scr_addr and gap_draw now fill the
+  127-byte gap before sq4's page (savings earlier in memory are swallowed by that alignment).
+  Low memory free: 80 bytes.
+- Bug: code moved ahead of hud.asm used GAPS/SHGAP (equs built on BUFC, defined at the file end):
+  pasmo gave it the first-pass value, so gaps were read from ROM address 0x0018 and "shown" values
+  written to 0x0022 - every gap redrew every time. BUFC now defined at the top of racer.asm.
+- Bug: the start ran at 12.5 pictures/s (merged build 16.5). One late picture at GO (GO message +
+  a race-order row) set the 4-frame pace for 25 pictures. GO's picture now does nothing else.
+- drive_test RESULT: PASS (start 16.0 pictures/s). tests/profile.py fixed (measures the start).
+
+## 2026-11-10 08:40 SAST - Slim Jane replaces WHITE; the old WHITE goes to a pool
+- Grant: replace the glasses driver with Slim Jane ("need a girl in the race"), keep him as a
+  tougher racer for later races. WHITE's heading 0 is Grant's slim open-wheeler; 22.5 and 45 placed
+  by hand on the pixel grid (turn_car.py's draft turned the 1-pixel wings to mush). Face: long hair,
+  fringe, lashes, a smile. The old car is in tools/pool_art.txt (SPECS) and his face in
+  POOL['SPECS'] in tools/make_faces.py - kept in the repo, not loaded into the 48K (no room: a car is
+  1024 bytes, 80 are free). Jane drives as WHITE did (15/16 throttle, 3/256 mistakes) for now.

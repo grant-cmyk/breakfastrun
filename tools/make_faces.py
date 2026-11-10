@@ -5,7 +5,8 @@ face says its driver's way of driving (Grant, 10 Nov 2026):
   CYAN   the racer: shades, angry brows, gritted teeth
   GREEN  the slow truck: asleep - a cap, eyes shut, a snoring o, a z
   PINK   the tank commander: a steel helmet with a star, stern brows, a moustache
-  WHITE  the steady one: round glasses, a straight mouth
+  WHITE  Slim Jane: long hair, a fringe, lashes, a smile
+  (pool) SPECS  the steady one: round glasses, a straight mouth
 Shown ink on the car's colour band. Writes src/faces.asm (16 rows x 2 bytes a
 face, kept in TOPMEM) and build/faces/*.txt for one_bit_review.py."""
 import os
@@ -93,8 +94,28 @@ F['PINK'] = ["................",
              "....##....##....",
              "......####......",
              "................"]
-# WHITE: a side parting, round glasses joined by a bridge, a straight mouth
-F['WHITE'] = face(ink=line(5, 12, 2) + [(4, 3), (3, 4)] + [(3, 5), (4, 5), (5, 5), (2, 6), (6, 6), (2, 7), (6, 7), (3, 8), (4, 8), (5, 8),
+# WHITE: Slim Jane (Grant, 10 Nov 2026: "need a girl in the race") - long hair
+# framing her face, a fringe, lashes over the eyes, a smile
+F['WHITE'] = ["................",
+              "....########....",
+              "..############..",
+              ".##############.",
+              ".####......####.",
+              "###..........###",
+              "##..#.#..#.#..##",
+              "##..##....##..##",
+              "##............##",
+              "##............##",
+              "##...#....#...##",
+              "##....####....##",
+              "##.#........#.##",
+              "##..##....##..##",
+              "##....####....##",
+              "................"]
+# The pool: drivers kept for later races, not in the game yet (tools/pool_art.txt)
+POOL = {}
+# SPECS (WHITE until 10 Nov 2026): a side parting, round glasses joined by a bridge, a straight mouth
+POOL['SPECS'] = face(ink=line(5, 12, 2) + [(4, 3), (3, 4)] + [(3, 5), (4, 5), (5, 5), (2, 6), (6, 6), (2, 7), (6, 7), (3, 8), (4, 8), (5, 8),
                        (10, 5), (11, 5), (12, 5), (9, 6), (13, 6), (9, 7), (13, 7), (10, 8), (11, 8), (12, 8), (7, 6), (8, 6), (4, 7), (11, 7)]
                        + line(5, 10, 11))
 ORDER = ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE']
@@ -109,5 +130,7 @@ with open(os.path.join(ROOT, 'src', 'faces.asm'), 'w') as f:
         f.write('; %s\n' % name)
         for r in g:
             f.write('        defb %%%s,%%%s\n' % (r[:8].replace('#', '1').replace('.', '0'), r[8:].replace('#', '1').replace('.', '0')))
+for name in POOL:
+    open(os.path.join(ROOT, 'build', 'faces', name.lower() + '.txt'), 'w').write('\n'.join(POOL[name]) + '\n')
 for name in ORDER:
     print(name); print('\n'.join(F[name])); print()

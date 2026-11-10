@@ -1,14 +1,15 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-10 07:35 SAST · machine: Claude cloud container · branch: main (trial-window-22 merged) · commit: see `git log -1`
+**Stamped:** 2026-11-10 08:45 SAST · machine: Claude cloud container · branch: main (trial-window-22 merged) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 22 x 15 cells (176 x 120) in an arcade bezel; the
 table a blue-on-cyan chequered cloth (dark checks 25% dots); cereal O's (solid - cars bounce off) mark
 the road; breakfast things masked on top. Five of Grant's own cars (YOU, CYAN, GREEN the slow 3-axle
-truck, PINK the tracked car, WHITE), each computer car with its own driving style; skids at speed;
-the finish: cars roll to a stop, flags in the race order with the drivers' faces, RACE FINISHED when
-all are in. Beeper engine (pitch from your speed) and crash sound, played in the wait time. Own IM2
+truck, PINK the tracked car, WHITE = Slim Jane's open-wheeler), each computer car with its own driving style; skids at speed;
+a staggered grid; the race order shows faces on the grid, then each car's gap to the leader (8
+checkpoints, small font), a clock beside the best-lap holder, the best lap under it, mini flags as
+cars finish; RACE FINISHED when all are in. Beeper engine (pitch from your speed) and crash sound, played in the wait time. Own IM2
 interrupt routine. Real-ROM test PASS (pixel-exact window).
 Whole lap: work 193.7k T a picture; 177 pictures at 3 TV frames, 31 at 4.
 
@@ -18,10 +19,13 @@ Whole lap: work 193.7k T a picture; 177 pictures at 3 TV frames, 31 at 4.
 cars in tools/car_art.txt; tools/turn_car.py drafts the angled headings); mock-up scripts in tools/;
 tests/drive_test.py, tests/profile_lap.py, tests/smooth_cpu.py.
 
-**Constraints:** memory - TOPMEM (0xFAD0..0xFFF3) about 80 bytes left; low memory about 280 bytes.
+**Constraints:** memory - TOPMEM (0xFAD0..0xFFF3) about 75 bytes left; low memory 80 bytes. A pool
+driver (tools/pool_art.txt: SPECS, the old WHITE) needs 1 KB for his car - none free in the 48K now.
+Any code moved ahead of hud.asm must not use equs defined later (pasmo first-pass values).
 Frame time: about 16k T of headroom on an average picture.
 
-**Waiting on Grant:** playtest; angled headings of his cars are drafts (redraw in the editor if any
+**Waiting on Grant:** playtest; Jane's 22.5 and 45 headings (placed by hand - touch up in the
+editor); whether Jane should drive easier than the old WHITE; angled headings of his cars are drafts (redraw in the editor if any
 look wrong); confirm the repo should be public; push a tag for this build from his machine (cloud
 sessions cannot push tags).
 
