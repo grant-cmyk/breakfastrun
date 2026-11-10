@@ -826,3 +826,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   it from a race's start, centred (clock col 27, time 2 px into col 28: ink x 216-238, the panel
   200-255). The race order's clock icon still marks this race's fastest car. Kept until the Spectrum
   is reset (not saved to tape). Tests added for both.
+
+## 2026-11-10 SAST - the track longer and the road wider (same design)
+- Grant: "I still need the track to be longer. It can be the same design but wider road and longer
+  route". make_world.py: the same centre line, scaled 1.35 (was 1.1) about the start line, the road
+  72 px (was 64), the O's re-laid at the same spacing (128 of them); the world 72 x 64 tiles (was 56
+  rows - MAPW stays 72, the surface and O maps assume it) and everything moved down DY = 64 so the
+  top of the track fits. The grid lanes 14 px either side (11 for the 16 x 16 cars). The breakfast
+  things are spread with the track: 12 of the 22 find room. TRACK_SY in world.asm: the tests drive
+  on the bottom straight from it, not from fixed numbers.
+- 46 waypoints (was 34): 184 bytes, over BUFG's 160 - moved into the program (the big cars freed
+  room there); BUFE holds the 64-row index (128 bytes) and less strip text.
+- Mini-map: 3/32 scale (was 1/8), from (-8, -3), so the bigger track fits the panel, centred. A bug
+  in the first try: the new scaling code used DE and lost each dot's x - the computer cars' dots
+  landed outside the map, one in the driver strip (the drive test's "no speech bubble" check caught
+  it). Fixed (x kept on the stack).
+- Measured: lap work 207.2k T a picture - UNDER the 3-frame 209.7k again (the cars spread out more
+  on the longer track); frames {2:17, 3:255, 4:26, 5:1}; autopilot lap 19.2 s (was ~15.5).
+  Computer-car laps 17.6-22.4 s. drive_test: 1 FAIL - 12.0 pictures a second off the start with the
+  five big cars bunched (asks 13); everything else PASS. nos_test PASS.

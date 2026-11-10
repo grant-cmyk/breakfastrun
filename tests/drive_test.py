@@ -23,6 +23,7 @@ MAPW = int(re.search(r'MAPW\s+equ\s+(\d+)', src).group(1))
 MAPH = int(re.search(r'MAPH\s+equ\s+(\d+)', src).group(1))
 NWP = int(re.search(r'NWP\s+equ\s+(\d+)', src).group(1))
 CPU0X = int(re.search(r'CPU0X\s+equ\s+(\d+)', src).group(1))
+SY = int(re.search(r'TRACK_SY\s+equ\s+(\d+)', src).group(1))   # the bottom straight's middle
 sect = lambda a, b: src[src.index(a):src.index(b)]
 tiles = [[int(v, 16) for v in l.split('defb')[1].split(';')[0].split(',')]
          for l in sect('tiles:', 'surface_map:').splitlines() if 'defb' in l]
@@ -244,8 +245,16 @@ with Racer(headless=True) as sp:
     print('lap record panel ink x', xs.min() if len(xs) else None, xs.max() if len(xs) else None)
     check(bl < 0xFFFF and sp.read16(SYM['rec_lap']) == bl and len(xs) and abs((xs.min() + xs.max()) / 2 - 227.5) <= 1.5,
           'the best lap is the lap record, shown with its clock, centred under the race order (x %s-%s)' % (xs.min() if len(xs) else '-', xs.max() if len(xs) else '-'))
-    check(sp.read8(SYM['bufc'] + 130) == 0 and not sb[160:192, 88:160].any() and attr(21, 12) == 0x30,
-          'the crew chief quiet: no speech bubble')
+    talking = sp.read8(SYM['bufc'] + 130)               # (a message may still be up: let it end -
+    for _ in range(40):                                  # the longer track moved the moment it is
+        if sp.read8(SYM['bufc'] + 130) == 0: break       # checked into one)
+        sp.run(duration=0.1, fast_forward=True)
+    sb2 = screen_bits(sp)
+    if sb2[160:192, 88:160].any() or attr(21, 12) != 0x30:   # (to see what is there)
+        ys, xs2 = np.nonzero(sb2[160:192, 88:160]); print('  strip ink rows', sorted(set(ys + 160))[:12], 'x', sorted(set(xs2 + 88))[:12], 'attr(21,12) %02X' % attr(21, 12))
+        shot(sp, 'bubble_debug.png')
+    check(sp.read8(SYM['bufc'] + 130) == 0 and not sb2[160:192, 88:160].any() and attr(21, 12) == 0x30,
+          'the crew chief quiet: no speech bubble (radio state when first looked: %d)' % talking)
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
     # the four computer cars are in by now: the race order shows no faces while racing - a mini
     # chequered flag in column 30 for each car that is in, and the gaps to the leader in a small font
@@ -263,14 +272,14 @@ with Racer(headless=True) as sp:
     check(max(d) > 40, 'the computer cars drive differently (they spread out)')
 
     # ---- your top speed on a clear road (computer cars sent far away) ----
-    for i in CPUS: put(sp, i, 4 + 40 * i, 430)   # (parked apart: they bump nothing)
-    put(sp, 0, 180, 344, 16)
+    for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58)   # (parked apart: they bump nothing)
+    put(sp, 0, 180, SY - 8, 16)
     hold(sp, ['Q'], 1.5)
     pv = car(sp, 0)
     check(1.6 < math.hypot(pv['vx'], pv['vy']) <= 1.8, 'your top speed on a clear road is 1.75 px/frame (%.2f)' % math.hypot(pv['vx'], pv['vy']))
 
     # ---- bump: drop a computer car just in front of you, drive into it ----
-    put(sp, 0, 200, 344, 16); put(sp, 1, 230, 344, 16)
+    put(sp, 0, 200, SY - 8, 16); put(sp, 1, 230, SY - 8, 16)
     sp.write(CARS + CS + 16, bytes([60, 2]))      # CPU A: 60 frames of 'lift' so it sits still-ish
     b0n = g(sp, 'bumps')
     hold(sp, ['Q'], 1.0)
@@ -280,8 +289,8 @@ with Racer(headless=True) as sp:
     check(abs(p2['x'] - a2['x']) >= 10 or abs(p2['y'] - a2['y']) >= 10, 'bumped cars do not end up inside each other')
     # head-on: you and a computer car coast at each other (no keys, so nothing
     # pushes back after the bump); just after they touch, each moves away
-    for i in CPUS: put(sp, i, 4 + 40 * i, 430)   # (parked apart: they bump nothing)
-    put(sp, 0, 200, 344, 16); put(sp, 1, 222, 344, 48)   # 22 apart: they meet in a few frames
+    for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58)   # (parked apart: they bump nothing)
+    put(sp, 0, 200, SY - 8, 16); put(sp, 1, 222, SY - 8, 48)   # 22 apart: they meet in a few frames
     sp.write(CARS + 6, bytes([0x80, 0x01]))        # you rolling right at 1.5 px/frame
     sp.write(CARS + CS + 6, bytes([0x80, 0xFE]))   # CPU A rolling left at 1.5 px/frame
     sp.write(CARS + CS + 16, bytes([40, 2]))       # ...and lifting (no throttle)
@@ -295,10 +304,10 @@ with Racer(headless=True) as sp:
           'cars that hit head-on bounce away from each other')
 
     # ---- finish: on your last lap, cross the line ----
-    for i in CPUS: put(sp, i, 4 + 40 * i, 430)   # (parked apart: they bump nothing)
+    for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58)   # (parked apart: they bump nothing)
     sp.write(CARS + 25, bytes([3]))                # past the line 3 times: on lap 3
     sp.write(CARS + 13, bytes([SYM['ws']]))        # heading for the first waypoint after it
-    put(sp, 0, 250, 344, 16)
+    put(sp, 0, 250, SY - 8, 16)
     hold(sp, ['Q'], 1.5)
     sp.run(duration=0.3, fast_forward=True)
     flag, pq = screen_text(sp, 10, 4, 15), screen_text(sp, 12, 8, 7)

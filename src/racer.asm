@@ -3126,6 +3126,7 @@ gd_2:
         include "gen_bumps.asm"
         include "clothmini2.asm"
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
+        include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
 isr:
         push af
         push hl
@@ -3605,7 +3606,6 @@ bufh_src:
         include "strip_h.asm"   ; more messages
 bufh_end:
 bufg_src:
-        include "waypoints.asm" ; the centre line, for the computer cars
         include "strip_g.asm"
 bufg_end:
 bufe_src:
@@ -3617,7 +3617,7 @@ TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
-BUFG      equ BUF+0x1660        ; the waypoints
+BUFG      equ BUF+0x1660        ; messages
 BUFF      equ BUF+0x1560        ; the strip's letters, NOS icon, messages
 BUFH      equ BUF+0x1760        ; more messages
 LFONT     equ BUFF + lfont_src - buff_src
@@ -3625,7 +3625,7 @@ NOS_ICON  equ BUFF + nos_icon_src - buff_src
 MSG_INDEX equ BUFF + msg_index_src - buff_src
 BUFE      equ BUF+0x1460        ; the map's row index
 row_index equ BUFE + row_index_src - bufe_src
-wp_tab    equ BUFG + waypoints - bufg_src
+wp_tab    equ waypoints             ; (in the program: 46 of them outgrew BUFG)
 thrust_tab equ BUFD + thrust_tab_src - bufd_src
 ai_styles equ BUFD + ai_styles_src - bufd_src
 rev4      equ BUFD + rev4_src - bufd_src

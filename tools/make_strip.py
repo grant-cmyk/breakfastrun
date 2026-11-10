@@ -52,7 +52,8 @@ MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light (stage 2
 # the data goes in the free ends of the buffer's bottom-row strips: BUFF and BUFH
 # whole, the ends of BUFE (after the row index) and BUFG (after the waypoints)
 _nwp = int(re.search(r'NWP\s+equ\s+(\d+)', open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()).group(1))
-AREAS = [('F', 'BUFF', 160), ('H', 'BUFH', 160), ('E', 'BUFE', 160 - 112), ('G', 'BUFG', 160 - 4 * _nwp),
+_maph = int(re.search(r'MAPH\s+equ\s+(\d+)', open(os.path.join(ROOT, 'src', 'world.asm')).read()).group(1))
+AREAS = [('F', 'BUFF', 160), ('H', 'BUFH', 160), ('E', 'BUFE', 160 - 2 * _maph), ('G', 'BUFG', 160),   # (the waypoints: in the program)
          ('T', 'TOPMEM', 16)]                          # (T: a few bytes at the top of memory)
 out = {k: [] for k, _, _ in AREAS}; used = {k: 0 for k, _, _ in AREAS}
 def put(k, text, n): out[k].append(text); used[k] += n

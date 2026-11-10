@@ -935,30 +935,28 @@ map_update:
         ld c,NCARS-1
 mu_new:
         push bc
-        ld a,(ix+C_X)           ; map x = (x + 8 - 64) / 8, 0..53
-        add a,8-64
-        ld l,a
-        ld a,(ix+C_X+1)
-        adc a,0xFF
-        ld h,a
-        call map_coord
+        ld l,(ix+C_X)           ; map x = (x + 8 - MMX0) * 3 / 32, 0..53
+        ld h,(ix+C_X+1)         ; (3/32 for the bigger track; it was 1/8)
+        ld de,8-MMX0
+        add hl,de
+        call map_c3
         cp 54
         jr c,mu_x
         ld a,53
 mu_x:
-        ld e,a
-        ld a,(ix+C_Y)           ; map y = (y + 8 - 32) / 8, 0..45
-        add a,8-32
-        ld l,a
-        ld a,(ix+C_Y+1)
-        adc a,0xFF
-        ld h,a
-        call map_coord
+        push af                 ; (x kept: map_c3 uses DE)
+        ld l,(ix+C_Y)           ; map y = (y + 8 - MMY0) * 3 / 32, 0..45
+        ld h,(ix+C_Y+1)
+        ld de,8-MMY0
+        add hl,de
+        call map_c3
         cp 46
         jr c,mu_y
         ld a,45
 mu_y:
         ld d,a
+        pop af
+        ld e,a
         pop bc
         push bc
         ld a,c                  ; remember where
@@ -1034,21 +1032,15 @@ mo_3:
         jr nz,mo_1
         ret
 
-map_coord:                      ; HL (may be negative) / 8 -> A, 0 if negative
-        bit 7,h
-        ld a,0
-        ret nz
-        srl h
-        rr l
-        srl h
-        rr l
-        srl h
-        rr l
+map_c3:                         ; HL (0..~700) * 3 / 32 -> A
+        ld d,h
+        ld e,l
+        add hl,hl
+        add hl,de
+        add hl,hl               ; * 8: H = HL * 3 / 32
+        add hl,hl
+        add hl,hl
         ld a,h
-        or a
-        ld a,l
-        ret z
-        ld a,255
         ret
 
 ; map_dot: C rows of the pattern B (0xC0 or 0xE0) at map x E, y D (XOR)
