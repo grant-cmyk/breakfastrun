@@ -933,3 +933,26 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   about +6.5k T a picture on 218.4k (budget 209.7k). Memory: the copier grows ~320 bytes into
   TOPMEM (15 bytes spare); the main area has ~870 free since the big cars, so the TOPMEM map rows
   can move down. The bezel would take the message bar's second row. Best done with a speed pass.
+
+## 2026-11-11 SAST - speed pass merged; wrap-up for a new chat
+- Grant: "go with the proposal, but would like to have smoothness of movement, so lets optimize the
+  current setup before looking at adding a row"; later "ignore the speed pass for now", then
+  "Merge and then wrap up to take to another chat". The paused work sat on branch speed-pass-wip;
+  tested in full before the merge (drive_test: only the 13/s start check fails, 12.0; nos_test
+  PASS; o_test PASS 30/30), then fast-forwarded into main.
+- tests/profile_ticks.py: the lap profile with the game tick split (your physics, the computer
+  cars' thinking and physics, bumps, O checks). It showed the O checks at 14k T a picture.
+- o_check: oc_quick tests all four tiles at once (a 2-bit mask over the byte pair, both rows) in
+  ~250 T; the full oc_try only when an O may be there. Two bugs on the way: the second row is 9
+  bytes on (8 was used), and o_check fell through into the fourth tile's oc_try - now a JR. O checks
+  14.0k -> 5.7k T a picture. tests/o_test.py: your car bounces off 30 of 30 O's, not off clear cloth.
+- grip.asm: the world speed changes by each frame's forwards and sideways change (small numbers:
+  mul8s, /64 rounded), the full sum only for a big change or a fresh start every 32 frames; the top
+  speed cap only while sliding; your car skips the unused heading push. draw_car skips empty mask
+  bytes (and their ink).
+- Lap work 211.6k T a picture (was 218.4k; budget 209.7k); frames {2:35, 3:203, 4:64, 5:1}.
+  tests/sample_lap.py (PC sampling) is NOT trustworthy - the emulator does not stop mid-frame where
+  asked; use profile_ticks.py.
+- Grant asked which tools Claude uses and the requirements for a purpose-built Spectrum tool (answered
+  in chat). The retro plugin now has a zx-toolkit skill (zxdev, Grant's own emulator) - use it next
+  session for timing and debugging instead of the zx package where it does more.
