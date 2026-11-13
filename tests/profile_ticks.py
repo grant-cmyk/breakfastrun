@@ -12,7 +12,7 @@ for line in open(os.path.join(ROOT, 'build', 'racer.sym')):
     if len(p) >= 3 and p[1] == 'EQU': SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
 src = open(os.path.join(ROOT, 'src', 'world.asm')).read()
 wps = [tuple(int(v) for v in l.split('dw')[1].split(',')) for l in open(os.path.join(ROOT, 'src', 'waypoints.asm')).read().split('waypoints:')[1].splitlines() if 'dw' in l]
-STAGES = ['main', 'tick_loop', 'tick', 'tk_you', 'tk_ai', 'ai_drive', 'tk_phys', 'tk_rest', 'bump_all', 'tk_o', 'race_progress', 'hud_update', 'camera', 'cloth_fill', 'draw_tiles', 'draw_car', 'wait_show', 'copy_to_screen']
+STAGES = ['main', 'tick_loop', 'cpu_move', 'tick', 'tk_you', 'tk_ai', 'ai_drive', 'tk_rest', 'bump_all', 'tk_o', 'race_progress', 'hud_update', 'camera', 'cloth_fill', 'draw_tiles', 'draw_car', 'wait_show', 'copy_to_screen']
 ADDR = {SYM[n]: n for n in STAGES}
 log = []
 class P(Spectrum):
@@ -47,7 +47,7 @@ for (n, t0), (n2, t1) in zip(log, log[1:]):
         pics += 1
         if last_copy is not None: frames[round((t0 - last_copy) / 69888)] += 1
         last_copy = t0
-names = {'main': 'frames to step', 'tick_loop': 'tick loop', 'tick': 'tick: clock, keys', 'tk_you': 'your physics', 'tk_ai': 'cpu: loop', 'ai_drive': 'cpu: thinking', 'tk_phys': 'cpu: physics', 'tk_rest': 'cpu: next', 'bump_all': 'bumps', 'tk_o': 'O checks', 'wait_show': 'waiting for the 3rd frame'}
+names = {'main': 'frames to step', 'tick_loop': 'tick loop', 'tick': 'tick: clock, keys', 'tk_you': 'your physics', 'tk_ai': 'cpu: loop', 'ai_drive': 'cpu: thinking', 'cpu_move': 'cpu: physics', 'tk_rest': 'cpu: next', 'bump_all': 'bumps', 'tk_o': 'O checks', 'wait_show': 'waiting for the 3rd frame'}
 work = 0
 for n, v in sorted(tot.items(), key=lambda kv: -kv[1]):
     print('%-30s %7d T' % (names.get(n, n), v // pics))
