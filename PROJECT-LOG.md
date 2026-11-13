@@ -956,3 +956,56 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant asked which tools Claude uses and the requirements for a purpose-built Spectrum tool (answered
   in chat). The retro plugin now has a zx-toolkit skill (zxdev, Grant's own emulator) - use it next
   session for timing and debugging instead of the zx package where it does more.
+
+## 2026-11-13 SAST - the layout review built; a speed pass measured in zxdev; your car's set-up
+- Grant: build the approved layout proposals (1, 3, 5-7, 8), then a further speed pass before the
+  extra window row, measured with tests/profile_ticks.py and the retro plugin's zx-toolkit skill;
+  then, mid-session, a new feature: set your car up - traction, speed and acceleration at 5 levels,
+  every car at 1 each, you add 2 before the start, the HUD shows yours.
+- Layout (commit cc0966e). Message bar while racing (bar_tick, hud.asm): your place in double-size
+  letters, bright white on red, columns 1-6; LAP small then n/3 double-size, black on bright yellow,
+  columns 12-17; the race time m:ss at column 19. One big letter a picture at most; the time a
+  digit a second (whole seconds: a tenths digit would cost a redraw every other picture - Claude's
+  choice, the mock-up showed tenths). Race order: the lap digit gone from every row. Strip: both
+  faces 16 x 16 in 2 x 2 cell panels (columns 1-2 and 21-22, rows 21-22); the bubble fills columns
+  11-20, rows 20-22 (x 88-167, y 160-183), its tail a white point over the left of the chief's face
+  (BB_TAIL keeps those 8 bytes to put back). Border (flash, isr): green 25 frames at GO, red 10 on a
+  crash (5 off an O), white 50 while the NOS burns - through snd_port, counted down in the interrupt.
+- build.sh (repo root) builds the tape, bin and symbols; checked byte for byte against the
+  committed tape before any change.
+- zxdev (zx-emulator 0.9.6, built from source in the cloud session; smoke test passed).
+  tests/zxlap.py: the autopilot lap in zxdev, profiled by routine, counting real TV frames a
+  picture. FINDING: profile_ticks.py under-counts. The screen copy is 38.8k T (not 24.5k): a late
+  picture's copy runs with interrupts off across a frame boundary, a frame count is lost, and the
+  old profile (which times by the frame counter) never sees it. In zxdev the lap was 3 frames x
+  195, 4 x 104, 5 x 3 - a third of the pictures late, not the 64 in 268 recorded on 11 Nov.
+- Speed pass (commits 8341959, and the next):
+  1. cloth_fill filled kind by kind: every blank line in one pass (HL = 0, 4 a character row),
+     then the P0 lines and the P2 lines, 2 a character row, the pattern in BC, DE, HL, IY, loaded
+     again only where the check row changes. 45k -> 29k T; pixel for pixel the same (drive_test);
+     ~340 bytes smaller (cf_init, the minis, loaders, slots and their tables are gone). First try
+     was 16 lines out: line 0's world y is camy, not camy - 16.
+  2. The computer cars move once a picture (cpu_move in main: physics with ph_steps = dt); they
+     still think frame by frame. Physics 29k -> 19k T. Their laps: 19.2 22.2 19.4 18.5 s (were
+     18.7 22.7 19.3 18.7).
+  3. make_copier: 7 pairs (AF BC DE HL, EXX, BC DE HL) then 4, no IX/IY: 279 T a row (295), 36
+     bytes a row (40): the copy 38.8k -> 36.4k T, and 8 more rows fit where the routine is.
+  Looked at and left: draw_car (570 T a row is near what mask + ink through the shift tables can
+  do); the dotted loop's per-line count (1.3k T).
+- Result, zxdev lap: 3 frames x 308, 4 x 12 (was 195 / 104 / 3); all told 213k T a picture with the
+  waiting (was 236k). drive_test passes in full for the first time: 15.0 pictures a second off the
+  grid (12.0; asks 13). The pictures still late are those with 4-5 cars in view.
+- o_test: an O is tried twice before it counts as missed - the test writes your car's place while
+  the game may be half-way through moving it.
+- Set-up (hud.asm su_keys, su_apply, su_draw; grip.asm): GRIP, SPEED, ACCEL at 1..5; keys 1, 2, 3
+  add a point (2 to spend), 0 takes them back; only before Q; kept from race to race. SPEED: top
+  speed 448 + 28 a level (8.8; 1.75, 1.86, 1.97 ...), ACCEL: push + 10 a level with the top speed
+  held (new: vf is capped every frame, not only in a slide), GRIP: the grip table x 1.15 a level
+  (su_gtab). The computer cars are untouched (1, 1, 1). HUD: row 23, "1G##### 2S##### 3A#####",
+  the key numbers only before the start; the chief says PICK TWO UPGRADES / KEYS ONE TWO THREE
+  (the small letters have no digits). Measured (tests/setup_test.py): SPEED 3 top 1.96 (1.75);
+  ACCEL 3 reaches 1.5 px a frame in 7 frames (15); GRIP 3 slides 52 frames after a hard turn (55)
+  - the grip step is small in that test and wants Grant's feel on the keys.
+- Tests: drive_test PASS, nos_test PASS, o_test PASS, setup_test PASS.
+- Memory: code_end 0xBF35 (203 bytes free in the main area); the copier ends at 0xF8E2 (TOPMEM
+  0xFAD0: 493 spare, 288 of it wanted by the extra row).

@@ -64,7 +64,8 @@ MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light (stage 2
         ('M_WIN', 'GET IN THERE!|YOU WON!'),           # you won
         ('M_DONE', 'WELL DRIVEN!'),                    # you finished, not first
         ('M_NOS', 'NOS READY!|SPACE TO BOOST'),        # you picked up a canister
-        ('M_BOOST', 'NOS!|GO GO GO')]                  # you fired it           # you finished, not first
+        ('M_BOOST', 'NOS!|GO GO GO'),                  # you fired it
+        ('M_SETUP', 'PICK TWO UPGRADES|KEYS ONE TWO THREE')]   # before the start: set your car up                  # you fired it           # you finished, not first
 # the data goes in the free ends of the buffer's bottom-row strips: BUFF and BUFH
 # whole, the ends of BUFE (after the row index) and BUFG (after the waypoints)
 _nwp = int(re.search(r'NWP\s+equ\s+(\d+)', open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()).group(1))

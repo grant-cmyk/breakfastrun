@@ -129,13 +129,14 @@ yg_forces:
         ld hl,(yg_vs)
         ld (yg_s0),hl
         ; ---- the engine and drag: forwards only ----
-        ld hl,(yg_vf)
-        ld de,G_PUSH
+        ld hl,(yg_pushv)        ; the push: by your car's set-up (su_apply)
         ld a,(BOOST_T)          ; NOS: twice the push (and the top speed)
         or a
         jr z,yg_p1
-        ld de,2*G_PUSH
+        add hl,hl
 yg_p1:
+        ex de,hl
+        ld hl,(yg_vf)
         ld a,(ix+C_CTRL)
         and CT_GO+CT_BRK
         jr z,yg_drag
@@ -165,6 +166,25 @@ yg_d1:
         jr nz,yg_d2
         call yg_tiny
 yg_d2:
+        ex de,hl                ; never over the top speed for your set-up (twice
+        ld hl,(yg_topv)         ; it with NOS): a car set up for acceleration
+        ld a,(BOOST_T)          ; pushes harder than its top speed needs, and is
+        or a                    ; held to it here
+        jr z,yg_d3
+        add hl,hl
+yg_d3:
+        ld (yg_topn),hl
+        bit 7,d                 ; (backwards: no limit)
+        jr nz,yg_d4
+        or a
+        sbc hl,de
+        jr c,yg_d5              ; over: the top speed itself
+yg_d4:
+        ex de,hl                ; under: vf as it is
+        jr yg_d6
+yg_d5:
+        add hl,de
+yg_d6:
         ld (yg_vf),hl
         ; ---- the tyres: sideways speed, up to the grip a frame ----
         ld a,(yg_sl)            ; grip: sliding?  holding Q?
@@ -243,12 +263,7 @@ yg_c1:
         srl d
         rr e
         add hl,de
-        ld de,G_TOP
-        ld a,(BOOST_T)
-        or a
-        jr z,yg_c2
-        ld de,2*G_TOP
-yg_c2:
+        ld de,(yg_topn)         ; (this frame's top speed: yg_d3)
         or a
         sbc hl,de               ; HL = how far over
         jr c,yg_world
@@ -420,7 +435,10 @@ yt_1:
         or a
         sbc hl,de
         ret
-yg_gtab: db G_GRIP, G_Q, G_SLIDE, G_QSLIDE
+yg_gtab: db G_GRIP, G_Q, G_SLIDE, G_QSLIDE   ; (your set-up's grip: su_apply writes it)
+yg_pushv: dw G_PUSH             ; ... its push
+yg_topv:  dw G_TOP              ; ... its top speed
+yg_topn:  dw G_TOP              ; this frame's top speed (twice it with NOS)
 
 ; YG_ROT: one heading step's turn, by shifts: C = cos 5.625 = 1 - 1/256 - 1/1024,
 ; S = sin 5.625 = 1/16 + 1/32 + 1/256 (0.0977). T1 = vf C, T2 = vf S, T3 = vs C, T4 = vs S

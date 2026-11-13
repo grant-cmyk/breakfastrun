@@ -7,6 +7,8 @@ tiny cars, momentum and drift, household tracks. Original game, original art.
 
 ## Current build - the race screen
 - Keys: **O** left, **P** right, **Q** accelerate (and start, and race again), **A** brake/reverse.
+  **SPACE** fires a NOS canister. Before the start, **1 2 3** add a level to your car's GRIP, SPEED or
+  ACCEL (2 points to spend; **0** takes them back) - the HUD's bottom row shows your set-up.
 - 3 laps, you and four computer cars. Window 23 x 16 cells on the left; panel: logo, race order
   (each car on its colour, you on red), mini-map (a dot per car, yours blinking). Above the window:
   start lights, GO!, FINAL LAP!, FINISHED nTH. Below: LAP, TIME, BEST lap (time, car, lap).
@@ -18,6 +20,9 @@ Stage 2 (scrolling, one car) is tag `stage2-verified` / commit 2ce33b7.
 Stage 1 (one car, one single-screen track) is tag `stage1-verified` / commit 8501179.
 
 ## Build
+    bash build.sh                                     # everything below in one go: tape, bin, symbols
+    python3 tests/zxlap.py                            # autopilot lap in zxdev: real frames a picture, cost by routine
+    python3 tests/setup_test.py                       # your car's set-up: keys, HUD row, what each level does
     python3 tools/make_data.py                       # regenerates src/data.asm (car, thrust)
     python3 tools/make_world.py                      # regenerates src/world.asm (track, waypoints)
     python3 tools/make_code.py                       # regenerates src/gen_tiles.asm, src/gen_bumps.asm

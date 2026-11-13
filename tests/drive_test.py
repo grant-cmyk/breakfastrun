@@ -288,10 +288,10 @@ with Racer(headless=True) as sp:
         if sp.read8(SYM['bufc'] + 130) == 0: break       # checked into one)
         sp.run(duration=0.1, fast_forward=True)
     sb2 = screen_bits(sp)
-    if sb2[160:192, 88:160].any() or attr(21, 12) != 0x30:   # (to see what is there)
-        ys, xs2 = np.nonzero(sb2[160:192, 88:160]); print('  strip ink rows', sorted(set(ys + 160))[:12], 'x', sorted(set(xs2 + 88))[:12], 'attr(21,12) %02X' % attr(21, 12))
+    if sb2[160:184, 88:168].any() or attr(21, 12) != 0x30:   # (to see what is there)
+        ys, xs2 = np.nonzero(sb2[160:184, 88:168]); print('  strip ink rows', sorted(set(ys + 160))[:12], 'x', sorted(set(xs2 + 88))[:12], 'attr(21,12) %02X' % attr(21, 12))
         shot(sp, 'bubble_debug.png')
-    check(sp.read8(SYM['bufc'] + 130) == 0 and not sb2[160:192, 88:160].any() and attr(21, 12) == 0x30,
+    check(sp.read8(SYM['bufc'] + 130) == 0 and not sb2[160:184, 88:168].any() and attr(21, 12) == 0x30,
           'the crew chief quiet: no speech bubble (radio state when first looked: %d)' % talking)
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
     # the four computer cars are in by now: the race order shows no faces while racing - a mini

@@ -43,6 +43,9 @@ hud_init:                       ; a new race: what changes (the rest: screen_onc
         ld a,l
         ld (bar_time),a
         call strip_reset        ; the driver strip: inventory, the radio
+        ld a,M_SETUP            ; the crew chief: pick your upgrades
+        call msg_say
+        call su_apply           ; your car's set-up, and its row on the HUD
         call map_init
         ld b,0                  ; the tower in grid order, all at once
 hi_tw:
@@ -485,6 +488,7 @@ hu_go:                          ; GO: the race order redraws without the faces
         ld (pace_skip),a        ; (a busy picture: it does not set the pace)
         ld hl,25*256+4          ; the border green for half a second
         call flash
+        call su_draw            ; (the set-up row loses its key numbers)
         ld hl,shown_order
         ld b,NCARS
 hg_1:
@@ -642,6 +646,9 @@ st_put:
 ; HUD_UPDATE: once per picture, after race_progress
 ; ---------------------------------------------------------------------
 hud_update:
+        ld a,(start_go)         ; before Q: keys 1, 2, 3 set your car up
+        or a
+        call z,su_keys
         call start_lights       ; Q pressed: the lights, red, red, red, green
         ld a,(race_on)          ; the start: lights -> GO!
         ld hl,shown_on
@@ -825,6 +832,180 @@ b3_draw:
         ld b,1
         ld a,(pb_attr)
         jp print_big
+
+; ---------------------------------------------------------------------
+; YOUR CAR'S SET-UP (Grant, 13 Nov 2026): every car has three parts, each at a
+; level 1..5 - GRIP (traction), SPEED (top speed), ACCEL (acceleration). Every
+; car starts at 1, 1, 1; you have 2 points to add, anywhere, before the start:
+; keys 1, 2, 3 add one to GRIP, SPEED, ACCEL; 0 takes both back. The computer
+; cars stay at 1, 1, 1. The choice is kept from race to race.
+;   GRIP:  the tyres' grip (yg_gtab), 15% more a level
+;   SPEED: the top speed, 1/16 more a level (1.75 px a frame at level 1)
+;   ACCEL: more push, so the top speed comes sooner (the top speed holds it)
+; The HUD's bottom row (row 23) shows it: for each part its key (before the
+; start), its letter and 5 pips, a filled one for each level.
+; ---------------------------------------------------------------------
+su_keys:
+        ld a,0xEF               ; 0: start again (keys 6-0: 0 is bit 0)
+        in a,(0xFE)
+        rra
+        jr nc,su_reset
+        ld a,0xF7               ; 1, 2, 3 (keys 1-5: bits 0, 1, 2)
+        in a,(0xFE)
+        cpl
+        and 7
+        ld hl,su_up
+        jr nz,su_k1
+        ld (hl),1               ; none down: the next press is a new one
+        ret
+su_k1:
+        ld b,(hl)
+        ld (hl),0
+        dec b
+        ret nz                  ; still held from last time
+        ld hl,su_lv-1
+su_k2:
+        inc hl                  ; HL -> the part's level
+        rra
+        jr nc,su_k2
+        ld a,(su_pts)           ; a point left, and not at 5 yet?
+        or a
+        ret z
+        ld a,(hl)
+        cp 5
+        ret nc
+        inc (hl)
+        ld hl,su_pts
+        dec (hl)
+        jr su_apply
+su_reset:
+        ld hl,su_lv
+        ld (hl),1
+        inc hl
+        ld (hl),1
+        inc hl
+        ld (hl),1
+        inc hl
+        ld (hl),2
+; SU_APPLY: the levels -> the numbers grip.asm drives your car by, then the row
+su_apply:
+        ld a,(su_lv+1)          ; SPEED s: top = 448 + 28 (s - 1) (8.8: 1.75 + 0.11)
+        dec a
+        add a,a
+        add a,a
+        ld c,a                  ; C = 4 (s - 1): the push that top speed needs
+        add a,a
+        add a,a
+        add a,a
+        sub c
+        ld l,a
+        ld h,0
+        ld de,G_TOP
+        add hl,de
+        ld (yg_topv),hl
+        ld a,(su_lv+2)          ; ACCEL a: push = 64 + 4 (s - 1) + 10 (a - 1)
+        dec a
+        ld e,a
+        add a,a
+        add a,a
+        add a,e
+        add a,a
+        add a,c
+        add a,G_PUSH
+        ld l,a
+        ld h,0
+        ld (yg_pushv),hl
+        ld a,(su_lv)            ; GRIP g: its row of the grip table
+        dec a
+        add a,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,su_gtab
+        add hl,de
+        ld de,yg_gtab
+        ld bc,4
+        ldir
+; SU_DRAW: the set-up row: "1G#####  2S#####  3A#####" from column 0
+su_draw:
+        ld hl,su_lv
+        ld c,0                  ; C = the part's first column: 0, 8, 16
+su_d1:
+        push hl
+        push bc
+        ld a,c                  ; its key - only while it can be pressed
+        rrca
+        rrca
+        rrca
+        ld e,a
+        add a,'1'
+        ld b,a
+        ld a,(race_on)
+        or a
+        jr z,su_d2
+        ld b,' '
+su_d2:
+        ld hl,su_txt
+        ld (hl),b
+        ld d,0                  ; its letter
+        ld hl,su_names
+        add hl,de
+        ld a,(hl)
+        ld hl,su_txt+1
+        ld (hl),a
+        dec hl
+        ld b,23
+        call print_at
+        pop bc
+        pop hl
+        push hl
+        push bc
+        ld d,(hl)               ; D = filled pips to go, E = pips to go
+        ld e,5
+        inc c
+su_d3:
+        inc c
+        push de
+        push bc
+        ld a,d
+        or a
+        ld de,su_pip
+        jr nz,su_d4
+        ld de,su_pip+8
+su_d4:
+        ld b,23
+        call tr_glyph
+        pop bc
+        pop de
+        ld a,d
+        or a
+        jr z,su_d5
+        dec d
+su_d5:
+        dec e
+        jr nz,su_d3
+        pop bc
+        pop hl
+        inc hl
+        ld a,c
+        add a,8
+        ld c,a
+        cp 24
+        jr nz,su_d1
+        ret
+su_lv:    db 1,1,1              ; your levels: GRIP, SPEED, ACCEL
+su_pts:   db 2                  ; points still to spend
+su_up:    db 0                  ; 1: no set-up key was down last picture
+su_txt:   db "1G",0
+su_names: db "GSA"
+su_pip:   db 0,0x7E,0x7E,0x7E,0x7E,0x7E,0x7E,0   ; a level you have
+          db 0,0x7E,0x42,0x42,0x42,0x42,0x7E,0   ; ... and one you have not
+su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both
+        db G_GRIP, G_Q, G_SLIDE, G_QSLIDE       ; 1 (0.085 px a frame of sideways speed)
+        db 25, 16, 16, 10                        ; 2
+        db 29, 18, 18, 12                        ; 3
+        db 32, 20, 20, 13                        ; 4
+        db 35, 22, 22, 14                        ; 5
 
 ; ---------------------------------------------------------------------
 ; THE RACE ORDER (the tower): rows TOWER_Y.. of the panel, 2 rows a place:
