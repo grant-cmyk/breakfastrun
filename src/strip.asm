@@ -20,8 +20,9 @@ HIT_O   equ BUFC+138            ; you hit an O (set in tick)
 INV     equ BUFC+139            ; the inventory: 3 slots, 0 empty, 1 NOS
 INV_SH  equ BUFC+142            ; ... as shown (3)
 MSG_T   equ BUFC+148            ; strip ticks the message stays up once typed
-BOX_X   equ 89                  ; the box's inside: x 89-150
-WAVE_X  equ 107                 ; the wave: 13 lines, 2 px apart, rows 161-167
+BOX_X   equ 89                  ; the box's inside: x 89-166 (BOX_W wide)
+BOX_W   equ 78
+WAVE_X  equ 116                 ; the wave: 13 lines, 2 px apart, rows 161-167
 WAVE_MID equ 164
 
 strip_reset:                    ; a new race
@@ -88,7 +89,7 @@ strip_tick:
         ld b,22
 st_hide:
         xor a
-        call bubble2
+        call bb_step
         ld a,(MSG_ST)
         cp 6
         jr nz,st_next
@@ -112,13 +113,13 @@ st_show:                        ; 1-2: the bubble appears, half a tick
         ld b,22
 st_sh1:
         ld a,1
-        call bubble2
+        call bb_step
         ld a,(MSG_ST)
         cp 2
         jr nz,st_next
         ld a,0x78               ; drawn: white, then the words
         call bb_attr
-        ld a,171
+        ld a,170                ; (2 lines: rows 170-174 and 176-180)
         ld (MSG_Y),a
         call line_x
         ld a,3
@@ -157,9 +158,12 @@ stt_end:
         ld a,4
         ld (MSG_ST),a
         ret
-; BUBBLE: A = 1 draws, 0 clears the crew chief's speech bubble in
-; char row B (20-23) - its 8 lines, columns 11-19: the box (x 88-151, rounded) and
-; its tail out to the chief (column 19, rows 172-179). Drawn while he talks.
+; BUBBLE: A = 1 draws, 0 clears the crew chief's speech bubble in char row B
+; (20-22) - its 8 lines. It fills its cells exactly (the layout review, Grant, 10 Nov
+; 2026): columns 11-20, rows 20-22 - the box x 88-167, y 160-183, rounded - so no
+; white shows round it. Its tail is a white point in the chief's blue panel (column
+; 21, rows 172-179), over the left of his face: BB_TAIL has those 8 bytes with the
+; tail, then the 8 without it, to put the face back.
 bubble:
         ld (bb_on+1),a
         ld a,b
@@ -181,44 +185,44 @@ bubble:
 bb_ln:
         push bc
         push hl
-        ld d,0x80               ; D: column 11 (the left edge), E: 18 (the right),
-        ld e,0x01               ; B: 19 (the tail); the middle: blank
-        ld b,0
+        ld de,0x8001            ; D: column 11 (the left edge), E: 20 (the right)
         ld a,c
         cp 160
         jr z,bb_lin
-        cp 191
+        cp 183
         jr z,bb_lin
         cp 161
         jr z,bb_crn
-        cp 190
+        cp 182
         jr z,bb_crn
         sub 172                 ; the tail: rows 172-179
         cp 8
         jr nc,bb_mid
-        push hl
-        ld hl,bb_tail
-        add a,l
-        ld l,a
-        jr nc,bb_t1
-        inc h
-bb_t1:
-        ld b,(hl)
+        ld b,a
+        ld a,(bb_on+1)          ; shown: the first 8 bytes; gone: the next 8
+        dec a
+        and 8
+        add a,b
+        ld e,a
+        ld d,0
+        ld hl,BB_TAIL
+        add hl,de
+        ld e,(hl)
         pop hl
-        ld a,c
-        cp 173                  ; its mouth, rows 173-178: no right edge
-        jr c,bb_mid
-        cp 179
-        jr nc,bb_mid
-        ld e,0
+        push hl
+        ld a,l                  ; column 21: 10 on from the left edge
+        add a,10
+        ld l,a
+        ld (hl),e
+        pop hl
+        push hl
+        ld de,0x8000            ; its mouth: no right edge
         jr bb_mid
 bb_crn:
-        ld d,0x40               ; the rounded corners
-        ld e,0x02
+        ld de,0x4002            ; the rounded corners
         jr bb_mid
 bb_lin:
-        ld d,0x3F               ; the top and bottom lines
-        ld e,0xFC
+        ld de,0x3FFC            ; the top and bottom lines
         ld a,0xFF
         jr bb_w
 bb_mid:
@@ -232,28 +236,25 @@ bb_on:
         xor a
         ld d,a
         ld e,a
-        ld b,a
 bb_w1:
         ld (hl),d
         inc l
-        ld c,6
+        ld b,8
 bb_w2:
         ld (hl),a
         inc l
-        dec c
-        jr nz,bb_w2
+        djnz bb_w2
         ld (hl),e
-        inc l
-        ld (hl),b
         pop hl
         pop bc
         inc h
         inc c
         djnz bb_ln
         ret
-bb_tail: db 0x80,0x40,0x20,0x18,0x18,0x20,0x40,0x80
 
-bubble2:                        ; A = 1 draw, 0 clear: char rows B and B+1
+bb_step:                        ; A = 1 draw, 0 clear: B = 20: char rows 20 and 21;
+        bit 1,b                 ; B = 22: row 22 (half the bubble a tick)
+        jp nz,bubble
         push af
         push bc
         call bubble
@@ -261,11 +262,11 @@ bubble2:                        ; A = 1 draw, 0 clear: char rows B and B+1
         pop af
         inc b
         jp bubble
-bb_attr:                        ; A = the bubble's colour: columns 11-18, rows 20-23
+bb_attr:                        ; A = the bubble's colour: columns 11-20, rows 20-22
         ld b,20
         ld c,11
-        ld d,4
-        ld e,8
+        ld d,3
+        ld e,10
         jp set_attrs
 
         ; (line_x: in clothmini.asm, the gap before sq4's page)
@@ -373,8 +374,8 @@ wave_tick:
         ret z
         dec a
         ld (WAVE_T),a
-        ld b,WAVE_MID-3         ; wipe its 7 rows (4 bytes from x 104): one
-        ld c,104                ; character row, so the next row is INC H
+        ld b,WAVE_MID-3         ; wipe its 7 rows (4 bytes from x 112): one
+        ld c,112                ; character row, so the next row is INC H
         call scr_addr
         ld b,7
 wt_1:
@@ -662,6 +663,8 @@ nf_2:
         ld a,BOOST_FR
         ld (BOOST_T),a
         call inv_draw
+        ld hl,BOOST_FR*256+7    ; the border white while it burns (the layout review)
+        call flash
         ld hl,1*256+25          ; the rush of the NOS: 25 frames (L), kind 1 (H)
         ld (snd_fxt),hl
         ld a,M_BOOST

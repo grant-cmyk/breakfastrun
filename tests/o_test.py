@@ -24,8 +24,10 @@ with Racer(headless=True) as sp:
     for tx, ty in pick:
         sp.write(SYM['snd_bump'], bytes([0]))
         put(sp, 0, tx * 8 + 4 - 8 + 3, ty * 8 + 4 - 8 - 2, 16)       # its middle 3 px right, 2 up of the O's
-        sp.run(duration=0.08, fast_forward=True)
-        if sp.read8(SYM['snd_bump']) == 0: missed.append((tx, ty))
+        for k in range(8):                                            # (a frame at a time: the crunch is
+            sp.run(duration=0.02, fast_forward=True)                  # set on the next game tick, and fades
+            if sp.read8(SYM['snd_bump']): break                       # a picture at a time)
+        else: missed.append((tx, ty))
     ok(not missed, 'your car bounces off every O it is put on (%d of %d; missed %s)' % (len(pick) - len(missed), len(pick), missed[:5]))
     clear = []                                                        # clear cloth: no bounce
     for tx, ty in [(2, 2), (10, 3), (36, 30), (60, 4), (5, 60)]:

@@ -1475,7 +1475,8 @@ ocb_snd:
         ret nz
         ld a,SND_CRASH/2        ; you: a short crunch
         ld (snd_bump),a
-        ret
+        ld hl,5*256+2           ; and the border red, a moment
+        jp flash
 
 ; ---------------------------------------------------------------------
 ; BUMP (IX = car a, HL = car b): if they overlap, they bounce apart.
@@ -1569,6 +1570,8 @@ bump:
 bp_you:
         ld a,SND_CRASH
         ld (snd_bump),a
+        ld hl,10*256+2          ; a crash: the border red for a fifth of a second
+        call flash
 bp_snd:
         ; touching: bounce apart. Along whichever way they are further
         ; apart, each car is kicked away from the other at KICK speed and
@@ -2252,10 +2255,13 @@ sw_e1:
         ret
 sw_crash:                       ; 16 random flips, random short gaps
         ld c,16
+        ld a,(snd_port)         ; (the border as it is: red, if it is flashing)
+        and 7
+        ld e,a
 sw_c1:
         call rnd
         and 24
-        or 6
+        or e
         out (254),a
         call rnd
         and 31
@@ -2265,8 +2271,21 @@ sw_c2:
         djnz sw_c2
         dec c
         jr nz,sw_c1
-        ld a,6
+        ld a,e
         out (254),a
+        ret
+
+; FLASH: the border as a signal (the layout review, Grant, 10 Nov 2026): green
+; at GO, red on a crash, white while the NOS burns. H = TV frames, L = the
+; colour; the interrupt counts it down and puts the yellow back. The border
+; shares port 254 with the speaker, so it goes through snd_port like the sound.
+flash:
+        ld a,h
+        ld (flash_t),a
+        ld a,(snd_port)
+        and 0xF8
+        or l
+        ld (snd_port),a
         ret
 
 ; ---------------------------------------------------------------------
@@ -3107,6 +3126,7 @@ snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
 snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
 snd_fxk:  db 0                  ; ... which: 0 NOS picked up, 1 NOS fired, 2 up: a beep
 snd_port: db 6                  ; what port 254 last had: border yellow
+flash_t:  db 0                  ; a border flash: TV frames left
 ai_s:     db 0
 ph_cnt:   db 0
 ph_px:    dw 0
@@ -3178,7 +3198,11 @@ q_free:      db 0
 tr_force:    db 0               ; gap_draw: draw even if it looks unchanged
 gd_place:    db 0
 gd_y:        db 0               ; Q has been let go since this race was set up
+bar_shown:   defs 7             ; the message bar: the 6 big letters shown (0: none),
+                                ; then 1: LAP and the time are shown
+bar_next:    dw 0               ; the race time when the clock's next second is due
 race_vars_end:
+bar_time:    db "0:00",0        ; the race time, m:ss (hud_init starts it)
 shown_dot:   defs 2*NCARS       ; each car's dot on the mini-map (0xFF x: none) - not reset
 last_shown: db 0
 tr_base:  dw 0
@@ -3297,6 +3321,20 @@ isr:
         ld hl,(FRAMES)
         inc hl
         ld (FRAMES),hl
+        ld hl,flash_t           ; a border flash: its colour goes out every
+        ld a,(hl)               ; frame (so it shows without any sound), then
+        or a                    ; the table's yellow again
+        jr z,isr_e
+        dec (hl)
+        ld hl,snd_port
+        ld a,(hl)
+        jr nz,isr_f
+        or 7                    ; (yellow is 6: all three bits, less bit 0)
+        dec a
+        ld (hl),a
+isr_f:
+        out (254),a
+isr_e:
         ld hl,snd_rate          ; the engine: snd_rate/256 of a speaker flip
         ld a,(hl)               ; every frame - 9 to 49 a second, so it is
         inc hl                  ; heard however busy the loop is (snd_acc
@@ -3836,6 +3874,7 @@ BUFH      equ BUF+0x1760        ; more messages
 LFONT     equ BUFF + lfont_src - buff_src
 NOS_ICON  equ BUFF + nos_icon_src - buff_src
 MSG_INDEX equ BUFF + msg_index_src - buff_src
+BB_TAIL   equ BUFG + bb_tail_src - bufg_src
 BUFE      equ BUF+0x1460        ; the map's row index
 row_index equ BUFE + row_index_src - bufe_src
 wp_tab    equ waypoints             ; (in the program: 46 of them outgrew BUFG)

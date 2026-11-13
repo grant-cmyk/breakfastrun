@@ -73,12 +73,12 @@ lx_1:
         inc hl
         jr lx_1
 lx_2:
-        ld a,b                  ; x = BOX_X + (62 - (4n - 1)) / 2
+        ld a,b                  ; x = BOX_X + (BOX_W - (4n - 1)) / 2
         add a,a
         add a,a
         dec a
         neg
-        add a,62
+        add a,BOX_W
         srl a
         add a,BOX_X
         ld (MSG_X),a

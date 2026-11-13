@@ -182,9 +182,10 @@ with Racer(headless=True) as sp:
     print('message bar %r' % msg)
     check(msg == 'GET READY/PRESS Q', 'before the start: GET READY, PRESS Q in the message bar')
     sb = screen_bits(sp)                            # the driver strip under the window
-    check(attr(20, 0) == 0x57 and attr(23, 3) == 0x57 and attr(20, 20) == 0x4F and attr(23, 23) == 0x4F
-          and sb[170:182, 33:47].any() and not sb[170:182, 49:63].any(),
-          'under the window, the driver strip: you on red, your NOS in slot 1, the crew chief on blue')
+    check(attr(21, 1) == 0x57 and attr(22, 2) == 0x57 and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
+          and attr(20, 0) == 0x30 and attr(23, 23) == 0x30 and sb[168:184, 8:24].any() and sb[168:184, 168:184].any()
+          and not sb[160:168, 0:32].any() and sb[170:182, 33:47].any() and not sb[170:182, 49:63].any(),
+          'under the window, the driver strip: you (16 x 16) on a 2 x 2 red panel, your NOS in slot 1, the crew chief on a 2 x 2 blue panel')
     check(all(attr(5 + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(5 + 2 * i, 25) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
@@ -208,6 +209,7 @@ with Racer(headless=True) as sp:
     check(still, 'holding Q on red: nobody moves')
     tg = go_green(sp)
     check(sp.read8(SYM['race_on']) == 1 and lamps() == [0x44] * 3, 'then all three green: the race is on (%.1f s after Q)' % (1.9 + tg))
+    check(sp.read8(SYM['snd_port']) & 7 == 4 and sp.read8(SYM['flash_t']) > 0, 'at GO the border flashes green (port value %d, %d frames left)' % (sp.read8(SYM['snd_port']), sp.read8(SYM['flash_t'])))
 
     # ---- you: accelerate, camera follows, top speed unchanged ----
     r0 = g(sp, 'renders')
@@ -215,13 +217,26 @@ with Racer(headless=True) as sp:
     p1 = car(sp, 0)
     fps = (g(sp, 'renders') - r0) / 2.0
     print('you after 2s of Q', p1, ' pictures/s %.1f' % fps)
+    check(sp.read8(SYM['snd_port']) & 7 == 6 and sp.read8(SYM['flash_t']) == 0, 'and goes back to yellow')
     check(all(p1['x'] > car(sp, i)['x'] for i in CPUS), 'from the grid you pull away from all four')
     check(fps >= 13, 'at least 13 pictures a second off the start, five cars bunched (got %.1f)' % fps)
     check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
-    check(attr(21, 12) == 0x78 and screen_bits(sp)[171:188, 90:150].any(), 'at the green light the crew chief talks: his bubble, words in it')
+    sb = screen_bits(sp)
+    check(attr(20, 11) == 0x78 and attr(22, 20) == 0x78 and attr(23, 12) == 0x30 and attr(21, 10) == 0x30
+          and sb[160, 90:166].all() and sb[183, 90:166].all() and sb[170:181, 90:166].any(),
+          'at the green light the crew chief talks: his bubble fills columns 11-20, rows 20-22, words in it')
+    check((sb[172:180, 168] == 1).all() and sb[175, 168:172].all(), "the bubble's tail is a point in the chief's panel")
     press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
     cx, cy = pc_['x'] - g(sp, 'camx'), pc_['y'] - g(sp, 'camy')
     check((cx, cy) == (80, 52), 'camera keeps your car exactly in the middle of the 176 x 120 window (%d,%d)' % (cx, cy))
+
+    sp.run(duration=0.6, fast_forward=True)
+    bar = screen_text(sp, 2, 9, 3) + '|' + screen_text(sp, 2, 19, 4)
+    check(attr(1, 1) == 0x57 and attr(2, 6) == 0x57 and attr(1, 12) == 0x70 and attr(2, 17) == 0x70 and sb is not None
+          and screen_bits(sp)[8:24, 8:56].any() and screen_bits(sp)[8:24, 96:144].any(),
+          'racing: your place large on red and your lap large on bright yellow in the message bar')
+    check(re.fullmatch(r'LAP\|0:0\d', bar) is not None, 'with LAP and the race time beside them (%r)' % bar)
+    check(not screen_bits(sp)[TOWER_Y * 8:TOWER_Y * 8 + 80, 240:248].any(), 'the race order no longer shows a lap digit on each row')
 
     # ---- park your car in the infield and watch the computer race 90 s ----
     put(sp, 0, 40, 40)                        # top-left corner, well off the track
@@ -305,7 +320,12 @@ with Racer(headless=True) as sp:
     put(sp, 0, 200, SY - 8, 16); put(sp, 1, 230, SY - 8, 16)
     sp.write(CARS + CS + 16, bytes([60, 2]))      # CPU A: 60 frames of 'lift' so it sits still-ish
     b0n = g(sp, 'bumps')
-    hold(sp, ['Q'], 1.0)
+    red = False                                   # (the crash: the border red, a fifth of a second)
+    press(sp, 'Q', True)
+    for _ in range(50):
+        sp.run(duration=0.02, fast_forward=True); red = red or sp.read8(SYM['snd_port']) & 7 == 2
+    press(sp, 'Q', False)
+    check(red, 'ramming a car flashes the border red')
     p2, a2 = car(sp, 0), car(sp, 1)
     print('after ramming', p2, a2, 'bumps', g(sp, 'bumps') - b0n)
     check(g(sp, 'bumps') > b0n, 'driving into a computer car bumps it')

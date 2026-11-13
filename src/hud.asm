@@ -3,7 +3,9 @@
 ; Claude Design canvas "Breakfast Run Screen Design"):
 ;
 ;   cols 0-23, rows 0-2   MESSAGE BAR: start lights, GO!, FINAL LAP!,
-;                         FINISHED nTH - double-size ROM letters
+;                         FINISHED nTH - double-size ROM letters; while you
+;                         race and it has no message: your place and lap, large,
+;                         and the race time (bar_tick)
 ;   cols 1-23, rows 4-19  the play window (racer.asm), framed
 ;   cols 0-23, rows 21-22 LAP and TIME, BEST lap (time, car, lap)
 ;   cols 25-31            PANEL: logo, race order, mini-map
@@ -36,6 +38,10 @@ hud_init:                       ; a new race: what changes (the rest: screen_onc
         ld a,h
         or l
         call nz,best_panel
+        ld hl,0x3030            ; the race time: 0:00
+        ld (bar_time+2),hl
+        ld a,l
+        ld (bar_time),a
         call strip_reset        ; the driver strip: inventory, the radio
         call map_init
         ld b,0                  ; the tower in grid order, all at once
@@ -213,7 +219,13 @@ pb_b0:
 ; THE MESSAGE BAR
 ; ---------------------------------------------------------------------
 msg_clear:                      ; the message bar: rows 1-2 (row 0 is the
-        ld b,1                  ; track's name)
+        ld hl,bar_shown         ; track's name). Your place and lap are not on
+        ld b,7                  ; it now: bar_tick draws them afresh
+mc_1:
+        ld (hl),0
+        inc hl
+        djnz mc_1
+        ld b,1
         ld c,0
         ld d,2
         ld e,24
@@ -471,6 +483,8 @@ hu_go:                          ; GO: the race order redraws without the faces
         call msg_say
         ld a,1
         ld (pace_skip),a        ; (a busy picture: it does not set the pace)
+        ld hl,25*256+4          ; the border green for half a second
+        call flash
         ld hl,shown_order
         ld b,NCARS
 hg_1:
@@ -670,6 +684,9 @@ hu_best:
         call best_panel
 hu_order:
         call strip_triggers     ; what the crew chief says
+        ld a,(race_on)          ; your place, lap and time in the message bar
+        or a
+        call nz,bar_tick
         ld a,(renders)          ; spread the HUD out: the order on one
         and 3                   ; picture in four, the map on another, the
         jp z,tower_update       ; clock on the other two
@@ -692,6 +709,122 @@ ho_down:
         ret z
         pop hl                  ; leave the main loop: back to the start
         jp new_race
+
+; ---------------------------------------------------------------------
+; BAR_TICK (each picture, racing): the message bar is empty after GO, so it
+; shows what you most want to know, large (the layout review, Grant, 10 Nov
+; 2026): your place - bright white on red, your colour - in columns 1-6, and
+; LAP n/3 - black on bright yellow - in 12-17, with the race time after it.
+; One big letter a picture at most, and only one that changed, so no picture
+; runs late; the time a digit a second. A message (GO!, FINAL LAP!) takes
+; the bar: msg_clear, when it goes, has everything drawn afresh.
+; ---------------------------------------------------------------------
+A_BLAP  equ 0x70                ; black on bright yellow
+bar_tick:
+        ld a,(you_done)         ; FINISHED nTH stays
+        or a
+        ret nz
+        ld hl,(race_time)       ; the clock: another second?
+        ld de,(bar_next)
+        or a
+        sbc hl,de
+        jr c,bt_1
+        ld hl,50
+        add hl,de
+        ld (bar_next),hl
+        ld hl,bar_time+3        ; m:ss, a digit at a time
+        ld c,22                 ; (C = its column, if only it changes)
+        inc (hl)
+        ld a,(hl)
+        cp '9'+1
+        jr c,bt_dig
+        ld (hl),'0'
+        dec hl
+        inc (hl)
+        ld a,(hl)
+        cp '6'
+        jr c,bt_all
+        ld (hl),'0'
+        dec hl
+        dec hl
+        inc (hl)
+bt_all:
+        xor a                   ; more than one digit: the whole time, below
+        ld (bar_shown+6),a
+        jr bt_1
+bt_dig:
+        ld a,(msg_timer)        ; one digit: straight on (if the bar is free
+        ld b,a                  ; and the time is up to date)
+        ld a,(bar_shown+6)
+        dec a
+        or b
+        jr nz,bt_1
+        ld b,2
+        jp print_at
+bt_1:
+        ld a,(msg_timer)        ; a message has the bar
+        or a
+        ret nz
+        ld a,(position)         ; your place: "1ST".."5TH"
+        dec a
+        add a,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,txt_places
+        add hl,de
+        ld de,bar_shown
+        ld c,1
+        ld a,A_MSG
+        call bar_3
+        ld a,(cars+C_LAPS)      ; the lap (behind the line at the start: 1)
+        or a
+        jr nz,bt_2
+        inc a
+bt_2:
+        add a,'0'
+        ld hl,bar_lap
+        ld (hl),a
+        ld c,12
+        ld a,A_BLAP
+        call bar_3
+        ld a,(de)               ; the small text: LAP, and the whole time
+        or a
+        ret nz
+        inc a
+        ld (de),a
+        ld hl,txt_blap
+        ld b,2
+        ld c,9
+        call print_at
+        ld hl,bar_time
+        ld b,2
+        ld c,19
+        jp print_at
+; bar_3: 3 big letters at HL against those shown at DE, from column C in
+; colour A: the first that differs is drawn, and that is all for this picture
+bar_3:
+        ld (pb_attr),a
+        ld b,3
+b3_1:
+        ld a,(de)
+        cp (hl)
+        jr nz,b3_draw
+        inc hl
+        inc de
+        inc c
+        inc c
+        djnz b3_1
+        ret
+b3_draw:
+        ld a,(hl)
+        ld (de),a
+        ld (txt_digit),a
+        pop hl                  ; (not back to bar_tick)
+        ld hl,txt_digit
+        ld b,1
+        ld a,(pb_attr)
+        jp print_big
 
 ; ---------------------------------------------------------------------
 ; THE RACE ORDER (the tower): rows TOWER_Y.. of the panel, 2 rows a place:
@@ -736,26 +869,10 @@ cell_addr:                      ; cell row B, column C -> HL = its top pixel row
         ret
 
 fin_key:                        ; A = car -> A = car, + 8 if it is in, + 16 if
-        push hl                 ; it has the best lap, + 32 * (its lap AND 3)
+        push hl                 ; it has the best lap
         push bc
         ld e,a                  ; E = the car
-        add a,a                 ; its record: cars + car * 28
-        add a,a
-        add a,a
-        sub e
-        add a,a
-        add a,a
         ld c,a
-        ld b,0
-        ld hl,cars+C_LAPS
-        add hl,bc
-        ld a,(hl)
-        and 3
-        rrca
-        rrca
-        rrca
-        or e
-        ld c,a                  ; C = car + lap * 32
         ld d,0
         ld hl,fin_at
         add hl,de
@@ -879,37 +996,19 @@ trp_2:
         inc a
         ld b,a
         jp tr_face
-tr_race:                        ; the gap (columns 28-29), its lap or, once it is
-                                ; in, a flag (30),
-        ld a,1                  ; a clock if it has the best lap (31)
-        ld (tr_force),a
-        ld a,(tr_row)
-        sub TOWER_Y
+tr_race:                        ; the gap (columns 28-29); once it is in, a flag
+        ld a,1                  ; (30); a clock if it has the best lap (31). (Each
+        ld (tr_force),a         ; row had its lap too: yours is large in the
+        ld a,(tr_row)           ; message bar now - the layout review, Grant,
+        sub TOWER_Y             ; 10 Nov 2026)
         srl a
         call gap_draw           ; A = place
         ld a,(tr_key)
         bit 3,a
-        jr z,trr_lap
+        jr z,trr_1
         ld c,30
         ld de,flag_top
         call tr_glyph16
-        jr trr_1
-trr_lap:                        ; still racing: the lap it is on, where its flag
-        rlca                    ; will go (Grant, 10 Nov 2026)
-        rlca
-        rlca
-        and 3
-        jr nz,trr_l1            ; (behind the line at the start: lap 1)
-        inc a
-trr_l1:
-        add a,'0'
-        ld (txt_digit),a
-        ld hl,txt_digit
-        ld a,(gd_y)
-        ld b,a
-        ld c,30
-        ld a,2                  ; 2 px in: clear of the gap and the clock
-        call st_text_x
 trr_1:
         ld a,(tr_key)
         bit 4,a
@@ -1239,4 +1338,6 @@ tm_d1:
         ret
 ; (the HUD's fixed text is in hudtext.asm, kept at the top of memory)
 txt_digit:    db "0",0
+bar_lap:      db "1/",'0'+LAPS  ; the lap, large: n/3
+txt_blap:     db "LAP",0
 time_txt:     db "0:00.0",0
