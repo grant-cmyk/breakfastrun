@@ -38,7 +38,7 @@ CARS = SYM['cars']
 x0 = w16(CARS + 1); wp = 0
 while wps[wp][0] < x0 + 30: wp += 1
 start_wp, laps, fr = wp, 0, 0
-r_last = w16(SYM['renders']); f_last = 0; frames = Counter()
+r_last = w16(SYM['renders']); f_last = 0; frames = Counter(); slow = Counter()
 while laps < 1 and fr < 1500:
     c = mem(CARS, 11)
     x, y, ang = c[1] + 256 * c[2] + 8, c[4] + 256 * c[5] + 8, c[10]
@@ -50,7 +50,11 @@ while laps < 1 and fr < 1500:
     rpc('run', frames=1); fr += 1
     r = w16(SYM['renders'])
     if r != r_last:
-        if f_last: frames[fr - f_last] += 1
+        if f_last:
+            frames[fr - f_last] += 1
+            cs = mem(CARS, SYM['c_size'] * 5); cx, cy = w16(SYM['camx']), w16(SYM['camy'])
+            vis = sum(1 for i in range(5) if -16 < cs[i * SYM['c_size'] + 1] + 256 * cs[i * SYM['c_size'] + 2] - cx < 176 and -16 < cs[i * SYM['c_size'] + 4] + 256 * cs[i * SYM['c_size'] + 5] - cy < 120)
+            slow[(fr - f_last, vis, (r - 1) & 3)] += 1
         r_last, f_last = r, fr
 rep = rpc('profile_report', top=20000)
 rpc('quit') if False else z.kill()
@@ -84,6 +88,10 @@ pics = sum(frames.values()) or 1
 total = rep['total_t_states']
 print('zxdev lap: %d TV frames, %d pictures, %.0f T a picture all told (3 frames = 209,664)' % (fr, pics, total / pics))
 print('TV frames per picture:', dict(sorted(frames.items())))
+if os.environ.get('SLOW'):
+    print('pictures by (cars in view, HUD slot): at 3 frames / at 4 or more')
+    for vis in range(6):
+        print('  %d cars: ' % vis + '   '.join('slot %d: %3d / %2d' % (sl, slow[(3, vis, sl)], sum(v for (f, v_, s_), v in slow.items() if f > 3 and v_ == vis and s_ == sl)) for sl in range(4)))
 big = defaultdict(int)
 for n, v in tot.items(): big[re.sub(r'^(tile_|td_|gt_|dt_).*', 'draw_tiles (generated)', re.sub(r'^(cf_|cfw_).*', 'cloth_fill (parts)', n))] += v
 for n, v in sorted(big.items(), key=lambda kv: -kv[1])[:32]:

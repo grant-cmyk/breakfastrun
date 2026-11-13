@@ -21,13 +21,18 @@ with Racer(headless=True) as sp:
     go_green(sp); press(sp, 'Q', False)
     for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58)
     missed = []
-    for tx, ty in pick:
+    def bounces(tx, ty):
         sp.write(SYM['snd_bump'], bytes([0]))
         put(sp, 0, tx * 8 + 4 - 8 + 3, ty * 8 + 4 - 8 - 2, 16)       # its middle 3 px right, 2 up of the O's
         for k in range(8):                                            # (a frame at a time: the crunch is
             sp.run(duration=0.02, fast_forward=True)                  # set on the next game tick, and fades
-            if sp.read8(SYM['snd_bump']): break                       # a picture at a time)
-        else: missed.append((tx, ty))
+            if sp.read8(SYM['snd_bump']): return True                 # a picture at a time)
+        return False
+    for tx, ty in pick:
+        # (the test writes the car's place while the game runs: now and then the game is
+        # half-way through moving the car and puts it back. A real miss is a matter of
+        # where the car is, so it would miss again: try twice before calling it one)
+        if not bounces(tx, ty) and not bounces(tx, ty): missed.append((tx, ty))
     ok(not missed, 'your car bounces off every O it is put on (%d of %d; missed %s)' % (len(pick) - len(missed), len(pick), missed[:5]))
     clear = []                                                        # clear cloth: no bounce
     for tx, ty in [(2, 2), (10, 3), (36, 30), (60, 4), (5, 60)]:

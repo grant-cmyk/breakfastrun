@@ -3580,23 +3580,25 @@ mt_l_done:
 ; ---------------------------------------------------------------------
 ; MAKE_COPIER: write the screen-copy routine into memory at COPIER.
 ; Code is just bytes, so a program can write code. Each 22-byte window row
-; is 12 bytes (pop 6 pairs off the buffer, push them onto the screen), then
-; 10 bytes (5 pairs). Finally jp
-; copy_done. Too big to carry on the tape for nothing, and every address in
-; it is worked out here.
+; is two pieces: bytes 0-13 (POP 7 pairs off the buffer - AF, BC, DE, HL, then
+; EXX and the other BC, DE, HL - and PUSH them onto the screen), then bytes
+; 14-21 (4 pairs). 279 T a row; it was 295 with IX and IY as the 5th and 6th
+; pairs (they cost 4 T more each way) - the speed pass, 13 Nov 2026 - and the
+; routine is 36 bytes a row, not 40. Finally jp copy_done. Too big to carry on
+; the tape for nothing, and every address in it is worked out here.
 ; ---------------------------------------------------------------------
 make_copier:
         ld de,COPIER
         xor a
 mc_row:
         ld (mc_y),a
-        ld a,6                  ; bytes 0..11: 6 pairs
+        ld a,7                  ; bytes 0..13: 7 pairs
         ld (mc_n),a
         xor a
         call mc_half
-        ld a,5                  ; bytes 12..21: 5 pairs - the whole row
+        ld a,4                  ; bytes 14..21: 4 pairs - the whole row
         ld (mc_n),a
-        ld a,12
+        ld a,14
         call mc_half            ; (22 bytes: no odd byte left over)
         ld a,(mc_y)
         inc a
@@ -3632,15 +3634,11 @@ mc_dst:                         ; HL = screen address of this row, byte WIN_COL 
         add a,WIN_Y
         ld b,a
         jp scr_addr
-mc_half:                        ; A = first byte, (mc_n) = pairs (6 or 5)
+mc_half:                        ; A = first byte, (mc_n) = pairs (7 or 4)
         ld (mc_h),a
         call mc_src
         call mc_ldsp            ; ld sp,<buffer row>
-        ld a,(mc_n)             ; pops: af,bc,de,hl,ix(,iy) = 2n-4 bytes... 
-        add a,a                 ; (8 bytes for 6 pairs, 6 for 5)
-        sub 4
-        ld c,a
-        ld b,0
+        call mc_cnt             ; the pops: the first 8 bytes (7 pairs) or 4
         ld hl,mc_pops
         ldir
         ld a,(mc_h)
@@ -3653,15 +3651,18 @@ mc_half:                        ; A = first byte, (mc_n) = pairs (6 or 5)
         inc h
 mc_h1:
         call mc_ldsp            ; ld sp,<screen row + 2n>
-        ld a,(mc_n)             ; pushes: (iy,)ix,hl,de,bc,af - the last 2n-4
-        add a,a
-        sub 4
-        ld c,a
-        ld b,0
+        call mc_cnt             ; the pushes: the last 8 bytes, or 4
         ld hl,mc_pushes+8
         or a
         sbc hl,bc
         ldir
+        ret
+mc_cnt:                         ; BC = 8 for 7 pairs (with the EXX), 4 for 4
+        ld bc,8
+        ld a,(mc_n)
+        cp 7
+        ret z
+        ld c,4
         ret
 mc_op:                          ; write opcode A and address HL
         ld (de),a
@@ -3684,8 +3685,8 @@ mc_ldsp:                        ; write "ld sp,HL"
         ld (de),a
         inc de
         ret
-mc_pops:   db 0xF1,0xC1,0xD1,0xE1,0xDD,0xE1,0xFD,0xE1   ; pop af,bc,de,hl,ix,iy
-mc_pushes: db 0xFD,0xE5,0xDD,0xE5,0xE5,0xD5,0xC5,0xF5   ; push iy,ix,hl,de,bc,af
+mc_pops:   db 0xF1,0xC1,0xD1,0xE1,0xD9,0xC1,0xD1,0xE1   ; pop af,bc,de,hl; exx; pop bc,de,hl
+mc_pushes: db 0xE5,0xD5,0xC5,0xD9,0xE5,0xD5,0xC5,0xF5   ; push hl,de,bc; exx; push hl,de,bc,af
 
 im2_on:
         di
@@ -3736,7 +3737,7 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xFAC3 (120 lines)
+TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xF8E2 (120 lines of 36 bytes)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
