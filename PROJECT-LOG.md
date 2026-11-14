@@ -1422,3 +1422,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   tests/drive_test.py then fails its speed and lap-time checks. obj_paint costs about 11,000 T
   with one block in view - far more than it should; not yet found why. One sugar cube also sits
   under the start lights. 47 bytes free in that build.
+
+## 2026-11-14 SAST (afternoon, later still) - damage, its gauge and the oil can
+- Grant: "I would like to include a car status - also shows like the NOS, which is damage, each
+  time you hit a car or something you sustain damage. With damage the car slows down a bit. Then
+  little health bars (oil cans) are available on the track randomly - only once about a lap in
+  time though. The damage shows as an icon with a little bar."
+- Built (racer.asm DAMAGE, strip.asm oil_tick, grip.asm): dmg 0..8 - a hit on a car or a cereal O
+  adds 1, not again for 12 pictures (one crash is many touches); each point takes 8/256 px a
+  frame off your top speed (fully damaged 1.50 against 1.75: 86%); a spanner and a bar of what
+  is left in the window's bottom left corner (drawn into the buffer like the NOS canisters); an
+  oil can (two map tiles, NOS_C in tools/make_world.py, at 76, 146 on the left-hand side) is put
+  out 120 pictures into the race, mends all the damage when driven over, and comes back 192-255
+  pictures later (about a lap). tests/damage_test.py (8 checks). Picture:
+  docs/design/damage_in_game.png.
+- Not as asked, yet: the can comes at ONE place (a random place needs a set of map tiles for
+  each); only YOUR car takes damage; damage does not carry a message from the crew chief.
+- Memory: the ditty's data (129 bytes) moved out of the program to the title's table block at
+  0x5B4C (td_end2; 23 bytes left there). Program: code_end 0xBEC0, 320 bytes free.
+- Speed (zxlap): in the pack 67 pictures at 3 frames / 212 at 4 / 1 at 5; alone 247 / 85.

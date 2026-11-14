@@ -37,10 +37,10 @@ for k in kinds:
 GATE = max(1, STEP - 1)                          # a step sounds for all but its last frame: the pulse
 with open(os.path.join(ROOT, 'src', 'music.asm'), 'w') as f:
     f.write('; made by tools/make_music.py from tools/make_ditties.py: "%s" (%s), %d steps of %d TV frames\n' % (d['name'], d['mood'], len(steps), STEP))
-    f.write('MU_STEP equ %d\nMU_GATE equ %d\n; a byte a step: the note\'s place in mu_ptab, 254 a rest, 255 the end\nmu_tune:\n' % (STEP, GATE))
+    f.write('MU_STEP equ %d\nMU_GATE equ %d\n; a byte a step: the note\'s place in mu_ptab, 254 a rest, 255 the end\n; (kept with the title\'s tables at TD, not in the program: racer.asm gives mu_tune and mu_ptab)\nmu_tune_src:\n' % (STEP, GATE))
     for q in range(0, len(steps), 9):
         f.write('        db ' + ','.join('254' if m is None else '%d' % (kinds.index(m) * 4) for m in steps[q:q + 9]) + '\n')
-    f.write('        db 255\n; 4 bytes a pitch: the cycles in a whole burst, n, m, what a cycle costs (units of 279 T)\nmu_ptab:\n')
+    f.write('        db 255\n; 4 bytes a pitch: the cycles in a whole burst, n, m, what a cycle costs (units of 279 T)\nmu_ptab_src:\n')
     for k in kinds:
         f.write('        db %s    ; note %d\n' % (','.join('%d' % v for v in rows[k]), k))
 times = steps

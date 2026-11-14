@@ -171,6 +171,14 @@ yg_d1:
 yg_d2:
         ex de,hl                ; never over the top speed for your set-up (twice
         ld hl,(yg_topv)         ; it with NOS): a car set up for acceleration
+        ld a,(dmg)              ; (less DMG_SLOW for each point of damage: Grant, 14 Nov
+        add a,a                 ; 2026, "with damage the car slows down a bit")
+        add a,a
+        add a,a
+        ld c,a
+        ld b,0
+        or a
+        sbc hl,bc
         ld a,(BOOST_T)          ; pushes harder than its top speed needs, and is
         or a                    ; held to it here
         jr z,yg_d3

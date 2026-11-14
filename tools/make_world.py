@@ -261,8 +261,12 @@ _d = [p for i, p in enumerate(PATH) if 0 < i < len(PATH) - 1 and p[1] > PATH[i -
 _mid = [p for p in PATH if abs(p[0] - 288) < 80 and p[1] < SY - 100]
 _bx = sum(p[0] for p in _mid) / len(_mid); _by = max(p[1] for p in _mid)
 CANS = {'A': _can(156, SY), 'B': _can(_bx, _by)}      # A just behind the grid
+# C: the OIL CAN (Grant, 14 Nov 2026: health for a damaged car) - on the left-hand straight, half-way up
+OIL_ART = ['........', '..XXX...', '.X...XX.', 'XXXXXXXX', 'X......X', 'X.XXXX.X', 'X.X..X.X', 'X.XXXX.X', 'X......X', 'X......X', 'XXXXXXXX', '........']
+_left = min(PATH, key=lambda p: (abs(p[1] - (SY - 170)), p[0]))
+CANS['C'] = _can(min(p[0] for p in PATH if abs(p[1] - _left[1]) < 20), _left[1])
 for k, (tx, ty, dy) in CANS.items():
-    for y, row in enumerate(NOS_ART):
+    for y, row in enumerate(OIL_ART if k == 'C' else NOS_ART):
         for x, c in enumerate(row):
             if c == 'X': px[tx * 8 + x, ty * 8 + dy + y] = 1; ipx[tx * 8 + x, ty * 8 + dy + y] = 1
 # masks: the breakfast things sit ON the tablecloth (Grant, 10 Nov 2026) - a 1-px

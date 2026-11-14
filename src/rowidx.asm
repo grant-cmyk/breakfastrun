@@ -34,14 +34,14 @@ row_index_src:
         dw row_30 - high_src + TOPMEM
         dw row_31 - high_src + TOPMEM
         dw row_32 - high_src + TOPMEM
-        dw row_33 - high_src + TOPMEM
-        dw row_34
-        dw row_35
+        dw row_33
+        dw row_34 - high_src + TOPMEM
+        dw row_35 - high_src + TOPMEM
         dw row_36
         dw row_37
         dw row_38
         dw row_39
-        dw row_40
+        dw row_40 - high_src + TOPMEM
         dw row_41
         dw row_42
         dw row_43

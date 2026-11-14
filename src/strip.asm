@@ -32,6 +32,12 @@ srs_1:
         ld (NOS_SHOW),a
         ld (BOOST_T),a
         call nos_place
+        xor a                   ; no damage, no oil can yet: the first comes 8 seconds in
+        ld (dmg),a
+        ld b,a
+        call ot_set
+        ld a,120
+        ld (oil_t),a
         ld a,5
         ld (MSG_ST),a           ; no bubble (it goes, if one was up)
         ret
@@ -439,6 +445,7 @@ strip_triggers:
         or a
         ret z
         call nos_take           ; over a canister?
+        call oil_tick           ; the oil can, and the damage's cool-down
         ld hl,COOL
         ld a,(hl)
         or a
@@ -575,16 +582,8 @@ np_1:
         ld (NOS_B_T1),a
         ret
 
-nos_take:                       ; each picture: are you over the canister?
-        ld a,(NOS_SHOW)
-        or a
-        ld de,8+10-NOS_A_X
-        ld bc,8+10-NOS_A_Y
-        jr z,nt_1
-        ld de,8+10-NOS_B_X
-        ld bc,8+10-NOS_B_Y
-nt_1:
-        ld hl,(cars+C_X)        ; within 10 pixels of its centre, both ways
+near_you:                       ; DE, BC = 18 - a thing's x, y: are you within 10 pixels of it, both ways? CY = yes
+        ld hl,(cars+C_X)
         add hl,de
         ld a,h
         or a
@@ -599,6 +598,55 @@ nt_1:
         ret nz
         ld a,l
         cp 21
+        ret
+; OIL_TICK, each picture: the oil can (see DAMAGE in racer.asm). It is put out on the road
+; when its time is up, waits to be driven over - all your damage mended - and comes back about
+; a lap later (192 to 255 pictures). One place for now: NOS_C (tools/make_world.py).
+oil_tick:
+        ld hl,dmg_cool
+        ld a,(hl)
+        or a
+        jr z,ot_1
+        dec (hl)
+ot_1:
+        inc hl                  ; (oil_t is the byte after)
+        ld a,(hl)
+        or a
+        jr z,ot_out
+        dec (hl)
+        ret nz
+        ld a,NOS_C_V0           ; time: out it goes
+        ld b,NOS_C_V1
+ot_set:
+        ld (NOS_C_T0),a
+        ld a,b
+        ld (NOS_C_T1),a
+        ret
+ot_out:
+        ld de,8+10-NOS_C_X
+        ld bc,8+10-NOS_C_Y
+        call near_you
+        ret nc
+        xor a
+        ld (dmg),a              ; mended
+        ld b,a
+        call ot_set             ; and the can is gone
+        call rnd
+        or 0xC0
+        ld (oil_t),a
+        ld hl,0*256+8           ; (the pick-up's sound)
+        ld (snd_fxt),hl
+        ret
+nos_take:                       ; each picture: are you over the canister?
+        ld a,(NOS_SHOW)
+        or a
+        ld de,8+10-NOS_A_X
+        ld bc,8+10-NOS_A_Y
+        jr z,nt_1
+        ld de,8+10-NOS_B_X
+        ld bc,8+10-NOS_B_Y
+nt_1:
+        call near_you
         ret nc
         ld hl,INV               ; your first empty slot
         ld b,3

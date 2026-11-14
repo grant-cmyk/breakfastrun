@@ -165,6 +165,7 @@ def window_bad(sp):
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
     mask[139 - WY:151 - WY, 160 - 8:184 - 8] = False  # the NOS canisters in the corner
+    mask[WH - 8:WH, 0:16] = False                     # the damage gauge in the other corner
     for n in range(N):
         c = car(sp, n)
         cx, cy = c['x'] - camx, c['y'] - camy

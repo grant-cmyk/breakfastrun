@@ -187,6 +187,7 @@ draw_all:
         or a
         call nz,lights_draw
         call nos_draw           ; the NOS canisters you hold, in the window's corner
+        call dmg_draw           ; and your car's damage, in the other corner
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
         ld a,(FRAMES)
@@ -1579,6 +1580,7 @@ ocb_snd:
         ret nz
         ld hl,2*256+6           ; you: a bonk - a note that falls, 6 frames (Grant's pick from
         ld (snd_fxt),hl         ; the Sound Lab, 14 Nov 2026: B2)
+        call dmg_hit            ; and damage
         ld hl,5*256+2           ; and the border red, a moment
         jp flash
 
@@ -1676,6 +1678,7 @@ bp_you:
         ld (snd_bump),a
         ld hl,10*256+2          ; a crash: the border red for a fifth of a second
         call flash
+        call dmg_hit            ; and damage
 bp_snd:
         ; touching: bounce apart. Along whichever way they are further
         ; apart, each car is kicked away from the other at KICK speed and
@@ -2382,6 +2385,77 @@ nd_col:
         djnz nd_col
         ret
         include "lights.asm"    ; the lamps, the rail, the canister
+
+; ---------------------------------------------------------------------
+; DAMAGE (Grant, 14 Nov 2026: "a car status - also shows like the NOS, which is damage, each
+; time you hit a car or something you sustain damage. With damage the car slows down a bit.
+; Then little health bars (oil cans) are available on the track randomly - only once about a
+; lap in time though. The damage shows as an icon with a little bar").
+;   dmg 0..DMG_MAX: a hit on a car or a cereal O adds 1 (not again for DMG_COOL pictures:
+;   one crash is many touches); each point takes DMG_SLOW/256 px a frame off your top speed
+;   (you_grip); an oil can on the road (oil_tick, strip.asm) mends it all.
+;   DMG_DRAW: a spanner and a bar in the window's bottom left corner - the bar is what is
+;   LEFT of the car's health, 8 pixels when whole. Into the buffer, like the NOS canisters.
+; ---------------------------------------------------------------------
+DMG_MAX  equ 8
+DMG_COOL equ 12
+DMG_SLOW equ 8                  ; (8 points: 64 of the 448 - a seventh off the top speed)
+DMG_B    equ BUF + 0x800*2 + 0*0x100 + 2*32 + 2      ; buffer row 144 (the window's last cell row), byte 2: its left edge
+dmg_hit:
+        ld hl,dmg_cool
+        ld a,(hl)
+        or a
+        ret nz
+        ld (hl),DMG_COOL
+        dec hl                  ; (dmg is the byte before)
+        ld a,(hl)
+        cp DMG_MAX
+        ret nc
+        inc (hl)
+        ret
+dmg_draw:
+        ld a,(dmg)              ; the bar: 8 pixels less one a point, from the left
+        ld b,a
+        inc b
+        ld a,0xFF
+        jr dd_2
+dd_1:
+        add a,a
+dd_2:
+        djnz dd_1
+        ld c,a
+        ld hl,DMG_B
+        ld de,dmg_icon
+        ld b,8
+dd_3:
+        ld a,(de)               ; the spanner; beside it the bar between a line above
+        ld (hl),a               ; and a line below
+        inc l
+        ld a,b
+        cp 8
+        jr z,dd_5
+        dec a
+        jr z,dd_5
+        ld a,c
+        jr dd_4
+dd_5:
+        ld a,0xFF
+dd_4:
+        ld (hl),a
+        dec l
+        inc de
+        inc h
+        djnz dd_3
+        ret
+dmg_icon:
+        db %01100000
+        db %11000000
+        db %11001000
+        db %01111100
+        db %00011110
+        db %00001111
+        db %00000111
+        db %00000010
 
 ; ---------------------------------------------------------------------
 ; SOUND (the beeper): played in the time the loop would otherwise spend
@@ -3470,8 +3544,10 @@ mu_used:  db 0                  ; ... what the last burst used
 mu_el:    db 0                  ; TV frames the last picture's work took
 mu_ph:    db 0                  ; ... frames this note still sounds for
 mu_off:   db 0                  ; ... where its burst is in mu_ptab
-mu_ptr:   dw mu_tune            ; ... the next note in the tune
-        include "music.asm"
+mu_ptr:   dw mu_tune            ; ... the next note in the tune (music.asm is kept at TD: see td_end2)
+dmg:      db 0                  ; your car's damage, 0..DMG_MAX
+dmg_cool: db 0                  ; ... pictures until a hit counts again (the byte after dmg)
+oil_t:    db 0                  ; the oil can: pictures until it is put out (0: it is out)
 SKID_FR  equ 5
 snd_skt:  db 0                  ; the skid's screech: frames left
 snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
@@ -3882,7 +3958,7 @@ start_once:                     ; (start, from the start-up area)
         call im2_on
         ld hl,td_src            ; the title's tables, to where they stay (the ROM's
         ld de,TD                ; interrupt is off now: its variables are free)
-        ld bc,td_end-td_src
+        ld bc,td_end2-td_src
         ldir
         ld hl,logo_bits         ; the title screen (title.asm), until 1 is pressed
         xor a
@@ -4265,7 +4341,11 @@ im2_on:
         ei
         ret
         include "title3.asm"    ; the title's tables, copied to TD (0x5B4C) by start_once
-        if td_end - td_src > 0x5E00 - TD
+        include "music.asm"     ; ... and the ditty's (14 Nov 2026: 129 bytes the program needed back)
+td_end2:
+mu_tune equ TD + mu_tune_src - td_src
+mu_ptab equ TD + mu_ptab_src - td_src
+        if td_end2 - td_src > 0x5E00 - TD
         .error the title's tables run past 0x5E00 (the stack is below 0x5F00: 50 bytes deep at most)
         endif
 ; data kept at the top of memory (TOPMEM, above the generated copy routine),
