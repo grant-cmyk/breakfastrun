@@ -179,12 +179,12 @@ pw_1:
 ; ---------------------------------------------------------------------
 ; THE VIEW LEADS THE CAR (Grant, 14 Nov 2026: "have the car position in the screen adjust to
 ; allow to see ahead more on the track"). lead_x, lead_y: how far the camera is ahead of the
-; car, in pixels, signed. Each aims at the car's speed that way x 24 / 256 (42 at top speed),
+; car, in pixels, signed. Each aims at the car's speed that way x 12 / 256 (21 at top speed),
 ; held to LEAD_X / LEAD_Y, and moves LEAD_STEP pixels a picture at most - it slides, never jumps.
 ; ---------------------------------------------------------------------
-LEAD_X    equ 40
-LEAD_Y    equ 32
-LEAD_STEP equ 3
+LEAD_X    equ 20                ; (halved, Grant 14 Nov 2026: "half on each - its a little too much")
+LEAD_Y    equ 16
+LEAD_STEP equ 2
 cam_lead:
         ld hl,(cars+C_VX)
         ld c,LEAD_X
@@ -196,14 +196,13 @@ cam_lead:
 cl_one:
         add hl,hl
         add hl,hl
-        add hl,hl
-        ld a,h                  ; (x 8, kept in A:B)
+        ld a,h                  ; (x 4, kept in A:B)
         ld b,l
         add hl,hl
         push de
         ld d,a
         ld e,b
-        add hl,de               ; x 24: H = the lead to aim at
+        add hl,de               ; x 12: H = the lead to aim at
         pop de
         ld a,h
         or a

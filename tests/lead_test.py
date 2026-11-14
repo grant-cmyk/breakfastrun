@@ -25,7 +25,7 @@ with Racer(headless=True) as sp:
     for k in range(40): sp.run(duration=0.04, fast_forward=True); seen.append(lead(sp)[0])
     step = max(abs(b - a) for a, b in zip(seen, seen[1:]))
     lx, ly = lead(sp); x, y = onscreen(sp)
-    ok(lx == 40 and abs(ly) <= 3 and abs(x - (WW // 2 - 8 - 40)) <= 8, 'at speed to the right: the view 40 pixels ahead, the car at x %d of %d in the window (lead %d, %d)' % (x, WW, lx, ly))
+    ok(lx == 20 and abs(ly) <= 3 and abs(x - (WW // 2 - 8 - 20)) <= 8, 'at speed to the right: the view 20 pixels ahead, the car at x %d of %d in the window (lead %d, %d)' % (x, WW, lx, ly))
     ok(step <= 6, 'it slid there: never more than %d pixels between looks 2 TV frames apart' % step)
     shot(sp, 'lead_right.png')
     press(sp, 'Q', False); sp.run(duration=4.0, fast_forward=True)

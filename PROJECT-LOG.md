@@ -1638,3 +1638,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Memory: code_end 0xBFD3 (45 bytes free in that area).
 - OPEN: 4 empty rows in the panel between the map and RACE; the lap record sits 3.5 px right of
   the panel's centre (a cell-aligned clock cannot be centred in 6 columns).
+
+## 2026-11-14 23:15 SAST - the look-ahead halved
+
+- Grant: "could you make the look ahead affect slightly less - so half on each - its a little too
+  much of an adjustment - but the idea works - design changes work well and speed is good".
+- src/plateco.asm: LEAD_X 20, LEAD_Y 16 (were 40, 32); the aim is speed x 12/256 (21 px at top
+  speed, was 42); LEAD_STEP 2 px a picture (was 3), so the slide feels the same.
+- All ten tests PASS; speed alone 41 / 224 / 5 (unchanged).
