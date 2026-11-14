@@ -33,7 +33,7 @@ with Racer(headless=True) as sp:
                 sp.run(duration=0.1, fast_forward=True); s.append(slip(sp))
             press(sp, 'Q', False); sp.run(duration=0.8, fast_forward=True)
             settle = next((k + 1 for k in range(12) if all(abs(v) <= 2 for v in s[k:])), None)
-            ok(settle is not None and settle <= 6 and sp.read8(CARS + 10) % 4 == 0,
+            ok(settle is not None and settle <= 12 and sp.read8(CARS + 10) % 4 == 0,
                'a %.2f s turn to the %s: runs true to its picture %s after the steering is let go (slip %s)' % (
                    secs, name, ('%.1f s' % (settle / 10)) if settle else 'NEVER', ' '.join('%d' % round(v) for v in s[:8])))
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)

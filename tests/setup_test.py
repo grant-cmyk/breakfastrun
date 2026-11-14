@@ -57,7 +57,7 @@ acc = run_setup(['3', '3']); print('accel +2:', acc)
 ok(acc['lv'] == [1, 1, 3, 0] and abs(acc['top'] - base['top']) < 0.02, 'key 3 twice: ACCEL at level 3, the top speed unchanged (%.2f)' % acc['top'])
 ok(acc['t15'] is not None and base['t15'] is not None and acc['t15'] <= base['t15'] - 4, 'ACCEL 3: 1.5 px a frame comes sooner (%s frames, against %s)' % (acc['t15'], base['t15']))
 grp = run_setup(['1', '1']); print('grip +2:', grp)
-ok(grp['lv'] == [3, 1, 1, 0] and grp['grip'] == [29, 18, 18, 12] and base['grip'] == [22, 14, 14, 9],
+ok(grp['lv'] == [3, 1, 1, 0] and grp['grip'] == [29, 16, 16, 9] and base['grip'] == [22, 12, 12, 7],
    'key 1 twice: GRIP at level 3 - the tyres hold 29/256 px a frame of sideways speed (22 at level 1): %s' % grp['grip'])
 mix = run_setup(['1', '2', '3', '0', '3', '1', '2']); print('mixed, 0 in the middle:', mix)
 ok(mix['lv'] == [2, 1, 2, 0], 'a third key does nothing; 0 takes the points back to spend again (%s)' % mix['lv'])

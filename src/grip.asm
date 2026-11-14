@@ -16,9 +16,10 @@
 ; a * b = sq(a + b) - sq(|a - b|), sq(n) = n * n / 4.
 ; =====================================================================
 G_GRIP   equ 22                 ; 0.085 px a frame of sideways speed (8.8)
-G_SLIDE  equ 14                 ; ... 65% of it while sliding
-G_Q      equ 14                 ; ... 65% while you hold Q (35% to the engine)
-G_QSLIDE equ 9                  ; ... both
+G_SLIDE  equ 12                 ; ... while sliding (it was 14: Grant, 14 Nov 2026, "the car does not
+                                ; skid enough around corners ... at full speed there needs to be more")
+G_Q      equ 12                 ; ... while you steer with Q held (it was 14)
+G_QSLIDE equ 7                  ; ... both (it was 9)
 G_PUSH   equ 64                 ; 0.25 a frame (with drag 1/8: top speed 1.75)
 G_TOP    equ 448                ; 1.75 px a frame
 
@@ -187,13 +188,12 @@ yg_d5:
 yg_d6:
         ld (yg_vf),hl
         ; ---- the tyres: sideways speed, up to the grip a frame ----
-        ld a,(ix+C_CTRL)        ; NOT STEERING: the tyres' full grip, sliding or
-        ld b,0                  ; not, Q or not - so once you point the car where
-        and CT_L+CT_R           ; you want to go, the slide dies in about a
-        jr z,yg_g1              ; quarter of a second and the car runs true
-        ld a,(yg_sl)            ; (Grant, 14 Nov 2026: "it kept sliding to a
-        add a,a                 ; side" - it took 0.9 s). Steering: less grip
-        ld b,a                  ; while sliding, and less while holding Q
+        ld a,(yg_sl)            ; grip: less while sliding, and less again while you
+        add a,a                 ; steer with Q held (the engine uses some of it).
+        ld b,a                  ; Not steering, Q costs nothing - so once you point
+        ld a,(ix+C_CTRL)        ; the car where you want to go the slide dies away
+        and CT_L+CT_R           ; (about half a second from a full-speed corner)
+        jr z,yg_g1
         bit 2,(ix+C_CTRL)       ; (CT_GO)
         jr z,yg_g1
         inc b

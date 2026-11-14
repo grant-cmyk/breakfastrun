@@ -1276,3 +1276,14 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   sequence showing the drivers, a car skidding round): storyboards and an animation, not code.
 - tests: setup_test checks GRIP by the tyres' grip numbers (the slide-length measure moved with
   the timing); drive_test's head-on check writes the cars' places between pictures.
+
+## 2026-11-14 SAST - more skid in the corners
+- Grant: "the car does not skid enough around corners, so at full speed there needs to be more
+  sliding/skidding."
+- grip.asm: the tyres' grip while sliding 14 -> 12, while steering with Q held 14 -> 12, both
+  9 -> 7 (/256 px a frame of sideways speed; the GRIP levels' table in step: level 3 is 29, 16,
+  16, 9). Not steering, the grip is now the sliding grip while the car slides (it was the full
+  22), so the slide runs on after the corner. Measured at top speed (tests/drift_test.py), the
+  time to run true to the picture after the steering is let go: 0.5-0.6 s after a 0.14 s turn,
+  0.6-0.7 s after 0.3 s, 0.8-1.1 s after 0.5 s (it was 0.3-0.4 s for all); slip up to 60-75
+  degrees in the long turn. It still ends on the pictured heading.

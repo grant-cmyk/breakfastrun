@@ -65,14 +65,20 @@ THREE WAYS TO PLAY A NOTE
 -------------------------
   pips   one burst on the note's first frame, as many whole cycles as fit in
          PIP_T (about 1 ms): a short dry "tick with a pitch".
-  plink  the pip, then fainter repeats on the next three frames (half, a
-         quarter, then one cycle): the note rings and dies away like a music
-         box or a plucked string. Costs about twice the pips. (This is the
-         "better trick within the budget": a 1-bit speaker has no volume, but
-         fewer cycles per frame sounds quieter, so a fade can be faked.)
-  buzz   two cycles on EVERY frame for the first half of the note (8 frames
-         at most - any longer and the average cost breaks the budget): a
-         short held, buzzy note with a strong 50 Hz rattle in it.
+  plink  the pip, then two fainter repeats on the next two frames: the note
+         rings and dies away like a music box or a plucked string. Costs two
+         to three times the pips. This is the "better trick within the
+         budget": a 1-bit speaker has no volume, but a THIN pulse is quieter
+         than a fat one. So the repeats keep the note's period (which is what
+         carries the pitch) and narrow the pulse: half width on the second
+         frame, quarter width on the third. In the player it is the same loop
+         with two delay bytes used in turn (pulse width, then the rest of the
+         period). An earlier try, repeats of fewer and fewer flips, measured
+         worse: one lone cycle has no pitch, it only adds rattle.
+  buzz   about half a millisecond of the note (two cycles at least) on EVERY
+         frame for the first half of the note, 8 frames at most - any longer
+         and the average cost breaks the budget: a short held, buzzy note
+         with a strong 50 Hz rattle in it.
 
 Percussion is cheap: "o" is two flips 501 T apart (a soft thud, ~540 T), "x"
 is two flips 111 T apart (a thin tick, ~150 T). On a frame where a note also
@@ -110,6 +116,7 @@ LOOP_BASE_T = 33            # the pip loop: 33 + 13 x E from flip to flip
 LOOP_STEP_T = 13
 
 PIP_T = 3_600               # a pip: as many whole cycles as fit in this
+BUZZ_T = 1_700              # a buzz frame: as many cycles as fit (2 at least)
 BUZZ_GATE = 8               # a buzz note sounds for at most this many frames
 BURST_LIMIT_T = 4_000       # the brief's limit for one burst
 LAST_T = 40                 # after a burst's last flip: just the way out
@@ -272,23 +279,32 @@ def even_cycles(budget, hp, most=16):
     return max(2, n - (n & 1))
 
 
+def thin_pulses(hp, cycles, narrow):
+    """A burst of thin pulses one whole period apart: each pulse is hp/narrow
+    wide (to the loop's 13 T), the rest of the period is silence."""
+    width = LOOP_BASE_T + LOOP_STEP_T * max(1, int(round((hp / narrow - LOOP_BASE_T) / LOOP_STEP_T)))
+    burst = [width, 2 * hp - width] * cycles
+    burst[-1] = LAST_T                  # nothing to wait for after the last
+    return burst
+
+
 def note_bursts(style, midi, length):
-    """{frame offset within the note: flips} for one note."""
+    """{frame offset within the note: burst} for one note."""
     hp = half_period(midi)
     full = even_cycles(PIP_T, hp)
     if style == "pips":
-        plan = {0: full}
+        plan = {0: [hp] * full}
     elif style == "plink":
-        plan = {0: full,
-                1: max(2, (full // 2) & ~1),
-                2: max(2, (full // 4) & ~1),
-                3: 2}
+        plan = {0: [hp] * full,
+                1: thin_pulses(hp, full // 2, 2),
+                2: thin_pulses(hp, full // 2, 4)}
     elif style == "buzz":
         gate = min(BUZZ_GATE, max(2, length // 2))
-        plan = {f: 4 for f in range(gate)}
+        flips = max(4, even_cycles(BUZZ_T, hp))
+        plan = {f: [hp] * flips for f in range(gate)}
     else:
         raise ValueError(style)
-    return {f: n for f, n in plan.items() if f < length}
+    return {f: b for f, b in plan.items() if f < length}
 
 
 def music_frames(ditty, style, loops=LOOPS):
@@ -303,9 +319,9 @@ def music_frames(ditty, style, loops=LOOPS):
                 continue
             hp = half_period(midi)
             plan = note_bursts(style, midi, length)
-            starts.append((base + t, midi, plan[0]))
-            for f, flips in plan.items():
-                frames.setdefault(base + t + f, []).append([hp] * flips)
+            starts.append((base + t, midi, len(plan[0])))
+            for f, burst in plan.items():
+                frames.setdefault(base + t + f, []).append(burst)
         for t, ch in drums.items():
             lst = frames.setdefault(base + t, [])
             spent = sum(sum(b) for b in lst)
