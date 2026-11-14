@@ -34,8 +34,10 @@ example"): every object is now drawn as seen from straight above the table - toa
 sugar cubes, the top of a milk carton, butter on its dish, a place mat with a plate and a fried egg, a bowl of
 cereal, a mug of tea, a jam jar's lid - and in the race picture they stand OFF the road.
 Then (Grant: "the egg definitely needs yellow yolk ... maybe some white milk. A black coffee in a
-cup"): a fried egg with a YELLOW yolk on white (two colours, the yolk's bold blue surround being
-the 8 pixels of blue between them), a glass of milk in place of the carton top, and a black
+cup"): a fried egg with a YELLOW yolk on white (two colours, at first with a bold blue surround
+between them; then - Grant: "the white around the egg is white, the yolk is yellow. No blue in
+an egg" - the yolk drawn in a SECOND INK, yellow, on the white paper, with 8+ pixels of plain
+white between it and any blue; compose() asserts one ink and one paper in every cell), a glass of milk in place of the carton top, and a black
 coffee on a white saucer (black paper).
 
 Writes docs/design/colour_objects.png: the objects (6x, 1x, 2x), the proof (one object scrolled
@@ -51,6 +53,13 @@ DESIGN = os.path.join(ROOT, 'docs', 'design')
 WIN = 0x29; EDGE = 8
 BLACK, BLUE, RED, MAGENTA, GREEN, CYAN, YELLOW, WHITE = range(8)
 
+def grow(m):
+    g = m.copy()
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            g[max(0, dy):m.shape[0] + min(0, dy), max(0, dx):m.shape[1] + min(0, dx)] |= m[max(0, -dy):m.shape[0] + min(0, -dy), max(0, -dx):m.shape[1] + min(0, -dx)]
+    return g
+
 # ---- drawing an object: shape (its footprint), bits (ink), label (0 = edge, else a paper colour + 1)
 class Obj:
     def __init__(self, name, w, h, round_=False):
@@ -63,6 +72,7 @@ class Obj:
                 for fx in (cx, w - 1 - cx):
                     for fy in (cy, h - 1 - cy): self.shape[fy, fx] = 0
         self.bits = self.shape.copy(); self.label = np.zeros((h, w), dtype=np.uint8)
+        self.ink2 = np.zeros((h, w), dtype=np.uint8)           # a second ink colour (+1) for some ink pixels; 0 = blue
     def panel(self, x0, y0, x1, y1, colour):
         """An inside, x0..x1-1 by y0..y1-1: only where there are 8 pixels of object every way."""
         ok = np.zeros_like(self.shape)
@@ -74,6 +84,13 @@ class Obj:
     def mask(self, m, colour):
         """An inside of any shape (None: white, for round_obj)."""
         self.bits[m == 1] = 0; self.label[m == 1] = 99 if colour is None else colour + 1
+    def second_ink(self, m, colour):
+        """Solid shapes in a SECOND ink colour, on this object's paper: kept (here, by trimming)
+        at least 8 pixels - measured along each axis - from every blue ink pixel and every
+        other paper, so no cell can ever hold two inks or two papers."""
+        same = ((self.label == self.label[m == 1].max()) & (self.bits == 0)).astype(np.uint8); far = 1 - same
+        for _ in range(8): far = grow(far)
+        m = m & (1 - far); self.bits[m == 1] = 1; self.ink2[m == 1] = colour + 1; return m
     def ink(self, art, x, y):                                 # blue drawing, kept to the insides
         h, w = art.shape; m = (art == 1) & (self.label[y:y + h, x:x + w] > 0)
         self.bits[y:y + h, x:x + w][m] = 1
@@ -119,17 +136,17 @@ def glass():
     arc = ring(9.5, 1.3); arc[8:, :] = 0; arc[:, 8:] = 0; o.ink(arc, 14, 14)      # a highlight on the milk
     return o
 def egg():
-    """Two colours: the yolk is yellow, the white is white, and the 10 pixels of solid blue between
-    them (8 on the square, so 10.5 on the round) is the yolk's bold outline."""
-    n = 84; c = (n - 1) / 2; o = Obj('Fried egg, 84 across, white with a YELLOW yolk', n, n)
+    """White with a YELLOW yolk and no blue inside: the yolk is drawn in ink, and the cells that
+    hold it are white paper with YELLOW ink. That works as long as no cell ever holds yolk and
+    blue together, so there are 8+ pixels of plain white all round the yolk."""
+    n = 66; c = (n - 1) / 2; o = Obj('Fried egg, 66 across, white with a YELLOW yolk', n, n)
     y, x = np.mgrid[0:n, 0:n]; t = np.arctan2(y - c, x - c)
-    o.shape = (np.hypot(x - c, y - c) <= 37.5 + 2.0 * np.sin(2 * t + 0.7) + 1.2 * np.sin(3 * t + 2)).astype(np.uint8)   # a wobbly white
+    o.shape = (np.hypot(x - c, y - c) <= 30.6 + 1.4 * np.sin(2 * t + 0.7) + 0.9 * np.sin(3 * t + 2)).astype(np.uint8)   # a wobbly white
     o.bits = o.shape.copy(); o.label[:] = 0
     o.panel(0, 0, n, n, WHITE)
-    ringm = disc(n, n, c, c, 17.3); o.bits[ringm == 1] = 1; o.label[ringm == 1] = 0
-    o.mask(disc(n, n, c, c, 6.7), YELLOW)
-    o.ink(pic([".XX", "X..", "X.."]), 37, 37)                  # a glint on the yolk
-    for (px, py) in ((20, 30), (60, 26), (24, 58), (58, 60), (41, 17), (44, 66)): o.ink(pic(["X"]), px, py)   # pepper
+    m = o.second_ink(disc(n, n, c, c, 6.0), YELLOW)
+    for (px, py) in ((30, 29), (29, 30), (29, 31)):            # a glint: white paper showing through the yolk
+        if m[py, px]: o.bits[py, px] = 0; o.ink2[py, px] = 0
     return o
 def coffee():
     """Black coffee: black paper. The cup's wall is the 8+ of blue between the black and the white saucer."""
@@ -141,10 +158,11 @@ def coffee():
     o.ink(pic(["XX", "XX"]), 40, 41); o.ink(pic(["X"]), 43, 38)
     return o
 def butter():
-    o = Obj('Butter on its dish, 56 x 40, yellow', 56, 40); o.panel(8, 8, 48, 32, YELLOW)
-    pat = np.zeros((14, 28), dtype=np.uint8); pat[0] = pat[-1] = 1; pat[:, 0] = pat[:, -1] = 1; pat[0, 0] = pat[0, -1] = pat[-1, 0] = pat[-1, -1] = 0
-    pat[1:-1, 20] = 1; pat[3, 3:15] = 1; pat[5, 3:10] = 1      # the pat, one slice cut, a shine
-    o.ink(pat, 14, 13)
+    o = Obj('Butter on its dish, 64 x 48, white dish, YELLOW pat', 64, 48); o.panel(8, 8, 56, 40, WHITE)
+    pat = np.zeros((48, 64), dtype=np.uint8); pat[16:32, 16:48] = 1; pat[16, 16] = pat[16, 47] = pat[31, 16] = pat[31, 47] = 0
+    m = o.second_ink(pat, YELLOW)
+    o.bits[19, 20:36] = 0; o.bits[21, 20:28] = 0; o.bits[17:31, 40] = 0     # a shine and a cut slice, in white paper
+    o.ink2[o.bits == 0] = 0
     return o
 def mat():
     o = Obj('Place mat and plate, 80 x 64, green and white', 80, 64)
@@ -181,25 +199,26 @@ for o in OBJECTS: o.label[o.label == 99] = WHITE + 1
 def compose(cloth, things, sprites=None, wrong=False):
     """cloth: the bits of a cell-aligned piece of window. things: [(obj, x, y)]. sprites: (mask,
     bits) drawn over everything, as the game draws cars. Returns bits, attrs (the rule applied)."""
-    H, W = cloth.shape; b = cloth.copy(); lab = np.zeros((H, W), dtype=np.uint8); cov = np.zeros((H, W), dtype=np.uint8)
+    H, W = cloth.shape; b = cloth.copy(); lab = np.zeros((H, W), dtype=np.uint8); cov = np.zeros((H, W), dtype=np.uint8); ik = np.zeros((H, W), dtype=np.uint8)
     for o, x, y in things:
         for j in range(o.h):
             for i in range(o.w):
                 yy, xx = y + j, x + i
                 if 0 <= yy < H and 0 <= xx < W and o.shape[j, i]:
-                    b[yy, xx] = o.bits[j, i]; lab[yy, xx] = o.label[j, i]; cov[yy, xx] = 1
-    if sprites is not None: b[sprites[0] == 1] = sprites[1][sprites[0] == 1]
+                    b[yy, xx] = o.bits[j, i]; lab[yy, xx] = o.label[j, i]; cov[yy, xx] = 1; ik[yy, xx] = o.ink2[j, i]
     a = np.full((H // 8, W // 8), WIN, dtype=np.uint8)
     for r in range(H // 8):
         for c in range(W // 8):
-            cl = lab[r * 8:r * 8 + 8, c * 8:c * 8 + 8]; cc = cov[r * 8:r * 8 + 8, c * 8:c * 8 + 8]
-            cols = set(cl[cl > 0].tolist())
+            sl = (slice(r * 8, r * 8 + 8), slice(c * 8, c * 8 + 8))
+            cl, cc, cb, ci = lab[sl], cov[sl], b[sl], ik[sl]
             if wrong:                                          # the naive way: colour every cell the object touches
-                if cc.any(): a[r, c] = (things[0][0].label.max() - 1) * 8 + BLUE
+                if cc.any(): a[r, c] = WHITE * 8 + BLUE
                 continue
-            if cols:
-                assert len(cols) == 1 and cc.all(), 'colour clash'   # never: an inside with cloth, or two colours
-                a[r, c] = (cols.pop() - 1) * 8 + BLUE
+            papers = set(cl[cb == 0].tolist()); inks = set(ci[cb == 1].tolist()); cols = set(cl[cl > 0].tolist())
+            # never: two papers, two inks, or any of an object's inside in a cell that also holds cloth
+            assert len(papers) <= 1 and len(inks) <= 1 and len(cols) <= 1 and (not cols or cc.all()), 'colour clash'
+            if cols: a[r, c] = (cols.pop() - 1) * 8 + (inks.pop() - 1 if inks and max(inks) else BLUE)
+    if sprites is not None: b[sprites[0] == 1] = sprites[1][sprites[0] == 1]
     return b, a
 def verify(o):
     """Every one of the 64 positions against the cell grid: compose() asserts there is no clash."""
@@ -224,13 +243,6 @@ def clean_cloth(w):
             yd = slice(max(0, 32 * j), min(H, H + 32 * j)); xd = slice(max(0, 32 * i), min(W, W + 32 * i))
             v[ys, xs] += w[yd, xd]; n[ys, xs] += 1
     return (v * 2 > n).astype(np.uint8)
-def grow(m):
-    g = m.copy()
-    for dy in (-1, 0, 1):
-        for dx in (-1, 0, 1):
-            g[max(0, dy):m.shape[0] + min(0, dy), max(0, dx):m.shape[1] + min(0, dx)] |= m[max(0, -dy):m.shape[0] + min(0, -dy), max(0, -dx):m.shape[1] + min(0, -dx)]
-    return g
-
 if __name__ == '__main__':
     for o in OBJECTS: verify(o)
     print('verified: no clash at any of the 64 positions, for all', len(OBJECTS), 'objects')
@@ -264,11 +276,11 @@ if __name__ == '__main__':
     o = OBJECTS[0]; colour = WHITE
     thin = Obj('thin', o.w, o.h); thin.shape = o.shape.copy()  # the same egg with only a 2-pixel outline
     core = 1 - grow(grow((1 - o.shape).astype(np.uint8)))
-    yolk = (o.label == YELLOW + 1).astype(np.uint8)
-    thin.bits = (o.shape & (1 - core)) | (grow(grow(yolk)) & (1 - yolk)) | (o.bits & (o.label > 0))
+    yolk = (o.ink2 > 0).astype(np.uint8)
+    thin.bits = (o.shape & (1 - core)) | (grow(grow(yolk)) & (1 - yolk))
     thin.label[:] = 0; thin.label[core == 1] = colour + 1
     PW, PH = (o.w + 47) // 8 * 8, (o.h + 31) // 8 * 8
-    for title, axis in (('2a. The proof: the fried egg (two colours) and the cloth scrolled 0 to 7 pixels ACROSS the cell grid (white ticks = cell edges). Neither colour ever leaves the egg.', 0),
+    for title, axis in (('2a. The proof: the fried egg (white paper, yellow yolk in a second ink) and the cloth scrolled 0 to 7 pixels ACROSS the cell grid (white ticks = cell edges). Neither colour ever leaves the egg.', 0),
                         ('2b. The same scrolled 0 to 7 pixels DOWN. Last picture: what happens WITHOUT the rule (thin edge, colour on every cell the egg touches).', 1)):
         fr = []
         for k in list(range(8)) + ['wrong']:
@@ -286,20 +298,21 @@ if __name__ == '__main__':
     #    of O's: across the middle and up the right-hand side here), and a car that has left the road
     x_ = (win ^ clean).astype(np.uint8); spr = grow(x_); sbits = win.copy()
     by = {o.name.split(',')[0]: o for o in OBJECTS}
-    things = [(by['Fried egg'], -10, -38), (by['Glass of milk'], 74, -5)]
+    things = [(by['Fried egg'], 2, -24), (by['Glass of milk'], 74, -5)]
     b, a = compose(clean, things, sprites=(spr, sbits))
     sb[8:152, 8:184] = b; sa[1:19, 1:23] = a
     scr = render(sb, sa, border=6, s=3)
-    notes = ['THE RULE: a solid blue edge at least 8 pixels thick; a cell is coloured only if it holds some',
+    notes = ['THE RULE, part 1: a solid blue edge at least 8 pixels thick; a cell is coloured only if it holds some',
              '  of the inside. Checked by the script at all 64 pixel positions for every object: no clash.',
              '',
              'TOP DOWN: everything is drawn as seen from straight above the table. The edge does a job in',
              '  each drawing: the crust of the toast, the rim of the bowl and the glass, the wall of the cup.',
              '',
-             'THE EGG: yellow yolk on white. Two colours need 8 pixels of solid blue between them, so the',
-             '  yolk has a bold blue surround 10 pixels thick; with the white and the outer edge the egg comes',
-             '  to 84 across with a 13-pixel yolk. It cannot be made much smaller. On the place mat\'s plate',
-             '  it would need three more rings (over 100 pixels), so the plate is left empty.',
+             'A SECOND INK (the egg): the yolk is drawn in ink, and the cells that hold it are white paper',
+             '  with YELLOW ink - so there is no blue in the egg. It works as long as no cell holds yolk and',
+             '  blue together: 8 pixels of plain white, measured along each axis, between the yolk and any',
+             '  blue (11 on the round). The egg is 66 across with a 12-pixel yolk. Same trick: the butter',
+             '  is now a yellow pat on a white dish. A car driving over the yolk turns yellow in those cells.',
              '',
              'THE COFFEE: black paper works - the cup wall is the blue between the black and the white saucer.',
              '  Blue drawing on black is dim: the highlight barely shows, so the coffee is best left plain.',
@@ -311,7 +324,7 @@ if __name__ == '__main__':
              'COST: per picture, for each object in view, the game colours the cells that hold its inside',
              '  and puts back the ones it has left: about 10 to 60 colour writes each for these sizes.',
              '',
-             'LIMITS: plain colours only, not BRIGHT. One ink: all the drawing is blue. Over the solid blue',
+             'LIMITS: plain colours only, not BRIGHT. One ink per cell: blue, or a second ink kept 8 clear. Over the solid blue',
              '  edge a car shows only as its thin outline. Objects must not overlap each other, but may touch.']
     row = Image.new('RGB', (scr.width + 30 + 1000, scr.height), BG); d = ImageDraw.Draw(row); row.paste(scr, (0, 0))
     for k, t in enumerate(notes): d.text((scr.width + 30, 8 + 27 * k), t, fill=FG, font=fb)
