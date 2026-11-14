@@ -130,6 +130,12 @@ class Racer(Spectrum):
         if self.armed and self.pc == SYM['copy_done']:   # marks too: check where)
             self.armed = False
             raise zs.EmulatorException('at copy_done')
+    def load_tape(self, filename):          # the title screen comes up first (src/title.asm):
+        super().load_tape(filename)         # wait for its flashing PRESS 1 OR 2 TO START, press
+        t = 0                               # 1 (1UP) - and every test begins on the race screen
+        while self.read8(0x5800 + 23 * 32 + 5) != 0xB0 and t < 60: self.run(duration=0.1, fast_forward=True); t += 0.1
+        self.run(duration=0.5, fast_forward=True)                    # (the rest of the title is drawn after its prompt)
+        press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)
 
 def at_copy_done(sp):
     # stop at the exact moment the copy has finished: the screen, the camera
@@ -372,11 +378,16 @@ with Racer(headless=True) as sp:
     r1 = g(sp, 'renders'); t1 = g(sp, 'race_time')
     sp.run(duration=0.5, fast_forward=True)
     check(g(sp, 'renders') == r1 and g(sp, 'race_time') == t1, 'the race over: everything stops (no pictures, the clock still)')
-    hold(sp, ['Q'], 0.3)                           # let go, then press: a new race
+    hold(sp, ['Q'], 0.3)                           # let go, then press: the title screen (src/title.asm) ...
+    sp.run(duration=1.0, fast_forward=True)
+    check(sp.read8(0x5800 + 23 * 32 + 5) == 0xB0 and screen_text(sp, 23, 5, 21) == 'PRESS 1 OR 2 TO START'
+          and sp.read8(SYM['snd_rate']) == 0, 'Q after the finish: back to the title screen, the engine quiet')
+    hold(sp, ['1'], 0.2)                           # ... and 1 (1UP): a new race
     sp.run(duration=1.5, fast_forward=True)
     p5 = car(sp, 0)
     check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0 and screen_text(sp, 22, 1, 9) == ' PRESS Q '
-          and (p5['x'], p5['y']) == (car(sp, 0)['x'], car(sp, 0)['y']), 'Q after the finish starts a new race on the grid')
+          and (p5['x'], p5['y']) == (car(sp, 0)['x'], car(sp, 0)['y']) and frame_ok(sp),
+          '1 at the title starts a new race on the grid, the race screen whole again (its frame back)')
     sb = screen_bits(sp)
     check(sp.read16(SYM['rec_lap']) == bl and sp.read16(SYM['best_lap']) == 0xFFFF
           and sb[(TOWER_Y + 10) * 8:(TOWER_Y + 10) * 8 + 8, 216:240].any(),

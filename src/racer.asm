@@ -345,7 +345,9 @@ k_right: ld a,0xDF              ; P
         jr nz,rk2
         set 1,c
 rk2:
-        call key_go             ; Q
+k_go:   ld a,0xFB               ; Q
+        in a,(0xFE)
+        and 0x01
         jr nz,rk_qup
         set 2,c
         ld a,(q_free)           ; first press of Q starts the lights - a new
@@ -382,11 +384,6 @@ k_nos:  ld a,0x7F               ; SPACE: fire a NOS canister (a new press)
         jp nos_fire
 rk_spup:
         ld (hl),a
-        ret
-key_go:                         ; Z: the accelerate key is down (hud_over asks too)
-        ld a,0xFB               ; Q
-        in a,(0xFE)
-        and 0x01
         ret
 
 ; ---------------------------------------------------------------------

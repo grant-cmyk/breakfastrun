@@ -18,6 +18,7 @@ class P(Spectrum):
         log.append((ADDR.get(self.pc), t))
 with P(headless=True) as sp:
     sp.load_tape(os.environ.get('ZTAP', os.path.join(ROOT, 'build', 'racer.tap')))
+    import title_skip; title_skip.leave(sp)   # the title screen first: 1 = 1UP
     while sp.read16(SYM['renders']) == 0:
         sp.run(duration=0.1, fast_forward=True)
     sp.run(duration=3.0, fast_forward=True)   # (the start: five cars bunched on the grid)

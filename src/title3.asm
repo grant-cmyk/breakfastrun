@@ -31,7 +31,7 @@ a_runs_src:
         defs 3                  ; ... which the copy sets to 0, once, at start-up)
 key_ch_src: db "OPQA "              ; 1UP's keys: left, right, accelerate, brake, NOS
 k_patch_src:                        ; ... and where read_keys reads each one
-        dw k_left+1, k_right+1, key_go+1, k_brake+1, k_nos+1
+        dw k_left+1, k_right+1, k_go+1, k_brake+1, k_nos+1
 k_sp_src:   db "SP",0
 t_script_src:
         db 0x80,17,1,14,T_HEAD

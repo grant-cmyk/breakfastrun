@@ -52,6 +52,9 @@ T_P1    equ 0x57                ; bright white on red: 1UP
 title_again:
         xor a
         ld (snd_rate),a         ; the engine quiet
+        ld a,6                  ; (and the border the table's yellow, if the NOS left it white)
+        ld (snd_port),a
+        out (254),a
         call scr_save
         ld hl,BUF+25            ; the logo is in the kept picture: 32 bytes a line
         ld a,25
@@ -603,6 +606,10 @@ ka_5:
         inc a
         cp 5
         jp nz,ka_1
+        ld a,(k_go+1)           ; the accelerate key also ends the wait after a race (hud_over)
+        ld (ho_key+1),a
+        ld a,(k_go+5)
+        ld (ho_key+5),a
         ld a,(TD + key_ch_src - td_src + 2)         ; the race screen's PRESS Q names the new key
         ld (txt_strip+7),a
         ld (TOPMEM + txt_pressq_src - high_src + 6),a

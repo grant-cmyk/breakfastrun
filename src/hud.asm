@@ -686,7 +686,9 @@ hu_order:
 
 hud_over:                       ; after the finish: the last flags, then
         call tower_update       ; wait for Q (the accelerate key) to be let go,
-        call key_go             ; then pressed again - the title screen, then a new race
+ho_key: ld a,0xFB               ; then pressed again - the title screen, then a new race
+        in a,(0xFE)             ; (title.asm writes the chosen key here too)
+        and 0x01
         ld hl,q_up
         jr z,ho_down
         ld (hl),1

@@ -31,6 +31,8 @@ def key(k, down):
     if down and k not in held: rpc('key_down', keys=k); held.add(k)
     if not down and k in held: rpc('key_up', keys=k); held.discard(k)
 rpc('load', path=TAP); rpc('random', pin=True)
+while mem(0x5800 + 23 * 32 + 5, 1)[0] != 0xB0: rpc('run', frames=5)   # the title screen (src/title.asm): its flashing
+rpc('run', frames=25); rpc('press', keys='1', frames=10, after=5)      # prompt is up, then the rest of it - 1 (1UP) starts the race
 while w16(SYM['renders']) == 0: rpc('run', frames=5)
 key('Q', True)
 while mem(SYM['race_on'], 1)[0] == 0: rpc('run', frames=1)
