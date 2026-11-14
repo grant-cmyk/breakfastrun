@@ -67,13 +67,15 @@ def bres(x0, y0, x1, y1):
         e2 = 2 * e
         if e2 >= dy: e += dy; x0 += sx
         if e2 <= dx: e += dx; y0 += sy
-def draw(parts, deg, scale=0.88, n=20):
+def draw(parts, deg, scale=0.88, n=20, O=None):
+    """O: the middle of the frame the car is drawn into (default: the 19 x 19's, as in the game)."""
+    O = C if O is None else O
     th = math.radians(deg); c, s = math.cos(th), math.sin(th)
-    fwd = lambda x, y: (C + scale * ((x - C) * c - (y - C) * s), C + scale * ((x - C) * s + (y - C) * c))    # clockwise on screen
+    fwd = lambda x, y: (O + scale * ((x - C) * c - (y - C) * s), O + scale * ((x - C) * s + (y - C) * c))    # clockwise on screen
     g = [['.'] * n for _ in range(n)]
     for py in range(n):                              # the blocks: the last one over a pixel's middle wins
         for px in range(n):
-            dx, dy = (px + .5 - C) / scale, (py + .5 - C) / scale
+            dx, dy = (px + .5 - O) / scale, (py + .5 - O) / scale
             x, y = C + dx * c + dy * s, C - dx * s + dy * c
             for p in parts:
                 if p[0] == 'rect' and p[2] <= x < p[4] and p[3] <= y < p[5]: g[py][px] = p[1]
