@@ -685,10 +685,8 @@ hu_order:
         jp strip_tick           ; the radio on the other two
 
 hud_over:                       ; after the finish: the last flags, then
-        call tower_update       ; wait for Q to be let go,
-        ld a,0xFB               ; then pressed again - a new race
-        in a,(0xFE)
-        and 1
+        call tower_update       ; wait for Q (the accelerate key) to be let go,
+        call key_go             ; then pressed again - the title screen, then a new race
         ld hl,q_up
         jr z,ho_down
         ld (hl),1
@@ -698,7 +696,7 @@ ho_down:
         or a
         ret z
         pop hl                  ; leave the main loop: back to the start
-        jp new_race
+        jp title_again          ; (title.asm; it ends at new_race)
 
 ; ---------------------------------------------------------------------
 ; BAR_TICK (each picture, racing): the message bar is empty after GO, so it

@@ -83,6 +83,7 @@ CT_BRK  equ 8
 
         org 0x5F00              ; big-car frames, below the program (8.25 KB, loaded
         include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
+        include "title.asm"     ; the title / attract screen, in the room the small cars leave
         if $ > 0x8000
         .error the big cars run past 0x8000
         endif
@@ -328,21 +329,23 @@ tk_o1:
         djnz tk_o
         ret
 
+; (the keys are 1UP's, as chosen on the title's KEYS screen - title.asm writes each
+; key's half row and bit into the LD A and AND below; as loaded: O P Q A SPACE)
 read_keys:
         ld c,0
-        ld a,0xDF               ; Y U I O P
+k_left: ld a,0xDF               ; O
         in a,(0xFE)
-        bit 1,a                 ; O
+        and 0x02
         jr nz,rk1
         set 0,c
 rk1:
-        bit 0,a                 ; P
+k_right: ld a,0xDF              ; P
+        in a,(0xFE)
+        and 0x01
         jr nz,rk2
         set 1,c
 rk2:
-        ld a,0xFB               ; Q
-        in a,(0xFE)
-        bit 0,a
+        call key_go             ; Q
         jr nz,rk_qup
         set 2,c
         ld a,(q_free)           ; first press of Q starts the lights - a new
@@ -360,17 +363,17 @@ rk_qup:
         ld a,1
         ld (q_free),a
 rk3:
-        ld a,0xFD               ; A
+k_brake: ld a,0xFD              ; A
         in a,(0xFE)
-        bit 0,a
+        and 0x01
         jr nz,rk4
         set 3,c
 rk4:
         ld a,c
         ld (cars+C_CTRL),a
-        ld a,0x7F               ; SPACE: fire a NOS canister (a new press)
+k_nos:  ld a,0x7F               ; SPACE: fire a NOS canister (a new press)
         in a,(0xFE)
-        and 1
+        and 0x01
         ld hl,SPACE_UP
         jr nz,rk_spup
         cp (hl)                 ; (A = 0: was it up?)
@@ -379,6 +382,11 @@ rk4:
         jp nos_fire
 rk_spup:
         ld (hl),a
+        ret
+key_go:                         ; Z: the accelerate key is down (hud_over asks too)
+        ld a,0xFB               ; Q
+        in a,(0xFE)
+        and 0x01
         ret
 
 ; ---------------------------------------------------------------------
@@ -3618,6 +3626,7 @@ isr_x:
         pop af
         ei
         ret
+        include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
 code_end:
 
 ; ---------------------------------------------------------------------
@@ -3657,10 +3666,20 @@ start_once:                     ; (start, from the start-up area)
         call so_blk
         call make_tables
         call make_copier        ; the program writes its own copy routine
-        call screen_once        ; everything on the screen that never changes
         xor a                   ; the engine quiet until the first picture
         ld (snd_rate),a
+        ld (t_drv),a            ; the title's first driver
+        ld a,6
+        out (254),a             ; BORDER 6 (yellow: the kitchen table)
         call im2_on
+        ld hl,td_src            ; the title's tables, to where they stay (the ROM's
+        ld de,TD                ; interrupt is off now: its variables are free)
+        ld bc,td_end-td_src
+        ldir
+        ld hl,logo_bits         ; the title screen (title.asm), until 1 is pressed
+        xor a
+        call title
+        call screen_once        ; everything on the race screen that never changes
         jp new_race
 
 so_blk:                         ; LDIR, unless there is nothing to copy (BC = 0 would copy 64K)
@@ -4037,6 +4056,10 @@ im2_on:
         im 2
         ei
         ret
+        include "title3.asm"    ; the title's tables, copied to TD (0x5B4C) by start_once
+        if td_end - td_src > 0x5C78 - TD
+        .error the title's tables run into FRAMES
+        endif
 ; data kept at the top of memory (TOPMEM, above the generated copy routine),
 ; loaded here and copied up by start; use the names below, not the _src ones
 high_src:
