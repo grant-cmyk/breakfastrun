@@ -1065,3 +1065,30 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Speed (zxdev lap): 3 frames x 280, 4 x 32 (was 308 / 12): taller turned cars cost more rows,
   and it shows with 4-5 cars in view. Tests: drive, nos, O, set-up all PASS (15.0 pictures a
   second off the grid). docs/design/big_cars_16_headings.png: every car at every heading as stored.
+
+## 2026-11-14 SAST - speed back with the full-size cars; the slide ends when you stop steering; screen options
+- Grant, of the full-size turned cars: "happy but yes the gameplay did slow - any way to have
+  these images and faster play?" Kept the pictures, found the time elsewhere: draw_car counts its
+  rows in IXL (22 T a row); bumps and the O checks once a picture, after everyone has moved
+  (bumps_o; they ran on alternate TV frames). zxdev lap 3 frames x 304, 4 x 18 (280 / 32 with the
+  taller cars; 308 / 12 before them). Tried and put back: the computer cars deciding every 8
+  frames, not 4 (313 / 8, but their laps slowed by about 1.5 s: 21.0 23.4 22.8 20.8).
+- Grant: "after the car has skidded, and I face a direction, it still seems to drift ... it kept
+  sliding to a side." Measured on open ground (O's and off-road switched off in the emulator),
+  top speed, a 0.4 s turn, then steering let go with Q held: the slip angle went 51, 47, 38, 34,
+  25, 20, 12, 6, 0 degrees - 0.9 s to run true - because a sliding car holding Q had only 9/256
+  of grip a frame. No fault in the sums (both directions the same; it does reach 0). Change
+  (grip.asm): NOT STEERING, the tyres have their full grip (yg_gtab's first number: 22/256, more
+  with GRIP levels), sliding or not, Q or not. Now 43, 28, 4, 0: about 0.3 s. Steering, the grip
+  is as before, so a drift can still be held with the wheel.
+- tests/setup_test.py: GRIP is now judged by the frames until the tyres grip again after a hard
+  turn (level 3: 11 frames; level 1: 17).
+- Memory: both ld iy,23610 are gone (nothing reads IY); yg_gtab and the set-up's numbers moved to
+  the gap. Main area 6 bytes free.
+- Grant asked for a second agent to mock up "a nicer display ... organise, condense, shape, put
+  borders around things". tools/make_screen_options.py -> docs/design/screen_options.png and
+  screen_option_a/b/c.png, built cell by cell on a real racing screen: A cards on the table
+  (white cards under blue title bars, one joined YOU | CAR | RADIO dashboard); B arcade console
+  (black, one instrument column: RACE, CAR, MAP); C blue dashboard (the window stands on an
+  L-shaped blue dashboard holding YOU, CAR, RADIO and the MAP; a TV-style banner on top). The
+  agent's pick: C. The best-lap time shown is made up; the before-start state is not mocked.

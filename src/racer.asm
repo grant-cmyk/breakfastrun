@@ -2168,7 +2168,6 @@ copy_to_screen:
         jp COPIER
 copy_done:
         ld sp,(save_sp)
-        ld iy,23610
         ei
         ret
 
@@ -2441,7 +2440,6 @@ cl_1:
         ld a,(cf_kk)
         xor 16
         jp nz,cl_kind
-        ld iy,23610             ; (IY as the rest of the program expects it)
         ret
 ; CL_FLIP: the check row changes at this line: the pattern's other version
 ; (8 bytes on or back), for the next 8 lines of the kind. The CALL's return

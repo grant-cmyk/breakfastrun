@@ -286,3 +286,8 @@ su_pts:   db 2                  ; points still to spend
 su_up:    db 0                  ; 1: no set-up key was down last picture
 su_txt:   db "1G",0
 su_names: db "GSA"
+; (from grip.asm)
+yg_gtab: db G_GRIP, G_Q, G_SLIDE, G_QSLIDE   ; (your set-up's grip: su_apply writes it)
+yg_pushv: dw G_PUSH             ; ... its push
+yg_topv:  dw G_TOP              ; ... its top speed
+yg_topn:  dw G_TOP              ; this frame's top speed (twice it with NOS)

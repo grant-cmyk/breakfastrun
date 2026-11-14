@@ -187,11 +187,14 @@ yg_d5:
 yg_d6:
         ld (yg_vf),hl
         ; ---- the tyres: sideways speed, up to the grip a frame ----
-        ld a,(yg_sl)            ; grip: sliding?  holding Q?
-        add a,a
-        ld b,a
-        ld a,(ix+C_CTRL)
-        and CT_GO
+        ld a,(ix+C_CTRL)        ; NOT STEERING: the tyres' full grip, sliding or
+        ld b,0                  ; not, Q or not - so once you point the car where
+        and CT_L+CT_R           ; you want to go, the slide dies in about a
+        jr z,yg_g1              ; quarter of a second and the car runs true
+        ld a,(yg_sl)            ; (Grant, 14 Nov 2026: "it kept sliding to a
+        add a,a                 ; side" - it took 0.9 s). Steering: less grip
+        ld b,a                  ; while sliding, and less while holding Q
+        bit 2,(ix+C_CTRL)       ; (CT_GO)
         jr z,yg_g1
         inc b
 yg_g1:
@@ -435,10 +438,7 @@ yt_1:
         or a
         sbc hl,de
         ret
-yg_gtab: db G_GRIP, G_Q, G_SLIDE, G_QSLIDE   ; (your set-up's grip: su_apply writes it)
-yg_pushv: dw G_PUSH             ; ... its push
-yg_topv:  dw G_TOP              ; ... its top speed
-yg_topn:  dw G_TOP              ; this frame's top speed (twice it with NOS)
+; (yg_gtab, yg_pushv, yg_topv, yg_topn: in clothmini.asm, the gap before sq4)
 
 ; YG_ROT: one heading step's turn, by shifts: C = cos 5.625 = 1 - 1/256 - 1/1024,
 ; S = sin 5.625 = 1/16 + 1/32 + 1/256 (0.0977). T1 = vf C, T2 = vf S, T3 = vs C, T4 = vs S

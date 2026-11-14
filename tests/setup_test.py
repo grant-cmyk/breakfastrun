@@ -1,7 +1,7 @@
 """Your car's set-up on the real ROM (Grant, 13 Nov 2026): three parts - GRIP, SPEED, ACCEL - at
 levels 1..5; every car starts at 1, 1, 1 and you have 2 points to add before the start with keys
 1, 2, 3 (0 takes them back). Checks the keys, the HUD row, and what each part does to the car:
-the top speed, the frames to reach 1.5 px a frame from rest, and how far a slide carries.
+the top speed, the frames to reach 1.5 px a frame from rest, and how long the slide lasts after a hard turn.
 Prints PASS/FAIL lines and RESULT."""
 import os, math
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,12 +40,10 @@ def run_setup(keys):
             if r['t15'] is None and v >= 1.5: r['t15'] = n
         r['top'] = vmax
         press(sp, 'P', True); sp.run(duration=0.3, fast_forward=True); press(sp, 'P', False)   # a hard turn at speed,
-        y0 = car(sp, 0)['y']; x0 = car(sp, 0)['x']; slide = 0                                   # then how long it slides
-        for _ in range(60):
-            sp.run(duration=0.02, fast_forward=True)
-            if sp.read8(SYM['yg_sl']): slide += 1
+        n = 0                                                 # then the frames until the tyres grip again
+        while sp.read8(SYM['yg_sl']) and n < 60: sp.run(duration=0.02, fast_forward=True); n += 1
         press(sp, 'Q', False)
-        r['slide'] = slide
+        r['slide'] = n
         return r
 base = run_setup([]); print('1,1,1:', base)
 ok(base['lv'] == [1, 1, 1, 2] and base['pips'] == [1, 1, 1], 'every part starts at level 1, with 2 points to spend (%s, pips %s)' % (base['lv'], base['pips']))
@@ -59,7 +57,7 @@ acc = run_setup(['3', '3']); print('accel +2:', acc)
 ok(acc['lv'] == [1, 1, 3, 0] and abs(acc['top'] - base['top']) < 0.02, 'key 3 twice: ACCEL at level 3, the top speed unchanged (%.2f)' % acc['top'])
 ok(acc['t15'] is not None and base['t15'] is not None and acc['t15'] <= base['t15'] - 4, 'ACCEL 3: 1.5 px a frame comes sooner (%s frames, against %s)' % (acc['t15'], base['t15']))
 grp = run_setup(['1', '1']); print('grip +2:', grp)
-ok(grp['lv'] == [3, 1, 1, 0] and grp['slide'] < base['slide'], 'key 1 twice: GRIP at level 3, a hard turn slides for less time (%d frames, against %d)' % (grp['slide'], base['slide']))
+ok(grp['lv'] == [3, 1, 1, 0] and grp['slide'] < base['slide'], 'key 1 twice: GRIP at level 3, after a hard turn the slide ends sooner (%d frames, against %d)' % (grp['slide'], base['slide']))
 mix = run_setup(['1', '2', '3', '0', '3', '1', '2']); print('mixed, 0 in the middle:', mix)
 ok(mix['lv'] == [2, 1, 2, 0], 'a third key does nothing; 0 takes the points back to spend again (%s)' % mix['lv'])
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)
