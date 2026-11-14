@@ -84,6 +84,7 @@ CT_BRK  equ 8
         org 0x5F00              ; big-car frames, below the program (8.25 KB, loaded
         include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
         include "title.asm"     ; the title / attract screen, in the room the small cars leave
+        include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         if $ > 0x8000
         .error the big cars run past 0x8000
         endif
@@ -188,6 +189,7 @@ draw_all:
         call nz,lights_draw
         call nos_draw           ; the NOS canisters you hold, in the window's corner
         call dmg_draw           ; and your car's damage, in the other corner
+        call pl_draw            ; and your place, on its plate, top right
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
         ld a,(FRAMES)
@@ -2494,7 +2496,6 @@ snd_picture:
         ld (snd_bump),a
 sp_1:
         xor a                   ; engine pitch: 0 = quiet
-        ld (snd_gap),a
         ld (snd_rate),a
         ld a,(race_on)
         or a
@@ -3409,7 +3410,6 @@ oc_x:     dw 0                  ; o_check: car centre - 4, and its distances
 oc_y:     dw 0
 oc_dx:    dw 0
 oc_dy:    dw 0
-snd_gap:  db 0                  ; engine: counts between speaker flips (0 quiet)
 snd_bump: db 0                  ; crash noise: pictures left
 O_FREE   equ 6
 o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
@@ -3653,6 +3653,7 @@ gd_2:
         include "rowidx.asm"    ; the map: each tile row's list
         include "omap.asm"      ; the cereal O's: one bit a tile
         include "faces.asm"     ; the drivers' faces for the race order
+        include "plateco.asm"   ; the place plate in the window (pl_draw)
         if OPT_TALL
         include "hudtext_gfx.asm"
         include "tdtab.asm"
@@ -4266,8 +4267,10 @@ im2_on:
         ret
         include "title3.asm"    ; the title's tables, copied to TD (0x5B4C) by start_once
         include "music.asm"     ; ... and the ditty's (14 Nov 2026: 129 bytes the program needed back)
+        include "plate_td.asm"  ; ... and the place plate's message
 td_end2:
 mu_tune equ TD + mu_tune_src - td_src
+pl_msg  equ TD + pl_msg_src - td_src
 mu_ptab equ TD + mu_ptab_src - td_src
         if td_end2 - td_src > 0x5E00 - TD
         .error the title's tables run past 0x5E00 (the stack is below 0x5F00: 50 bytes deep at most)

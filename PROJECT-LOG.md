@@ -1476,3 +1476,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   own colours). Not built.
 - tests/stuck_test.py: a car that has passed one waypoint and moved 60 pixels on is not "stuck"
   (one place of 477 was 2 waypoints short at 12 s with the game at its slower rhythm).
+
+## 2026-11-14 SAST (evening) - your place on a plate inside the window
+- Grant, of the in-game position mock-ups: wanted "smaller fonts - not double sized but in a
+  smaller square that has slightly rounded edges, with the game around it"; "I like B [a solid
+  blue plate, letters cut out], but can we create smaller fonts, and so 2nd or 3rd shows a small
+  nd or small rd"; of docs/design/ingame_plate.png: "3 is good build 3".
+- Built (src/plateco.asm pl_draw, called after dmg_draw; data from tools/make_plate.py): a solid
+  rounded plate 34 x 22 in a 40 x 24 clear patch at window x 128-167, lines 8-31 - the ROM's own
+  figure, a small raised st / nd / rd / th and LAP n/3 in a 3 x 5 font, all cut out of the
+  plate; under it, while msg_timer runs (the strip's FINAL LAP, 3 s), a second plate with FINAL
+  LAP!. Not drawn while the start lights hang. tests/plate_test.py. Picture:
+  docs/design/place_plate_in_game.png. Only FINAL LAP! so far: other quick messages (UP ONE!,
+  OIL OUT) need 30 bytes of letters each and there is no room.
+- MEMORY, learnt the hard way: the program is two regions. Before sq4 (page-aligned, then the
+  tiles' page) everything pads up to the next page - adding there costs nothing until it crosses
+  a page, then 256 bytes at once. After the tables is the true free space. The plate's code is
+  after faces.asm for that reason. Now: code_end 0xBFF5 - 11 bytes free; the room under 0x8000
+  has 12; the table block at 0x5B4C none. The next feature needs room found first (the small
+  cars' frames carry about 2.4 KB of zero bytes: a change to draw_car).
