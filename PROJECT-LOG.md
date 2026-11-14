@@ -1111,3 +1111,26 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tools/show_game_cars.py -> docs/design/big_cars_16_headings.png: the cars as the game has them,
   real size and 4x (he asked to see them).
 - Tests: drive (window 128 high, one-row bar, bezel a row up), nos, O, set-up: all PASS.
+
+## 2026-11-14 SAST - the page layout chosen in outline (G3); small cars to stay an option
+- Screen mock-ups by a second agent, round by round: D, E, F (the window two rows taller, the
+  border matching the surround; tools/make_screen_options2.py, docs/design/screen_options2.png);
+  Grant: the 3-2-1 figures are "too much. I like the original idea of the lights - so three
+  blocks, they change colour as the countdown goes" (three 2 x 2 cell blocks in the window:
+  black, then red, red, red, then all green); then "I like the e design but still in yellow ...
+  the border changes around the gameplay area ... the car three ratings and the display for the
+  player bottom left" -> G1 / G2 (tools/make_screen_options3.py, screen_options3.png); then "G2
+  is getting there. Now move the map above the car positions - just below the logo - you don't
+  need to say map but give a row space between the map and the title logo. Don't worry about
+  displaying the car strengths" -> G3 (docs/design/screen_option_g3.png, screen_options4.png):
+  right column rows 0-1 logo, 2 empty, 3-7 map, 8 empty, 9 RACE, 10-19 the five cars, 20 best
+  lap; window x 8-183, y 16-151 in a slim blue frame; bottom left your face and big place in a
+  red block (columns 1-9, rows 20-21), a white lap strip, TIME; the bubble and chief beside it;
+  NOS in the window corner; no car strengths on this screen. Not yet approved for building.
+- Grant: "for the game development we need to keep the ability to have two car options - the
+  smaller cars and the bigger cars. We may end up going with smaller cars (the ones used in the
+  positions on the right). It may actually help gameplay - helping cars avoid each other a bit
+  more." To build as a switch at build time (one constant: make_data.py writes either set,
+  draw_car has both row widths). The 16 x 16 cars are in tools/car_art.txt (2 bytes a row, 16
+  rows): about 5.8 KB for five cars against 10.7 KB, and roughly half the drawing time - Claude's
+  estimates, not measured. The bump test (11 px) and the O test are the same for both.
