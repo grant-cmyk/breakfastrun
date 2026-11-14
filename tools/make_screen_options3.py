@@ -20,6 +20,14 @@ only apart from the light blocks; one ink and one paper per cell). Unlike E, the
 place now sit on the cell grid (face cols 1-2, place cols 4-9, rows 20-21). Made up: the best-lap
 time, the times in the FINAL LAP / FINISHED pictures, the window's top 8 lines (see options2).
 
+G3 (Grant, later: "G2 is getting there. Now move the map above the car positions - so just below
+the logo - you don't need to say map but give a row space between the map and the title logo.
+Don't worry about displaying the car strengths") is G2 with the right-hand column re-ordered:
+logo (rows 0-1), one row of table, the map with no title (rows 3-7), one row of table, RACE
+(row 9), the five cars (rows 10-19), best lap (row 20); the CAR panel is gone and the three
+rows under the column are left as clean table. Writes docs/design/screen_option_g3.png and
+screen_options4.png.
+
 Writes docs/design/screen_options3.png (G1 and G2: the race screen 3x, the five start-light
 pictures, the two messages, notes) and screen_option_g1.png, screen_option_g2.png.
 Usage: make_screen_options3.py"""
@@ -32,7 +40,7 @@ from make_screen_options import (put, fill, small, rom, outline, heading, tail, 
                                  YOUF, CREWF, TABLE, CARD, HEAD, YOU, CHIEF)
 from make_screen_options2 import start, race, big, centre, check, DESIGN
 
-def option_g(state, dark):
+def option_g(state, dark, map_first=False):
     DARK = 0x47                                  # bright white on black: G1's dark cards
     d, b, a, place, lap, time = start(state, TABLE, TABLE if dark else 0x31)   # the frame: black / blue ink
     # the slim frame: a 2-px rounded line and a gap of table, in the old bezel's cells
@@ -42,14 +50,19 @@ def option_g(state, dark):
     put(b, d.name, 8, 0)
     # the instrument column: logo, RACE, best lap, CAR, MAP
     put(b, d.logo, 200, 0); a[1, 25:30] = 0x72; a[1, 30:32] = 0x77
-    heading(b, a, 'RACE', 25, 2, 7); race(b, a, d, 25, 3)
-    fill(a, 25, 13, 7, 1, DARK if dark else TABLE); small(b, 'BEST 0:41.2', 206, 106)
-    heading(b, a, 'CAR', 25, 14, 7)
-    for i, at in enumerate((0x44, 0x45, 0x46) if dark else (0x31, 0x32, 0x33)):   # green, cyan, yellow / blue, red, magenta
-        fill(a, 25, 15 + i, 7, 1, at)
-    strengths(b, 201, 121, 8, 217, 6, 8)
-    heading(b, a, 'MAP', 25, 18, 7)
-    fill(a, 25, 19, 7, 5, 0x46 if dark else TABLE); put(b, d.map, 204, 154)
+    if map_first:                                # G3: map under the logo, no CAR panel
+        put(b, d.map, 204, 25)                   # rows 3-7 (y 24-63): the map is 37 lines, y 25-61
+        heading(b, a, 'RACE', 25, 9, 7); race(b, a, d, 25, 10)
+        small(b, 'BEST 0:41.2', 206, 162)
+    else:
+        heading(b, a, 'RACE', 25, 2, 7); race(b, a, d, 25, 3)
+        fill(a, 25, 13, 7, 1, DARK if dark else TABLE); small(b, 'BEST 0:41.2', 206, 106)
+        heading(b, a, 'CAR', 25, 14, 7)
+        for i, at in enumerate((0x44, 0x45, 0x46) if dark else (0x31, 0x32, 0x33)):   # green, cyan, yellow / blue, red, magenta
+            fill(a, 25, 15 + i, 7, 1, at)
+        strengths(b, 201, 121, 8, 217, 6, 8)
+        heading(b, a, 'MAP', 25, 18, 7)
+        fill(a, 25, 19, 7, 5, 0x46 if dark else TABLE); put(b, d.map, 204, 154)
     # the scoreboard: your face and your place in ONE red block (on the cell grid); lap, then time
     fill(a, 1, 20, 9, 2, YOU); put(b, YOUF, 8, 160); big(b, place, 32, 160)
     fill(a, 1, 22, 9, 1, CARD)
@@ -62,7 +75,8 @@ def option_g(state, dark):
     return b, a
 def option_g1(state): return option_g(state, True)
 def option_g2(state): return option_g(state, False)
-for fn in (option_g1, option_g2): fn.border = 6; fn.msg = (0, 152, 192, 192)
+def option_g3(state): return option_g(state, False, True)
+for fn in (option_g1, option_g2, option_g3): fn.border = 6; fn.msg = (0, 152, 192, 192)
 
 OPTIONS = [('G1 - E on the yellow table: dark panels (yellow border)', option_g1, 'g1',
             ['The slim window frame is a black line. Best lap, CAR, MAP and TIME stay as black cards with bright ink.',
@@ -73,6 +87,11 @@ OPTIONS = [('G1 - E on the yellow table: dark panels (yellow border)', option_g1
              'CAR: blue, red and magenta straight on the table (yellow and green do not read on yellow).',
              'Best lap, MAP and TIME are black on the table, as the map is in the game today.'])]
 
+OPTIONS4 = [('G3 - G2, map under the logo, no car strengths', option_g3, 'g3',
+             ['Right column: logo, a row of table, the map (no title), a row of table, RACE, the five cars, best lap.',
+              'The CAR panel is gone; the strengths are not shown on this screen. Under the column: clean table.',
+              'Everything else as G2: slim blue frame, scoreboard bottom left, bubble and chief, start lights, NOS.'])]
+
 if __name__ == '__main__':
     try:
         f = ImageFont.truetype('DejaVuSans-Bold.ttf', 26); fs = ImageFont.truetype('DejaVuSans.ttf', 19); fl = ImageFont.truetype('DejaVuSans-Bold.ttf', 16)
@@ -81,24 +100,26 @@ if __name__ == '__main__':
     def crop(fn, state, box, s):
         b, a = fn(state); im = render(b, a, border=fn.border, s=s)
         return im.crop(((32 + box[0]) * s, (24 + box[1]) * s, (32 + box[2]) * s, (24 + box[3]) * s))
-    rows = []
-    for title, fn, tag, notes in OPTIONS:
-        check(title, fn)
-        b, a = fn('race'); main = render(b, a, border=fn.border, s=3)
-        o = os.path.join(DESIGN, 'screen_option_%s.png' % tag); main.save(o); print('wrote', os.path.normpath(o), main.size)
-        strip = [crop(fn, s, (0, 8, 192, 160), 2) for s in ('off', 'r1', 'r2', 'r3', 'go')]
-        msgs = [(t, crop(fn, s, fn.msg, 2)) for s, t in (('final', 'Last lap'), ('finish', 'At the flag'))]
-        rows.append((title, main, strip, msgs, notes))
-    gap = 24; mw, mh = rows[0][1].size; cw, ch = rows[0][2][0].size
-    rh = 46 + mh + 92
-    out = Image.new('RGB', (gap + mw + gap + 3 * cw + 3 * gap, rh * len(rows) + gap), BG); d = ImageDraw.Draw(out)
-    for n, (title, main, strip, msgs, notes) in enumerate(rows):
-        y = gap // 2 + n * rh; x2 = gap + mw + gap
-        d.text((gap, y + 6), title, fill=(255, 255, 255), font=f); out.paste(main, (gap, y + 46))
-        d.text((x2, y + 12), 'The start lights in the window: unlit, red, red red, red red red, all green (go), then gone', fill=FG, font=fl)
-        for k, im in enumerate(strip): out.paste(im, (x2 + (k % 3) * (cw + gap), y + 46 + (k // 3) * (ch + 12)))
-        xm = x2 + 2 * (cw + gap); ym = y + 46 + ch + 12
-        for t, im in msgs:
-            d.text((xm, ym), t, fill=FG, font=fl); out.paste(im, (xm, ym + 22)); ym += 22 + im.height + 14
-        for k, t in enumerate(notes): d.text((gap + 4, y + 46 + mh + 8 + 26 * k), '- ' + t, fill=(222, 221, 214), font=fs)
-    o = os.path.join(DESIGN, 'screen_options3.png'); out.save(o); print('wrote', os.path.normpath(o), out.size)
+    def sheet(options, name):
+        rows = []
+        for title, fn, tag, notes in options:
+            check(title, fn)
+            b, a = fn('race'); main = render(b, a, border=fn.border, s=3)
+            o = os.path.join(DESIGN, 'screen_option_%s.png' % tag); main.save(o); print('wrote', os.path.normpath(o), main.size)
+            strip = [crop(fn, s, (0, 8, 192, 160), 2) for s in ('off', 'r1', 'r2', 'r3', 'go')]
+            msgs = [(t, crop(fn, s, fn.msg, 2)) for s, t in (('final', 'Last lap'), ('finish', 'At the flag'))]
+            rows.append((title, main, strip, msgs, notes))
+        gap = 24; mw, mh = rows[0][1].size; cw, ch = rows[0][2][0].size
+        rh = 46 + mh + 92
+        out = Image.new('RGB', (gap + mw + gap + 3 * cw + 3 * gap, rh * len(rows) + gap), BG); d = ImageDraw.Draw(out)
+        for n, (title, main, strip, msgs, notes) in enumerate(rows):
+            y = gap // 2 + n * rh; x2 = gap + mw + gap
+            d.text((gap, y + 6), title, fill=(255, 255, 255), font=f); out.paste(main, (gap, y + 46))
+            d.text((x2, y + 12), 'The start lights in the window: unlit, red, red red, red red red, all green (go), then gone', fill=FG, font=fl)
+            for k, im in enumerate(strip): out.paste(im, (x2 + (k % 3) * (cw + gap), y + 46 + (k // 3) * (ch + 12)))
+            xm = x2 + 2 * (cw + gap); ym = y + 46 + ch + 12
+            for t, im in msgs:
+                d.text((xm, ym), t, fill=FG, font=fl); out.paste(im, (xm, ym + 22)); ym += 22 + im.height + 14
+            for k, t in enumerate(notes): d.text((gap + 4, y + 46 + mh + 8 + 26 * k), '- ' + t, fill=(222, 221, 214), font=fs)
+        o = os.path.join(DESIGN, name); out.save(o); print('wrote', os.path.normpath(o), out.size)
+    sheet(OPTIONS, 'screen_options3.png'); sheet(OPTIONS4, 'screen_options4.png')
