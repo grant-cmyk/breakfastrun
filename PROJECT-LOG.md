@@ -1349,3 +1349,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   pictures a second off the start" check now asks for 12.5: off the grid the game is in its
   4-frame rhythm for those 2 seconds either way (26 pictures with no ditty, 25 with it, whatever
   the minimum or margin). Grant told.
+
+## 2026-11-14 SAST (midday) - coloured objects in whole game screens (mock-up)
+- Grant: "mockups for different coloured objects and how they would look in gameplay - cleverly
+  working around colour clash". tools/make_colour_scenes.py -> docs/design/colour_scenes.png:
+  six real screens (read from the game in zxdev on an autopilot lap) with 31 objects placed on
+  the world beside the road, clear of the O's; every cell checked for one ink and one paper.
+  The blended (no blue edge) objects did not get placed: they need 12 px clear all round and the
+  strips beside the road are too narrow where the tool looked. Not built into the game.
