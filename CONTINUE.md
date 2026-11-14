@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 14:15 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 16:39 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -14,9 +14,9 @@ start (not shown on screen). `bash build.sh` -> build/racer.tap.
 **Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 301, 4 x 12; 15.5 pictures a second off the
 grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
-**Memory:** 320 bytes free in the program (code_end 0xBEC0), 52 under 0x8000, 23 in the table block at 0x5B4C. The big cars do not fit.
+**Memory:** about 250 bytes free in the program (code_end 0xBF03), 52 under 0x8000, about 30 in the table block at 0x5B4C. The big cars do not fit.
 
-**Next step:** Grant to playtest the tape: DAMAGE (a spanner and bar bottom left; hits slow the car; an oil can on the left-hand side mends it, about once a lap - docs/design/damage_in_game.png), the title (plain options 1 / 2 / K), and the ditty
+**Next step:** Grant to playtest the tape: DAMAGE (an icon bottom left whose fill empties from the top - a heart now; Grant wants a mechanical one: choose from docs/design/damage_icons.png, tools/make_damage_icons.py; hits slow the car; an oil can on the left-hand side mends it, about once a lap - docs/design/damage_in_game.png), the title (plain options 1 / 2 / K), and the ditty
 now "Kettle's On, driving" (ditty13; a faster one, ditty14, is in the Sound Lab,
 https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS). Then the COLOURED OBJECTS: OBJECTS=1 python3
 tools/make_world.py; OBJECTS=1 bash build.sh puts eight small square ones on the table

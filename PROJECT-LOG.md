@@ -1441,3 +1441,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Memory: the ditty's data (129 bytes) moved out of the program to the title's table block at
   0x5B4C (td_end2; 23 bytes left there). Program: code_end 0xBEC0, 320 bytes free.
 - Speed (zxlap): in the pack 67 pictures at 3 frames / 212 at 4 / 1 at 5; alone 247 / 85.
+
+## 2026-11-14 SAST (later afternoon) - the health gauge redrawn; the music's beat made exact
+- Grant on the gauge: "the icon for health is not clear - it needs to be masked and a better icon
+  ... more easily show health levels"; then "a slightly larger heart, that is filled in. The heart
+  'empties' as health is lost, from the top down" - "the outline of the heart remains but the
+  fill empties"; then "a heart is for a person, more than for a car, looking for something more
+  mechanical" - "mockup some alternative icons". Built: a 16 x 13 icon on its own clear patch,
+  outline kept, fill emptied from the top by dmg_emp rows (dmg_draw, dmg_heart in racer.asm).
+  The heart is in the build; seven mechanical ones to choose from in
+  docs/design/damage_icons.png (tools/make_damage_icons.py: cog, engine, spanner, fuel can,
+  battery, piston, car from above). Swapping one in is a change of the 52 bytes of art.
+- Grant on the music: "does not hold - it just sounds like a collection of beeps in the game - it
+  loses its musicality". Cause: the burst-a-picture way sounded each note at the picture's
+  uneven beat (3 or 4 TV frames), cut to its spare time, and skipped 1 in 5. Now the interrupt
+  sounds the note itself, about 2 ms on every OTHER TV frame of its step (25 a second, exact),
+  an octave under the music-box register (LOW 12: 494-1,100 Hz). mu_burst and the call are gone
+  (the wait's spare-time count stays, unused). COST, measured (zxlap): alone 199 pictures at 3
+  frames / 113 at 4 (it was 247 / 85); in the pack 13 / 247 / 3 at 5 (67 / 212 / 1). Every
+  frame at LOW 17 was dearer still (107 / 176 alone).

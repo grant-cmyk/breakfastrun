@@ -243,7 +243,6 @@ wait_show:
         xor a
         call obj_paint
         endif
-        call mu_burst           ; the ditty's note, once a picture
         call snd_picture        ; this picture's engine pitch; the crash fades
         ld hl,(renders)
         inc hl
@@ -2394,13 +2393,16 @@ nd_col:
 ;   dmg 0..DMG_MAX: a hit on a car or a cereal O adds 1 (not again for DMG_COOL pictures:
 ;   one crash is many touches); each point takes DMG_SLOW/256 px a frame off your top speed
 ;   (you_grip); an oil can on the road (oil_tick, strip.asm) mends it all.
-;   DMG_DRAW: a spanner and a bar in the window's bottom left corner - the bar is what is
-;   LEFT of the car's health, 8 pixels when whole. Into the buffer, like the NOS canisters.
+;   DMG_DRAW: a heart, 16 x 13, in the window's bottom left corner on its own clear patch. Its
+;   outline stays; its fill EMPTIES FROM THE TOP as health is lost (Grant, 14 Nov 2026: "a
+;   slightly larger heart, that is filled in. The heart 'empties' as health is lost, from the top
+;   down ... the outline of the heart remains but the fill empties"). Into the buffer, like the
+;   NOS canisters.
 ; ---------------------------------------------------------------------
 DMG_MAX  equ 8
 DMG_COOL equ 12
 DMG_SLOW equ 8                  ; (8 points: 64 of the 448 - a seventh off the top speed)
-DMG_B    equ BUF + 0x800*2 + 0*0x100 + 2*32 + 2      ; buffer row 144 (the window's last cell row), byte 2: its left edge
+DMG_B    equ BUF + 0x800*2 + 3*0x100 + 1*32 + 2      ; buffer row 139 (third 2, char row 1, line 3), byte 2: the window's left edge
 dmg_hit:
         ld hl,dmg_cool
         ld a,(hl)
@@ -2414,48 +2416,65 @@ dmg_hit:
         inc (hl)
         ret
 dmg_draw:
-        ld a,(dmg)              ; the bar: 8 pixels less one a point, from the left
-        ld b,a
-        inc b
-        ld a,0xFF
-        jr dd_2
+        ld a,(dmg)              ; how many of the heart's rows, from the top, are empty
+        add a,dmg_emp AND 255
+        ld l,a
+        ld a,0
+        adc a,dmg_emp/256
+        ld h,a
+        ld c,(hl)
+        ld hl,dmg_heart         ; a row: outline, fill (left byte), outline, fill (right byte)
+        ld de,DMG_B
+        ld b,13
 dd_1:
-        add a,a
-dd_2:
-        djnz dd_1
-        ld c,a
-        ld hl,DMG_B
-        ld de,dmg_icon
-        ld b,8
-dd_3:
-        ld a,(de)               ; the spanner; beside it the bar between a line above
-        ld (hl),a               ; and a line below
-        inc l
-        ld a,b
-        cp 8
-        jr z,dd_5
-        dec a
-        jr z,dd_5
+        call dd_byte            ; both bytes written whole: the heart has its own clear patch
+        inc e                   ; ("it needs to be masked": Grant, 14 Nov 2026)
+        call dd_byte
+        dec e
         ld a,c
-        jr dd_4
-dd_5:
-        ld a,0xFF
-dd_4:
-        ld (hl),a
-        dec l
-        inc de
-        inc h
-        djnz dd_3
+        or a
+        jr z,dd_2
+        dec c
+dd_2:
+        inc d                   ; the next line down (the buffer is laid out like the screen)
+        ld a,d
+        and 7
+        jr nz,dd_3
+        ld a,e
+        add a,32
+        ld e,a
+        ld a,d
+        sub 8
+        ld d,a
+dd_3:
+        djnz dd_1
         ret
-dmg_icon:
-        db %01100000
-        db %11000000
-        db %11001000
-        db %01111100
-        db %00011110
-        db %00001111
-        db %00000111
-        db %00000010
+dd_byte:                        ; the outline, with the fill unless this row is an empty one
+        ld a,c
+        or a
+        ld a,(hl)
+        inc hl
+        jr nz,dd_4
+        or (hl)
+dd_4:
+        inc hl
+        ld (de),a
+        ret
+dmg_emp: db 1,2,3,4,5,6,8,10,13        ; empty rows (the first has no fill) for damage 0 to 8
+dmg_heart:                      ; O the outline, F the fill
+        db 0x3C,0x00,0x3C,0x00      ; ..OOOO....OOOO..
+        db 0x42,0x3C,0x42,0x3C      ; .OFFFFO..OFFFFO.
+        db 0x81,0x7E,0x81,0x7E      ; OFFFFFFOOFFFFFFO
+        db 0x80,0x7F,0x01,0xFE      ; OFFFFFFFFFFFFFFO
+        db 0x80,0x7F,0x01,0xFE      ; OFFFFFFFFFFFFFFO
+        db 0x80,0x7F,0x01,0xFE      ; OFFFFFFFFFFFFFFO
+        db 0x40,0x3F,0x02,0xFC      ; .OFFFFFFFFFFFFO.
+        db 0x20,0x1F,0x04,0xF8      ; ..OFFFFFFFFFFO..
+        db 0x10,0x0F,0x08,0xF0      ; ...OFFFFFFFFO...
+        db 0x08,0x07,0x10,0xE0      ; ....OFFFFFFO....
+        db 0x04,0x03,0x20,0xC0      ; .....OFFFFO.....
+        db 0x02,0x01,0x40,0x80      ; ......OFFO......
+        db 0x01,0x00,0x80,0x00      ; .......OO.......
 
 ; ---------------------------------------------------------------------
 ; SOUND (the beeper): played in the time the loop would otherwise spend
@@ -2702,95 +2721,6 @@ of_x:
         ret
 
         endif
-; MU_BURST: the ditty's note the way Manic Miner sounds its tune (Grant, 14 Nov 2026: "can you
-; play manic miner and see how the sound holds more" - "A half-miner is okay"): a burst of the
-; note milliseconds long, low in pitch, once a picture, for as long as the note lasts (the
-; interrupt steps the tune). A cycle: flip, 17 + 16 n T, flip, 30 + 16 m T.
-; "Play with options so impact on speed is minimised": the burst only ever uses time the
-; picture had to SPARE. The wait for the TV frame (snd_wait) counts how long it waited, in
-; units of 279 T (mu_slack: 250 a frame); the last picture's spare time, plus what its own
-; burst used, less a margin, is this burst's budget - up to the whole burst (4 ms). With time
-; to spare the note is full; when the picture is tight it thins out, and with no time to
-; spare it is skipped - the music costs the game no speed. After a late picture: no burst.
-MU_MARGIN equ 14                ; units kept back (3,900 T): pictures differ a little
-mu_burst:
-        ld hl,mu_slack          ; the last picture's spare time (and start counting again)
-        ld c,(hl)
-        ld (hl),0
-        ld a,(mu_used)
-        add a,c
-        jr nc,mb_0
-        ld a,255
-mb_0:
-        sub MU_MARGIN
-        jr nc,mb_00
-        xor a
-mb_00:
-        ld c,a                  ; C = the budget
-        xor a
-        ld (mu_used),a
-        ld hl,pace              ; the last picture finished late (over the rhythm, as the
-        ld a,(mu_el)            ; main loop reckons it): nothing this time
-        dec a
-        cp (hl)
-        ret nc
-        ld a,(mu_ph)
-        or a
-        ret z
-        ld a,(snd_fxt)          ; an event is sounding (an effect, the skid, a crash): the
-        ld hl,snd_skt           ; tune keeps its place but gives way to it
-        or (hl)
-        ld hl,snd_bump
-        or (hl)
-        ret nz
-        ld a,(mu_off)
-        add a,mu_ptab AND 255
-        ld l,a
-        ld a,0
-        adc a,mu_ptab/256
-        ld h,a
-        ld b,(hl)               ; cycles in a whole burst, n, m, units a cycle
-        inc hl
-        ld d,(hl)
-        inc hl
-        ld e,(hl)
-        inc hl
-        ld a,(hl)
-        ld (mb_u+1),a
-        add a,a                 ; under two cycles' worth of spare time: no note this picture.
-        dec a                   ; (A guaranteed minimum was tried: even one cycle took the
-        cp c                    ; start, five cars bunched, from 13 pictures a second to 12.5)
-        ret nc
-        ld a,(snd_port)
-        ld l,a
-        ld h,0                  ; H = units used
-mb_c:
-        ld a,c                  ; another cycle only while the budget lasts
-mb_u:   sub 0
-        jr c,mb_x
-        ld c,a
-        ld a,(mb_u+1)
-        add a,h
-        ld h,a
-        ld a,l
-        xor 24
-        out (254),a
-        ld l,d
-mb_d1:
-        dec l
-        jr nz,mb_d1
-        xor 24
-        out (254),a
-        ld l,e
-mb_d2:
-        dec l
-        jr nz,mb_d2
-        ld l,a
-        djnz mb_c
-mb_x:
-        ld a,h
-        ld (mu_used),a
-        ret
 snd_wait:
         ld a,(snd_bump)
         or a
@@ -3832,11 +3762,50 @@ mu_1:
         ld a,MU_GATE            ; and the frames it sounds for
         ld (mu_ph),a
 mu_ring:
-        ld a,(mu_ph)            ; (the note itself is sounded once a picture: mu_burst)
-        or a
-        jr z,mu_out
-        dec a
-        ld (mu_ph),a
+        ld a,(mu_ph)            ; the note sounds on EVERY TV frame of its step, here in the
+        or a                    ; interrupt, so its beat is exact whatever the picture is doing
+        jr z,mu_out             ; (Grant, 14 Nov 2026, of the burst-a-picture way: "it just
+        dec a                   ; sounds like a collection of beeps in the game - it loses its
+        ld (mu_ph),a            ; musicality"). The price is time: about 2 ms every other frame
+        rra                     ; (25 bursts a second, evenly spaced).
+        jr c,mu_out
+        ld a,(snd_fxt)          ; An event sounding (an effect, the skid, a crash): the tune
+        ld hl,snd_skt           ; keeps its place but gives way
+        or (hl)
+        ld hl,snd_bump
+        or (hl)
+        jr nz,mu_out
+        ld a,(mu_off)
+        add a,mu_ptab AND 255
+        ld l,a
+        ld a,0
+        adc a,mu_ptab/256
+        ld h,a
+        ld a,(hl)               ; cycles, n, m: a cycle is flip, 20 + 16 n T, flip, 36 + 16 m T
+        inc hl
+        ld (mu_cy+1),a
+        ld a,(hl)
+        ld (mu_p1+1),a
+        inc hl
+        ld a,(hl)
+        ld (mu_p2+1),a
+mu_cy:  ld h,0
+        ld a,(snd_port)
+mu_c:
+        xor 24
+        out (254),a
+mu_p1:  ld l,0
+mu_d1:
+        dec l
+        jr nz,mu_d1
+        xor 24
+        out (254),a
+mu_p2:  ld l,0
+mu_d2:
+        dec l
+        jr nz,mu_d2
+        dec h
+        jr nz,mu_c
         jr mu_out
 mu_off0:
         xor a

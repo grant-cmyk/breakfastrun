@@ -4,25 +4,25 @@ MU_GATE equ 5
 ; a byte a step: the note's place in mu_ptab, 254 a rest, 255 the end
 ; (kept with the title's tables at TD, not in the program: racer.asm gives mu_tune and mu_ptab)
 mu_tune_src:
-        db 0,4,8,12,0,8,16,0,8
-        db 4,0,0,20,4,24,8,8,4
-        db 20,8,8,8,8,8,0,4,8
-        db 12,0,28,12,0,16,8,0,0
-        db 24,16,8,4,20,4,0,0,0
-        db 0,0,0,16,24,16,12,24,16
-        db 8,0,4,8,0,0,24,24,24
-        db 16,24,24,4,0,0,0,0,0
-        db 0,4,8,12,0,8,16,12,16
-        db 8,0,4,20,24,4,20,8,4
+        db 0,3,6,9,0,6,12,0,6
+        db 3,0,0,15,3,18,6,6,3
+        db 15,6,6,6,6,6,0,3,6
+        db 9,0,21,9,0,12,6,0,0
+        db 18,12,6,3,15,3,0,0,0
+        db 0,0,0,12,18,12,9,18,12
+        db 6,0,3,6,0,0,18,18,18
+        db 12,18,18,3,0,0,0,0,0
+        db 0,3,6,9,0,6,12,9,12
+        db 6,0,3,15,18,3,15,6,3
         db 0,0,0,0,0,0
         db 255
-; 4 bytes a pitch: the cycles in a whole burst, n, m, what a cycle costs (units of 279 T)
+; 3 bytes a pitch: the cycles in a burst (one a frame), n, m
 mu_ptab_src:
-        db 3,147,146,18    ; note 95
-        db 4,116,116,14    ; note 99
-        db 4,97,97,12    ; note 102
-        db 6,73,72,9    ; note 107
-        db 5,87,86,11    ; note 104
-        db 3,130,130,16    ; note 97
-        db 4,110,109,13    ; note 100
-        db 7,65,64,8    ; note 109
+        db 2,109,109    ; note 95
+        db 2,86,86    ; note 99
+        db 3,72,72    ; note 102
+        db 4,54,53    ; note 107
+        db 3,64,64    ; note 104
+        db 2,97,97    ; note 97
+        db 3,81,81    ; note 100
+        db 4,48,47    ; note 109
