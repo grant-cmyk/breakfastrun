@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 05:23 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 05:44 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 120 in an arcade bezel; five cars at 20 x 20.
@@ -11,18 +11,21 @@ flashes (green GO, red crash, white NOS). NEW: your car's set-up - GRIP, SPEED, 
 row; the computer cars stay at 1, 1, 1.
 
 **Speed:** measure with tests/zxlap.py (zxdev: real TV frames a picture, cost by routine) - NOT
-profile_ticks.py alone, which under-counts late pictures (the copy with interrupts off loses a
-frame count). zxdev lap: 3 frames x 308, 4 x 12 (was 195 / 104). Biggest now: the copy 36k,
-draw_car 30-34k, cloth 29k, tiles 12k+, physics 19k, thinking 11k. The pictures still late have
-4-5 cars in view.
+profile_ticks.py alone, which under-counts late pictures. zxdev lap now: 3 frames x 280, 4 x 32
+(308 / 12 before the cars were turned at full size: their frames are up to 27 rows, were 21).
+The late pictures are those with 4-5 cars in view.
 
-**Next step:** Grant chooses the angled cars (docs/design/angled_cars_options.png: A as now, B the
-number upright, C rebuilt from parts - Claude recommends B) and marks up the new cast drafts
-(docs/design/new_cast_mockup.png). Then, in this order: (1) build the approved set-up box and
-in-window NOS (docs/design/setup_box_mockup.png, tools/make_setup_mockup.py - "good enough", 14 Nov);
-(2) a memory plan and a mock-up for the title / attract screen (logo, keys, hi-score, 1 or 2
-players, choose a driver then a car: six drivers - 3 ladies, 3 men - and ten cars, each with
-strengths and weaknesses; two players later); (3) the extra window row (176 x 128, about +5.4k T).
+**MEMORY IS FULL:** main area 4 bytes free (code_end 0xBFFC), the gap before sq4 ~3, start-up area
+44, TOPMEM 0xFA40 (the extra window row's copier still fits below it). The set-up box, the
+in-window NOS, the title screen and more cars ALL need a memory plan first (ideas: draw half the
+headings as mirrors or half-turns of the other half - 16 headings stored today; a 128K build; a
+separate title-screen load).
+
+**Next step:** Grant playtests build/racer.tap from the branch - above all the cars turning (now
+his own drawings turned at full size, 24-wide frames; touch-ups go in tools/big_car_art_27.txt).
+Then a memory plan, before any of: the set-up box and in-window NOS (approved mock-up:
+docs/design/setup_box_mockup.png), the title / attract screen with a choice of driver and car
+(drafts: docs/design/new_cast_mockup.png), the extra window row.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test
@@ -38,8 +41,8 @@ editor https://claude.ai/artifact/2EqdSKs3fDfUqERTX9pTzL; Skid Lab
 https://claude.ai/artifact/XWjkAzJ9kFKki9naPic3V8; Layout Review
 https://claude.ai/artifact/GL5FkuruWucbShFekbkLp8.
 
-**Constraints:** memory - main area 203 bytes free (code_end 0xBF35), more in the gap before sq4
-(cf_init left it); TOPMEM 15; the copier ends 0xF8E2, 493 below TOPMEM. Big cars 0-3 below the
+**Constraints:** memory - see MEMORY IS FULL above; the copier ends 0xF8E2. Big-car frames fill 0x5F00-0x7FFF
+(contended memory) and spill into data.asm. Big cars 0-3 below the
 program at 0x5F00 (contended memory). Code before hud.asm must not use equs defined later (pasmo
 first-pass values). The interrupt may land while the cloth fill has SP in the buffer: it may push
 only 6 bytes (A, H, L only). The cloth fill uses IY and the other register set; the copier uses

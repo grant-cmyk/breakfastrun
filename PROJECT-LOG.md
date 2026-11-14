@@ -1039,3 +1039,29 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   faces - BUN, SPECS2, CURLS (ladies), CAP, SHADES (men) - for him to redraw in the editor.
   The title screen itself is not designed or built: it needs a memory plan first (203 bytes free
   in the main area; ten more cars at 20 x 20 x 16 headings will not fit beside five - 2 KB each).
+
+## 2026-11-14 SAST - the angled cars turned at full size, in the game
+- Grant, of the bigger-frame mock-up (docs/design/turn_bigger_frame_mockup.png): "middle row is
+  substantially better. Go with 26."
+- Built at 24 WIDE, not 26, and said so: a 26-wide frame is 4 bytes a row and about 13 KB of
+  pictures against about 10.5 KB of room; measured on his cars, a 24-wide frame with the car's
+  middle on the frame's middle loses nothing but a pixel or two at the far tips of the two widest
+  cars (CYAN and GREEN at 45 degrees), and a row stays 3 bytes - no more work per row.
+- tools/make_data.py: everything on a 27 x 27 grid, the car's middle on the grid's middle. The
+  22.5 and 45 degree drawings are his upright drawing turned at full size (majority of 16 samples,
+  as before) and are kept in tools/big_car_art_27.txt - read back, never overwritten, so they can
+  be touched up by hand (the car editor's Big cars mode still edits 20 x 20: not updated). The
+  other 13 headings are mirrors and quarter turns. On the 12 angled headings the race number is
+  redrawn upright; on the 4 square ones it is as drawn, turned. The old 22.5 and 45 blocks in
+  tools/big_car_art.txt are no longer read.
+- The game's frame: grid columns 2-25 (24 wide), only the rows in use kept (20 upright, up to 27
+  turned), at car position - 3 across and - 6 down. big_tab (data.asm): each car's each heading:
+  address, first row, rows. draw_car reads it (car_rows and big_base are gone).
+- Memory: the pictures went from 10,240 to 10,740 bytes and the table 320. Found by: the 256
+  bytes at 0x7F00 (frames now fill 0x5F00-0x7FFF); bar_tick, su_draw and their tables into the
+  gap before sq4; cars_init to the top of memory (TOPMEM 0xFA40; the extra window row's copier
+  still fits below it, to 0xFA02). THE MAIN AREA IS NOW FULL: 4 bytes free (code_end 0xBFFC), the
+  gap about 3, the start-up area 44. Nothing more fits without a new memory plan.
+- Speed (zxdev lap): 3 frames x 280, 4 x 32 (was 308 / 12): taller turned cars cost more rows,
+  and it shows with 4-5 cars in view. Tests: drive, nos, O, set-up all PASS (15.0 pictures a
+  second off the grid). docs/design/big_cars_16_headings.png: every car at every heading as stored.

@@ -154,8 +154,9 @@ def window_bad(sp):
     for n in range(N):
         c = car(sp, n)
         cx, cy = c['x'] - camx, c['y'] - camy
-        # the big car's 21 x 21 frame (the car and its 1px halo) at position - 2
-        mask[max(cy - 2, 0):max(cy + 19, 0), max(cx - 2, 0):max(cx + 19, 0)] = False
+        # the big car's frame (the car turned at full size, and its 1px halo): 24 wide from
+        # position - 3, up to 29 rows from position - 6
+        mask[max(cy - 6, 0):max(cy + 23, 0), max(cx - 3, 0):max(cx + 21, 0)] = False
     bad = int(((bits != want) & mask).sum())
     if bad:                                 # save what differs, to look at
         im = np.stack([want * 255, bits * 255, ((bits != want) & mask) * 255], axis=-1).astype(np.uint8)

@@ -124,48 +124,126 @@ def frames_of(k):
     return f
 all_frames = [frames_of(k) for k in range(len(KINDS))]
 
-# ---- the big cars (Grant, 10 Nov 2026): 20 x 20 drawings in tools/big_car_art.txt, of which
-# the 19 x 19 top-left part is used (column 19 and row 19 stay empty), turned about its middle.
-# In the game each heading is a 21 x 21 frame - the car plus its 1px halo - stored as 21 rows of
-# 3 (mask, ink) byte pairs, padded to 128 bytes; frame (0, 0) is car position - 2 in x and y,
-# so the car's middle stays at position + 8, as with the 16 x 16 cars.
-BN = 19
+# ---- the big cars. Grant draws each car once, facing up, 20 x 20 (tools/big_car_art.txt: its
+# 19 x 19 top-left part is used). The angled headings are that drawing TURNED AT FULL SIZE in a
+# bigger frame (Grant, 14 Nov 2026: "the car primary shape should remain intact ... wheels and
+# overall size"; "go with 26"): a 17 x 18 car turned 45 degrees is 25 pixels across, and the old
+# 20 x 20 frame cut its corners off. Everything is worked out on a 27 x 27 grid with the car's
+# middle on the grid's middle; the game's frame is that grid's columns 2..25 - 24 wide, so a row
+# is still 3 bytes (26 would be 4 bytes a row and 13 KB of pictures: there is not the memory) -
+# and as many rows as the heading needs, with the 1-px halo. A 24-wide frame loses nothing but
+# a pixel or two at the far tips of the two widest cars. Each frame keeps only its rows in use:
+# big_tab gives every car's every heading its address, first row and row count.
+# tools/big_car_art_27.txt holds the 22.5 and 45 degree drawings (made here from the upright
+# one the first time; edit them there - they are read back, never overwritten).
+BN = 19; GN = 27; GO = 4; FW = 24; FX = 2
+CH = {INK: 'X', PAPER: 'o', NONE: '.'}; HC = {'X': INK, 'o': PAPER, '.': NONE}
+BIG_ANG = [0.0, math.degrees(math.atan2(1, 2)), 45.0, 90 - math.degrees(math.atan2(1, 2))]   # 22.5 is drawn on a 2:1 slope
+PLATE = {'YOU': ('1', 9.5, 5.5), 'CYAN': ('2', 9.5, 5.5), 'WHITE': ('3', 9.5, 13.5), 'PINK': ('4', 9.5, 12.5), 'GREEN': ('5', 9.5, 10.5)}
+DIGIT = {'1': [".o.", "oo.", ".o.", ".o.", "ooo"], '2': ["oo.", "..o", ".o.", "o..", "ooo"], '3': ["oo.", "..o", ".o.", "..o", "oo."],
+         '4': ["o.o", "o.o", "ooo", "..o", "..o"], '5': ["ooo", "o..", "oo.", "..o", "oo."]}
 def big_art():
     import re
     t = open(os.path.join(HERE, 'big_car_art.txt')).read(); got = {}
-    for m in re.finditer(r'== (\w+) big heading ([\d.]+) ==\n((?:[Xo.]{20}\n){20})', t):
-        rows = m.group(3).split()
+    for m in re.finditer(r'== (\w+) big heading 0 ==\n((?:[Xo.]{20}\n){20})', t):
+        rows = m.group(2).split()
         assert rows[19] == '.' * 20 and all(r[19] == '.' for r in rows), m.group(1)
-        g = [[INK if c == 'X' else PAPER if c == 'o' else NONE for c in r[:BN]] for r in rows[:BN]]
-        got.setdefault(NAMES.index(m.group(1)), {})[['0', '22.5', '45'].index(m.group(2))] = g
+        g = [[NONE] * GN for _ in range(GN)]
+        for y in range(BN):
+            for x in range(BN): g[y + GO][x + GO] = HC[rows[y][x]]
+        got[NAMES.index(m.group(1))] = g
     return got
-def bmdiag(g): return [[g[BN - 1 - c][BN - 1 - r] for c in range(BN)] for r in range(BN)]
-def brot(g): return [[g[BN - 1 - c][r] for c in range(BN)] for r in range(BN)]
-BIG = big_art()
+def bturn(g, deg, n=4):
+    """Each pixel the majority of 16 sample points of the drawing turned about the grid's middle:
+    empty only if mostly empty, else ink unless paper clearly wins (as tools/turn_car.py)."""
+    c = GN / 2; th = math.radians(deg); out = []
+    for py in range(GN):
+        r = []
+        for px in range(GN):
+            cnt = {INK: 0, PAPER: 0, NONE: 0}
+            for sy in range(n):
+                for sx in range(n):
+                    dx, dy = px + (sx + .5) / n - c, py + (sy + .5) / n - c
+                    lx = dx * math.cos(th) + dy * math.sin(th); ly = -dx * math.sin(th) + dy * math.cos(th)
+                    x, y = math.floor(lx + c), math.floor(ly + c)
+                    cnt[g[y][x] if 0 <= x < GN and 0 <= y < GN else NONE] += 1
+            r.append(NONE if cnt[NONE] > n * n // 2 else PAPER if cnt[PAPER] > cnt[INK] else INK)
+        out.append(r)
+    return out
+def bsym45(g):                                  # the 45 degree drawing: the same either side of the car's own line
+    g = [r[:] for r in g]; M = GN - 1
+    for y in range(GN):
+        for x in range(GN):
+            a, b = g[y][x], g[M - x][M - y]
+            if a != b: g[y][x] = g[M - x][M - y] = INK if INK in (a, b) else PAPER
+    return g
+def bmdiag(g): return [[g[GN - 1 - c][GN - 1 - r] for c in range(GN)] for r in range(GN)]
+def brot(g): return [[g[GN - 1 - c][r] for c in range(GN)] for r in range(GN)]
+def big_turned():
+    """The 22.5 and 45 degree drawings on the 27 x 27 grid: read from big_car_art_27.txt, which
+    is written from the upright drawings if it is not there yet."""
+    import re
+    p = os.path.join(HERE, 'big_car_art_27.txt'); up = big_art()
+    if not os.path.exists(p):
+        with open(p, 'w') as f:
+            f.write("BREAKFAST RUN BIG CAR ART, ANGLED - 27 x 27, the car's middle on the grid's middle (row 13, column 13)\n"
+                    "X = ink   o = paper   . = empty. Made by tools/make_data.py from Grant's upright drawings in\n"
+                    "tools/big_car_art.txt, turned at FULL SIZE (14 Nov 2026). The game shows columns 2-25 (24 wide).\n"
+                    "Edit these by hand to touch them up: make_data.py reads this file and never overwrites it\n"
+                    "(delete it to have it made afresh). The race number is put on upright by make_data.py.\n\n")
+            for k in sorted(up):
+                for h, g in (('22.5', bturn(up[k], BIG_ANG[1])), ('45', bsym45(bturn(up[k], 45)))):
+                    f.write('== %s big27 heading %s ==\n' % (NAMES[k], h) + '\n'.join(''.join(CH[v] for v in r) for r in g) + '\n\n')
+    t = open(p).read(); got = {}
+    for m in re.finditer(r'== (\w+) big27 heading ([\d.]+) ==\n((?:[Xo.]{27}\n){27})', t):
+        got.setdefault(NAMES.index(m.group(1)), {})[m.group(2)] = [[HC[c] for c in r] for r in m.group(3).split()]
+    return up, got
+def stamp(g, k, h):
+    """The race number upright on an angled heading (turned, a 3 x 5 number is mush): its plate's
+    middle turned with the car, a solid block round it wherever the car is."""
+    d, px, py = PLATE[NAMES[k]]; th = math.radians(BIG_ANG[h % 4] + 90 * (h // 4)); c = GN / 2
+    dx, dy = px + GO - c, py + GO - c
+    x0 = round(c + dx * math.cos(th) - dy * math.sin(th) - 1.5); y0 = round(c + dx * math.sin(th) + dy * math.cos(th) - 2.5)
+    g = [r[:] for r in g]
+    for j in range(-1, 6):
+        for i in range(-1, 4):
+            if g[y0 + j][x0 + i] != NONE:
+                g[y0 + j][x0 + i] = PAPER if 0 <= j < 5 and 0 <= i < 3 and DIGIT[d][j][i] == 'o' else INK
+    return g
+BIG0, BIGT = big_turned()
 def big_frames(k):
-    n, nne, ne = BIG[k][0], BIG[k][1], BIG[k][2]
+    n, nne, ne = BIG0[k], BIGT[k]['22.5'], BIGT[k]['45']
     f = [n, nne, ne, bmdiag(nne)]
     for i in range(4, 16): f.append(brot(f[i - 4]))
-    return f
+    return [g if h % 4 == 0 else stamp(g, k, h) for h, g in enumerate(f)]
 big_all = [big_frames(k) for k in range(len(KINDS))]
-BF = BN + 2                                    # the frame: the car and its halo
 def big_bytes(g):
-    """21 rows of mask0, ink0, mask1, ink1, mask2, ink2, then 2 bytes of padding."""
-    solid = [[g[y - 1][x - 1] != NONE if 0 < y <= BN and 0 < x <= BN else False for x in range(BF)] for y in range(BF)]
-    out = []
-    for y in range(BF):
-        m = [1 if any(solid[y + j][x + i] for j in (-1, 0, 1) for i in (-1, 0, 1) if 0 <= y + j < BF and 0 <= x + i < BF) else 0 for x in range(BF)]
-        k = [1 if 0 < y <= BN and 0 < x <= BN and (g[y - 1][x - 1] == INK or (g[y - 1][x - 1] == DITH and (x + y) % 2 == 0)) else 0 for x in range(BF)]
-        m += [0] * (24 - BF); k += [0] * (24 - BF)
-        for b in range(3):
-            out.append(int(''.join(map(str, m[b * 8:b * 8 + 8])), 2)); out.append(int(''.join(map(str, k[b * 8:b * 8 + 8])), 2))
-    return out + [0, 0], [y for y in range(BF) if any(solid[yy][x] for yy in (y - 1, y, y + 1) if 0 <= yy < BF for x in range(BF))]
-def write_big(f, k):
-    f.write('; --- car %d: %s, big ---\n' % (k, NAMES[k]))
-    for n, g in enumerate(big_all[k]):
-        b, _ = big_bytes(g)
-        for i in range(0, 128, 16):
-            f.write('        defb ' + ','.join('0x%02X' % v for v in b[i:i + 16]) + ('   ; heading %d' % n if i == 0 else '') + '\n')
+    """The frame: grid columns 2..25 (24 wide), grid row r is frame row r + 1 (room for the halo
+    above row 0). Returns (first row in use, the rows' bytes: mask0, ink0, mask1, ink1, mask2, ink2)."""
+    H = GN + 2
+    solid = [[0 <= y - 1 < GN and g[y - 1][x + FX] != NONE for x in range(FW)] for y in range(H)]
+    rows = []
+    for y in range(H):
+        m = [1 if any(solid[y + j][x + i] for j in (-1, 0, 1) for i in (-1, 0, 1) if 0 <= y + j < H and 0 <= x + i < FW) else 0 for x in range(FW)]
+        k = [1 if 0 <= y - 1 < GN and g[y - 1][x + FX] == INK else 0 for x in range(FW)]
+        rows.append((any(m), [int(''.join(map(str, v[b * 8:b * 8 + 8])), 2) for b in range(3) for v in (m, k)]))
+    used = [y for y in range(H) if rows[y][0]]
+    return used[0], [rows[y][1] for y in range(used[0], used[-1] + 1)]
+BIG_LO = 0x2100                                # room below the program for the big cars (0x5F00-0x7FFF)
+def big_layout():
+    """Every frame's bytes, in order; those that fit below the program go there, the rest above."""
+    lo, hi, tab, room = [], [], [], BIG_LO
+    for k in range(len(KINDS)):
+        for h, g in enumerate(big_all[k]):
+            first, rows = big_bytes(g); n = 6 * len(rows)
+            dest = lo if n <= room else hi
+            if dest is lo: room -= n
+            dest.append((k, h, rows)); tab.append((k, h, first, len(rows)))
+    return lo, hi, tab
+def write_frames(f, frames):
+    for k, h, rows in frames:
+        f.write('bf_%d_%d:                        ; %s, heading %d: %d rows\n' % (k, h, NAMES[k], h, len(rows)))
+        for r in rows: f.write('        defb ' + ','.join('0x%02X' % v for v in r) + '\n')
 
 
 if __name__ == '__main__':
@@ -184,21 +262,19 @@ if __name__ == '__main__':
             g = all_frames[k][4]
             for (a, b), (ma, mb) in zip(rows_bytes(ink_of(g)), rows_bytes(mask_of(g))):
                 f.write('        defb %%%s,%%%s,%%%s,%%%s\n' % tuple(format(v, '08b') for v in (ma, a, mb, b)))
-        f.write('\n; the big cars (20 x 20; frames 21 x 21 with the halo): 16 headings x 128 bytes a car.\n')
-        f.write('; Cars 0-3 are in bigcars.asm, below the program; car 4 is here.\nbigcar_4:\n')
-        write_big(f, 4)
+        lo, hi, tab = big_layout()
+        f.write('\n; BIG_TAB: each car\'s 16 headings: the frame\'s address, its first row, its rows\n')
+        f.write('; (frames are 24 wide - 3 (mask, ink) byte pairs a row - and only the rows in use are kept)\nbig_tab:\n')
+        for k, h, first, n in tab:
+            f.write('        dw bf_%d_%d\n        db %d,%d\n' % (k, h, first, n))
+        f.write('\n; the big-car frames that did not fit below the program (%d bytes)\n' % sum(6 * len(r) for _, _, r in hi))
+        write_frames(f, hi)
     with open(os.path.join(HERE, '..', 'src', 'bigcars.asm'), 'w') as f:
         f.write('; GENERATED by tools/make_data.py - do not edit by hand\n')
-        f.write('; the big cars 0-3 (YOU, CYAN, GREEN, PINK), 2048 bytes each, below the program\n')
-        f.write('; (0x5F00-0x7EFF): 16 headings x 21 rows x (mask, ink) x 3 bytes, padded to 128\nbigcars_lo:\n')
-        for k in range(4): write_big(f, k)
-    with open(os.path.join(HERE, '..', 'src', 'carrows.asm'), 'w') as f:   # (kept at the top of memory)
-        f.write('; GENERATED by tools/make_data.py - do not edit by hand\n')
-        f.write('; the rows of each big-car heading (21-row frames) that are not empty: first row, how many\n')
-        f.write('; (over every car, as hand-drawn cars can differ in shape)\ncar_rows_src:\n')
-        for n in range(16):
-            used = sorted(set(y for k in range(len(KINDS)) for y in big_bytes(big_all[k][n])[1]))
-            f.write('        defb %d,%d   ; heading %d\n' % (used[0], used[-1] - used[0] + 1, n))
+        f.write('; the big-car frames, below the program (0x5F00-0x7FFF): %d bytes of %d\n' % (sum(6 * len(r) for _, _, r in lo), BIG_LO))
+        write_frames(f, lo)
+    print('big cars: %d bytes below the program, %d above, table %d; tallest frame %d rows' % (
+        sum(6 * len(r) for _, _, r in lo), sum(6 * len(r) for _, _, r in hi), 4 * len(tab), max(n for _, _, _, n in tab)))
     with open(os.path.join(HERE, '..', 'src', 'sqtab.asm'), 'w') as f:
         f.write('; GENERATED by tools/make_data.py - do not edit by hand\n')
         f.write('; quarter squares / 32: n * n / 128 for n = 0..383, 2 bytes each (grip.asm:\n')

@@ -76,10 +76,10 @@ CT_R    equ 2
 CT_GO   equ 4
 CT_BRK  equ 8
 
-        org 0x5F00              ; the big cars 0-3, below the program (8 KB, loaded
+        org 0x5F00              ; big-car frames, below the program (8.25 KB, loaded
         include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
-        if $ > 0x7F00
-        .error the big cars run past 0x7F00
+        if $ > 0x8000
+        .error the big cars run past 0x8000
         endif
         org 32768
 
@@ -1930,13 +1930,13 @@ draw_car:
         ld de,(camx)
         or a
         sbc hl,de
-        ld de,13                ; u = wx + 13: the frame's buffer x - 1
-        add hl,de               ; (frame at wx - 2, buffer x 0 = window x -16)
+        ld de,12                ; u = wx + 12: the frame's buffer x - 1
+        add hl,de               ; (frame at wx - 3, buffer x 0 = window x -16)
         ld a,h
         or a
         ret nz
         ld a,l
-        cp 190                  ; wx -13..176
+        cp 190                  ; wx -12..177
         ret nc
         ld (wxu),a
         ld l,(ix+C_Y)
@@ -1944,68 +1944,62 @@ draw_car:
         ld de,(camy)
         or a
         sbc hl,de
-        ld de,34                ; w = wy + 34 = the frame's buffer row + 20
-        add hl,de               ; (frame at wy - 2, window row 0 = buffer row 16)
+        ld de,42                ; w = wy + 42 = the frame's buffer row + 32
+        add hl,de               ; (frame at wy - 6, window row 0 = buffer row 16)
         ld a,h
         or a
         ret nz
         ld a,l
-        cp 172                  ; buffer rows -20..151
+        cp 184                  ; buffer rows -32..151
         ret nc
         ld (dc_row0),a
-        ; picture: big_base[kind] + heading * 128
+        ; picture: big_tab[kind * 16 + heading]: the frame's address, its first
+        ; row and how many rows it has (only the rows in use are kept: the cars
+        ; turned at full size are up to 27 rows, the upright ones 20)
+        ld l,(ix+C_KIND)
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
         ld a,(ix+C_ANG)
         rrca
         rrca
         and 15
-        ld h,a
-        ld l,0
-        srl h
-        rr l
-        ld a,(ix+C_KIND)
-        add a,a
-        add a,big_base AND 255
-        ld e,a
-        ld a,0
-        adc a,big_base/256
-        ld d,a
-        ld a,(de)
-        add a,l
+        or l
         ld l,a
-        inc de
-        ld a,(de)
-        adc a,h
-        ld d,a
-        ld e,l                  ; DE = this heading's rows
-        ld a,(ix+C_ANG)         ; skip the empty rows: car_rows says the
-        rrca                    ; first row and how many
-        rrca
-        and 15
-        add a,a
-        add a,car_rows AND 255
-        ld l,a
-        ld a,0
-        adc a,car_rows/256
-        ld h,a
-        ld a,(hl)
-        ld (dc_first),a
+        add hl,hl
+        add hl,hl
+        ld de,big_tab
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)               ; DE = the frame's rows
+        inc hl
+        ld b,(hl)               ; B = its first row
         inc hl
         ld a,(hl)
         ld (dc_count),a
-        ld a,(dc_row0)          ; buffer row of the first row, + 20
-        ld hl,dc_first
-        add a,(hl)
-        sub 20
+        ld a,(dc_row0)          ; buffer row of the first row, + 32
+        add a,b
+        sub 32
         jr nc,dc_top
         neg                     ; above the buffer: skip that many rows
         ld b,a
-        add a,(hl)
-        ld (hl),a
         ld a,(dc_count)
         sub b
         ret c
         ret z
         ld (dc_count),a
+        ld a,b                  ; DE += rows skipped * 6
+        add a,a
+        add a,b
+        add a,a
+        add a,e
+        ld e,a
+        jr nc,dc_sk
+        inc d
+dc_sk:
         xor a
 dc_top:
         ld (dc_row0),a          ; now the buffer row itself
@@ -2021,16 +2015,6 @@ dc_top:
         ld a,b
         ld (dc_count),a
 dc_cnt:
-        ld a,(dc_first)         ; DE += first * 6
-        ld l,a
-        add a,a
-        add a,l
-        add a,a
-        add a,e
-        ld e,a
-        jr nc,dc_f1
-        inc d
-dc_f1:
         ; shift table t = (15 - u) AND 7; first byte = u DIV 8
         ld a,(wxu)
         ld c,a
@@ -2165,8 +2149,6 @@ dc_same:
         dec a
         jp nz,dc_loop
         ret
-big_base:                       ; each car's 16 big headings
-        dw bigcars_lo, bigcars_lo+2048, bigcars_lo+4096, bigcars_lo+6144, bigcar_4
 
 ; ---------------------------------------------------------------------
 ; COPY_TO_SCREEN: the window part of the buffer -> the screen, with the
@@ -2917,38 +2899,7 @@ pa_line:
 ; CPU D: 6 of 8, the most mistakes (~16.0 s)
 ; Everyone thinks every 4 frames. Your autopilot lap: ~13.5 s.
 ; ---------------------------------------------------------------------
-cars_init:
-        db 0
-        dw STARTX
-        db 0
-        dw STARTY
-        dw 0,0
-        db STARTA,0,3, PLAYERWP,0,0, 0,0,0, 8,0,0, 0,0,0, 0, 0,0
-        db 0
-        dw CPU0X
-        db 0
-        dw CPU0Y
-        dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 15,0,8, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
-        db 0
-        dw CPU1X
-        db 0
-        dw CPU1Y
-        dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 12,0,6, 2,0,0, 0, 0,0     ; GREEN: 12/16 - the slowest (a long 3-axle truck), few mistakes
-        db 0
-        dw CPU2X
-        db 0
-        dw CPU2Y
-        dw 0,0
-        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 15,0,12, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
-        db 0
-        dw CPU3X
-        db 0
-        dw CPU3Y
-        dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 16,0,3, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
-cars_init_end:
+; (cars_init: kept at the top of memory - see high_src)
 
 ; ---------------------------------------------------------------------
 ; variables
@@ -3708,8 +3659,39 @@ high_src:
         include "hudtext.asm"   ; the HUD's fixed text
         include "toprows.asm"   ; some of the map's row lists
         include "strip_t.asm"   ; a message or two
-        include "carrows.asm"   ; each heading's rows in use
         include "tdtab.asm"     ; the tile routine for each camy AND 7
+cars_init_src:
+        db 0
+        dw STARTX
+        db 0
+        dw STARTY
+        dw 0,0
+        db STARTA,0,3, PLAYERWP,0,0, 0,0,0, 8,0,0, 0,0,0, 0, 0,0
+        db 0
+        dw CPU0X
+        db 0
+        dw CPU0Y
+        dw 0,0
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 15,0,8, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
+        db 0
+        dw CPU1X
+        db 0
+        dw CPU1Y
+        dw 0,0
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 12,0,6, 2,0,0, 0, 0,0     ; GREEN: 12/16 - the slowest (a long 3-axle truck), few mistakes
+        db 0
+        dw CPU2X
+        db 0
+        dw CPU2Y
+        dw 0,0
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 15,0,12, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
+        db 0
+        dw CPU3X
+        db 0
+        dw CPU3Y
+        dw 0,0
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 16,0,3, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
+cars_init_src_end:
 high_end:
 ; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn
 ; or shown: cars reach row 151 at most), copied there by start too
@@ -3737,7 +3719,8 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ 0xFAD0            ; the copy routine ends at 0xF8E2 (120 lines of 36 bytes)
+TOPMEM      equ 0xFA40            ; the copy routine ends at 0xF8E2 (120 lines of 36 bytes;
+                                  ; 8 more lines would end at 0xFA02)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
@@ -3774,11 +3757,11 @@ clock_top equ TOPMEM + clock_top_src - high_src
 CLOCK8    equ clock_top+4       ; the clock in one cell (8 rows straight)
 grid_order equ TOPMEM + grid_order_src - high_src
 car_colours equ TOPMEM + car_colours_src - high_src
-car_rows  equ TOPMEM + car_rows_src - high_src
 tdraw_table equ TOPMEM + tdraw_table_src - high_src
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
 omap      equ TOPMEM + omap_src - high_src
+cars_init equ TOPMEM + cars_init_src - high_src
 faces     equ BUFA + faces_src - bufa_src
 
         if WIN_W - 22
@@ -3790,7 +3773,7 @@ faces     equ BUFA + faces_src - bufa_src
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide
         endif
-        if NCARS*C_SIZE - (cars_init_end - cars_init)
+        if NCARS*C_SIZE - (cars_init_src_end - cars_init_src)
         .error cars_init does not hold NCARS records
         endif
         if code_end > BUF_HI*256
