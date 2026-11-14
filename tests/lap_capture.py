@@ -26,6 +26,7 @@ def grab(sp):
     frames.append(Image.fromarray(px[24:24 + 192, 48:48 + 256]))      # the whole screen
 with Spectrum(headless=True) as sp:
     sp.load_tape(os.path.join(ROOT, 'build', 'racer.tap'))
+    import title_skip; title_skip.leave(sp)   # the title screen first: 1 = 1UP
     while sp.read16(SYM['renders']) == 0: sp.run(duration=0.1, fast_forward=True)
     wp, t, laps = 0, 0.0, 0
     x0 = sp.read16(CARS + 1)

@@ -24,6 +24,7 @@ def key(sp, k, d):
 CARS = SYM['cars']
 with P(headless=True) as sp:
     sp.load_tape(os.path.join(ROOT, 'build', 'racer.tap'))
+    import title_skip; title_skip.leave(sp)   # the title screen first: 1 = 1UP
     while sp.read16(SYM['renders']) == 0: sp.run(duration=0.1, fast_forward=True)
     sp.devices.notify(zs.KeyStroke(zs.KEYS['Q'].ID, pressed=True))   # the start lights: to green first
     while sp.read8(SYM['race_on']) == 0: sp.run(duration=0.02, fast_forward=True)
