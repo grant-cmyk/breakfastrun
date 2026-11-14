@@ -11,7 +11,7 @@ fails = 0
 def ok(c, m):
     global fails
     print('PASS' if c else 'FAIL', m); fails += 0 if c else 1
-def plate(sp): return screen_bits(sp)[WY + 8:WY + 32, 8 + 128:8 + 168].astype(bool)      # its 40 x 24 patch
+def plate(sp): return screen_bits(sp)[WY + 8:WY + 32, 8 + 120:8 + 168].astype(bool)      # its 48 x 24 patch
 def msg(sp): return screen_bits(sp)[WY + 33:WY + 46, 8 + 120:8 + 168].astype(bool)
 with Racer(headless=True) as sp:
     sp.load_tape(TAP); t = 0
@@ -28,9 +28,9 @@ with Racer(headless=True) as sp:
             sp.write(SYM['position'], bytes([pos])); sp.write(CARS + SYM['c_laps'], bytes([lap])); sp.write(SYM['msg_timer'], bytes([0]))
             at_copy_done(sp); p = plate(sp); seen[(pos, lap)] = p.tobytes()
             if (pos, lap) == (2, 2):
-                solid = p[3:22, 4:36]                 # inside the plate: mostly lit, the letters cut out of it
-                ok(not p[0].any() and not p[23].any() and not p[:, 0:3].any() and not p[:, 37:40].any() and p[1, 5:35].all() and not p[1, 3:5].any() and 0.55 < solid.mean() < 0.95,
-                   '2nd, lap 2: a solid plate 34 x 22 with rounded corners, 3 clear pixels each side and a clear line above and below, its letters cut out (%.0f%% of its inside lit)' % (100 * solid.mean()))
+                solid = p[3:22, 4:44]                 # inside the plate: mostly lit, the letters cut out of it
+                ok(not p[0].any() and not p[23].any() and not p[:, 0:3].any() and not p[:, 45:48].any() and p[1, 5:43].all() and not p[1, 3:5].any() and 0.55 < solid.mean() < 0.95,
+                   'P2, lap 2: a solid plate 42 x 22 with rounded corners, 3 clear pixels each side and a clear line above and below, its letters cut out (%.0f%% of its inside lit)' % (100 * solid.mean()))
     laps = len({seen[(2, lap)] for lap in (1, 2, 3)}); places = len({seen[(pos, 1)] for pos in (1, 2, 3, 4, 5)})
     ok(laps == 3 and places >= 4, 'the plate changes with the lap (%d of 3 differ) and with the place (%d of 5 differ; the game works your place out afresh as the test writes it)' % (laps, places))
     sp.write(SYM['msg_timer'], bytes([0])); at_copy_done(sp); quiet = msg(sp).copy()

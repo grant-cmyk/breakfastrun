@@ -1519,3 +1519,24 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Memory: the cars now take 4,864 bytes under 0x8000, not 7,296 - 2,432 bytes free there (it is
   slower "contended" memory: fine for data and for code that is not time-critical). Program:
   code_end 0xBF7C, 132 bytes free.
+
+## 2026-11-14 SAST (night) - the plate carries it all; nothing bottom left; speed back to the morning's
+- Grant: "The in game display works really well - so that bottom left reporting is not needed at
+  all." The face, the red block, the white strip (PRESS Q / LAP / FINAL LAP / FINISHED!) and the
+  TIME row are gone (make_strip.py; hud_update no longer calls bar_tick, which is left in the
+  source unused; msg_finished only clears the timer). NOTE: nothing now tells the player which
+  key starts the race - the strip's PRESS Q did.
+- Grant: "Is it possible in that blue area to have your current laptime, small if you can. I
+  think you can put P1 or P2 or P3 instead of 3rd or 1st" - "have a space between the P1 and lap
+  and still show 1/3". The plate is 42 x 22 (6 bytes): P and your place (ROM letters), a gap,
+  the lap n/3 small, and under them your lap's time so far m:ss.t small (race_time - C_LST,
+  time_fmt). Small figures: pl_g (0-9 : . / blank, 5 bytes each; pl_pair puts two in a byte).
+- Speed: the plate is composed once into pl_bmp (144 bytes, under 0x8000) when place or lap
+  changes (pl_static, plate_slow.asm), only the time's 5 rows are redone each picture, and the
+  bitmap is copied to the buffer with LDIs; the gauge's three bytes a row are written out, not
+  called. Plate + gauge + oil can went from about 20,500 T a picture to about 8,000. zxlap alone:
+  246 pictures at 3 frames / 85 at 4 - the same as before today's gauge, plate and lap time
+  (247 / 85). In the pack 38 / 233.
+- Music: still off in the race (OPT_MUSIC). Grant: "need to figure out how to make the music
+  come through during the game." Not solved on the beeper. Proposed: the AY sound chip (128K
+  machines, or a 48K with one): held notes in three voices for a few hundred T a frame.

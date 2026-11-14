@@ -3,101 +3,162 @@
 ; ---------------------------------------------------------------------
 ; THE PLACE PLATE (Grant, 14 Nov 2026: "positional information into the game area, its easier
 ; for the player to see" - a small solid plate with rounded corners INSIDE the window, top
-; right, the table showing all round it; an ordinary figure with a small raised st / nd / rd /
-; th, the lap under it in small letters; and a quick message on a second plate below it - FINAL
+; right, the table showing all round it; P and your place's figure ("P1 or P2 or P3 instead of
+; 3rd or 1st"), L and the lap small beside them, your lap's time so far small under them; and a quick message on a second plate below it - FINAL
 ; LAP! for its 3 seconds: "3 is good build 3"). Into the buffer each picture, like the gauge.
 ; A plate is FILLED (pl_fill: its rows by how near the top or bottom they are - clear, two
 ; rounding rows, solid), then its letters are CUT OUT a byte-wide column at a time (pl_cut).
 ; Not while the start lights hang there.
 ; ---------------------------------------------------------------------
-PL_B    equ BUF + 2*32 + 18     ; the place plate: buffer row 16 (window line 8), bytes 18-22, 24 rows
+; SPEED (the same evening): the plate is COMPOSED once, into pl_bmp (6 bytes a row, 24 rows),
+; when your place or lap changes (pl_static, in the slow memory under 0x8000 with the other
+; parts that run rarely); each picture only the time's figures are done again there, and the
+; whole of pl_bmp is copied into the buffer. It was 12,000 T a picture built from nothing.
+PL_B    equ BUF + 2*32 + 17     ; the place plate: buffer row 16 (window line 8), bytes 17-22, 24 rows
 PL_M    equ BUF + 5*32 + 0x100 + 17     ; the message's: buffer row 41, bytes 17-22, 13 rows
 pl_draw:
         ld a,(lt_on)
         or a
         ret nz
-        ld hl,PL_B
-        ld bc,18*256+5
-        call pl_fill
-        ld a,(position)         ; the figure: the ROM's own, 8 x 8 (1 before the race)
+        inc a
+        ld (pl_lin),a           ; (the letters go into pl_bmp: its rows are 6 bytes apart)
+        ld a,(position)         ; your place (1 before the race) and lap (1 behind the line)
         or a
         jr nz,pd_1
         inc a
 pd_1:
-        dec a
-        push af
-        add a,a
-        add a,a
-        add a,a
-        add a,0x88              ; ("1" is at 0x3D88)
-        ld e,a
-        ld d,0x3D
-        ld hl,PL_B+4*0x100+1
-        ld b,8
-        call pl_cut
-        pop af                  ; st, nd, rd, th (and th)
-        cp 3
-        jr c,pd_2
-        ld a,3
-pd_2:
-        ld de,pl_suf
-        call pd_x5
-        ld hl,PL_B+4*0x100+2
-        call pl_cut5
-        ld hl,PL_B+32+7*0x100+1 ; LAP  /3
-        ld de,pl_lap
-        ld c,4
-        call pl_cols
-        ld a,(cars+C_LAPS)      ; and its figure (behind the line at the start: 1)
+        ld b,a
+        ld a,(cars+C_LAPS)
         or a
-        jr z,pd_3
-        dec a
-        cp 3
-        jr c,pd_3
-        ld a,2
+        jr nz,pd_2
+        inc a
+pd_2:
+        ld c,a
+        ld hl,(pl_key)          ; changed? the plate afresh
+        or a
+        sbc hl,bc
+        call nz,pl_static
+        ld hl,pl_bmp+15*6+1     ; your lap's time so far, small: m:ss.t - its 5 rows solid again,
+        ld b,5
 pd_3:
-        ld de,pl_dig
-        call pd_x5
-        ld hl,PL_B+32+7*0x100+3
-        call pl_cut5
-        ld a,(msg_timer)        ; FINAL LAP! while the strip says so
+        ld (hl),0xFF
+        inc hl
+        ld (hl),0xFF
+        inc hl
+        ld (hl),0xFF
+        inc hl
+        inc hl
+        inc hl
+        inc hl
+        djnz pd_3
+        ld hl,(race_time)       ; then the figures cut out
+        ld de,(cars+C_LST)
+        or a
+        sbc hl,de
+        call time_fmt
+        ld a,(time_txt)
+        call pd_d
+        ld c,10                 ; m and :
+        ld hl,pl_bmp+15*6+1
+        call pl_pair
+        ld a,(time_txt+3)
+        call pd_d
+        ld c,a
+        ld a,(time_txt+2)
+        call pd_d               ; s s
+        ld hl,pl_bmp+15*6+2
+        call pl_pair
+        ld a,(time_txt+5)
+        call pd_d
+        ld c,a
+        ld a,11                 ; . and t
+        ld hl,pl_bmp+15*6+3
+        call pl_pair
+        ld hl,pl_bmp            ; and the plate into the buffer
+        ld de,PL_B
+        ld b,24
+pd_4:
+        ld c,255                ; (so the 6 LDIs leave B, the row count, alone)
+        ldi
+        ldi
+        ldi
+        ldi
+        ldi
+        ldi
+        ld a,e                  ; DE: back to the row's first byte, and a line down (the buffer
+        sub 6                   ; is laid out like the screen)
+        ld e,a
+        inc d
+        ld a,d
+        and 7
+        jr nz,pd_5
+        ld a,e
+        add a,32
+        ld e,a
+        ld a,d
+        sub 8
+        ld d,a
+pd_5:
+        djnz pd_4
+        ld a,(msg_timer)        ; FINAL LAP! on a second plate while its 3 seconds run
         or a
         ret z
-        ld hl,PL_M
-        ld bc,7*256+6
-        call pl_fill
-        ld hl,PL_M+4*0x100
-        ld de,pl_msg
-        ld c,6
-pl_cols:                        ; C columns of 5 rows from DE, at HL and on to the right
-        push hl
-        call pl_cut5
+        jp pl_message
+pl_pair:                        ; two small figures cut out of the column at HL: number A in bits 7-5,
+        push hl                 ; number C beside it in bits 3-1
+        call pd_g
+        ld a,c
+        ld b,d
+        ld c,e                  ; BC -> the left one
+        call pd_g               ; DE -> the right one
         pop hl
-        inc l
-        dec c
-        jr nz,pl_cols
-        ret
-pd_x5:                          ; DE += 5 x A
-        ld l,a
-        add a,a
-        add a,a
-        add a,l
-        add a,e
-        ld e,a
-        ret nc
-        inc d
-        ret
-pl_cut5:
-        ld b,5
-pl_cut:                         ; B rows of the column at HL: the bits of (DE) on cut out of the plate
-        ld a,(de)
+        ld a,5
+pp_1:
+        push af
+        ld a,(de)               ; the right one, moved over to bits 3-1
+        rrca
+        rrca
+        rrca
+        rrca
+        ld (pp_2+1),a
+        ld a,(bc)
+pp_2:   or 0
         xor (hl)
         ld (hl),a
+        inc bc
         inc de
         call pl_down
-        djnz pl_cut
+        pop af
+        dec a
+        jr nz,pp_1
         ret
-pl_down:                        ; HL: the next line down (the buffer is laid out like the screen)
+pd_d:                           ; a character of the time -> its figure (a space is a 0)
+        sub '0'
+        ret nc
+        xor a
+        ret
+pd_g:                           ; DE -> small figure A (pl_g + 5 A)
+        ld e,a
+        add a,a
+        add a,a
+        add a,e
+        add a,pl_g AND 255
+        ld e,a
+        ld a,0
+        adc a,pl_g/256
+        ld d,a
+        ret
+pl_down:                        ; HL: the next row down - in pl_bmp (pl_lin 1: 6 bytes on) or in the
+        ld a,(pl_lin)           ; buffer (0: laid out like the screen)
+        or a
+        jr z,pw_1
+        ld a,l
+        add a,6
+        ld l,a
+        ret nc
+        inc h
+        ret
+pw_1:
         inc h
         ld a,h
         and 7
@@ -109,42 +170,3 @@ pl_down:                        ; HL: the next line down (the buffer is laid out
         sub 8
         ld h,a
         ret
-pl_fill:                        ; HL = its top left byte, B = its solid rows, C = bytes: a clear line, two
-        ld de,0x0000            ; rounding rows, the solid rows, two rounding rows, a clear line
-        call pf_row
-        ld de,0x07E0
-        call pf_row
-        ld de,0x0FF0
-        call pf_row
-pf_1:
-        ld de,0x1FF8            ; (3 pixels in at each side)
-        call pf_row
-        djnz pf_1
-        ld de,0x0FF0
-        call pf_row
-        ld de,0x07E0
-        call pf_row
-        ld de,0x0000
-pf_row:                         ; a row: D its left byte, E its right, solid between (clear if D is 0)
-        push hl
-        push bc
-        ld (hl),d
-        inc l
-        ld a,d
-        or a
-        jr z,pf_2
-        ld a,0xFF
-pf_2:
-        ld b,c
-        dec b
-        dec b
-pf_3:
-        ld (hl),a
-        inc l
-        djnz pf_3
-        ld (hl),e
-        pop bc
-        pop hl
-        jp pl_down
-        include "plate.asm"     ; pl_dig (tools/make_plate.py; pl_suf and pl_lap are under 0x8000, pl_msg at TD)
-

@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 19:49 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 20:24 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -14,18 +14,17 @@ start (not shown on screen). `bash build.sh` -> build/racer.tap.
 **Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 301, 4 x 12; 15.5 pictures a second off the
 grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
-**Memory:** 132 bytes free in the program (code_end 0xBF7C; code added before sq4.asm's include costs a whole page when it crosses one - add after faces.asm); about 2,440 bytes free under 0x8000 since the small cars' frames went to 4 bytes a row (contended memory: data, or code that is not time-critical); none in the table block at 0x5B4C.
+**Memory:** 137 bytes free in the program (code_end 0xBF77; code added before sq4.asm's include costs a whole page when it crosses one - add after faces.asm); about 2,000 bytes free under 0x8000 (contended memory: data, and code that runs rarely - plate_slow.asm is there); none in the table block at 0x5B4C.
 
-**Next step:** (the ditty is OFF in the race now - OPT_MUSIC; Grant found every in-race version "background beeping"; suggested: play it on the title screen instead.) Grant to playtest the tape: YOUR PLACE ON A PLATE in the window, top right (small nd / rd, the lap, FINAL LAP! under it - docs/design/place_plate_in_game.png); DAMAGE (an icon bottom left whose fill empties from the top - a heart now; Grant wants a mechanical one: choose from docs/design/damage_icons.png, tools/make_damage_icons.py; hits slow the car; an oil can on the left-hand side mends it, about once a lap - docs/design/damage_in_game.png), the title (plain options 1 / 2 / K), and the ditty
-now "Kettle's On, driving" (ditty13; a faster one, ditty14, is in the Sound Lab,
-https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS). Then the COLOURED OBJECTS: OBJECTS=1 python3
-tools/make_world.py; OBJECTS=1 bash build.sh puts eight small square ones on the table
-(docs/design/small_objects_in_game.png) and they are colour-correct, but the game is slower with
-them and drive_test fails - first find why obj_paint costs about 11,000 T with one block in view
-(it should be under 2,000), move the sugar cube out from under the start lights, then measure
-again. Run `python3 tools/make_world.py; bash build.sh` to get the default game back. Chosen big
-designs, not buildable yet (speed, memory): the cyan plate with egg and bacon, the mug on a saucer
-(tools/make_fryup.py). Not built: driver and car choice, 2UP, a bigger gameplay area.
+**Next step:** MUSIC IN THE RACE - Grant wants it to "come through during the game"; every
+beeper version tried on 14 Nov was "background beeping" and cost speed, so it is off (OPT_MUSIC).
+Proposed and awaiting his word: play it on the AY sound chip where there is one (128K, or a 48K
+with the chip; zxdev: option ay48) - held notes, three voices, almost no time - keeping the
+beeper for the effects. Then: a prompt for the start key (PRESS Q went with the bottom-left
+block); more quick messages on the second plate (only FINAL LAP! so far); the coloured objects
+(OBJECTS=1: slow; first find why obj_paint costs 11,000 T); the tune on the title screen. The
+screen now: nothing bottom left; your place, lap and lap time on the plate in the window
+(docs/design/place_plate_in_game.png); the lightning health gauge bottom left of the window.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

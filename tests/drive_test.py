@@ -166,7 +166,7 @@ def window_bad(sp):
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
     mask[139 - WY:151 - WY, 160 - 8:184 - 8] = False  # the NOS canisters in the corner
     mask[WH - 17:WH, 0:24] = False                    # the health gauge in the other corner
-    mask[8:32, 128:168] = False                       # your place on its plate, top right
+    mask[8:32, 120:168] = False                       # your place on its plate, top right
     mask[33:46, 120:168] = False                      # ... and its message's plate
     for n in range(N):
         c = car(sp, n)

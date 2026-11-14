@@ -85,6 +85,7 @@ CT_BRK  equ 8
         include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
         include "title.asm"     ; the title / attract screen, in the room the small cars leave
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
+        include "plate_slow.asm" ; ... and its parts that run rarely
         if $ > 0x8000
         .error the big cars run past 0x8000
         endif
@@ -2437,12 +2438,48 @@ dmg_draw:
         ld hl,dmg_heart         ; for each byte: the table's pixels to keep, the outline, the fill
         ld de,DMG_B
         ld b,DMG_ROWS
-dd_1:
-        call dd_byte            ; the icon goes ON the table: only the icon and 2 pixels round
-        inc e                   ; it are cleared - a mask its own shape, which you do not see
-        call dd_byte            ; (Grant, 14 Nov 2026: "a masked item, so a decent mask - but
-        inc e                   ; invisible mask"), in the window's own blue
-        call dd_byte
+dd_1:                           ; the icon goes ON the table: only the icon and 2 pixels round it are
+                                ; cleared - a mask its own shape, which you do not see (Grant, 14 Nov
+                                ; 2026: "a masked item, so a decent mask - but invisible mask"), in the
+                                ; window's own blue. (Three bytes written out, not called: 3,000 T saved)
+        ld a,(de)
+        and (hl)                ; what the table keeps
+        inc hl
+        or (hl)                 ; the outline
+        inc hl
+        inc c                   ; the fill, unless this row is an empty one (C not 0)
+        dec c
+        jr nz,dd_a
+        or (hl)
+dd_a:
+        inc hl
+        ld (de),a
+        inc e
+        ld a,(de)
+        and (hl)                ; what the table keeps
+        inc hl
+        or (hl)                 ; the outline
+        inc hl
+        inc c                   ; the fill, unless this row is an empty one (C not 0)
+        dec c
+        jr nz,dd_b
+        or (hl)
+dd_b:
+        inc hl
+        ld (de),a
+        inc e
+        ld a,(de)
+        and (hl)                ; what the table keeps
+        inc hl
+        or (hl)                 ; the outline
+        inc hl
+        inc c                   ; the fill, unless this row is an empty one (C not 0)
+        dec c
+        jr nz,dd_c
+        or (hl)
+dd_c:
+        inc hl
+        ld (de),a
         dec e
         dec e
         ld a,c
@@ -2462,20 +2499,6 @@ dd_2:
         ld d,a
 dd_3:
         djnz dd_1
-        ret
-dd_byte:
-        ld a,(de)
-        and (hl)                ; what the table keeps
-        inc hl
-        or (hl)                 ; the outline
-        inc hl
-        inc c                   ; the fill, unless this row is an empty one (C not 0)
-        dec c
-        jr nz,dd_4
-        or (hl)
-dd_4:
-        inc hl
-        ld (de),a
         ret
 dmg_emp: db 3,4,5,6,7,8,10,12,17        ; rows without fill (the first 2 are margin) for damage 0 to 8
         include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
