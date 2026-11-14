@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-13 20:17 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 05:23 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 120 in an arcade bezel; five cars at 20 x 20.
@@ -16,9 +16,13 @@ frame count). zxdev lap: 3 frames x 308, 4 x 12 (was 195 / 104). Biggest now: th
 draw_car 30-34k, cloth 29k, tiles 12k+, physics 19k, thinking 11k. The pictures still late have
 4-5 cars in view.
 
-**Next step:** Grant playtests build/racer.tap from the branch (the layout, the border flashes, the
-set-up's feel - is each level's step right?). Then the extra window row (176 x 128): about +5.4k T
-a picture now (cloth 1.8k, copy 2.2k, tiles ~1k); the copier has room where it is.
+**Next step:** Grant chooses the angled cars (docs/design/angled_cars_options.png: A as now, B the
+number upright, C rebuilt from parts - Claude recommends B) and marks up the new cast drafts
+(docs/design/new_cast_mockup.png). Then, in this order: (1) build the approved set-up box and
+in-window NOS (docs/design/setup_box_mockup.png, tools/make_setup_mockup.py - "good enough", 14 Nov);
+(2) a memory plan and a mock-up for the title / attract screen (logo, keys, hi-score, 1 or 2
+players, choose a driver then a car: six drivers - 3 ladies, 3 men - and ten cars, each with
+strengths and weaknesses; two players later); (3) the extra window row (176 x 128, about +5.4k T).
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

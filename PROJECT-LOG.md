@@ -1009,3 +1009,33 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Tests: drive_test PASS, nos_test PASS, o_test PASS, setup_test PASS.
 - Memory: code_end 0xBF35 (203 bytes free in the main area); the copier ends at 0xF8E2 (TOPMEM
   0xFAD0: 493 spare, 288 of it wanted by the extra row).
+
+## 2026-11-14 SAST - mock-ups: the set-up box, the angled cars, a new cast; the title screen asked for
+- Grant: the NOS to the play window's bottom right, the three car measures tighter - three rows
+  in a little box left of the radio box; then "don't use letters, use icons", and the NOS much
+  smaller, no box, in the race's own colours, masked; then "good enough".
+  tools/make_setup_mockup.py -> docs/design/setup_box_mockup.png (on two real screens,
+  docs/design/mock_setup_*.bin): a 4 x 3 cell box at columns 6-9, rows 20-22; each row a 7 x 5 icon
+  (tyre, fast-forward, bolt) and five 3 x 5 pips; no key numbers (rows in key order); the NOS as a
+  7 x 10 canister a piece, blue on cyan with a 1-px gap, window bottom right. NOT BUILT YET.
+- Grant: "could Fable look at the cars and improve on the angled car graphics ... I did the
+  straight up images and Claude did the rest". Three versions, side by side at real size
+  (docs/design/angled_cars_options.png): A as in the game (tools/turn_car.py, pixels turned);
+  B = A with the race number redrawn UPRIGHT in a solid 5 x 7 plate
+  (tools/big_car_art_option_b.txt); C = each car rebuilt from its parts at 0.88 size
+  (tools/turn_big_car.py -> tools/big_car_art_option_c.txt: blocks as clean polygons, wheels,
+  gaps, the number upright). Claude's own verdict: C is cleaner but loses the cars' character
+  (wheel centres, the tank's treads) and is not clearly better; B is the one sure gain (the
+  number reads at every angle). Nothing installed in the game: Grant to choose. A 20 x 20 frame
+  cannot hold a 17 x 18 car turned 45 degrees (its box would be 24.7): corners clip or the car
+  shrinks - a limit of the frame, not of the drawing.
+- Grant: a title / attract screen - the logo, a keys option, the hi-score, 1 or 2 players; at the
+  start the player chooses a driver (face / personality), then a car; five more of each to choose
+  from, each car with strengths and weaknesses to tune; two players to play later. Then: mock up
+  five new cars ("the offroad, the pickup truck, the buggy - can get creative"; his old ones are
+  in tools/pool_art.txt: SPECS and the 6-wheel TRUCK) and personalities - three ladies and three
+  men. tools/make_new_cast_mockup.py -> tools/new_cast_art.txt, docs/design/new_cast_mockup.png:
+  first drafts of OFFROAD, PICKUP, BUGGY, HOTROD, MILKFLOAT (20 x 20, heading 0) and of five
+  faces - BUN, SPECS2, CURLS (ladies), CAP, SHADES (men) - for him to redraw in the editor.
+  The title screen itself is not designed or built: it needs a memory plan first (203 bytes free
+  in the main area; ten more cars at 20 x 20 x 16 headings will not fit beside five - 2 KB each).
