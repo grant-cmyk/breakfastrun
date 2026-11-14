@@ -1540,3 +1540,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Music: still off in the race (OPT_MUSIC). Grant: "need to figure out how to make the music
   come through during the game." Not solved on the beeper. Proposed: the AY sound chip (128K
   machines, or a 48K with one): held notes in three voices for a few hundred T a frame.
+- Later still: Grant: "can we make the P1 smaller, so that the display can be a bit smaller. Also
+  is it possible to shift it more towards the corner and have a smaller blue border around it?"
+  The plate is now 29 x 16: "P1 2/3" and the lap time both in the small figures, 2 pixels of
+  blue round them; 6 pixels in from the window's right edge and 3 down from its top (pl_bmp 5
+  bytes x 18 rows; PL_B, PL_W, PL_H). The message's plate moved up under it (PL_M, PL_MT).
+  zxlap alone: 240 pictures at 3 frames / 79 at 4.

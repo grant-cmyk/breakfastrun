@@ -3,25 +3,32 @@
 ; ---------------------------------------------------------------------
 ; THE PLACE PLATE (Grant, 14 Nov 2026: "positional information into the game area, its easier
 ; for the player to see" - a small solid plate with rounded corners INSIDE the window, top
-; right, the table showing all round it; P and your place's figure ("P1 or P2 or P3 instead of
-; 3rd or 1st"), L and the lap small beside them, your lap's time so far small under them; and a quick message on a second plate below it - FINAL
+; right corner; P1 2/3 - P and your place ("P1 or P2 or P3 instead of 3rd or 1st"), a space,
+; the lap - and under it your lap's time so far, all in the small 3 x 5 figures; and a quick message on a second plate below it - FINAL
 ; LAP! for its 3 seconds: "3 is good build 3"). Into the buffer each picture, like the gauge.
 ; A plate is FILLED (pl_fill: its rows by how near the top or bottom they are - clear, two
 ; rounding rows, solid), then its letters are CUT OUT a byte-wide column at a time (pl_cut).
 ; Not while the start lights hang there.
 ; ---------------------------------------------------------------------
-; SPEED (the same evening): the plate is COMPOSED once, into pl_bmp (6 bytes a row, 24 rows),
+; SPEED (the same evening): the plate is COMPOSED once, into pl_bmp (PL_W bytes a row, PL_H rows),
 ; when your place or lap changes (pl_static, in the slow memory under 0x8000 with the other
 ; parts that run rarely); each picture only the time's figures are done again there, and the
 ; whole of pl_bmp is copied into the buffer. It was 12,000 T a picture built from nothing.
-PL_B    equ BUF + 2*32 + 17     ; the place plate: buffer row 16 (window line 8), bytes 17-22, 24 rows
-PL_M    equ BUF + 5*32 + 0x100 + 17     ; the message's: buffer row 41, bytes 17-22, 13 rows
+PL_B    equ BUF + 1*32 + 2*0x100 + 19   ; the place plate: buffer row 10 (window line 2), bytes 19-23 (the
+                                ; window's last 40 pixels), 18 rows: the plate itself is 29 x 16, 6
+                                ; pixels in from the window's right edge and 3 down from its top
+                                ; (Grant, 14 Nov 2026: "make the P1 smaller, so that the display can be
+                                ; a bit smaller ... shift it more towards the corner and have a smaller
+                                ; blue border around it")
+PL_M    equ BUF + 3*32 + 5*0x100 + 18   ; the message's: buffer row 29, bytes 18-23, 13 rows
+PL_MT   equ BUF + 4*32 + 1*0x100 + 18   ; ... its letters' first row: buffer row 33
+; (PL_W and PL_H, pl_bmp's bytes a row and rows: in racer.asm, before the first use)
 pl_draw:
         ld a,(lt_on)
         or a
         ret nz
         inc a
-        ld (pl_lin),a           ; (the letters go into pl_bmp: its rows are 6 bytes apart)
+        ld (pl_lin),a           ; (the letters go into pl_bmp: its rows are PL_W bytes apart)
         ld a,(position)         ; your place (1 before the race) and lap (1 behind the line)
         or a
         jr nz,pd_1
@@ -38,7 +45,7 @@ pd_2:
         or a
         sbc hl,bc
         call nz,pl_static
-        ld hl,pl_bmp+15*6+1     ; your lap's time so far, small: m:ss.t - its 5 rows solid again,
+        ld hl,pl_bmp+10*PL_W+1  ; your lap's time so far, small: m:ss.t - its 5 rows solid again,
         ld b,5
 pd_3:
         ld (hl),0xFF
@@ -46,7 +53,6 @@ pd_3:
         ld (hl),0xFF
         inc hl
         ld (hl),0xFF
-        inc hl
         inc hl
         inc hl
         inc hl
@@ -59,34 +65,33 @@ pd_3:
         ld a,(time_txt)
         call pd_d
         ld c,10                 ; m and :
-        ld hl,pl_bmp+15*6+1
+        ld hl,pl_bmp+10*PL_W+1
         call pl_pair
         ld a,(time_txt+3)
         call pd_d
         ld c,a
         ld a,(time_txt+2)
         call pd_d               ; s s
-        ld hl,pl_bmp+15*6+2
+        ld hl,pl_bmp+10*PL_W+2
         call pl_pair
         ld a,(time_txt+5)
         call pd_d
         ld c,a
         ld a,11                 ; . and t
-        ld hl,pl_bmp+15*6+3
+        ld hl,pl_bmp+10*PL_W+3
         call pl_pair
         ld hl,pl_bmp            ; and the plate into the buffer
         ld de,PL_B
-        ld b,24
+        ld b,PL_H
 pd_4:
-        ld c,255                ; (so the 6 LDIs leave B, the row count, alone)
-        ldi
+        ld c,255                ; (so the LDIs leave B, the row count, alone)
         ldi
         ldi
         ldi
         ldi
         ldi
         ld a,e                  ; DE: back to the row's first byte, and a line down (the buffer
-        sub 6                   ; is laid out like the screen)
+        sub PL_W                ; is laid out like the screen)
         ld e,a
         inc d
         ld a,d
@@ -153,7 +158,7 @@ pl_down:                        ; HL: the next row down - in pl_bmp (pl_lin 1: 6
         or a
         jr z,pw_1
         ld a,l
-        add a,6
+        add a,PL_W
         ld l,a
         ret nc
         inc h

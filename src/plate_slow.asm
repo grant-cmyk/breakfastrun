@@ -2,32 +2,34 @@
 pl_static:                      ; B = your place, C = your lap: the plate composed in pl_bmp
         ld (pl_key),bc
         push bc
-        ld hl,pl_bmp
-        ld bc,18*256+6
-        call pl_fill
-        ld de,0x3E80            ; P, the ROM's own letter, 8 x 8
-        ld hl,pl_bmp+4*6+1
-        ld b,8
-        call pl_cut
+        ld hl,pl_bmp            ; the plate: a clear line, a rounding row, 14 solid, a rounding
+        ld c,PL_W               ; row, a clear line - 29 pixels of the 40 across
+        ld de,0x0000
+        call pf_row
+        ld de,0x0380
+        call pf_row
+        ld b,14
+ps_1:
+        ld de,0x07C0
+        call pf_row
+        djnz ps_1
+        ld de,0x0380
+        call pf_row
+        ld de,0x0000
+        call pf_row
         pop bc
         push bc
-        ld a,b                  ; and your place's figure beside it ("0" is at 0x3D80)
-        add a,a
-        add a,a
-        add a,a
-        add a,0x80
-        ld e,a
-        ld d,0x3D
-        ld hl,pl_bmp+4*6+2
-        ld b,8
-        call pl_cut
-        pop bc                  ; a gap, then the lap, small: n/3
-        ld a,13
-        ld hl,pl_bmp+5*6+3
+        ld a,14                 ; P and your place
+        ld c,b
+        ld hl,pl_bmp+3*PL_W+1
         call pl_pair
-        ld a,12
+        pop bc                  ; a space, the lap
+        ld a,13
+        ld hl,pl_bmp+3*PL_W+2
+        call pl_pair
+        ld a,12                 ; /3
         ld c,3
-        ld hl,pl_bmp+5*6+4
+        ld hl,pl_bmp+3*PL_W+3
         jp pl_pair
 pl_message:                     ; FINAL LAP! on its own plate, straight into the buffer
         xor a
@@ -35,7 +37,7 @@ pl_message:                     ; FINAL LAP! on its own plate, straight into the
         ld hl,PL_M
         ld bc,7*256+6
         call pl_fill
-        ld hl,PL_M+4*0x100
+        ld hl,PL_MT
         ld de,pl_msg
         ld c,6
 pl_cols:                        ; C columns of 5 rows from DE, at HL and on to the right
@@ -94,4 +96,4 @@ pf_3:
         jp pl_down
 pl_key:  dw 0                   ; the place and lap pl_bmp was composed for
 pl_lin:  db 0                   ; pl_down's rows: 1 in pl_bmp, 0 in the buffer
-pl_bmp:  defs 6*24              ; the plate, composed
+pl_bmp:  defs PL_W*PL_H          ; the plate, composed

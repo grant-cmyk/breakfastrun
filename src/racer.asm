@@ -84,6 +84,8 @@ CT_BRK  equ 8
         org 0x5F00              ; big-car frames, below the program (8.25 KB, loaded
         include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
         include "title.asm"     ; the title / attract screen, in the room the small cars leave
+PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a row,
+PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
         if $ > 0x8000
