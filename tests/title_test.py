@@ -3,7 +3,7 @@ choose 1UP or 2UP to play, K to customize keys, have the title screen have some 
 sequence showing the different drivers, maybe a face and have that car skid around").
 src/title.asm, title2.asm, title3.asm; layout A of docs/design/TITLE-SCREEN.md. Checks:
   - the title comes up after loading, before the race: logo twice the size, LAP RECORD, the cloth
-    stage in its frame, a driver's card, 1 = 1UP, 2 = 2UP, K = KEYS, the flashing prompt
+    stage in its frame, a driver's card, the choices as a plain list (1 - ONE PLAYER, 2 - TWO PLAYERS, K - KEYS), the flashing prompt
   - the attract sequence: the car moves, only on the cloth, leaves skid marks; all five drivers
     take their turn (number, name, face colour change)
   - 2 says 2UP COMING SOON and the prompt comes back
@@ -59,10 +59,10 @@ with Racer(headless=True) as sp:
     ok(screen_text(sp, 5, 18, 13) == 'DRIVER 1 OF 5' and attr(sp, 5, 18) == 0x4F and attr(sp, 16, 30) == 0x78 and screen_text(sp, 7, 23, 3) == 'YOU'
        and attr(sp, 6, 18) == 0x57 and sb[48:80, 144:176].any() and sb[104:136, 176:208].any(),
        'the driver\'s card: DRIVER 1 OF 5, a face on the car\'s colour, YOU, the car')
-    ok(sb[152:168, 8:24].any() and attr(sp, 19, 1) == 0x47 and attr(sp, 19, 3) == 0x57 and screen_text(sp, 21, 1, 8) == '1 PLAYER'
-       and attr(sp, 19, 11) == 0x47 and attr(sp, 19, 13) == 0x4F and screen_text(sp, 21, 11, 9) == '2 PLAYERS'
-       and attr(sp, 19, 21) == 0x47 and attr(sp, 19, 23) == 0x78 and screen_text(sp, 21, 23, 8) == 'REDEFINE',
-       'the choices, each with its key as a key cap: 1 1UP (red), 2 2UP (blue), K KEYS')
+    ok(screen_text(sp, 19, 9, 14) == '1 - ONE PLAYER' and screen_text(sp, 20, 9, 15) == '2 - TWO PLAYERS' and screen_text(sp, 21, 9, 8) == 'K - KEYS'
+       and all(attr(sp, r, c) == 0x30 for r in range(18, 23) for c in range(32))
+       and not sb[144:152].any() and not sb[176:184].any() and not sb[152:176, 0:72].any() and not sb[152:176, 192:256].any(),
+       'the choices, a plain list in normal letters, black on the table: 1 - ONE PLAYER, 2 - TWO PLAYERS, K - KEYS')
     ok(screen_text(sp, 23, 5, 21) == 'PRESS 1 OR 2 TO START' and all(attr(sp, 23, c) == 0xB0 for c in range(5, 26)),
        'PRESS 1 OR 2 TO START, flashing')
     # the attract sequence: 45 s, sampled 10 times a second

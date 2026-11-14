@@ -43,15 +43,9 @@ t_script_src:
         db 0x85,18,12,13,T_CARD ; the card
         db 0x85,18,1,13,T_HEAD
         db 5,18,"DRIVER   OF 5",0
-        db 0x53,1,T_KEY,"1",0
-        db 0x53,3,T_P1,"1UP",0
-        db 21,1,"1 PLAYER",0
-        db 0x53,11,T_KEY,"2",0
-        db 0x53,13,T_HEAD,"2UP",0
-        db 21,11,"2 PLAYERS",0
-        db 0x53,21,T_KEY,"K",0
-        db 0x53,23,T_CARD,"KEYS",0
-        db 21,23,"REDEFINE",0
+        db 19,9,"1 - ONE PLAYER",0     ; the choices: a plain list (Grant, 14 Nov 2026: "just
+        db 20,9,"2 - TWO PLAYERS",0    ; normal size 1 - One player 2 - Two players, K - Keys")
+        db 21,9,"K - KEYS",0
         db 0x97,5,1,21,0xB0     ; (flashing)
         db 23,5
 t_press_src: db "PRESS 1 OR 2 TO START",0
