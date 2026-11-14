@@ -12,11 +12,13 @@ rows = [l.split('defb')[1] for l in top[top.index('omap_src:'):].splitlines()[1:
 os_ = [(tx, ty) for ty in range(MAPH) for tx in range(MAPW) if [int(c) for b in rows[ty].split(',') for c in b.strip().lstrip('%')][tx]]
 w = open(os.path.join(ROOT, 'src', 'world.asm')).read()
 CX, CY = (int(re.search(r'NOS_C_%s equ (\d+)' % k, w).group(1)) for k in 'XY')
+import sys; sys.path.insert(0, os.path.join(ROOT, 'tools')); import make_damage_icons as mdi
+ART = mdi.game_art(); OUTLINE = sum(r.count('O') for r in ART); FILL = sum(r.count('F') for r in ART)   # the gauge's icon
 fails = 0
 def ok(c, m):
     global fails
     print('PASS' if c else 'FAIL', m); fails += 0 if c else 1
-def gauge(sp):                                        # the heart: lit pixels in its patch (window x 0-15, its last 13 lines)
+def gauge(sp):                                        # the icon: lit pixels in its patch (window x 0-15, its last 13 lines)
     return int(screen_bits(sp)[WY + WH - 13:WY + WH, 8:24].sum())
 with Racer(headless=True) as sp:
     sp.load_tape(TAP); t = 0
@@ -25,13 +27,13 @@ with Racer(headless=True) as sp:
     for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58); sp.write(CARS + i * CS + 19, bytes([0]))
     sp.run(duration=0.5, fast_forward=True)
     FULL = gauge(sp)
-    ok(sp.read8(SYM['dmg']) == 0 and FULL > 110, 'at the start: no damage, the heart full (%d pixels lit)' % FULL)
+    ok(sp.read8(SYM['dmg']) == 0 and FULL == OUTLINE + FILL, 'at the start: no damage, the gauge\'s icon full (%d pixels lit: its outline and all its fill)' % FULL)
     tx, ty = os_[40]
     put(sp, 0, tx * 8 - 1, ty * 8 - 6, 16); sp.run(duration=0.15, fast_forward=True)
     d1 = sp.read8(SYM['dmg']); sp.run(duration=0.05, fast_forward=True)
     ok(d1 == 1, 'put on a cereal O: one point of damage (%d)' % d1)
     put(sp, 0, 200, 250, 16); sp.run(duration=1.0, fast_forward=True)
-    ok(gauge(sp) < FULL, 'the heart has begun to empty (%d pixels lit)' % gauge(sp))
+    ok(gauge(sp) < FULL, 'the icon has begun to empty (%d pixels lit)' % gauge(sp))
     for k in range(3):
         put(sp, 0, tx * 8 - 1, ty * 8 - 6, 16); sp.run(duration=0.15, fast_forward=True); put(sp, 0, 200, 250, 16); sp.run(duration=1.0, fast_forward=True)
     ok(sp.read8(SYM['dmg']) == 4, 'three more hits, a second apart: 4 points (%d)' % sp.read8(SYM['dmg']))
@@ -48,11 +50,10 @@ with Racer(headless=True) as sp:
     gone = sp.read8(SYM['nos_c_t0']) == 0 and sp.read8(SYM['nos_c_t1']) == 0
     ok(sp.read8(SYM['dmg']) == 0 and gone and sp.read8(SYM['oil_t']) >= 180, 'driven over: the damage is mended, the can gone, the next in %d pictures (about a lap)' % sp.read8(SYM['oil_t']))
     put(sp, 0, 200, 250, 16); sp.run(duration=0.5, fast_forward=True)
-    ok(gauge(sp) == FULL, 'and the heart is full again (%d)' % gauge(sp))
+    ok(gauge(sp) == FULL, 'and the icon is full again (%d)' % gauge(sp))
     lit = []
     for d in range(9): sp.write(SYM['dmg'], bytes([d])); sp.run(duration=0.25, fast_forward=True); lit.append(gauge(sp))
-    top = screen_bits(sp)[WY + WH - 13:WY + WH - 7, 8:24]; bits = screen_bits(sp)[WY + WH - 13:WY + WH, 8:24]
-    ok(all(a > b for a, b in zip(lit, lit[1:])) and lit[8] > 30 and bits[0, 2:6].all() and bits[12, 7:9].all() and not bits[3, 1:15].any(),
-       'damage 0 to 8: the heart empties a step at a time (%s pixels lit); fully damaged its outline is still there and its inside empty' % lit)
+    ok(all(a > b for a, b in zip(lit, lit[1:])) and lit[8] == OUTLINE,
+       'damage 0 to 8: the icon empties a step at a time (%s pixels lit); fully damaged only its outline is left' % lit)
     shot(sp, 'damage_gauge.png')
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)

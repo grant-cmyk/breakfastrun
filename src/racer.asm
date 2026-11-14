@@ -2393,8 +2393,8 @@ nd_col:
 ;   dmg 0..DMG_MAX: a hit on a car or a cereal O adds 1 (not again for DMG_COOL pictures:
 ;   one crash is many touches); each point takes DMG_SLOW/256 px a frame off your top speed
 ;   (you_grip); an oil can on the road (oil_tick, strip.asm) mends it all.
-;   DMG_DRAW: a heart, 16 x 13, in the window's bottom left corner on its own clear patch. Its
-;   outline stays; its fill EMPTIES FROM THE TOP as health is lost (Grant, 14 Nov 2026: "a
+;   DMG_DRAW: an icon, 16 x 13 (a lightning bolt: "lets do the lightning"; it was a heart), in
+;   the window's bottom left corner on its own clear patch. Its outline stays; its fill EMPTIES FROM THE TOP as health is lost (Grant, 14 Nov 2026: "a
 ;   slightly larger heart, that is filled in. The heart 'empties' as health is lost, from the top
 ;   down ... the outline of the heart remains but the fill empties"). Into the buffer, like the
 ;   NOS canisters.
@@ -2461,20 +2461,7 @@ dd_4:
         ld (de),a
         ret
 dmg_emp: db 1,2,3,4,5,6,8,10,13        ; empty rows (the first has no fill) for damage 0 to 8
-dmg_heart:                      ; O the outline, F the fill
-        db 0x3C,0x00,0x3C,0x00      ; ..OOOO....OOOO..
-        db 0x42,0x3C,0x42,0x3C      ; .OFFFFO..OFFFFO.
-        db 0x81,0x7E,0x81,0x7E      ; OFFFFFFOOFFFFFFO
-        db 0x80,0x7F,0x01,0xFE      ; OFFFFFFFFFFFFFFO
-        db 0x80,0x7F,0x01,0xFE      ; OFFFFFFFFFFFFFFO
-        db 0x80,0x7F,0x01,0xFE      ; OFFFFFFFFFFFFFFO
-        db 0x40,0x3F,0x02,0xFC      ; .OFFFFFFFFFFFFO.
-        db 0x20,0x1F,0x04,0xF8      ; ..OFFFFFFFFFFO..
-        db 0x10,0x0F,0x08,0xF0      ; ...OFFFFFFFFO...
-        db 0x08,0x07,0x10,0xE0      ; ....OFFFFFFO....
-        db 0x04,0x03,0x20,0xC0      ; .....OFFFFO.....
-        db 0x02,0x01,0x40,0x80      ; ......OFFO......
-        db 0x01,0x00,0x80,0x00      ; .......OO.......
+        include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
 
 ; ---------------------------------------------------------------------
 ; SOUND (the beeper): played in the time the loop would otherwise spend

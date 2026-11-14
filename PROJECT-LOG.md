@@ -1460,3 +1460,6 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   (the wait's spare-time count stays, unused). COST, measured (zxlap): alone 199 pictures at 3
   frames / 113 at 4 (it was 247 / 85); in the pack 13 / 247 / 3 at 5 (67 / 212 / 1). Every
   frame at LOW 17 was dearer still (107 / 176 alone).
+- Grant, of the sixteen icons: "lets do the lightning". tools/make_damage_icons.py now writes the
+  game's art (src/dmgicon.asm; GAME = 'P'); tests/damage_test.py reads the same art. Picture:
+  docs/design/damage_gauge_in_game.png.
