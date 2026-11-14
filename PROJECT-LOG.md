@@ -1403,3 +1403,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Open: the crew chief still says "SPACE FOR NOS" after the NOS key is changed; the drivers'
   two-line descriptions are the agent's wording; a few frames tear on the title when the driver
   changes; no sound on the title.
+
+## 2026-11-14 SAST (afternoon, later) - Kettle's On driving; plain title options; small objects
+- Grant: "need that ditty to be less ditty and more driving almost trance like - can you up its
+  tempo or beat" - "Kettles on is still the best". make_ditties.drive(): the tune faster (a
+  quaver = 6 TV frames, 167 beats a minute) with a pedal note on every step the tune does not
+  sound - an unbroken pulse of 8 notes a second. ditty13 is in the build (ditty14: 5 frames a
+  step, 200 bpm). The player now reads a byte a step (MU_STEP, MU_GATE; 254 a rest): 129 bytes
+  for 96 steps. `python3 tools/make_music.py ditty13|ditty14` (only the driving tunes).
+- Grant: "make the 1UP and 2UP and keys just normal size 1 - One player 2 - Two players, K -
+  Keys". Done by the title agent (commit ede982d, merged): a plain three-line list.
+- Grant again: "build the objects" (after my advice: small ones only). OBJECTS=1 now places eight
+  small square blue-edged objects round the lap - sugar cubes (white), toast (yellow), a jam tart
+  (red) - in place of the old blue things; obj_paint colours rectangles (8 bytes a block).
+  tests/objects_test.py passes for all eight; picture docs/design/small_objects_in_game.png.
+  STILL OFF by default: the lap is slower with them (in the pack 25 pictures at 3 frames / 181
+  at 4 / 57 at 5 / 4 at 6, against 76 / 195 without; alone 105 / 134 / 45 against 249 / 65) and
+  tests/drive_test.py then fails its speed and lap-time checks. obj_paint costs about 11,000 T
+  with one block in view - far more than it should; not yet found why. One sugar cube also sits
+  under the start lights. 47 bytes free in that build.

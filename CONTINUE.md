@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 13:09 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 13:59 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -16,17 +16,16 @@ grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
 **Memory:** 177 bytes free in the program (code_end 0xBF4F), 52 under 0x8000. The big cars do not fit.
 
-**Next step:** Grant to playtest the tape with the TITLE / ATTRACT SCREEN (1 starts, K redefines
-keys, 2UP is a placeholder; docs/design/title_built.png) and the Green Light ditty, and decide
-about the COLOURED OBJECTS: they are built as an option (OBJECTS=1 python3 tools/make_world.py;
-OBJECTS=1 bash build.sh) but the mug alone takes the game to 5 TV frames a picture while in view
-(about 700 T a map tile; the mug with its margin is 99 tiles) and no longer fits beside the title
-screen - it needs a faster way to draw big objects, or small objects only. Chosen designs:
-the cyan plate with egg and bacon, the mug on a saucer seen a little from the side
-(docs/design/egg_bacon_plate.png, tools/make_fryup.py). Sound Lab:
-https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS (to change the tune: `python3
-tools/make_music.py dittyN`, `bash build.sh`). Not built: driver and car choice, 2UP, a bigger
-gameplay area.
+**Next step:** Grant to playtest the tape: the title (plain options 1 / 2 / K), and the ditty
+now "Kettle's On, driving" (ditty13; a faster one, ditty14, is in the Sound Lab,
+https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS). Then the COLOURED OBJECTS: OBJECTS=1 python3
+tools/make_world.py; OBJECTS=1 bash build.sh puts eight small square ones on the table
+(docs/design/small_objects_in_game.png) and they are colour-correct, but the game is slower with
+them and drive_test fails - first find why obj_paint costs about 11,000 T with one block in view
+(it should be under 2,000), move the sugar cube out from under the start lights, then measure
+again. Run `python3 tools/make_world.py; bash build.sh` to get the default game back. Chosen big
+designs, not buildable yet (speed, memory): the cyan plate with egg and bacon, the mug on a saucer
+(tools/make_fryup.py). Not built: driver and car choice, 2UP, a bigger gameplay area.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

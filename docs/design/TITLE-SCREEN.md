@@ -6,7 +6,7 @@ Real screens from the game (taken with zxdev), not mock-ups.
 
 - **The title** comes up after loading, before the race: layout A - the logo twice its size, LAP RECORD
   (the best lap since loading; `-:--.-` until there is one), the cloth stage in its slim frame, a
-  driver's card, `1` 1UP, `2` 2UP, `K` KEYS, and PRESS 1 OR 2 TO START flashing.
+  driver's card, 1 - ONE PLAYER, 2 - TWO PLAYERS, K - KEYS as a plain three-line list, and PRESS 1 OR 2 TO START flashing.
 - **The attract sequence** uses only the art in the game today: the five cars (YOU and the four
   computer cars, their real 16 headings) and their five faces. Each in turn drives on, skids a circle,
   a figure of eight or two tight rings with its nose turned into the bend, leaves two dotted skid
@@ -60,7 +60,7 @@ Spectrum pixels and colour cells (one ink + one paper per 8 x 8 cell), so it can
   cloth is wiped and the next driver comes on. In the game each would stay about 5 seconds (the GIF is quicker).
 - Beside the stage, that driver's card: face at twice the size on their colour, name, one-liner, the
   car they like best and its GRIP / SPEED / ACCEL as five pips each.
-- Three big buttons along the bottom, each with its key as a key cap: `1` 1UP, `2` 2UP, `K` KEYS.
+- Three big buttons along the bottom, each with its key as a key cap: 1 - ONE PLAYER, 2 - TWO PLAYERS, K - KEYS as a plain three-line list.
   PRESS 1 OR 2 TO START flashes (the Spectrum's own FLASH: costs nothing).
 - The car is the only thing that moves, and only on the cloth (one colour pair), so there is no colour clash.
 
