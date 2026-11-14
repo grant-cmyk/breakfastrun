@@ -1,4 +1,44 @@
-# Breakfast Run - title / attract screen (DESIGN, not built)
+# Breakfast Run - title / attract screen (design; layout A's first part is BUILT)
+
+## What is built (14 Nov 2026) - `title_built.png`, `title_built_keys.png`, `title_built_attract.gif`
+
+Real screens from the game (taken with zxdev), not mock-ups.
+
+- **The title** comes up after loading, before the race: layout A - the logo twice its size, LAP RECORD
+  (the best lap since loading; `-:--.-` until there is one), the cloth stage in its slim frame, a
+  driver's card, `1` 1UP, `2` 2UP, `K` KEYS, and PRESS 1 OR 2 TO START flashing.
+- **The attract sequence** uses only the art in the game today: the five cars (YOU and the four
+  computer cars, their real 16 headings) and their five faces. Each in turn drives on, skids a circle,
+  a figure of eight or two tight rings with its nose turned into the bend, leaves two dotted skid
+  marks, and drives off (6 to 8 seconds each); then the cloth is wiped and the next comes on. The
+  card shows DRIVER n OF 5, the face twice its size on the car's colour, a name, two lines and the
+  car's picture twice its size.
+- **Names and lines on the card.** The game only names one driver (Slim Jane); the others go by their
+  colour: YOU, CYAN, GREEN, PINK, SLIM JANE. The two lines say what the game's own notes say of how
+  each drives (THE RACER. FULL THROTTLE / A SLOW TRUCK. FEW MISTAKES / THE TANK. MOST MISTAKES /
+  THE FASTEST. RARELY WRONG). No strengths (GRIP / SPEED / ACCEL) are shown: the computer cars have none.
+- **K - KEYS**: 1UP's LEFT, RIGHT, ACCELERATE, BRAKE, NOS are asked for in turn (the row lights, its key
+  cap flashes, a big line names the key wanted), then back to the title. Refused: a key already taken,
+  the shifts and ENTER, 0 1 2 3 (the set-up's keys), and SPACE to accelerate. The race then reads the
+  chosen keys, and its PRESS Q names the new accelerate key.
+- **1** starts the race as before. **2** says 2UP COMING SOON for a second and a half.
+- **After a race** the accelerate key goes back to the title (lap record updated), and 1 starts the next race.
+
+Not built: 2UP, 2UP's keys, choosing a driver and a car, the new drivers and cars, the driver who holds
+the record, sound on the title. Known gaps: the crew chief's messages still say SPACE for the NOS
+after the key is changed; the keys are back to O P Q A SPACE after a reload.
+
+**Where it lives (measured).** Code: 1,100 bytes in the room the small cars leave free under 0x8000
+(52 left), and 358 bytes in the program for the stage's car, which is drawn against the clock (the
+program has 177 bytes free, from 535). Tables and words: 566 bytes copied at start-up to 0x5B4C-0x5D81
+(the printer buffer and the ROM's own variables, idle once the game's interrupt is on; the stack
+stays above 0x5ECE), with 126 more free there. After a race the race screen's fixed parts - drawn
+once by start-up code that is gone by then - are kept in the back buffer (3,920 bytes, free while
+no race runs) and put back. Files: `src/title.asm`, `title2.asm`, `title3.asm`; `tests/title_test.py`.
+
+---
+
+The design round follows, as written before the build.
 
 Design round of 14 Nov 2026, for Grant's ask: logo, 1UP / 2UP, K for keys, hi-score, and an attract
 sequence that shows the drivers with a car skidding about; then choose a driver, then a car.

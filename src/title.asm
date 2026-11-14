@@ -50,6 +50,7 @@ T_P1    equ 0x57                ; bright white on red: 1UP
 ; race is running) and put back before the next race.
 ; ---------------------------------------------------------------------
 title_again:
+        call k_up               ; (the key let go first: it may be one the title answers to)
         xor a
         ld (snd_rate),a         ; the engine quiet
         ld a,6                  ; (and the border the table's yellow, if the NOS left it white)
@@ -657,3 +658,77 @@ kc_1:
         pop bc
         jp print_at
 
+; A_MARKS: while it drifts, its skid marks - two dots a step, 4 pixels either side
+; of its middle across the way the nose points. (Here, not with the car's drawing
+; in title2.asm: the program has less room, and this is quick.) Put down before the car is drawn
+; (so they are kept with what is under it), and left behind as it moves on.
+a_marks:
+        ld a,(a_dr)
+        add a,16
+        cp 33
+        ret c                   ; (the nose within 22 degrees of the way it goes: gripping)
+        ld a,(a_h)
+        add a,a
+        add a,a
+        call heading_push       ; E = 64 sin, C = -64 cos of the nose's heading
+        ld a,c
+        call am_q
+        neg
+        ld d,a                  ; D, E = 4 pixels across the car
+        ld a,e
+        call am_q
+        ld e,a
+        ld a,(a_x+1)            ; H, L = its middle on the cloth
+        sub 24
+        ld h,a
+        ld a,(a_y+1)
+        sub 18
+        ld l,a
+        push hl
+        push de
+        ld a,h
+        add a,d
+        ld d,a
+        ld a,l
+        add a,e
+        ld e,a
+        call am_plot
+        pop de
+        pop hl
+        ld a,h
+        sub d
+        ld d,a
+        ld a,l
+        sub e
+        ld e,a
+am_plot:                        ; a dot at D, E on the cloth (112 x 96), if it is on it
+        ld a,d
+        cp 112
+        ret nc
+        ld a,e
+        cp 96
+        ret nc
+        add a,40
+        ld b,a
+        ld a,d
+        add a,16
+        ld c,a
+        call scr_addr
+        ld a,c
+        and 7
+        inc a
+        ld b,a
+        xor a
+        scf
+am_1:
+        rra
+        djnz am_1
+        or (hl)
+        ld (hl),a
+        ret
+am_q:                           ; A / 16, signed
+        sra a
+        sra a
+        sra a
+        sra a
+        ret

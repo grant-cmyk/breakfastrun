@@ -136,6 +136,9 @@ class Racer(Spectrum):
         while self.read8(0x5800 + 23 * 32 + 5) != 0xB0 and t < 60: self.run(duration=0.1, fast_forward=True); t += 0.1
         self.run(duration=0.5, fast_forward=True)                    # (the rest of the title is drawn after its prompt)
         press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)
+        self.run(duration=0.26, fast_forward=True)                   # (the race screen is drawn; from here the computer cars'
+                                                                     # 90 s below run just as they did before there was a title:
+                                                                     # the same laps. One check there turns on when the race starts)
 
 def at_copy_done(sp):
     # stop at the exact moment the copy has finished: the screen, the camera
