@@ -15,11 +15,13 @@
 ; worked out again from it. Multiplying uses quarter squares (sqtab):
 ; a * b = sq(a + b) - sq(|a - b|), sq(n) = n * n / 4.
 ; =====================================================================
-G_GRIP   equ 22                 ; 0.085 px a frame of sideways speed (8.8)
-G_SLIDE  equ 12                 ; ... while sliding (it was 14: Grant, 14 Nov 2026, "the car does not
+G_GRIP   equ 16                 ; 0.0625 px a frame of sideways speed (8.8): GRIP level 1. It was 22;
+                                ; Grant, 14 Nov 2026: "have the car skid/slide more. The idea is that the
+                                ; player will need to 'buy' improved grip to reduce the skidding"
+G_SLIDE  equ 8                  ; ... while sliding (it was 14: Grant, 14 Nov 2026, "the car does not
                                 ; skid enough around corners ... at full speed there needs to be more")
-G_Q      equ 12                 ; ... while you steer with Q held (it was 14)
-G_QSLIDE equ 7                  ; ... both (it was 9)
+G_Q      equ 8                  ; ... while you steer with Q held (it was 14)
+G_QSLIDE equ 5                  ; ... both (it was 9)
 G_PUSH   equ 64                 ; 0.25 a frame (with drag 1/8: top speed 1.75)
 G_TOP    equ 448                ; 1.75 px a frame
 
@@ -244,7 +246,17 @@ yg_g3:
         jr c,yg_g4
         inc a
 yg_g4:
-        ld (snd_skid),a
+        ld hl,snd_skid          ; the sound is an EVENT, not a noise that runs on (Grant, 14
+        ld b,(hl)               ; Nov 2026: "reduce the amount of noise to focus on events"): a
+        ld (hl),a               ; short screech as a real slide STARTS, then quiet until the
+        or a                    ; car has gripped and slides again
+        jr z,yg_g5
+        ld a,b
+        or a
+        jr nz,yg_g5
+        ld a,SKID_FR
+        ld (snd_skt),a
+yg_g5:
         ; ---- never faster than the top speed: vf gives way (only in a slide:
         ;      gripping, the push and drag hold vf at the top speed) ----
         ld a,(yg_sl)

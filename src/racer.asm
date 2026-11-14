@@ -297,11 +297,27 @@ bumps_o:
         ld b,NCARS
 tk_o:
         push bc
+        ld a,(ix+C_KIND)        ; a computer car that has bounced off O's O_FREE times
+        or a                    ; since its last waypoint is wedged against them (Grant,
+        jr z,tk_o0              ; 14 Nov 2026: "the tank got stuck ... in between the
+        add a,o_hits AND 255    ; loops/circles and could not get out"): the O's let it
+        ld l,a                  ; through until it reaches the waypoint
+        ld a,0
+        adc a,o_hits/256
+        ld h,a
+        ld a,(hl)
+        cp O_FREE
+        jr nc,tk_o1
+        push hl
+        call o_check
+        pop hl
+        jr nc,tk_o1
+        inc (hl)
+        jr tk_o1
+tk_o0:
         call o_check
         jr nc,tk_o1
-        ld a,b                  ; you (the first): the crew chief may say so
-        cp NCARS
-        jr nz,tk_o1
+        ld a,1                  ; you: the crew chief may say so
         ld (HIT_O),a
 tk_o1:
         ld de,C_SIZE
@@ -1062,6 +1078,13 @@ pace_gate:
 ; next_waypoint: move on, pick a new aiming offset, maybe start a mistake
 next_waypoint:
         call lap_and_inc
+        ld a,(ix+C_KIND)        ; (and its count of O's bounced off starts again)
+        add a,o_hits AND 255
+        ld l,a
+        ld a,0
+        adc a,o_hits/256
+        ld h,a
+        ld (hl),0
         call ai_style           ; S_LINE: how far its line wanders, each way -
         inc hl                  ; a different line through every corner
         ld c,(hl)               ; mask (3, 7 or 15)
@@ -2353,6 +2376,7 @@ nd_col:
 ; Port 254: bits 0-2 the border (yellow, 6), bits 3-4 the speaker.
 ; ---------------------------------------------------------------------
 SND_CRASH equ 6
+SND_CRUISE equ 84               ; (speed / 4: about three quarters of the top speed)
 snd_picture:
         ld a,(snd_bump)         ; the crash fades a picture at a time
         or a
@@ -2391,18 +2415,12 @@ sp_2:
         ld a,l
         cp 8
         ret c                   ; all but stopped: quiet
-        cp 112
-        jr c,sp_3
-        ld a,111
-sp_3:
-        ld b,a                  ; the interrupt's rate: 2 x speed + 30
-        add a,a
+        cp SND_CRUISE           ; up to speed: quiet too - the engine is heard only while
+        ret nc                  ; the car is PICKING UP speed (off the line, out of a corner,
+        ld b,a                  ; after a bump): an event, not a drone (Grant, 14 Nov 2026).
+        add a,a                 ; The interrupt's rate: 2 x speed + 30 flips per 256 frames
         add a,30
         ld (snd_rate),a
-        ld a,b
-        neg                     ; gap = 150 - speed: faster, higher
-        add a,150
-        ld (snd_gap),a
         ret
 snd_wait:
         ld a,(snd_bump)
@@ -3114,6 +3132,10 @@ oc_dx:    dw 0
 oc_dy:    dw 0
 snd_gap:  db 0                  ; engine: counts between speaker flips (0 quiet)
 snd_bump: db 0                  ; crash noise: pictures left
+O_FREE   equ 6
+o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
+SKID_FR  equ 5
+snd_skt:  db 0                  ; the skid's screech: frames left
 snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
 snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
 snd_fxk:  db 0                  ; ... which: 0 NOS picked up, 1 NOS fired, 2 up: a beep
@@ -3393,12 +3415,12 @@ fx_go:
         ld h,6
         jr isr_burst
 isr_sk:
-        ld a,(snd_skid)         ; you are sliding: a hiss - a few quick speaker
-        or a                    ; flips at random short gaps, every frame (more
-        jr z,isr_x              ; for a harder slide)
-        add a,a
-        add a,2
-        ld h,a
+        ld a,(snd_skt)          ; a slide has just started: a short screech - a few
+        or a                    ; quick speaker flips at random short gaps, for
+        jr z,isr_x              ; SKID_FR frames (you_grip sets it)
+        dec a
+        ld (snd_skt),a
+        ld h,4
         ld l,0                  ; (gap 0: a random one each flip)
 isr_burst:                      ; H flips, L counts apart (16 T a count)
         ld a,(snd_port)

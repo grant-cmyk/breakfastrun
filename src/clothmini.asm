@@ -158,10 +158,10 @@ bt_big:
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both
         db G_GRIP, G_Q, G_SLIDE, G_QSLIDE       ; 1 (0.085 px a frame of sideways speed)
-        db 25, 14, 14, 8                         ; 2
-        db 29, 16, 16, 9                         ; 3
-        db 32, 18, 18, 10                        ; 4
-        db 35, 20, 20, 12                        ; 5
+        db 20, 11, 11, 7                         ; 2
+        db 25, 14, 14, 9                         ; 3
+        db 30, 18, 18, 11                        ; 4
+        db 36, 22, 22, 14                        ; 5
 su_lv:    db 1,1,1              ; your levels: GRIP, SPEED, ACCEL
 su_pts:   db 2                  ; points still to spend
 su_up:    db 0                  ; 1: no set-up key was down last picture
