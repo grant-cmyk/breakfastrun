@@ -1495,3 +1495,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   after faces.asm for that reason. Now: code_end 0xBFF5 - 11 bytes free; the room under 0x8000
   has 12; the table block at 0x5B4C none. The next feature needs room found first (the small
   cars' frames carry about 2.4 KB of zero bytes: a change to draw_car).
+- SPEED with the plate, measured (zxlap): racing alone, no picture at 3 TV frames any more -
+  245 at 4, 9 at 5 (it was 199 / 113 before the plate); in the pack 3 / 251 / 8. The plate's
+  drawing (a fill of 24 rows and the cut-outs, every picture) is about 10,000 T and the game had
+  about 7,000 to spare at 3 frames once the music took its share. So the game now runs at a
+  steady 12.5 pictures a second. To win it back: draw_car with 2-byte frames for the small cars
+  (their third byte is always zero) - less time a car, and about 2.4 KB of memory.
