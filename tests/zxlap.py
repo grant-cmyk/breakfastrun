@@ -41,9 +41,8 @@ if os.environ.get('ALONE'):                     # the computer cars never leave 
     for i in range(1, 5): rpc('write', addr=SYM['cars'] + i * SYM['c_size'] + 19, value=0)   # lightest case: C_PACE 0)
 # the tables kept in the back buffer's bottom rows must come through a lap untouched (the taller
 # window once drew map tiles over them: "the road shape has broken", Grant, 14 Nov 2026)
-BUF = 0xC000; TABLES = {'messages (BUFA)': 0x1080, 'constants (BUFD)': 0x1380, 'messages (BUFE)': 0x1480,
-                        'letters (BUFF)': 0x1580, 'messages (BUFG)': 0x1680, 'messages (BUFH)': 0x1780}
-tables0 = {n: mem(BUF + a, 122) for n, a in TABLES.items()}   # (122 of 128: each strip's last 6 bytes take the interrupt's pushes)
+BUF = SYM['lowtab']; TABLES = {'constants (BUFD)': 0, 'letters (BUFF)': 128, 'messages (BUFH)': 256, 'messages (BUFG)': 384, 'messages (BUFE)': 512}
+tables0 = {n: mem(BUF + a, 128) for n, a in TABLES.items()}   # (since 14 Nov 2026 the tables are under 0x8000, not in the buffer's bottom rows)
 CARS = SYM['cars']
 x0 = w16(CARS + 1); wp = 0
 while wps[wp][0] < x0 + 30: wp += 1
@@ -67,7 +66,7 @@ while laps < 1 and fr < 1500:
             slow[(fr - f_last, vis, (r - 1) & 3)] += 1
         if 'mu_used' in SYM and mem(SYM['mu_ph'], 1)[0]: notes.append(mem(SYM['mu_used'], 1)[0])   # (only builds with the burst-a-picture ditty)
         r_last, f_last = r, fr
-broken = [n for n, a in TABLES.items() if mem(BUF + a, 122) != tables0[n]]
+broken = [n for n, a in TABLES.items() if mem(BUF + a, 128) != tables0[n]]
 rep = rpc('profile_report', top=20000)
 rpc('quit') if False else z.kill()
 labels = sorted((a, n) for n, a in SYM.items() if 0x5F00 <= a < 0xFFF0)
@@ -100,7 +99,7 @@ pics = sum(frames.values()) or 1
 total = rep['total_t_states']
 print('zxdev lap: %d TV frames, %d pictures, %.0f T a picture all told (3 frames = 209,664)' % (fr, pics, total / pics))
 print('TV frames per picture:', dict(sorted(frames.items())))
-print('PASS the tables in the buffer\'s bottom rows are untouched after the lap' if not broken else 'FAIL tables overwritten during the lap: %s' % ', '.join(broken))
+print('PASS the tables under 0x8000 are untouched after the lap' if not broken else 'FAIL tables overwritten during the lap: %s' % ', '.join(broken))
 if notes: print('the ditty: %d pictures with a note due, %d of them silent (no time to spare); average burst %.1f ms' % (len(notes), sum(1 for u in notes if u == 0), sum(notes) / len(notes) * 279 / 3500))
 if os.environ.get('SLOW'):
     print('pictures by (cars in view, HUD slot): at 3 frames / at 4 or more')

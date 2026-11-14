@@ -368,7 +368,7 @@ ST_ACC  equ BUFC+44             ; small text: the row being built (2)
 ST_X    equ BUFC+46             ;   where the next character goes
 ST_T    equ BUFC+47             ;   the text (2)
 ST_COL  equ BUFC+49             ;   its byte column
-PNUM    equ BUFC+96             ; the place number, 16 rows (tower_row)
+PNUM    equ BUF+0x12E0          ; the place number, 16 rows (tower_row): in the buffer's bottom rows
 ST_X0   equ BUFC+50             ;   where the first character goes (pixels)
 gaps_reset:                     ; a new race: nothing noted, nothing shown
         ld hl,CP_G

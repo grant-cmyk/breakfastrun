@@ -116,12 +116,12 @@ def screen_text(sp, row, col, n):
 
 def frame_ok(sp):
     # the slim frame (layout G3): a 2-pixel line, rounded, 3 pixels of table inside it
-    bits = screen_bits(sp)
-    lines = bits[3, 5:187].all() and bits[4, 4:188].all() and bits[155, 4:188].all() and bits[156, 5:187].all()
-    sides = bits[5:155, 3:5].all() and bits[5:155, 187:189].all()
-    gap = not bits[5:8, 5:187].any() and not bits[152:155, 5:187].any() and not bits[8:152, 5:8].any() and not bits[8:152, 184:187].any()
-    outside = not bits[0:3, 0:192].any() and not bits[3, 0:5].any() and not bits[157:160, 0:192].any() and not bits[5:155, 0:3].any()
-    attrs = all(sp.read8(0x5800 + c) == 0x31 for c in range(24)) and sp.read8(0x5800 + 19 * 32) == 0x31
+    bits = screen_bits(sp); B = WY + WH + 3                # (its bottom line: 3 pixels under the window)
+    lines = bits[3, 5:187].all() and bits[4, 4:188].all() and bits[B, 4:188].all() and bits[B + 1, 5:187].all()
+    sides = bits[5:B, 3:5].all() and bits[5:B, 187:189].all()
+    gap = not bits[5:8, 5:187].any() and not bits[B - 3:B, 5:187].any() and not bits[8:B - 3, 5:8].any() and not bits[8:B - 3, 184:187].any()
+    outside = not bits[0:3, 0:192].any() and not bits[3, 0:5].any() and not bits[B + 2:B + 4, 0:88].any() and not bits[5:B, 0:3].any()
+    attrs = all(sp.read8(0x5800 + c) == 0x31 for c in range(24)) and sp.read8(0x5800 + (B // 8) * 32) == 0x31
     return bool(lines and sides and gap and outside and attrs)
 
 class Racer(Spectrum):
@@ -160,11 +160,11 @@ def cloth(camx, camy):
 def window_bad(sp):
     at_copy_done(sp)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
-    bits = screen_bits(sp)[WY:152, 8:184]            # the window: cells 1-22, rows 3-18
+    bits = screen_bits(sp)[WY:WY + WH, 8:184]        # the window: cells 1-22
     want = world[camy:camy + WH, camx:camx + 176] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + 176])
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
-    mask[139 - WY:151 - WY, 160 - 8:184 - 8] = False  # the NOS canisters in the corner
+    mask[WH - 13:WH - 1, 160 - 8:184 - 8] = False     # the NOS canisters in the corner
     mask[WH - 17:WH, 0:24] = False                    # the health gauge in the other corner
     mask[2:20, 136:176] = False                       # your place on its plate, in the top right corner
     mask[21:34, 128:176] = False                      # ... and its message's plate
@@ -201,8 +201,8 @@ with Racer(headless=True) as sp:
     print('message bar %r' % msg)
     check(msg.strip(' /') == '', 'under the window, bottom left: nothing any more - no scoreboard (%r)' % msg)
     sb = screen_bits(sp)                            # the driver strip under the window
-    check(all(attr(r, c) == 0x30 for r in (20, 21, 22, 23) for c in range(0, 10)) and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
-          and not sb[160:192, 0:88].any() and sb[168:184, 168:184].any(),
+    check(all(attr(r, c) == 0x30 for r in (21, 22, 23) for c in range(0, 10)) and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
+          and not sb[168:192, 0:88].any() and sb[168:184, 168:184].any(),
           'under the window: plain table bottom left (your place and lap are on the plate in the window); the crew chief on blue')
     check(sb[140:150, 176:184].any() and attr(17, 22) == 0x29, 'your NOS canister is shown in the window\'s corner, in the window\'s colours')
     check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
@@ -244,9 +244,9 @@ with Racer(headless=True) as sp:
     check(fps >= 12.5, 'at least 12.5 pictures a second off the start, five cars bunched (got %.1f)' % fps)
     check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
     sb = screen_bits(sp)
-    check(attr(20, 11) == 0x78 and attr(23, 20) == 0x78 and attr(21, 10) == 0x30
-          and sb[160, 90:166].all() and sb[191, 90:166].all() and sb[172:184, 90:166].any(),
-          'at the green light the crew chief talks: his bubble fills columns 11-20, rows 20-23, words in it')
+    check(attr(21, 11) == 0x78 and attr(23, 20) == 0x78 and attr(21, 10) == 0x30 and attr(20, 11) == 0x31
+          and sb[168, 90:166].all() and sb[191, 90:166].all() and sb[176:188, 90:166].any(),
+          'at the green light the crew chief talks: his bubble fills columns 11-20, rows 21-23 (under the frame), words in it')
     check(attr(2, 8) == 0x29 and attr(1, 7) == 0x29 and sp.read8(SYM['lt_on']) == 0, 'the start lights have gone, their cells the window\'s colours again')
     check((sb[172:180, 168] == 1).all() and sb[175, 168:172].all(), "the bubble's tail is a point in the chief's panel")
     press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
@@ -255,7 +255,7 @@ with Racer(headless=True) as sp:
 
     sp.run(duration=0.6, fast_forward=True)
     bar = screen_text(sp, 22, 1, 9) + '|' + screen_text(sp, 23, 1, 9)
-    check(not screen_bits(sp)[160:192, 0:88].any() and attr(20, 4) == 0x30, 'racing: still nothing bottom left')
+    check(not screen_bits(sp)[168:192, 0:88].any() and attr(21, 4) == 0x30, 'racing: still nothing bottom left')
     check(not screen_bits(sp)[TOWER_Y * 8:TOWER_Y * 8 + 80, 240:248].any(), 'the race order no longer shows a lap digit on each row')
 
     # ---- park your car in the infield and watch the computer race 90 s ----
@@ -308,10 +308,10 @@ with Racer(headless=True) as sp:
         if sp.read8(SYM['msg_st']) == 0: break       # checked into one)
         sp.run(duration=0.1, fast_forward=True)
     sb2 = screen_bits(sp)
-    if sb2[160:184, 88:168].any() or attr(21, 12) != 0x30:   # (to see what is there)
-        ys, xs2 = np.nonzero(sb2[160:184, 88:168]); print('  strip ink rows', sorted(set(ys + 160))[:12], 'x', sorted(set(xs2 + 88))[:12], 'attr(21,12) %02X' % attr(21, 12))
+    if sb2[168:192, 88:168].any() or attr(21, 12) != 0x30:   # (to see what is there)
+        ys, xs2 = np.nonzero(sb2[168:192, 88:168]); print('  strip ink rows', sorted(set(ys + 168))[:12], 'x', sorted(set(xs2 + 88))[:12], 'attr(21,12) %02X' % attr(21, 12))
         shot(sp, 'bubble_debug.png')
-    check(sp.read8(SYM['msg_st']) == 0 and not sb2[160:184, 88:168].any() and attr(21, 12) == 0x30,
+    check(sp.read8(SYM['msg_st']) == 0 and not sb2[168:192, 88:168].any() and attr(21, 12) == 0x30,
           'the crew chief quiet: no speech bubble (radio state when first looked: %d)' % talking)
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
     # the four computer cars are in by now: the race order shows no faces while racing - a mini

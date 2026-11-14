@@ -1546,3 +1546,21 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   blue round them; 6 pixels in from the window's right edge and 3 down from its top (pl_bmp 5
   bytes x 18 rows; PL_B, PL_W, PL_H). The message's plate moved up under it (PL_M, PL_MT).
   zxlap alone: 240 pictures at 3 frames / 79 at 4.
+
+## 2026-11-14 SAST (late) - the window a row taller: 176 x 152
+- Grant: "a crazy thought. We don't really use the bottom area at all except for the pit crew
+  talks. Could we try one more row underneath in the gameplay." And: "the pit area can be reduced
+  by a row."
+- WIN_H 152 (19 character rows). What moved: the frame's bottom line (lines 163-164), the health
+  gauge and the NOS canisters (a row lower in the buffer), the crew chief's bubble (three rows,
+  21-23: its top line 168, the wave rows 169-175, the words at 177 and 183), the strip's fixed
+  picture (rows 168-191, colours rows 21-23), the copy routine (152 lines: it ends 0xFD62,
+  TOPMEM 0xFD70 - the top-of-memory data now ends 3 bytes short of the interrupt jump).
+- The tables that sat in the buffer's bottom rows (BUFA-BUFH: the messages, the small letters,
+  thrust, the driving styles) and BUFC's race variables are now at LOWTAB = 0x7D40, the top 704
+  bytes of the room under 0x8000: the tiles drawn past the window's last line need buffer rows
+  160-167, where the strips began. cloth_pat and PNUM stay in the buffer (rows 176 on). The
+  strips' "last 6 bytes" rule is gone with them.
+- Speed (zxlap): alone 200 pictures at 3 frames / 113 at 4 (it was 240 / 79 at 144 lines); in
+  the pack 14 / 250 / 1. Eight more lines are 5.5% more to fill, draw and copy.
+- Tests updated for the new positions (frame_ok, the window check, the bubble); all pass.

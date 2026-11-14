@@ -8,8 +8,8 @@
 ; ---------------------------------------------------------------------
 BOX_X   equ 89                  ; the box's inside: x 89-166 (BOX_W wide)
 BOX_W   equ 78
-WAVE_X  equ 116                 ; the wave: 13 lines, 2 px apart, rows 161-167
-WAVE_MID equ 164
+WAVE_X  equ 116                 ; the wave: 13 lines, 2 px apart, rows 169-175
+WAVE_MID equ 172
 
 strip_reset:                    ; a new race
         ld hl,MSG_P
@@ -76,7 +76,7 @@ strip_tick:
         cp 4
         jr z,st_up
         cp 5                    ; 5-6: the bubble goes, half a tick
-        ld b,20
+        ld b,21
         jr z,st_hide
         ld b,22
 st_hide:
@@ -99,7 +99,7 @@ st_next:
         inc (hl)
         ret
 st_show:                        ; 1-2: the bubble appears, half a tick
-        ld b,20
+        ld b,21
         cp 1
         jr z,st_sh1
         ld b,22
@@ -111,7 +111,7 @@ st_sh1:
         jr nz,st_next
         ld a,0x78               ; drawn: white, then the words
         call bb_attr
-        ld a,173                ; (2 lines: rows 173-177 and 179-183)
+        ld a,177                ; (2 lines: rows 177-181 and 183-187)
         ld (MSG_Y),a
         call line_x
         ld a,3
@@ -151,9 +151,9 @@ stt_end:
         ld (MSG_ST),a
         ret
 ; BUBBLE: A = 1 draws, 0 clears the crew chief's speech bubble in char row B
-; (20-23) - its 8 lines. It fills its cells exactly (the layout review, Grant, 10 Nov
-; 2026; four rows again with layout G3): columns 11-20, rows 20-23 - the box x 88-167,
-; y 160-191, rounded - so no
+; (21-23) - its 8 lines. It fills its cells exactly (the layout review, Grant, 10 Nov
+; 2026; three rows since the window grew a row, 14 Nov 2026): columns 11-20, rows 21-23 - the
+; box x 88-167, y 168-191, rounded - so no
 ; white shows round it. Its tail is a white point in the chief's blue panel (column
 ; 21, rows 172-179), over the left of his face: BB_TAIL has those 8 bytes with the
 ; tail, then the 8 without it, to put the face back.
@@ -180,11 +180,11 @@ bb_ln:
         push hl
         ld de,0x8001            ; D: column 11 (the left edge), E: 20 (the right)
         ld a,c
-        cp 160
+        cp 168
         jr z,bb_lin
         cp 191
         jr z,bb_lin
-        cp 161
+        cp 169
         jr z,bb_crn
         cp 190
         jr z,bb_crn
@@ -254,9 +254,9 @@ bb_step:                        ; A = 1 draw, 0 clear: char rows B and B + 1 (ha
         inc b
         jp bubble
 bb_attr:                        ; A = the bubble's colour: columns 11-20, rows 20-22
-        ld b,20
+        ld b,21
         ld c,11
-        ld d,4
+        ld d,3
         ld e,10
         jp set_attrs
 

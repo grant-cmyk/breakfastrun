@@ -1,9 +1,9 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 20:24 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 21:17 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
-**Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
+**Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 152 (19 rows, since 14 Nov late) in a slim
 blue frame; LAYOUT G3 BUILT (docs/design/g3_built.png): logo top right, the mini-map under it, the
 race order rows 10-19, bottom left your face and big place in a red block with a white strip (PRESS
 Q / LAP n/3 / FINAL LAP / FINISHED!) and the time, the crew chief's bubble (rows 20-23), the L2
@@ -14,7 +14,7 @@ start (not shown on screen). `bash build.sh` -> build/racer.tap.
 **Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 301, 4 x 12; 15.5 pictures a second off the
 grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
-**Memory:** 137 bytes free in the program (code_end 0xBF77; code added before sq4.asm's include costs a whole page when it crosses one - add after faces.asm); about 2,000 bytes free under 0x8000 (contended memory: data, and code that runs rarely - plate_slow.asm is there); none in the table block at 0x5B4C.
+**Memory:** 140 bytes free in the program (code_end 0xBF74; code added before sq4.asm's include costs a whole page when it crosses one - add after faces.asm); about 1,300 bytes free under 0x8000 below LOWTAB (0x7D40: the tables that were buffer strips; contended memory - data, and code that runs rarely); the top-of-memory data has 3 bytes to spare; none in the table block at 0x5B4C.
 
 **Next step:** MUSIC IN THE RACE - Grant wants it to "come through during the game"; every
 beeper version tried on 14 Nov was "background beeping" and cost speed, so it is off (OPT_MUSIC).

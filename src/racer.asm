@@ -21,14 +21,15 @@
 ; =====================================================================
 
 BUF     equ 0xC000      ; back buffer, 6 KB, laid out EXACTLY like the screen
+LOWTAB  equ 0x8000-704   ; the tables that were strips of the buffer, and BUFC: 5 x 128 + 64 bytes at the top of the room under 0x8000
 BUF_HI  equ 0xC0        ; (so the next pixel row down is INC H, and a row
                         ; copies to the screen as one block). Window pixel
                         ; (0,0) is buffer row 16, byte 2; the rows and bytes
                         ; around it are margins for cars half out of view.
-BUFC    equ BUF+0x1280  ; race-order variables, in the buffer's unused bottom rows
+BUFC    equ LOWTAB+640      ; race-order variables (they were in the buffer's bottom rows: the window is a row taller since 14 Nov 2026 and needs them)
         ; (defined up here: code before hud.asm uses equs built on it, and pasmo
         ; would give that code a stale first-pass value)
-cloth_pat equ BUFC+64    ; 4 kinds of dotted cloth line, 8 bytes each (32-aligned)
+cloth_pat equ BUF+0x12C0    ; 4 kinds of dotted cloth line, 8 bytes each (32-aligned)
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
 NCARS   equ 5           ; you + 4 computer cars
@@ -39,7 +40,7 @@ WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
 WIN_W   equ 22                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
-WIN_H   equ 144                 ; "take the very top row of the display as well"; it was 120
+WIN_H   equ 152                 ; "take the very top row of the display as well"; it was 120
                                 ; high on 9 Nov, 128 and 136 earlier on 14 Nov)
 MSG_ROW equ 23                  ; the message bar: the bottom row, until the new layout is built
 BUF_TOP equ 8                   ; the window's first line in the back buffer. The map's tiles
@@ -88,8 +89,8 @@ PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a 
 PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
-        if $ > 0x8000
-        .error the big cars run past 0x8000
+        if $ > LOWTAB
+        .error the room under 0x8000 runs into the tables kept at its top (LOWTAB)
         endif
         org 32768
 
@@ -2358,8 +2359,8 @@ ld_r1:
 ; corner, in the window's own colours: each replaces its byte of the cloth on 10 lines,
 ; so it stands clear of what is behind it (layout G3; the inventory slots have gone).
 ; Window lines 132-135 are buffer rows 140-143 (one character row), 136-141 rows 144-149.
-NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 1*32 + 23     ; buffer row 140 (third 2, char row 1, line 4), byte 23
-NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 2*32 + 23     ; buffer row 144 (third 2, char row 2, line 0)
+NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 23     ; buffer row 148 (third 2, char row 2, line 4), byte 23
+NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 23     ; buffer row 152 (third 2, char row 3, line 0)
 nos_draw:
         ld hl,INV
         ld c,0                  ; C = slot 0..2: bytes 23, 22, 21
@@ -2416,7 +2417,7 @@ DMG_MAX  equ 8
 DMG_ROWS equ 17                 ; the gauge: the icon's 13 rows and 2 clear ones above and below (dmgicon.asm)
 DMG_COOL equ 12
 DMG_SLOW equ 8                  ; (8 points: 64 of the 448 - a seventh off the top speed)
-DMG_B    equ BUF + 0x800*2 + 7*0x100 + 0*32 + 2      ; buffer row 135 (third 2, char row 0, line 7), byte 2: the window's left edge
+DMG_B    equ BUF + 0x800*2 + 7*0x100 + 1*32 + 2      ; buffer row 143 (third 2, char row 1, line 7), byte 2: the window's left edge
 dmg_hit:
         ld hl,dmg_cool
         ld a,(hl)
@@ -3955,7 +3956,7 @@ screen_once:
         ld (hl),0x30
         ldir
         ld bc,0                 ; ...the window's slim frame blue on the table (its
-        ld de,0x1418            ; cells: rows 0-19, columns 0-23)...
+        ld de,0x1518            ; cells: rows 0-20, columns 0-23)...
         ld a,0x31
         call set_attrs
         ld hl,0x5800+(WIN_Y/8)*32+WIN_COL   ; ...and the window blue ink on cyan paper
@@ -3992,8 +3993,8 @@ win_attr:
         ld a,A_LAP
         call set_attrs
         ld hl,strip_img         ; the driver strip: you, your inventory, the
-        ld b,160                ; crew chief's radio, the crew chief (rows
-so_row:                         ; 160-191, columns 0-23)
+        ld b,168                ; crew chief's radio, the crew chief (rows
+so_row:                         ; 168-191, columns 0-23)
         push bc
         push hl
         ld c,0
@@ -4007,8 +4008,8 @@ so_row:                         ; 160-191, columns 0-23)
         ld a,b
         cp 192
         jr nz,so_row
-        ld de,0x5800+20*32      ; and its colours
-        ld b,4
+        ld de,0x5800+21*32      ; and its colours
+        ld b,3
 so_attr:
         push bc
         ld bc,24
@@ -4054,10 +4055,10 @@ draw_frame:
         ld b,4
         ld de,0x0FF0
         call df_h
-        ld b,155
+        ld b,WIN_Y+WIN_H+3
         ld de,0x0FF0
         call df_h
-        ld b,156
+        ld b,WIN_Y+WIN_H+4
         ld de,0x07E0
         call df_h
         ld b,5
@@ -4071,7 +4072,7 @@ df_v:
         ld (hl),0x18
         inc b
         ld a,b
-        cp 155
+        cp WIN_Y+WIN_H+3
         jr nz,df_v
         ret
 df_h:                           ; line B: D at column 0, solid across, E at column 23
@@ -4382,18 +4383,18 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ 0xFC50            ; the copy routine ends at 0xFC42 (144 lines of 36 bytes)
-BUFA      equ BUF+0x1080        ; a table strip: 128 bytes from buffer row 160 (122 safe)
-BUFB      equ BUF+0x1180        ; a table strip: 128 bytes from buffer row 160 (122 safe)
-BUFD      equ BUF+0x1380        ; a table strip: 128 bytes from buffer row 160 (122 safe)
-BUFG      equ BUF+0x1680        ; a table strip: 128 bytes from buffer row 160 (122 safe)
-BUFF      equ BUF+0x1580        ; a table strip: 128 bytes from buffer row 160 (122 safe)
-BUFH      equ BUF+0x1780        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+TOPMEM      equ 0xFD70            ; the copy routine ends at 0xFD62 (152 lines of 36 bytes)
+BUFA      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
+BUFB      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
+BUFD      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
+BUFG      equ LOWTAB+384        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
+BUFF      equ LOWTAB+128        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
+BUFH      equ LOWTAB+256        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 LFONT     equ BUFF + lfont_src - buff_src
 NOS_ICON  equ BUFF + nos_icon_src - buff_src
 MSG_INDEX equ BUFF + msg_index_src - buff_src
 BB_TAIL   equ BUFG + bb_tail_src - bufg_src
-BUFE      equ BUF+0x1480        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+BUFE      equ LOWTAB+512        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 row_index equ row_index_src         ; (in the program: the strips are 128 bytes now)
 wp_tab    equ waypoints             ; (in the program: 46 of them outgrew BUFG)
 thrust_tab equ BUFD + thrust_tab_src - bufd_src
@@ -4465,7 +4466,7 @@ faces     equ faces_src
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
         endif
-        if BUF_TOP + WIN_H + 8 > 160
+        if BUF_TOP + WIN_H + 8 > 168
         .error the tiles under the window's last line run into the tables kept from buffer row 160
         endif
         if MAPW - 72
@@ -4480,14 +4481,11 @@ faces     equ faces_src
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
-        if (bufa_end - bufa_src) / 123 + (bufb_end - bufb_src) / 123 + (bufd_end - bufd_src) / 123 + (bufg_end - bufg_src) / 123 + (bufe_end - bufe_src) / 123 + (buff_end - buff_src) / 123 + (bufh_end - bufh_src) / 123
+        if (bufa_end - bufa_src) / 129 + (bufb_end - bufb_src) / 129 + (bufd_end - bufd_src) / 129 + (bufg_end - bufg_src) / 129 + (bufe_end - bufe_src) / 129 + (buff_end - buff_src) / 129 + (bufh_end - bufh_src) / 129
         .error a block for the buffer's bottom rows is over 122 bytes (128, less the last 6, where the interrupt's pushes can land)
         endif
         if (bufa_src - high_end) + (bufb_src - bufa_end) + (bufd_src - bufb_end) + (buff_src - bufd_end) + (bufh_src - buff_end) + (bufg_src - bufh_end) + (bufe_src - bufg_end)
         .error start_once copies the blocks back to back: keep them in this order
-        endif
-        if init_end > BUFA
-        .error the start-up area runs into where the buffer blocks are copied
         endif
         if init_end > TAB_HI*256
         .error the start-up routines run into the shift tables they build
