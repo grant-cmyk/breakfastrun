@@ -240,7 +240,7 @@ const MINER = [
   ['miner', 'Miner', 'The Manic Miner recipe: 8 ms of the note once a picture. Cost: the game runs at a steady 12.5 pictures a second.'],
   ['minerhalf', 'Half Miner', '4 ms of the note once a picture. Cost: about half of Miner; likely still 12.5 pictures a second most of the time.'],
   ['held', 'Held', 'The same sound time as Miner, spread over every TV frame, so the note is smoother. Cost: as Miner.'],
-  ['heldlight', 'Held, light', 'A shorter touch of the note on every frame. Cost: a little over half of Miner.'],
+  ['heldlight', 'Held, light', 'A slightly shorter touch of the note on every frame. Cost: nearly the same as Held.'],
 ];
 const mg = document.getElementById('miner');
 MINER.forEach(([k, name, what]) => mg.appendChild(el(`<div class="tile"><h3>${name}</h3><p>${what}</p>
