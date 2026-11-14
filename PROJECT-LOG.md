@@ -1385,3 +1385,21 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   tiles, about 1.5 KB) does not fit at all.
 - What would make it work: a faster way to draw a big object (not tile by tile), or small
   objects only (3 x 3 cells or so: about 7,000 T). Not started.
+
+## 2026-11-14 SAST (afternoon) - the title / attract screen is in
+- Built by an agent in its own worktree and merged (commit ffb9590): layout A - the logo, LAP
+  RECORD, a cloth stage where the five cars skid round in turn with their driver's card, 1 = 1UP
+  (starts the race), 2 = 2UP ("COMING SOON"), K = redefine 1UP's five keys; after a race the
+  accelerate key goes back to the title. src/title.asm (1,100 bytes at 0x7B80, the room the small
+  cars leave under 0x8000), title2.asm (358 bytes in the program), title3.asm (566 bytes copied
+  to 0x5B4C: the printer buffer and system variables). tests/title_test.py; the other tests press
+  1 to leave the title (tests/drive_test.py's start-up, tests/title_skip.py).
+- Memory now: code_end 0xBF4F - 177 bytes free in the program; 52 under 0x8000; init_end 0xCDDB.
+  The coloured objects (OBJECTS=1) no longer fit beside it without more room.
+- Speed (zxlap): in the pack 109 pictures at 3 frames / 195 at 4 / 9 at 5; alone 240 / 80
+  (before the title: 123 / 167 and 260 / 65). The agent's like-for-like run found read_keys 61 T
+  a picture dearer and nothing else; laps differ run to run. The 5-frame pictures are new to
+  watch.
+- Open: the crew chief still says "SPACE FOR NOS" after the NOS key is changed; the drivers'
+  two-line descriptions are the agent's wording; a few frames tear on the title when the driver
+  changes; no sound on the title.

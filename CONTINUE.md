@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 11:36 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 13:09 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -14,17 +14,19 @@ start (not shown on screen). `bash build.sh` -> build/racer.tap.
 **Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 301, 4 x 12; 15.5 pictures a second off the
 grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
-**Memory:** main area about 0.5 KB free (code_end 0xBDE9). The big cars do not fit.
+**Memory:** 177 bytes free in the program (code_end 0xBF4F), 52 under 0x8000. The big cars do not fit.
 
-**Next step:** Grant to playtest the tape with the ditty played the Manic Miner way (Green
-Light, "half-miner": 4 ms of the note, low, once a picture, using only each picture's spare
-time; it starts at the green light) and choose a tune in the Sound Lab
-(https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS, built by tools/make_sound_lab.py): four
-racing ditties (9-12) and the earlier eight, all half-miner. To change the tune:
-`python3 tools/make_music.py dittyN` then `bash build.sh`. In design, not built: coloured
-objects beside the track seen from above (docs/design/colour_objects.png) - a full gameplay
-mock-up with several objects was offered; the title / attract screen
-(docs/design/TITLE-SCREEN.md, title_*.png/gif). Also asked: a bigger gameplay area still.
+**Next step:** Grant to playtest the tape with the TITLE / ATTRACT SCREEN (1 starts, K redefines
+keys, 2UP is a placeholder; docs/design/title_built.png) and the Green Light ditty, and decide
+about the COLOURED OBJECTS: they are built as an option (OBJECTS=1 python3 tools/make_world.py;
+OBJECTS=1 bash build.sh) but the mug alone takes the game to 5 TV frames a picture while in view
+(about 700 T a map tile; the mug with its margin is 99 tiles) and no longer fits beside the title
+screen - it needs a faster way to draw big objects, or small objects only. Chosen designs:
+the cyan plate with egg and bacon, the mug on a saucer seen a little from the side
+(docs/design/egg_bacon_plate.png, tools/make_fryup.py). Sound Lab:
+https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS (to change the tune: `python3
+tools/make_music.py dittyN`, `bash build.sh`). Not built: driver and car choice, 2UP, a bigger
+gameplay area.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test
