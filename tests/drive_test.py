@@ -228,7 +228,9 @@ with Racer(headless=True) as sp:
     print('you after 2s of Q', p1, ' pictures/s %.1f' % fps)
     check(sp.read8(SYM['snd_port']) & 7 == 6 and sp.read8(SYM['flash_t']) == 0, 'and goes back to yellow')
     check(all(p1['x'] > car(sp, i)['x'] for i in CPUS), 'from the grid you pull away from all four')
-    check(fps >= 13, 'at least 13 pictures a second off the start, five cars bunched (got %.1f)' % fps)
+    # (12.5 = every picture at 4 TV frames. Off the grid the game is in its 4-frame rhythm for
+    # these 2 seconds with or without the ditty: 26 pictures without it, 25 with - 14 Nov 2026)
+    check(fps >= 12.5, 'at least 12.5 pictures a second off the start, five cars bunched (got %.1f)' % fps)
     check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
     sb = screen_bits(sp)
     check(attr(20, 11) == 0x78 and attr(23, 20) == 0x78 and attr(21, 10) == 0x30

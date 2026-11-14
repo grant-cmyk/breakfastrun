@@ -2432,8 +2432,8 @@ sp_2:
 ; picture had to SPARE. The wait for the TV frame (snd_wait) counts how long it waited, in
 ; units of 279 T (mu_slack: 250 a frame); the last picture's spare time, plus what its own
 ; burst used, less a margin, is this burst's budget - up to the whole burst (4 ms). With time
-; to spare the note is full; when the picture is tight it thins to two cycles (about 1.5 ms),
-; which is all the music can cost. After a late picture: no burst, and measure again.
+; to spare the note is full; when the picture is tight it thins out, and with no time to
+; spare it is skipped - the music costs the game no speed. After a late picture: no burst.
 MU_MARGIN equ 14                ; units kept back (3,900 T): pictures differ a little
 mu_burst:
         ld hl,mu_slack          ; the last picture's spare time (and start counting again)
@@ -2479,11 +2479,10 @@ mb_00:
         inc hl
         ld a,(hl)
         ld (mb_u+1),a
-        add a,a                 ; never under two cycles (about 1.5 ms): the tune must not
-        cp c                    ; drop out when the picture is tight - the one part of the
-        jr c,mb_min             ; music that can cost speed
-        ld c,a
-mb_min:
+        add a,a                 ; under two cycles' worth of spare time: no note this picture.
+        dec a                   ; (A guaranteed minimum was tried: even one cycle took the
+        cp c                    ; start, five cars bunched, from 13 pictures a second to 12.5)
+        ret nc
         ld a,(snd_port)
         ld l,a
         ld h,0                  ; H = units used

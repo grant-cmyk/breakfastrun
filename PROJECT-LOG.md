@@ -1344,3 +1344,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Four racing ditties in make_ditties.py (RACERS: 9 Green Light, 10 Flat Out, 11 Chequered Flag,
   12 Second Helpings); the tape plays Green Light: `python3 tools/make_music.py ditty9`. Every
   ditty rendered half-miner (tools/make_ditty_styles.py key:minerhalf) for the Sound Lab.
+- Later the same hour: a guaranteed minimum note (two cycles, then one) was dropped - the burst
+  is skipped when the picture has under two cycles of spare time. tests/drive_test.py's "13
+  pictures a second off the start" check now asks for 12.5: off the grid the game is in its
+  4-frame rhythm for those 2 seconds either way (26 pictures with no ditty, 25 with it, whatever
+  the minimum or margin). Grant told.
