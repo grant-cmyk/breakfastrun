@@ -40,6 +40,7 @@ ar_next:
         pop bc
         djnz ar_row
 ad_draw:
+        call a_marks
         ld ix,a_sav
         ld a,(t_drv)            ; the frame: big_tab[car * 16 + heading]
         add a,a
@@ -145,6 +146,80 @@ ad_next:
         inc a
         pop bc
         djnz ad_row
+        ret
+
+; A_MARKS: while it drifts, its skid marks - two dots a step, 4 pixels either side
+; of its middle across the way the nose points. Put down before the car is drawn
+; (so they are kept with what is under it), and left behind as it moves on.
+a_marks:
+        ld a,(a_dr)
+        add a,16
+        cp 33
+        ret c                   ; (the nose within 22 degrees of the way it goes: gripping)
+        ld a,(a_h)
+        add a,a
+        add a,a
+        call heading_push       ; E = 64 sin, C = -64 cos of the nose's heading
+        ld a,c
+        call am_q
+        neg
+        ld d,a                  ; D, E = 4 pixels across the car
+        ld a,e
+        call am_q
+        ld e,a
+        ld a,(a_x+1)            ; H, L = its middle on the cloth
+        sub 24
+        ld h,a
+        ld a,(a_y+1)
+        sub 18
+        ld l,a
+        push hl
+        push de
+        ld a,h
+        add a,d
+        ld d,a
+        ld a,l
+        add a,e
+        ld e,a
+        call am_plot
+        pop de
+        pop hl
+        ld a,h
+        sub d
+        ld d,a
+        ld a,l
+        sub e
+        ld e,a
+am_plot:                        ; a dot at D, E on the cloth (112 x 96), if it is on it
+        ld a,d
+        cp 112
+        ret nc
+        ld a,e
+        cp 96
+        ret nc
+        add a,40
+        ld b,a
+        ld a,d
+        add a,16
+        ld c,a
+        call scr_addr
+        ld a,c
+        and 7
+        inc a
+        ld b,a
+        xor a
+        scf
+am_1:
+        rra
+        djnz am_1
+        or (hl)
+        ld (hl),a
+        ret
+am_q:                           ; A / 16, signed
+        sra a
+        sra a
+        sra a
+        sra a
         ret
 
 ; A_RADR: A = a row (+ 32). Carry: it is on the cloth - HL = the screen address
@@ -260,15 +335,3 @@ a_vel:                          ; A = heading 0..63 -> HL = 2 x its sine, 8.8
         sub h
         ld h,a
         ret
-
-; ---- more of the title's words (title.asm is full) ----
-k_script:
-        db 0x41,2,T_KEY,"K",0
-        db 0x41,5,T_TABLE,"KEYS",0
-        db 0x84,9,1,14,T_P1
-        db 4,14,"1UP",0
-        db 0x85,9,11,14,T_CARD
-        db 17,7,"PRESS THE KEY FOR",0
-        db 0xFF
-t_soon: db "   2UP COMING SOON   ",0
-t_norec: db "-:--.-",0

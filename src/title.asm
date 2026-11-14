@@ -111,7 +111,7 @@ title:
         ld (t_lsk+1),a
 t_redraw:
         call t_cls
-        ld hl,t_script
+        ld hl,TD + t_script_src - td_src
         call ds_run
 t_logo: ld de,0                 ; the logo twice the size: 14 x 4 cells from column 1
 t_lsk:  ld a,0
@@ -123,7 +123,7 @@ t_lsk:  ld a,0
         ld a,h
         and l
         inc a
-        ld hl,t_norec
+        ld hl,TD + t_norec_src - td_src
         jr z,t_rec
         ld hl,(rec_lap)
         call time_fmt
@@ -146,7 +146,7 @@ t_loop:
         or a
         jr z,t_keys
         dec (hl)
-        ld hl,t_press
+        ld hl,TD + t_press_src - td_src
         call z,t_prompt
 t_keys:
         call k_scan
@@ -158,7 +158,7 @@ t_keys:
         jr nz,t_k
         ld a,40
         ld (t_msg),a
-        ld hl,t_soon
+        ld hl,TD + t_soon_src - td_src
         call t_prompt
         jr t_loop
 t_k:
@@ -389,10 +389,32 @@ a_new:
         ld bc,0x3090
         ld a,2
         call dbl
+        ld a,(t_drv)            ; the car, facing right, twice the size: the race order's
+        ld h,a                  ; picture of it (tower_cars: 16 rows of mask, ink, mask,
+        ld l,0                  ; ink, 64 bytes a car) - its ink put together first
+        srl h
+        rr l
+        srl h
+        rr l
+        ld de,tower_cars+1
+        add hl,de
+        ld de,a_sav
+        ld b,32
+an_car:
+        ld a,(hl)
+        ld (de),a
+        inc de
+        inc hl
+        inc hl
+        djnz an_car
+        ld de,a_sav
+        ld bc,0x68B0            ; (line 104, x 176: rows 13-16, columns 22-25)
+        ld a,2
+        call dbl
         ld bc,0x0717
         ld de,0x0208
         call clear_cells
-        ld bc,0x0B12
+        ld bc,0x0A12
         ld de,0x020D
         call clear_cells
         ld a,(t_drv)
@@ -406,10 +428,10 @@ a_new:
         ld bc,0x0817
         call print_at
         inc hl
-        ld bc,0x0B12
+        ld bc,0x0A12
         call print_at
         inc hl
-        ld bc,0x0C12
+        ld bc,0x0B12
         call print_at
         ld a,(t_drv)            ; the run: 12 bytes a driver
         add a,a
@@ -490,7 +512,7 @@ ks_done:
 ; ---------------------------------------------------------------------
 keys_screen:
         call t_cls
-        ld hl,k_script
+        ld hl,TD + k_script_src - td_src
         call ds_run
         ld hl,0x0020
         ld (k_tmp+1),hl
@@ -548,7 +570,7 @@ ka_2:
         cp '4'
         jr c,ka_w
 ka_3:
-        ld hl,key_ch            ; taken by one before it?
+        ld hl,TD + key_ch_src - td_src            ; taken by one before it?
         inc b
         jr ka_5
 ka_4:
@@ -562,7 +584,7 @@ ka_5:
         ld a,(k_i)
         add a,a
         ld c,a
-        ld hl,k_patch
+        ld hl,TD + k_patch_src - td_src
         add hl,bc               ; (B = 0)
         ld a,(hl)
         inc hl
@@ -581,7 +603,7 @@ ka_5:
         inc a
         cp 5
         jp nz,ka_1
-        ld a,(key_ch+2)         ; the race screen's PRESS Q names the new key
+        ld a,(TD + key_ch_src - td_src + 2)         ; the race screen's PRESS Q names the new key
         ld (txt_strip+7),a
         ld (TOPMEM + txt_pressq_src - high_src + 6),a
         jp k_up
@@ -606,13 +628,13 @@ k_cap:                          ; key k_i's cap: its letter, or SP
         call k_rowb
         ld c,21
         push bc
-        ld hl,key_ch
+        ld hl,TD + key_ch_src - td_src
         ld a,(k_i)
         ld e,a
         ld d,0
         add hl,de
         ld a,(hl)
-        ld hl,k_sp
+        ld hl,TD + k_sp_src - td_src
         ld e,2
         cp ' '
         jr z,kc_1
@@ -628,33 +650,3 @@ kc_1:
         pop bc
         jp print_at
 
-; ---------------------------------------------------------------------
-; the title's words and tables
-; ---------------------------------------------------------------------
-key_ch: db "OPQA "              ; 1UP's keys: left, right, accelerate, brake, NOS
-k_patch:                        ; ... and where read_keys reads each one
-        dw k_left+1, k_right+1, key_go+1, k_brake+1, k_nos+1
-k_sp:   db "SP",0
-t_script:
-        db 0x80,17,1,14,T_HEAD
-        db 0,19,"LAP RECORD",0
-        db 0x82,1,2,10,0x72     ; the logo's colours: RUN red, the egg white
-        db 0x82,11,2,4,0x77
-        db 0x84,1,14,16,0x31    ; the stage: the frame's cells blue on the table ...
-        db 0x85,2,12,14,0x29    ; ... the cloth blue on cyan
-        db 0x85,18,12,13,T_CARD ; the card
-        db 0x85,18,1,13,T_HEAD
-        db 5,18,"DRIVER   OF 5",0
-        db 0x53,1,T_KEY,"1",0
-        db 0x53,3,T_P1,"1UP",0
-        db 21,1,"1 PLAYER",0
-        db 0x53,11,T_KEY,"2",0
-        db 0x53,13,T_HEAD,"2UP",0
-        db 21,11,"2 PLAYERS",0
-        db 0x53,21,T_KEY,"K",0
-        db 0x53,23,T_CARD,"KEYS",0
-        db 21,23,"REDEFINE",0
-        db 0x97,5,1,21,0xB0     ; (flashing)
-        db 23,5
-t_press: db "PRESS 1 OR 2 TO START",0
-        db 0xFF

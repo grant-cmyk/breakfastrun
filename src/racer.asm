@@ -4057,8 +4057,8 @@ im2_on:
         ei
         ret
         include "title3.asm"    ; the title's tables, copied to TD (0x5B4C) by start_once
-        if td_end - td_src > 0x5C78 - TD
-        .error the title's tables run into FRAMES
+        if td_end - td_src > 0x5E00 - TD
+        .error the title's tables run past 0x5E00 (the stack is below 0x5F00: 50 bytes deep at most)
         endif
 ; data kept at the top of memory (TOPMEM, above the generated copy routine),
 ; loaded here and copied up by start; use the names below, not the _src ones
