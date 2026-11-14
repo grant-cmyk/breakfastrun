@@ -39,7 +39,7 @@ COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
-WIN_W   equ 23                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
+WIN_W   equ 24                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
 WIN_H   equ 152                 ; "take the very top row of the display as well"; it was 120
                                 ; high on 9 Nov, 128 and 136 earlier on 14 Nov)
 MSG_ROW equ 23                  ; the message bar: the bottom row, until the new layout is built
@@ -194,7 +194,6 @@ draw_all:
         call hud_pre            ; (their colours, and the canisters' cells cleared)
         call nos_draw           ; the NOS canisters you hold, in the window's corner
         call dmg_draw           ; and your car's damage, in the other corner
-        call fr_col             ; the frame's right-hand line, which the copy carries with the window
         call pl_draw            ; and your place, on its plate, top right
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
@@ -2376,8 +2375,8 @@ ld_r1:
 ; corner, in the window's own colours: each replaces its byte of the cloth on 10 lines,
 ; so it stands clear of what is behind it (layout G3; the inventory slots have gone).
 ; Window lines 132-135 are buffer rows 140-143 (one character row), 136-141 rows 144-149.
-NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 24     ; buffer row 148 (third 2, char row 2, line 4), byte 24
-NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 24     ; buffer row 152 (third 2, char row 3, line 0)
+NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 25     ; buffer row 148 (third 2, char row 2, line 4), byte 24
+NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 25     ; buffer row 152 (third 2, char row 3, line 0)
 nos_draw:
         ld hl,INV
         ld c,0                  ; C = slot 0..2: bytes 23, 22, 21
@@ -3682,7 +3681,7 @@ gd_1:
 gd_2:
         ld a,(gd_y)
         ld b,a
-        ld c,28
+        ld c,29
         jp st_text
         ; (gap_draw, from hud.asm, also fills the gap)
         include "sq4.asm"
@@ -3965,7 +3964,7 @@ screen_once:
         ld (hl),0x30
         ldir
         ld bc,0                 ; ...the window's slim frame blue on the table (its
-        ld de,0x1519            ; cells: rows 0-20, columns 0-24)...
+        ld de,0x151A            ; cells: rows 0-20, columns 0-25)...
         ld a,0x31
         call set_attrs
         ld hl,0x5800+(WIN_Y/8)*32+WIN_COL   ; ...and the window blue ink on cyan paper
@@ -3988,19 +3987,20 @@ win_attr:
         djnz win_attr
 
         call draw_frame
-        ld b,0                  ; logo, 7 x 2 cells at the top right
-        ld c,25
+        ld b,LOGO_ROW           ; the logo, 7 x 2 cells, centred under the window (Grant, 14 Nov 2026)
+        ld c,LOGO_COL
         call draw_logo
         ld hl,txt_race
         ld b,TOWER_Y-1
-        ld c,25
+        ld c,26
         call print_at
         ld b,TOWER_Y-1          ; RACE: white on blue across the panel
-        ld c,25
+        ld c,26
         ld d,1
-        ld e,7
+        ld e,6
         ld a,A_LAP
         call set_attrs
+        if OPT_PIT
         ld hl,strip_img         ; the driver strip: you, your inventory, the
         ld b,168                ; crew chief's radio, the crew chief (rows
 so_row:                         ; 168-191, columns 0-23)
@@ -4029,20 +4029,21 @@ so_attr:
         ex de,hl
         pop bc
         djnz so_attr
-        ld de,minimap_src+6*7   ; the mini-map, black on yellow, under the logo (its lines
-        ld b,MAP_Y+6            ; 6-42: screen lines 25-61); the cars' dots are XORed on it
+        endif
+        ld de,minimap_src+5*6   ; the mini-map, black on yellow, at the panel's top (its picture
+        ld b,2                  ; (MAP_Y + 5) starts 6 lines down: screen line 3); the cars' dots are XORed on it
 so_map:
         ld c,MAP_X
         call scr_addr
         ex de,hl
-        ld bc,7
+        ld bc,6
         ldir
         ex de,hl
         ld a,(so_y)             ; (B is 0 after LDIR: the row is kept in so_y)
         inc a
         ld (so_y),a
         ld b,a
-        cp MAP_Y+43
+        cp MAP_H-3              ; (MAP_Y + MAP_H)
         jr nz,so_map
         ld hl,shown_dot         ; no dots on it yet
         ld b,2*NCARS
@@ -4051,7 +4052,7 @@ so_d:
         inc hl
         djnz so_d
         ret
-so_y:   db MAP_Y+6
+so_y:   db 2
 
 ; DRAW_FRAME: the window's slim frame (layout G3 - Grant, 14 Nov 2026: "what i like in E is
 ; the border changes around the gameplay area"): a 2-pixel line with rounded corners, 3
@@ -4128,7 +4129,7 @@ dl_byte:
         dec a
         jr nz,dl_row
         ld hl,logo_attr         ; 2 rows of 7 attributes
-        ld de,0x5800+0*32+25
+        ld de,0x5800+LOGO_ROW*32+LOGO_COL
         ld b,2
 dl_attr:
         push bc
@@ -4452,6 +4453,7 @@ clock_top equ TOPMEM + clock_top_src - high_src
 clock_top equ clock_top_src
         endif
 CLOCK8    equ clock_top+4       ; the clock in one cell (8 rows straight)
+FLAG8     equ flag_top+3        ; and the flag in one
         if 1-OPT_TALL
 grid_order equ TOPMEM + grid_order_src - high_src
         else
@@ -4473,7 +4475,7 @@ omap      equ omap_src
 cars_init equ TOPMEM + cars_init_src - high_src
 faces     equ faces_src
 
-        if WIN_W - 23
+        if WIN_W - 24
         .error make_copier is written for a 23-byte window row (and the frame's column)
         endif
         if BUF_TOP + WIN_H + 8 > 168

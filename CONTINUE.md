@@ -1,15 +1,18 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 21:41 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 22:16 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
-**Latest (14 Nov 2026, 21:41 SAST) - read this before the older status below:** the window is 184 x 152
-(23 columns, 19 rows); your place, lap and lap time are on a small plate INSIDE the window (nothing bottom
-left any more); the health gauge is a MAGENTA lightning bolt bottom left of the window and the NOS bottles
-are RED bottom right, each in colour cells of its own (hud_pre, src/plate_slow.asm); in-race music is OFF
-(MUSIC=1 builds it; unsolved on the beeper, an AY-chip version is proposed and waits on Grant); coloured
-objects are OFF (OBJECTS=1; too slow). Speed alone: 19 pictures at 3 frames / 239 at 4 / 9 at 5 - the
-23rd column cost the faster rate; Grant has not yet said whether to keep it. Detail: PROJECT-LOG.md, end.
+**Latest (14 Nov 2026, 22:16 SAST) - read this before the older status below:** the window is 192 x 152
+(24 columns, 19 rows); the right panel is 6 columns: the mini-map at its top, RACE and the order under it
+(flag and best-lap clock share column 31); the BREAKFAST RUN logo is under the window, centred (rows 21-22);
+the crew chief's pit talk is OFF (PIT=1 builds it, but the logo now sits where his bubble was). Your place,
+lap and lap time are on a small plate INSIDE the window; the health gauge is a MAGENTA lightning bolt bottom
+left and the NOS bottles RED bottom right, each in colour cells of its own (hud_pre, src/plate_slow.asm).
+The VIEW LEADS THE CAR: up to 40 px ahead across, 32 up/down, 3 px a picture (cam_lead, src/plateco.asm;
+LEAD_X / LEAD_Y / LEAD_STEP to tune). In-race music is OFF (MUSIC=1; unsolved on the beeper, an AY-chip
+version waits on Grant); coloured objects OFF (OBJECTS=1; too slow). Speed alone: 40 pictures at 3 TV
+frames / 225 at 4 / 5 at 5. Detail: PROJECT-LOG.md, end.
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 152 (19 rows, since 14 Nov late) in a slim
 blue frame; LAYOUT G3 BUILT (docs/design/g3_built.png): logo top right, the mini-map under it, the

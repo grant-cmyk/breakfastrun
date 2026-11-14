@@ -57,7 +57,7 @@ title_again:
         ld (snd_port),a
         out (254),a
         call scr_save
-        ld hl,BUF+25            ; the logo is in the kept picture: 32 bytes a line
+        ld hl,BUF+2384+LOGO_COL ; the logo is in the kept picture (line 168 of it: 16 whole lines, 136 of 10 bytes, 16 whole), 32 bytes a line
         ld a,25
         call title
         call scr_rest

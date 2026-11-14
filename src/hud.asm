@@ -21,6 +21,8 @@ A_LAMP  equ 0x42                ; bright red on black: a start light, lit
 A_LOFF  equ 0x01                ; blue on black: a start light, not lit yet
 A_LGRN  equ 0x44                ; bright green on black: all three - go
 A_LAP   equ 0x4F                ; bright white on blue
+LOGO_ROW equ 21                 ; the logo: under the window, centred on it (columns 9-15)
+LOGO_COL equ 9
 TOWER_Y equ 10                  ; first row of the race order (RACE above it)
 A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 
@@ -29,9 +31,9 @@ A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 ; ---------------------------------------------------------------------
 hud_init:                       ; a new race: what changes (the rest: screen_once)
         ld b,TOWER_Y+2*NCARS    ; the lap record under the order: cleared,
-        ld c,25                 ; then shown if there is one from an earlier race
+        ld c,26                 ; then shown if there is one from an earlier race
         ld d,1
-        ld e,7
+        ld e,6
         call clear_cells
         ld hl,(rec_lap)
         inc hl
@@ -480,14 +482,14 @@ gu_1:
         jp gap_draw             ; (it sits in racer.asm, in the gap before sq4's page)
 best_panel:                     ; under the racers: a clock and the lap RECORD - the
         ld b,TOWER_Y+2*NCARS    ; best lap of any race since the game was loaded (a
-        ld c,27                 ; hi-score, Grant 10 Nov 2026), centred under the
+        ld c,28                 ; hi-score, Grant 10 Nov 2026), centred under the
         ld de,CLOCK8            ; order (the clock in column 27, the time 2 px into
         call tr_glyph           ; 28: x 216-238 against the panel's 200-255)
         ld hl,(rec_lap)
         call time_fmt
         ld hl,time_txt+2
         ld b,(TOWER_Y+2*NCARS)*8+1
-        ld c,28
+        ld c,29
         ld a,2                  ; 2 px clear of the clock (Grant: it read "d2.8")
         jr st_text_x
 ; ST_TEXT: HL = text (digits, '.', ' '), B = top pixel row, C = byte column:
@@ -668,14 +670,18 @@ hu_best:
         ld (hl),a
         call best_panel
 hu_order:
-        call strip_triggers     ; what the crew chief says
+        call strip_triggers     ; the canisters, the oil can - and what the crew chief says
         ; (no scoreboard under the window any more: your place and lap are on the plate in it - Grant, 14 Nov 2026)
         ld a,(renders)          ; spread the HUD out: the order on one
         and 3                   ; picture in four, the map on another, the
         jp z,tower_update       ; clock on the other two
         cp 2
         jp z,map_update
+        if OPT_PIT
         jp strip_tick           ; the radio on the other two
+        else
+        ret                     ; (no pit talk for now: Grant, 14 Nov 2026)
+        endif
 
 hud_over:                       ; after the finish: the last flags, then
         call tower_update       ; wait for Q (the accelerate key) to be let go,
@@ -882,12 +888,12 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         add a,TOWER_Y
         ld (tr_row),a           ; its first cell row
         ld b,a                  ; clear 2 cell rows x 7 bytes, INC H per pixel row
-        ld c,25
+        ld c,26
         call tr_clear
         ld a,(tr_row)
         inc a
         ld b,a
-        ld c,25
+        ld c,26
         call tr_clear
         ld a,(tr_car)           ; colours: you white on red, the others black
         ld e,a                  ; on their own colour
@@ -896,10 +902,10 @@ tower_row:                      ; place B (0..4), A = car (+ 8: finished)
         add hl,de
         ld a,(tr_row)
         ld b,a
-        ld c,25
+        ld c,26
         ld a,(hl)
         ld d,2
-        ld e,7
+        ld e,6
         call set_attrs
         ld a,(tr_row)           ; the place number, centred against the car:
         sub TOWER_Y             ; its ROM letter 4 px down the 16-px row
@@ -926,7 +932,7 @@ trp_2:
         ld (de),a
         inc de
         djnz trp_2
-        ld c,25
+        ld c,26
         ld de,PNUM
         call tr_glyph16
         ld a,(tr_car)           ; the car's own picture, facing right, at
@@ -942,12 +948,12 @@ trp_2:
         ex de,hl
         ld a,(tr_row)
         ld b,a
-        ld c,26
+        ld c,27
         call tr_pic
         ld a,(tr_row)
         inc a
         ld b,a
-        ld c,26
+        ld c,27
         call tr_pic
         ld a,(race_on)          ; racing: the gap to the leader, not the face
         or a
@@ -977,18 +983,25 @@ tr_race:                        ; the gap (columns 28-29); once it is in, a flag
         sub TOWER_Y             ; 10 Nov 2026)
         srl a
         call gap_draw           ; A = place
-        ld a,(tr_key)
-        bit 3,a
-        jr z,trr_1
-        ld c,30
-        ld de,flag_top
-        call tr_glyph16
-trr_1:
-        ld a,(tr_key)
-        bit 4,a
-        ret z
+        ld a,(tr_key)           ; column 31: the flag once it is in, the clock if it has the best
+        and 0x18                ; lap; both: the flag above the small clock (Grant, 14 Nov 2026:
+        ret z                   ; "the flag and the fastest time icons are in the same column")
         ld c,31
         ld de,clock_top
+        cp 0x10
+        jr z,tr_glyph16
+        ld de,flag_top
+        cp 0x08
+        jr z,tr_glyph16
+        ld a,(tr_row)
+        ld b,a
+        ld de,FLAG8
+        push bc
+        call tr_glyph
+        pop bc
+        inc b
+        ld de,CLOCK8
+        jr tr_glyph
 tr_glyph16:                     ; 16 rows at DE into cells tr_row and below, column C
         ld a,(tr_row)
         ld b,a
@@ -998,7 +1011,7 @@ tr_glyph16:                     ; 16 rows at DE into cells tr_row and below, col
         inc b
         jr tr_glyph
 tr_face:                        ; 8 rows x 2 bytes at DE into cells B, 29-30
-        ld c,29                 ; (column 28 left clear: a gap after the car)
+        ld c,30                 ; (column 29 left clear: a gap after the car)
         call cell_addr
         ld b,8
 tf_row:
@@ -1056,11 +1069,9 @@ tc_row:
         ld (hl),a
         inc l
         ld (hl),a
-        inc l
-        ld (hl),a
         ld e,a
         ld a,l
-        sub 6
+        sub 5
         ld l,a
         ld a,e
         inc h
@@ -1072,8 +1083,8 @@ tc_row:
 ; car: 2 x 2 for the computer cars, 3 x 3 and blinking for you. Each update
 ; puts back the map under the old dots, then draws the new ones.
 ; ---------------------------------------------------------------------
-MAP_X   equ 25*8                ; screen pixel of the map's top-left
-MAP_Y   equ 19                  ; (the map's own picture starts 6 lines down: it shows on lines 25-61)
+MAP_X   equ 26*8                ; screen pixel of the map's top-left: the panel's top (Grant, 14 Nov 2026: "shift the map up")
+MAP_Y   equ 0xFD                ; (-3: the map's own picture starts 6 lines down, so it shows from screen line 3)
 map_init:                       ; a new race: the last race's dots off the map (the
         jp map_off              ; map itself is drawn once, by screen_once)
 
@@ -1090,9 +1101,9 @@ mu_new:
         ld de,8-MMX0
         add hl,de
         call map_c3
-        cp 54
+        cp 46
         jr c,mu_x
-        ld a,53
+        ld a,45
 mu_x:
         push af                 ; (x kept: map_c3 uses DE)
         ld l,(ix+C_Y)           ; map y = (y + 8 - MMY0) * 3 / 32, 0..45
@@ -1100,10 +1111,14 @@ mu_x:
         ld de,8-MMY0
         add hl,de
         call map_c3
-        cp 46
+        cp MAP_H-2
         jr c,mu_y
-        ld a,45
+        ld a,MAP_H-3
 mu_y:
+        cp 3                    ; (and not above the screen's top line: MAP_Y is -3)
+        jr nc,mu_y2
+        ld a,3
+mu_y2:
         ld d,a
         pop af
         ld e,a
@@ -1183,13 +1198,14 @@ mo_3:
         ret
 
 map_c3:                         ; HL (0..~700) * 3 / 32 -> A
-        ld d,h
+        ld d,h                  ; (21/256 since the panel lost a column: the map is 48 wide)
         ld e,l
         add hl,hl
-        add hl,de
-        add hl,hl               ; * 8: H = HL * 3 / 32
+        add hl,hl
+        add hl,de               ; * 5
         add hl,hl
         add hl,hl
+        add hl,de               ; * 21: H = HL * 21 / 256
         ld a,h
         ret
 
@@ -1226,7 +1242,7 @@ md_row:
         ld (hl),a
         ld a,e
         and 0xF8
-        cp 48                   ; the map's last byte: nothing to the right
+        cp 40                   ; the map's last byte: nothing to the right
         jr nc,md_one
         inc l
         ld a,(hl)

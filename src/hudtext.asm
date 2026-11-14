@@ -1,5 +1,5 @@
 ; the HUD's fixed text (kept at the top of memory: see TOPMEM in racer.asm)
-txt_race_src:     db " RACE  ",0
+txt_race_src:     db " RACE ",0
 txt_ready_src:    db "GET READY",0
 txt_pressq_src:   db "PRESS Q",0
 txt_lamp_src:     db "O",0

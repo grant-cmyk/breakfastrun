@@ -1610,3 +1610,31 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   with the lead on and PASS with LEAD_X/Y set to 0. The camera is read by no driving code; the
   picture times change, and both tests are timed by the clock. NOT YET PROVED to be timing only.
 - Memory: code_end 0xBFE9 - 23 bytes free in that area.
+
+## 2026-11-14 22:16 SAST - no pit talk, the logo under the window, the map up, a 24th column
+
+- Grant: "Do away with the pitstop talk for now. Put the Breakfast Run logo centred under the
+  gameplay area at the bottom. Shift the map up. Make the race details one column shorter (so the
+  flag and the fastest time icons are in the same column. And then add another column to the game area."
+- WINDOW 192 x 152 (WIN_W 24: screen columns 1-24, the frame's right line in column 25). The copy
+  routine already moved 24 bytes a row, so it is unchanged - and `fr_col` (the frame's column kept
+  in the buffer, ~2,400 T a picture) is gone: the frame is on the screen, drawn once.
+- PANEL: 6 columns (26-31). Place 26, car 27-28, gap 29-30, column 31 the flag (in) or the clock
+  (best lap) - both: the flag in the upper cell (FLAG8), the small clock under it (CLOCK8).
+  Before the race the faces are in 30-31. RACE heading 6 wide; lap record clock 28, time 29.
+- MINI-MAP at the panel's top (screen lines 3-34), 48 wide: scale 21/256 (was 3/32, 54 wide) -
+  tools/make_world.py and map_c3 (src/hud.asm); MAP_H comes from the generator.
+- LOGO: rows 21-22, columns 9-15 (LOGO_ROW / LOGO_COL, src/hud.asm), centred on the window. The
+  title screen reads it back from there (src/title.asm, BUF+2384+LOGO_COL).
+- PIT TALK off: OPT_PIT (build.sh: PIT=1 puts it back, but the logo is now where the bubble was -
+  that needs a layout decision first). The strip's picture is not drawn, strip_tick not called;
+  the canisters and the oil can (strip_triggers) carry on.
+- SPEED (tests/zxlap.py): alone 40 pictures at 3 TV frames / 225 at 4 / 5 at 5 (it was 22 / 238 /
+  15 at 23 columns with the lead); in the pack 12 / 247 / 16 (was 3 / 248 / 11). Wider AND a
+  little faster, because fr_col went.
+- TESTS: drive, title, damage, plate, nos, o, setup, lead, drift, stuck all PASS. drift and stuck
+  pass again with the lead on - so their one failing case each at 23 columns was the clock-timed
+  tests meeting a different picture rhythm, as suspected (camera is read by no driving code).
+- Memory: code_end 0xBFD3 (45 bytes free in that area).
+- OPEN: 4 empty rows in the panel between the map and RACE; the lap record sits 3.5 px right of
+  the panel's centre (a cell-aligned clock cannot be centred in 6 columns).

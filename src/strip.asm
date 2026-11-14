@@ -446,6 +446,9 @@ strip_triggers:
         ret z
         call nos_take           ; over a canister?
         call oil_tick           ; the oil can, and the damage's cool-down
+        if OPT_PIT = 0
+        ret                     ; (no pit talk for now: Grant, 14 Nov 2026)
+        endif
         ld hl,COOL
         ld a,(hl)
         or a
