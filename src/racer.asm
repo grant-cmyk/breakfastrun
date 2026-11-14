@@ -1554,8 +1554,8 @@ ocb_snd:
         or a
         sbc hl,de
         ret nz
-        ld a,SND_CRASH/2        ; you: a short crunch
-        ld (snd_bump),a
+        ld hl,2*256+6           ; you: a bonk - a note that falls, 6 frames (Grant's pick from
+        ld (snd_fxt),hl         ; the Sound Lab, 14 Nov 2026: B2)
         ld hl,5*256+2           ; and the border red, a moment
         jp flash
 
@@ -3134,6 +3134,11 @@ snd_gap:  db 0                  ; engine: counts between speaker flips (0 quiet)
 snd_bump: db 0                  ; crash noise: pictures left
 O_FREE   equ 6
 o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
+mu_wait:  db 1                  ; the ditty: frames until its next note
+mu_ph:    db 0                  ; ... frames this note still sounds for
+mu_off:   db 0                  ; ... where its burst is in mu_ptab
+mu_ptr:   dw mu_tune            ; ... the next note in the tune
+        include "music.asm"
 SKID_FR  equ 5
 snd_skt:  db 0                  ; the skid's screech: frames left
 snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
@@ -3389,27 +3394,114 @@ isr_e:
         xor 24
         ld (snd_port),a
         out (254),a
-isr_q:                          ; (only A, H and L here: the interrupt may land
+isr_q:
+        ; ---- the ditty (Grant, 14 Nov 2026: "a little ditty sound playing in the
+        ;      background" - "please try the spilt milk"): music.asm, made by
+        ;      tools/make_music.py. Only A, H and L, and no calls: see below ----
+        ld hl,mu_wait           ; time for the next note (or drum)?
+        dec (hl)
+        jr nz,mu_ring
+        ld hl,(mu_ptr)
+        ld a,(hl)
+        cp 255                  ; the end: round again
+        jr nz,mu_1
+        ld hl,mu_tune
+        ld a,(hl)
+mu_1:
+        ld (mu_off),a           ; where its burst is in mu_ptab
+        inc hl
+        ld a,(hl)
+        ld (mu_wait),a          ; frames until the one after
+        inc hl
+        ld a,(hl)               ; and the frames it sounds for (a burst on each: "buzz")
+        ld (mu_ph),a
+        inc hl
+        ld (mu_ptr),hl
+mu_ring:
+        ld a,(mu_ph)
+        or a
+        jr z,mu_out
+        dec a
+        ld (mu_ph),a
+        ld a,(mu_off)
+        add a,mu_ptab AND 255
+        ld l,a
+        ld a,0
+        adc a,mu_ptab/256
+        ld h,a
+        ld a,(snd_fxt)          ; an event is sounding (an effect, the skid, a crash):
+        or a                    ; the tune keeps its place but gives way to it
+        jr nz,mu_out
+        ld a,(snd_skt)
+        or a
+        jr nz,mu_out
+        ld a,(snd_bump)
+        or a
+        jr nz,mu_out
+        ld a,(hl)               ; cycles (0: nothing this frame)
+        or a
+        jr z,mu_out
+        inc hl
+        ld a,(hl)
+        ld (mu_p1+1),a
+        inc hl
+        ld a,(hl)
+        ld (mu_p2+1),a
+        dec hl
+        dec hl
+        ld h,(hl)
+        ld a,(snd_port)
+mu_c:
+        xor 24                  ; a cycle: flip, 20 + 16 n T, flip, 36 + 16 m T
+        out (254),a
+mu_p1:  ld l,0
+mu_d1:
+        dec l
+        jr nz,mu_d1
+        xor 24
+        out (254),a
+mu_p2:  ld l,0
+mu_d2:
+        dec l
+        jr nz,mu_d2
+        dec h
+        jr nz,mu_c
+mu_out:
+                                ; (only A, H and L here: the interrupt may land
         ld a,(snd_fxt)          ; while the cloth fill has SP in the buffer, which
         or a                    ; has room for just 6 bytes of pushes)
         jr z,isr_sk
-        dec a                   ; an effect, a frame at a time:
-        ld (snd_fxt),a
+        dec a                   ; an effect, a frame at a time (Grant's picks from the
+        ld (snd_fxt),a          ; Sound Lab, 14 Nov 2026). L = frames left
         ld l,a
         ld a,(snd_fxk)
         or a
         jr nz,fx_fire
-        ld a,l
-        add a,a                 ; NOS picked up: a chirp that rises (the gap
-        add a,l                 ; between flips shrinks, 53 down to 20)
-        add a,20
+        ld a,l                  ; 0, NOS picked up: the coin run (P3) - four notes
+        srl a                   ; climbing, two frames each: 15 + 5 x (frames left / 2)
+        ld h,a                  ; counts between flips
+        add a,a
+        add a,a
+        add a,h
+        add a,15
         jr fx_go
 fx_fire:
-        cp 1                    ; (kind 2 up: a beep, flips that many counts apart)
+        cp 1
+        jr nz,fx_bonk
+        ld a,l                  ; 1, NOS fired: the whoosh up (F2) - a buzz that climbs
+        srl a                   ; steeply: 12 + 2.5 x frames left
+        add a,l
+        add a,l
+        add a,12
+        jr fx_go
+fx_bonk:
+        cp 2                    ; (3 up: a beep, flips that many counts apart)
         jr nz,fx_go
-        ld a,r                  ; NOS fired: a rushing noise (random gaps)
-        and 31
-        add a,8
+        ld a,l                  ; 2, a bang into a cereal O: the bonk (B2) - a note
+        add a,a                 ; that falls: 34 - 4 x frames left
+        add a,a
+        neg
+        add a,34
 fx_go:
         ld l,a
         ld h,6

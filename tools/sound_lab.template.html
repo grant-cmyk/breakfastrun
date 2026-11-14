@@ -56,7 +56,7 @@ button:focus-visible { outline: 3px solid var(--table); outline-offset: 2px; }
 
   <section>
     <h2>Background ditty</h2>
-    <p>Four tunes, each played three ways. Pips is one tiny burst a note. Plink lets the note ring a little, like a music box. Buzz holds the note and rattles. Each recording is the tune twice round.</p>
+    <p>Eight tunes, each played three ways. The newest tape plays Spilt Milk as buzz; tunes 5 to 8 are new. Pips is one tiny burst a note. Plink lets the note ring a little, like a music box. Buzz holds the note and rattles. Each recording is the tune twice round.</p>
     <div class="grid" id="ditties"></div>
     <div class="tile">
       <h3>In the game</h3>
@@ -86,6 +86,10 @@ const DITTIES = [
   ['2', 'Marmalade Swing', 'Bouncy, lazy long-short swing, 143 beats a minute. The busiest of the four.'],
   ['3', 'Spilt Milk', 'Cheeky and stop-start, like tiptoeing. Leaves the most room for event sounds.'],
   ['4', 'Sunny Side Up', 'A calm music-box waltz, 100 beats a minute. The gentlest, the least racy.'],
+  ['5', "Kettle's On", 'New. A skipping jig that keeps moving. The longest tune, so it repeats least.'],
+  ['6', 'Crumbs!', 'New. A galloping chase in a minor key. The raciest of the eight.'],
+  ['7', 'Pop-Up Toaster', 'New. Boingy leaps with pauses between them. Plenty of room for event sounds.'],
+  ['8', 'Butter Fingers', "New. Clumsy slips and stumbles. Spilt Milk's cousin."],
 ];
 // ---- the one-bit speaker: a list of flip times (seconds) becomes a sound ----
 const T = 1 / 3500000, FR = 0.02;
@@ -128,9 +132,9 @@ const EVENTS = [
       make: o => { for (let p = 0; p < 2; p++) burst(o, p * 0.06, 16, () => 150 + Math.floor(rnd() * 32) * 13); } },
   ] },
   { id: 'bang', name: 'Banging into a cereal O', what: 'Car against something solid on the table.', opts: [
-    { id: 'B1', name: 'Crunch', now: true, what: 'The same noise as hitting a car.',
+    { id: 'B1', name: 'Crunch', what: 'The same noise as hitting a car.',
       make: o => { for (let p = 0; p < 6; p++) burst(o, p * 0.06, 16, () => 150 + Math.floor(rnd() * 32) * 13); } },
-    { id: 'B2', name: 'Bonk', what: 'A note that falls, cartoon style.',
+    { id: 'B2', name: 'Bonk', now: true, what: 'A note that falls, cartoon style.',
       make: o => { for (let f = 0; f < 6; f++) burst(o, f * FR, 7, lerp(330, 620, f / 6)); } },
     { id: 'B3', name: 'Ping', what: 'A bright note that dies away, like tapping a bowl.',
       make: o => { [9, 7, 5, 3, 2].forEach((n, f) => burst(o, f * FR, n, 430)); } },
@@ -138,17 +142,17 @@ const EVENTS = [
       make: o => { burst(o, 0, 24, () => 60 + Math.floor(rnd() * 12) * 13); } },
   ] },
   { id: 'pick', name: 'Picking up a NOS', what: 'Driving over a canister.', opts: [
-    { id: 'P1', name: 'Rising chirp', now: true, what: 'A quick slide up in pitch.',
+    { id: 'P1', name: 'Rising chirp', what: 'A quick slide up in pitch.',
       make: o => { for (let l = 11; l >= 0; l--) burst(o, (11 - l) * FR, 6, (3 * l + 20) * 16); } },
     { id: 'P2', name: 'Ding-ding', what: 'Two clear notes, the second higher.',
       make: o => { for (let f = 0; f < 3; f++) burst(o, f * FR, 8, 480); for (let f = 4; f < 8; f++) burst(o, f * FR, 9, 360); } },
-    { id: 'P3', name: 'Coin run', what: 'Four fast notes climbing.',
+    { id: 'P3', name: 'Coin run', now: true, what: 'Four fast notes climbing.',
       make: o => { [560, 470, 400, 330].forEach((g, k) => { burst(o, k * 2 * FR, 8, g); burst(o, (k * 2 + 1) * FR, 5, g); }); } },
   ] },
   { id: 'fire', name: 'Firing the NOS', what: 'Pressing the boost.', opts: [
-    { id: 'F1', name: 'Rush', now: true, what: 'Half a second of rushing noise.',
+    { id: 'F1', name: 'Rush', what: 'Half a second of rushing noise.',
       make: o => { for (let f = 0; f < 25; f++) burst(o, f * FR, 6, () => (8 + Math.floor(rnd() * 32)) * 16); } },
-    { id: 'F2', name: 'Whoosh up', what: 'A buzz that climbs steeply for a third of a second.',
+    { id: 'F2', name: 'Whoosh up', now: true, what: 'A buzz that climbs steeply for a third of a second.',
       make: o => { for (let f = 0; f < 18; f++) burst(o, f * FR, 8, lerp(950, 260, f / 18)); } },
     { id: 'F3', name: 'Siren', what: 'Two notes swapping quickly.',
       make: o => { for (let f = 0; f < 18; f++) burst(o, f * FR, 8, (f >> 1) & 1 ? 420 : 560); } },
@@ -189,9 +193,9 @@ function playAudio(name, btn) {
   tag.play().catch(() => stopAll());
 }
 // ---- the picks ----
-let picks = { ditty: '' };
+let picks = { ditty: 'Spilt Milk, buzz' };
 EVENTS.forEach(e => picks[e.id] = e.opts.find(o => o.now).id);
-try { Object.assign(picks, JSON.parse(localStorage.getItem('br-sound-picks') || '{}')); } catch (e) {}
+try { Object.assign(picks, JSON.parse(localStorage.getItem('br-sound-picks-2') || '{}')); } catch (e) {}
 function showPicks() {
   const parts = ['Ditty: ' + (picks.ditty || 'not chosen yet')];
   EVENTS.forEach(e => { const o = e.opts.find(o => o.id === picks[e.id]) || e.opts[0]; parts.push(e.name + ': ' + o.id + ' ' + o.name); });
@@ -201,7 +205,7 @@ function showPicks() {
     b.setAttribute('aria-pressed', on); b.textContent = on ? 'Chosen' : 'Choose';
     b.closest('.tile').classList.toggle('chosen', on && g !== 'ditty');
   });
-  try { localStorage.setItem('br-sound-picks', JSON.stringify(picks)); } catch (e) {}
+  try { localStorage.setItem('br-sound-picks-2', JSON.stringify(picks)); } catch (e) {}
 }
 const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
 const dg = document.getElementById('ditties');

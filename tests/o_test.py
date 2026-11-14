@@ -22,11 +22,11 @@ with Racer(headless=True) as sp:
     for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58)
     missed = []
     def bounces(tx, ty):
-        sp.write(SYM['snd_bump'], bytes([0]))
+        sp.write(SYM['snd_fxt'], bytes([0]))
         put(sp, 0, tx * 8 + 4 - 8 + 3, ty * 8 + 4 - 8 - 2, 16)       # its middle 3 px right, 2 up of the O's
         for k in range(8):                                            # (a frame at a time: the crunch is
             sp.run(duration=0.02, fast_forward=True)                  # set on the next game tick, and fades
-            if sp.read8(SYM['snd_bump']): return True                 # a picture at a time)
+            if sp.read8(SYM['snd_fxt']): return True                 # a picture at a time)
         return False
     for tx, ty in pick:
         # (the test writes the car's place while the game runs: now and then the game is
@@ -37,7 +37,7 @@ with Racer(headless=True) as sp:
     clear = []                                                        # clear cloth: no bounce
     for tx, ty in [(2, 2), (10, 3), (36, 30), (60, 4), (5, 60)]:
         if any(obits[ty + j][tx + i] for j in (-1, 0, 1, 2) for i in (-1, 0, 1, 2) if 0 <= ty + j < MAPH and 0 <= tx + i < MAPW): continue
-        sp.write(SYM['snd_bump'], bytes([0])); put(sp, 0, tx * 8 - 4, ty * 8 - 4, 16); sp.run(duration=0.08, fast_forward=True)
-        if sp.read8(SYM['snd_bump']): clear.append((tx, ty))
+        sp.write(SYM['snd_fxt'], bytes([0])); put(sp, 0, tx * 8 - 4, ty * 8 - 4, 16); sp.run(duration=0.08, fast_forward=True)
+        if sp.read8(SYM['snd_fxt']): clear.append((tx, ty))
     ok(not clear, 'and not off clear cloth (%s)' % clear)
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)

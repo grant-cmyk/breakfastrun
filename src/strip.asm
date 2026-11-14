@@ -615,7 +615,7 @@ nt_3:
         xor 1
         ld (NOS_SHOW),a
         call nos_place
-        ld hl,0*256+12          ; the pick-up chirp: 12 frames (L), kind 0 (H)
+        ld hl,0*256+8           ; the pick-up's coin run: 8 frames (L), kind 0 (H)
         ld (snd_fxt),hl
         ld a,M_NOS
         jp msg_say
@@ -645,7 +645,7 @@ nf_2:
         ld (BOOST_T),a
         ld hl,BOOST_FR*256+7    ; the border white while it burns (the layout review)
         call flash
-        ld hl,1*256+25          ; the rush of the NOS: 25 frames (L), kind 1 (H)
+        ld hl,1*256+18          ; the NOS's whoosh up: 18 frames (L), kind 1 (H)
         ld (snd_fxt),hl
         ld a,M_BOOST
         jp msg_say

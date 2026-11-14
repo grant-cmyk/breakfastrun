@@ -229,7 +229,85 @@ def musicbox():
                 beat=30, beats_per_bar=3, transpose=7, bars=bars, drums=None)
 
 
-DITTIES = [march(), swing(), stopstart(), musicbox()]
+# ---- four more (Grant, 14 Nov 2026: "please try the spilt milk, but also come up with some new
+#      ditty options") - nearer Spilt Milk's cheek and gaps, with two racier ones ----
+def jig():
+    e, q, d = 9, 18, 27                 # quaver, crotchet, dotted crotchet (6/8)
+    bars = [
+        f"G6:{e} B6:{e} D7:{e} G7:{q} D7:{e}",
+        f"E7:{q} D7:{e} B6:{d}",
+        f"A6:{e} B6:{e} C7:{e} D7:{q} B6:{e}",
+        f"A6:{d} r:{d}",
+        f"G6:{e} B6:{e} D7:{e} G7:{q} A7:{e}",
+        f"G7:{q} E7:{e} D7:{d}",
+        f"C7:{e} E7:{e} D7:{e} B6:{e} A6:{e} B6:{e}",
+        f"G6:{d} r:{d}",
+        f"E7:{q} E7:{e} G7:{q} E7:{e}",
+        f"D7:{q} B6:{e} D7:{d}",
+        f"C7:{q} C7:{e} E7:{q} C7:{e}",
+        f"B6:{d} r:{d}",
+        f"G6:{e} B6:{e} D7:{e} G7:{q} D7:{e}",
+        f"E7:{e} G7:{e} E7:{e} D7:{q} B6:{e}",
+        f"A6:{e} C7:{e} B6:{e} A6:{q} B6:{e}",
+        f"G6:{d} r:{d}",
+    ]
+    return dict(key="ditty5", name="Kettle's On", mood="a skipping jig",
+                beat=27, beats_per_bar=2, transpose=4, bars=bars,
+                drums=["o..x.."] * 16)
+
+
+def chase():
+    e, s = 16, 8
+    bars = [
+        f"A6:{s} A6:{s} C7:{e} A6:{s} A6:{s} E7:{e}",
+        f"D7:{s} D7:{s} C7:{e} B6:{e} r:{e}",
+        f"A6:{s} A6:{s} C7:{e} A6:{s} A6:{s} E7:{e}",
+        f"G7:{e} E7:{e} D7:{e} r:{e}",
+        f"F6:{s} F6:{s} A6:{e} F6:{s} F6:{s} C7:{e}",
+        f"G6:{s} G6:{s} B6:{e} G6:{s} G6:{s} D7:{e}",
+        f"E7:{s} D7:{s} C7:{s} B6:{s} A6:{s} G#6:{s} A6:{s} B6:{s}",
+        f"A6:{e} r:{e} E6:{e} r:{e}",
+    ]
+    return dict(key="ditty6", name="Crumbs!", mood="a galloping chase, minor key",
+                beat=16, beats_per_bar=4, transpose=7, bars=bars,
+                drums=["o.x.o.x."] * 8)
+
+
+def toaster():
+    e, q = 11, 22
+    bars = [
+        f"C7:{e} r:{e} C7:{e} G6:{e} r:{q} G7:{e} r:{e}",
+        f"E7:{e} r:{e} E7:{e} C7:{e} r:{q} r:{q}",
+        f"D7:{e} r:{e} D7:{e} A6:{e} r:{q} A7:{e} r:{e}",
+        f"G7:{e} F7:{e} E7:{e} D7:{e} r:{q} r:{q}",
+        f"C7:{e} r:{e} C7:{e} G6:{e} r:{q} G7:{e} r:{e}",
+        f"F7:{e} r:{e} F7:{e} A6:{e} r:{q} r:{q}",
+        f"G6:{e} B6:{e} D7:{e} F7:{e} r:{e} E7:{e} D7:{e} r:{e}",
+        f"C7:{q} r:{q} G7:{e} C7:{e} r:{q}",
+    ]
+    return dict(key="ditty7", name="Pop-Up Toaster", mood="boingy leaps and pauses",
+                beat=22, beats_per_bar=4, transpose=4, bars=bars,
+                drums=["o...x..."] * 8)
+
+
+def butterfingers():
+    q, e, s = 20, 10, 5
+    bars = [
+        f"E7:{s} Eb7:{s} D7:{e} r:{e} B6:{e} r:{q} G6:{e} r:{e}",
+        f"A6:{e} r:{e} A6:{s} Bb6:{s} B6:{e} r:{q} r:{q}",
+        f"E7:{s} Eb7:{s} D7:{e} r:{e} B6:{e} r:{e} G6:{e} E6:{e} r:{e}",
+        f"F#6:{e} r:{e} A6:{e} r:{e} G6:{q} r:{q}",
+        f"C7:{e} E7:{e} r:{e} C7:{s} B6:{s} A6:{e} r:{e} r:{q}",
+        f"B6:{e} D7:{e} r:{e} B6:{s} A6:{s} G6:{e} r:{e} r:{q}",
+        f"E6:{e} G6:{e} B6:{e} E7:{e} r:{e} D7:{s} C7:{s} B6:{e} r:{e}",
+        f"G6:{s} G6:{s} r:{e} E6:{q} r:{q} r:{q}",
+    ]
+    return dict(key="ditty8", name="Butter Fingers", mood="clumsy slips and stumbles (Spilt Milk's cousin)",
+                beat=20, beats_per_bar=4, transpose=7, bars=bars,
+                drums=["x.....o."] * 8)
+
+
+DITTIES = [march(), swing(), stopstart(), musicbox(), jig(), chase(), toaster(), butterfingers()]
 STYLES = ["pips", "plink", "buzz"]
 FAVOURITE = ("ditty1", "plink")         # the one used for the in-game demo
 LOOPS = 2

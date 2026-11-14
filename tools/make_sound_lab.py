@@ -8,7 +8,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = sys.argv[1]
 tmp = tempfile.mkdtemp()
 audio = {}
-for d in (1, 2, 3, 4):
+for d in range(1, 9):
     for st in ('pips', 'plink', 'buzz'):
         audio['ditty%d_%s' % (d, st)] = None
 audio['demo_in_game'] = None

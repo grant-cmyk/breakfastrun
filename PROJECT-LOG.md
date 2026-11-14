@@ -1306,3 +1306,19 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the car clear of the pack). Not yet checked whether Grant sees a slowdown.
 - Sound Lab artifact (tools/make_sound_lab.py + tools/sound_lab.template.html): the four ditties
   in three styles, and 3-5 options for each of six event sounds, with a picks line to copy back.
+
+## 2026-11-14 SAST (midday) - the ditty plays; Grant's sound picks built; four new ditties
+- Grant: "please try the spilt milk, but also come up with some new ditty options", then his
+  picks from the Sound Lab: "Ditty: Spilt Milk, buzz. Accelerating: A1 Putter. Skidding: S1 Short
+  screech. Hitting another car: H1 Crunch. Banging into a cereal O: B2 Bonk. Picking up a NOS:
+  P3 Coin run. Firing the NOS: F2 Whoosh up."
+- The ditty player is in the interrupt (racer.asm, isr_q; A, H, L only, no calls). Data:
+  src/music.asm, made by tools/make_music.py from the tune in tools/make_ditties.py (run
+  `python3 tools/make_music.py ditty3` by hand - build.sh does not). Buzz: a burst of the note on
+  every frame for half the note, 8 frames at most. 160 bytes of tune, worst pitch error 0.6%.
+  The tune gives way to an effect, the skid or a crash, and keeps its place.
+- Effects (snd_fxk): 0 the coin run (pick-up, 8 frames), 1 the whoosh up (NOS, 18 frames),
+  2 the bonk (an O, 6 frames; it was the crunch), 3 up a beep. o_test reads snd_fxt now.
+- Four new ditties in make_ditties.py: 5 Kettle's On, 6 Crumbs!, 7 Pop-Up Toaster, 8 Butter
+  Fingers (WAVs in docs/sound/, all pass the tool's checks; nobody has heard them yet).
+- zxlap: 158 pictures at 3 frames, 143 at 4 - as before the music (151 / 145). code_end 0xBD1D.
