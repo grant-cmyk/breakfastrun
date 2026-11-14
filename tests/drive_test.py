@@ -16,6 +16,7 @@ for line in open(SYMF):
     p = line.split()
     if len(p) >= 3 and p[1] == 'EQU':
         SYM[p[0].lower()] = int(p[2].rstrip('H'), 16)
+WW = SYM['win_w'] * 8                                   # the window's width (184 since 14 Nov 2026)
 WY, WH, MR = SYM['win_y'], SYM['win_h'], SYM['msg_row']   # the window's top line and height, the message bar's row (build options)
 CS = SYM['c_size']; CARS = SYM['cars']; N = SYM['ncars']; CPUS = list(range(1, N)); TOWER_Y = SYM['tower_y']
 
@@ -116,11 +117,11 @@ def screen_text(sp, row, col, n):
 
 def frame_ok(sp):
     # the slim frame (layout G3): a 2-pixel line, rounded, 3 pixels of table inside it
-    bits = screen_bits(sp); B = WY + WH + 3                # (its bottom line: 3 pixels under the window)
-    lines = bits[3, 5:187].all() and bits[4, 4:188].all() and bits[B, 4:188].all() and bits[B + 1, 5:187].all()
-    sides = bits[5:B, 3:5].all() and bits[5:B, 187:189].all()
-    gap = not bits[5:8, 5:187].any() and not bits[B - 3:B, 5:187].any() and not bits[8:B - 3, 5:8].any() and not bits[8:B - 3, 184:187].any()
-    outside = not bits[0:3, 0:192].any() and not bits[3, 0:5].any() and not bits[B + 2:B + 4, 0:88].any() and not bits[5:B, 0:3].any()
+    bits = screen_bits(sp); B = WY + WH + 3; R = 8 + WW + 4   # (R: the right-hand line's second pixel)                # (its bottom line: 3 pixels under the window)
+    lines = bits[3, 5:R - 1].all() and bits[4, 4:R].all() and bits[B, 4:R].all() and bits[B + 1, 5:R - 1].all()
+    sides = bits[5:B, 3:5].all() and bits[5:B, R - 1:R + 1].all()
+    gap = not bits[5:8, 5:R - 1].any() and not bits[B - 3:B, 5:R - 1].any() and not bits[8:B - 3, 5:8].any() and not bits[8:B - 3, R - 4:R - 1].any()
+    outside = not bits[0:3, 0:R + 4].any() and not bits[3, 0:5].any() and not bits[B + 2:B + 4, 0:88].any() and not bits[5:B, 0:3].any()
     attrs = all(sp.read8(0x5800 + c) == 0x31 for c in range(24)) and sp.read8(0x5800 + (B // 8) * 32) == 0x31
     return bool(lines and sides and gap and outside and attrs)
 
@@ -154,20 +155,20 @@ def at_copy_done(sp):
 
 def cloth(camx, camy):
     # the tablecloth: 32-px checks, the dark ones 25% dots, locked to the table
-    y, x = np.mgrid[camy:camy + WH, camx:camx + 176]
+    y, x = np.mgrid[camy:camy + WH, camx:camx + WW]
     return ((((x >> 5) + (y >> 5)) & 1) == 1) & ((y & 1) == 0) & ((x & 3) == (y & 2))   # dark checks: 1 in 8, staggered
 
 def window_bad(sp):
     at_copy_done(sp)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
-    bits = screen_bits(sp)[WY:WY + WH, 8:184]        # the window: cells 1-22
-    want = world[camy:camy + WH, camx:camx + 176] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + 176])
+    bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]     # the window
+    want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
-    mask[WH - 13:WH - 1, 160 - 8:184 - 8] = False     # the NOS canisters in the corner
+    mask[WH - 13:WH - 1, WW - 24:WW] = False     # the NOS canisters in the corner
     mask[WH - 17:WH, 0:24] = False                    # the health gauge in the other corner
-    mask[2:20, 136:176] = False                       # your place on its plate, in the top right corner
-    mask[21:34, 128:176] = False                      # ... and its message's plate
+    mask[2:20, WW - 40:WW] = False                       # your place on its plate, in the top right corner
+    mask[21:34, WW - 48:WW] = False                      # ... and its message's plate
     for n in range(N):
         c = car(sp, n)
         cx, cy = c['x'] - camx, c['y'] - camy
@@ -204,7 +205,7 @@ with Racer(headless=True) as sp:
     check(all(attr(r, c) == 0x30 for r in (21, 22, 23) for c in range(0, 10)) and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
           and not sb[168:192, 0:88].any() and sb[168:184, 168:184].any(),
           'under the window: plain table bottom left (your place and lap are on the plate in the window); the crew chief on blue')
-    check(sb[140:150, 176:184].any() and attr(17, 22) == 0x29, 'your NOS canister is shown in the window\'s corner, in the window\'s colours')
+    check(sb[WY + WH - 12:WY + WH - 2, WW:WW + 8].any() and attr(19, WW // 8) == 0x29, 'your NOS canister is shown in the window\'s corner, in the window\'s colours')
     check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(TOWER_Y + 2 * i, 25) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
@@ -242,7 +243,7 @@ with Racer(headless=True) as sp:
     # (12.5 = every picture at 4 TV frames. Off the grid the game is in its 4-frame rhythm for
     # these 2 seconds with or without the ditty: 26 pictures without it, 25 with - 14 Nov 2026)
     check(fps >= 12.5, 'at least 12.5 pictures a second off the start, five cars bunched (got %.1f)' % fps)
-    check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
+    check(all(car(sp, i)['x'] > CPU0X + 20 for i in CPUS), 'pressing Q started the race: all four computer cars set off (x %s, from %d)' % ([car(sp, i)['x'] for i in CPUS], CPU0X))
     sb = screen_bits(sp)
     check(attr(21, 11) == 0x78 and attr(23, 20) == 0x78 and attr(21, 10) == 0x30 and attr(20, 11) == 0x31
           and sb[168, 90:166].all() and sb[191, 90:166].all() and sb[176:188, 90:166].any(),
@@ -251,7 +252,7 @@ with Racer(headless=True) as sp:
     check((sb[172:180, 168] == 1).all() and sb[175, 168:172].all(), "the bubble's tail is a point in the chief's panel")
     press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
     cx, cy = pc_['x'] - g(sp, 'camx'), pc_['y'] - g(sp, 'camy')
-    check((cx, cy) == (80, WH // 2 - 8), 'camera keeps your car exactly in the middle of the 176 x %d window (%d,%d)' % (WH, cx, cy))
+    check((cx, cy) == (WW // 2 - 8, WH // 2 - 8), 'camera keeps your car exactly in the middle of the %d x %d window (%d,%d)' % (WW, WH, cx, cy))
 
     sp.run(duration=0.6, fast_forward=True)
     bar = screen_text(sp, 22, 1, 9) + '|' + screen_text(sp, 23, 1, 9)

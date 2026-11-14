@@ -1564,3 +1564,19 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Speed (zxlap): alone 200 pictures at 3 frames / 113 at 4 (it was 240 / 79 at 144 lines); in
   the pack 14 / 250 / 1. Eight more lines are 5.5% more to fill, draw and copy.
 - Tests updated for the new positions (frame_ok, the window check, the bubble); all pass.
+
+## 2026-11-14 SAST (night) - the window a column wider: 184 x 152
+- Grant: "i would like to add one more column to the right ... and we'll see if there is a
+  performance impact". There was already a blank column between the frame and the right-hand
+  panel, so nothing there was squeezed: the window is columns 1-23, the frame's line in column 24.
+- WIN_W 23. The copy routine moves 12 pairs a row (7 + 5), 24 bytes: the 24th is the frame's own
+  screen column, so its line (0x18) is kept in the buffer's byte 25 of every window row (fr_col,
+  each picture). 152 lines x 40 bytes from 0xE800 run to 0xFFC3, so the "top of memory" data
+  (TOPMEM: masks, map rows, HUD text) is now under 0x8000 too, below LOWTAB. The cloth fill
+  pushes 13 pairs a line (bytes 25-0). Camera, car clip, frame, NOS canisters and the plate
+  follow WIN_W.
+- PERFORMANCE, measured (zxlap): alone 19 pictures at 3 frames / 239 at 4 / 9 at 5 (it was 200
+  / 113 at 22 columns); in the pack 9 / 255 / 10. The extra column takes the game out of its
+  faster rhythm altogether: about 9,000 T a picture (the copy 4,400, the cloth 1,700, the
+  frame's column 2,400, tiles). tests/drive_test.py: the computer cars' "set off" check asks for
+  20 pixels in 2 s, not 30 (one car made exactly 30 at the slower rhythm).

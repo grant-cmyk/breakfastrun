@@ -39,7 +39,7 @@ COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
-WIN_W   equ 22                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
+WIN_W   equ 23                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
 WIN_H   equ 152                 ; "take the very top row of the display as well"; it was 120
                                 ; high on 9 Nov, 128 and 136 earlier on 14 Nov)
 MSG_ROW equ 23                  ; the message bar: the bottom row, until the new layout is built
@@ -89,8 +89,8 @@ PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a 
 PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
-        if $ > LOWTAB
-        .error the room under 0x8000 runs into the tables kept at its top (LOWTAB)
+        if $ > LOWTAB-0x2A0
+        .error the room under 0x8000 runs into the data kept at its top (TOPMEM, LOWTAB)
         endif
         org 32768
 
@@ -193,6 +193,7 @@ draw_all:
         call nz,lights_draw
         call nos_draw           ; the NOS canisters you hold, in the window's corner
         call dmg_draw           ; and your car's damage, in the other corner
+        call fr_col             ; the frame's right-hand line, which the copy carries with the window
         call pl_draw            ; and your place, on its plate, top right
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
@@ -1763,7 +1764,7 @@ camera:
         jr nc,cx_pos
         ld hl,0
 cx_pos:
-        ld de,MAPW*8-200
+        ld de,MAPW*8-WIN_W*8-24
         call clamp_hl
         ld (camx),hl
         ld hl,(cars+C_Y)
@@ -2028,7 +2029,7 @@ draw_car:
         or a
         ret nz
         ld a,l
-        cp 190                  ; wx -12..177
+        cp WIN_W*8+14           ; wx -12..the window's width + 1
         ret nc
         ld (wxu),a
         ld l,(ix+C_Y)
@@ -2359,8 +2360,8 @@ ld_r1:
 ; corner, in the window's own colours: each replaces its byte of the cloth on 10 lines,
 ; so it stands clear of what is behind it (layout G3; the inventory slots have gone).
 ; Window lines 132-135 are buffer rows 140-143 (one character row), 136-141 rows 144-149.
-NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 23     ; buffer row 148 (third 2, char row 2, line 4), byte 23
-NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 23     ; buffer row 152 (third 2, char row 3, line 0)
+NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 24     ; buffer row 148 (third 2, char row 2, line 4), byte 24
+NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 24     ; buffer row 152 (third 2, char row 3, line 0)
 nos_draw:
         ld hl,INV
         ld c,0                  ; C = slot 0..2: bytes 23, 22, 21
@@ -2829,8 +2830,10 @@ flash:
 ; Any order is safe: the interrupt routine pushes 6 bytes, and below the
 ; start of every line are the 8 margin bytes of another.
 ; ---------------------------------------------------------------------
-CL_L0   equ (BUF_TOP/8)*32+24   ; the low byte of line 0's byte 24 (buffer row BUF_TOP)
-CL_PUSH macro                     ; bytes 23..0 of a line from the pairs BC, DE, HL, IY
+CL_L0   equ (BUF_TOP/8)*32+26   ; the low byte of line 0's byte 26 (buffer row BUF_TOP): 13 pushes fill
+                                ; bytes 25..0 (the window is 23 bytes wide since 14 Nov 2026: bytes 2-24)
+CL_PUSH macro                     ; bytes 25..0 of a line from the pairs BC, DE, HL, IY (bytes 25
+        push iy                 ; and 24 are the pattern's 17 and 16: IY's)
         rept 3
         push bc
         push de
@@ -2853,7 +2856,7 @@ cloth_fill:
 cb_row:
         rept 4                  ; the 4 in this character row, 2 pixel rows apart
         ld sp,ix
-        rept 12
+        rept 13
         push hl
         endm
         inc ixh
@@ -3956,7 +3959,7 @@ screen_once:
         ld (hl),0x30
         ldir
         ld bc,0                 ; ...the window's slim frame blue on the table (its
-        ld de,0x1518            ; cells: rows 0-20, columns 0-23)...
+        ld de,0x1519            ; cells: rows 0-20, columns 0-24)...
         ld a,0x31
         call set_attrs
         ld hl,0x5800+(WIN_Y/8)*32+WIN_COL   ; ...and the window blue ink on cyan paper
@@ -4067,7 +4070,7 @@ df_v:
         call scr_addr
         ld (hl),0x18
         ld a,l
-        add a,23
+        add a,WIN_W+1
         ld l,a
         ld (hl),0x18
         inc b
@@ -4079,7 +4082,7 @@ df_h:                           ; line B: D at column 0, solid across, E at colu
         ld c,0
         call scr_addr
         ld (hl),d
-        ld a,22
+        ld a,WIN_W
 df_h1:
         inc l
         ld (hl),0xFF
@@ -4198,10 +4201,10 @@ mc_row:
         ld (mc_n),a
         xor a
         call mc_half
-        ld a,4                  ; bytes 14..21: 4 pairs - the whole row
-        ld (mc_n),a
-        ld a,14
-        call mc_half            ; (22 bytes: no odd byte left over)
+        ld a,5                  ; bytes 14..23: 5 pairs. That is 24 bytes for a 23-byte window: the
+        ld (mc_n),a             ; last is the frame's own column, which fr_col keeps in the buffer
+        ld a,14                 ; (an odd byte copied by itself would need 6 bytes a row more, and
+        call mc_half            ; the routine would not fit under the interrupt's jump at 0xFFF4)
         ld a,(mc_y)
         inc a
         cp WIN_H
@@ -4259,12 +4262,12 @@ mc_h1:
         sbc hl,bc
         ldir
         ret
-mc_cnt:                         ; BC = 8 for 7 pairs (with the EXX), 4 for 4
-        ld bc,8
+mc_cnt:                         ; BC = 8 for 7 pairs (with the EXX), 6 for 5 (pop af, bc, de, hl, exx,
+        ld bc,8                 ; pop bc - and the pushes to match)
         ld a,(mc_n)
         cp 7
         ret z
-        ld c,4
+        ld c,6
         ret
 mc_op:                          ; write opcode A and address HL
         ld (de),a
@@ -4383,7 +4386,8 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ 0xFD70            ; the copy routine ends at 0xFD62 (152 lines of 36 bytes)
+TOPMEM      equ LOWTAB-0x2A0      ; (under 0x8000 since the window grew a column: the copy routine, 152
+                                  ; lines of 40 bytes from COPIER, now runs to 0xFFC3 - there is no top of memory left)
 BUFA      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 BUFB      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 BUFD      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
@@ -4463,8 +4467,8 @@ omap      equ omap_src
 cars_init equ TOPMEM + cars_init_src - high_src
 faces     equ faces_src
 
-        if WIN_W - 22
-        .error make_copier is written for a 22-byte window row
+        if WIN_W - 23
+        .error make_copier is written for a 23-byte window row (and the frame's column)
         endif
         if BUF_TOP + WIN_H + 8 > 168
         .error the tiles under the window's last line run into the tables kept from buffer row 160
@@ -4478,8 +4482,8 @@ faces     equ faces_src
         if code_end > BUF_HI*256
         .error code and data run into the back buffer
         endif
-        if TOPMEM + high_end - high_src > 0xFFF4
-        .error the top-of-memory data runs into the interrupt jump at 0xFFF4
+        if TOPMEM + high_end - high_src > LOWTAB
+        .error the data at TOPMEM runs into the tables at LOWTAB
         endif
         if (bufa_end - bufa_src) / 129 + (bufb_end - bufb_src) / 129 + (bufd_end - bufd_src) / 129 + (bufg_end - bufg_src) / 129 + (bufe_end - bufe_src) / 129 + (buff_end - buff_src) / 129 + (bufh_end - bufh_src) / 129
         .error a block for the buffer's bottom rows is over 122 bytes (128, less the last 6, where the interrupt's pushes can land)

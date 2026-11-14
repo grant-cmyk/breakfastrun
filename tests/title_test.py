@@ -159,7 +159,7 @@ with Racer(headless=True) as sp:
        'the attract sequence runs again, no race behind it')
     tap(sp, '1', 0.3, 2.0)
     sb = screen_bits(sp)
-    same = all((sb[y0:y1, x0:x1] == scr0[y0:y1, x0:x1]).all() for (y0, y1, x0, x1) in ((0, 8, 0, 256), (0, 64, 192, 256), (8, 160, 0, 8), (8, 160, 184, 192), (160, 168, 0, 192)))
+    same = all((sb[y0:y1, x0:x1] == scr0[y0:y1, x0:x1]).all() for (y0, y1, x0, x1) in ((0, 8, 0, 256), (0, 64, 200, 256), (8, 160, 0, 8), (8, 160, 192, 200), (160, 168, 0, 200)))
     ok(frame_ok(sp) and same and sp.read8(SYM['race_on']) == 0 and car(sp, 0)['vx'] == 0,
        '1: a new race on the grid; the race screen put back whole (frame, logo, mini-map)')
     t = go_green(sp); sp.run(duration=1.0, fast_forward=True); press(sp, 'Q', False)

@@ -14,14 +14,14 @@
 ; when your place or lap changes (pl_static, in the slow memory under 0x8000 with the other
 ; parts that run rarely); each picture only the time's figures are done again there, and the
 ; whole of pl_bmp is copied into the buffer. It was 12,000 T a picture built from nothing.
-PL_B    equ BUF + 1*32 + 2*0x100 + 19   ; the place plate: buffer row 10 (window line 2), bytes 19-23 (the
+PL_B    equ BUF + 1*32 + 2*0x100 + 20   ; the place plate: buffer row 10 (window line 2), bytes 19-23 (the
                                 ; window's last 40 pixels), 18 rows: the plate itself is 29 x 16, 6
                                 ; pixels in from the window's right edge and 3 down from its top
                                 ; (Grant, 14 Nov 2026: "make the P1 smaller, so that the display can be
                                 ; a bit smaller ... shift it more towards the corner and have a smaller
                                 ; blue border around it")
-PL_M    equ BUF + 3*32 + 5*0x100 + 18   ; the message's: buffer row 29, bytes 18-23, 13 rows
-PL_MT   equ BUF + 4*32 + 1*0x100 + 18   ; ... its letters' first row: buffer row 33
+PL_M    equ BUF + 3*32 + 5*0x100 + 19   ; the message's: buffer row 29, bytes 18-23, 13 rows
+PL_MT   equ BUF + 4*32 + 1*0x100 + 19   ; ... its letters' first row: buffer row 33
 ; (PL_W and PL_H, pl_bmp's bytes a row and rows: in racer.asm, before the first use)
 pl_draw:
         ld a,(lt_on)
@@ -174,4 +174,31 @@ pw_1:
         ld a,h
         sub 8
         ld h,a
+        ret
+
+; FR_COL: the copy routine moves 24 bytes a row, one more than the window: the 24th is the
+; screen column the frame's right-hand line is in. So that line (2 pixels: 0x18) is kept in
+; the buffer's byte 25 of every window row - put back each picture, after the cloth, the
+; tiles and the cars have had their way with it.
+fr_col:
+        ld hl,BUF + (BUF_TOP/8)*32 + 25
+        ld b,WIN_H/8
+fc_1:
+        ld a,0x18
+        rept 8
+        ld (hl),a
+        inc h
+        endm
+        ld a,h                  ; the next character row: 32 bytes on, back up its 8 lines -
+        sub 8                   ; or, past the last row of a third of the buffer, into the next
+        ld h,a
+        ld a,l
+        add a,32
+        ld l,a
+        jr nc,fc_2
+        ld a,h
+        add a,8
+        ld h,a
+fc_2:
+        djnz fc_1
         ret

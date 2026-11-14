@@ -11,8 +11,8 @@ fails = 0
 def ok(c, m):
     global fails
     print('PASS' if c else 'FAIL', m); fails += 0 if c else 1
-def plate(sp): return screen_bits(sp)[WY + 2:WY + 20, 8 + 136:8 + 176].astype(bool)      # its 40 x 18 patch
-def msg(sp): return screen_bits(sp)[WY + 21:WY + 34, 8 + 128:8 + 176].astype(bool)
+def plate(sp): return screen_bits(sp)[WY + 2:WY + 20, 8 + WW - 40:8 + WW].astype(bool)      # its 40 x 18 patch
+def msg(sp): return screen_bits(sp)[WY + 21:WY + 34, 8 + WW - 48:8 + WW].astype(bool)
 with Racer(headless=True) as sp:
     sp.load_tape(TAP); t = 0
     while g(sp, 'renders') == 0 and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1

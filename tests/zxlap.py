@@ -62,7 +62,7 @@ while laps < 1 and fr < 1500:
         if f_last:
             frames[fr - f_last] += 1
             cs = mem(CARS, SYM['c_size'] * 5); cx, cy = w16(SYM['camx']), w16(SYM['camy'])
-            vis = sum(1 for i in range(5) if -16 < cs[i * SYM['c_size'] + 1] + 256 * cs[i * SYM['c_size'] + 2] - cx < 176 and -16 < cs[i * SYM['c_size'] + 4] + 256 * cs[i * SYM['c_size'] + 5] - cy < 120)
+            vis = sum(1 for i in range(5) if -16 < cs[i * SYM['c_size'] + 1] + 256 * cs[i * SYM['c_size'] + 2] - cx < 184 and -16 < cs[i * SYM['c_size'] + 4] + 256 * cs[i * SYM['c_size'] + 5] - cy < 152)
             slow[(fr - f_last, vis, (r - 1) & 3)] += 1
         if 'mu_used' in SYM and mem(SYM['mu_ph'], 1)[0]: notes.append(mem(SYM['mu_used'], 1)[0])   # (only builds with the burst-a-picture ditty)
         r_last, f_last = r, fr
