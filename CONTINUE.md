@@ -1,7 +1,15 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 21:17 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 21:41 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
+
+**Latest (14 Nov 2026, 21:41 SAST) - read this before the older status below:** the window is 184 x 152
+(23 columns, 19 rows); your place, lap and lap time are on a small plate INSIDE the window (nothing bottom
+left any more); the health gauge is a MAGENTA lightning bolt bottom left of the window and the NOS bottles
+are RED bottom right, each in colour cells of its own (hud_pre, src/plate_slow.asm); in-race music is OFF
+(MUSIC=1 builds it; unsolved on the beeper, an AY-chip version is proposed and waits on Grant); coloured
+objects are OFF (OBJECTS=1; too slow). Speed alone: 19 pictures at 3 frames / 239 at 4 / 9 at 5 - the
+23rd column cost the faster rate; Grant has not yet said whether to keep it. Detail: PROJECT-LOG.md, end.
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 152 (19 rows, since 14 Nov late) in a slim
 blue frame; LAYOUT G3 BUILT (docs/design/g3_built.png): logo top right, the mini-map under it, the

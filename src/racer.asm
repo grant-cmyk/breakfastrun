@@ -191,6 +191,7 @@ draw_all:
         ld a,(lt_on)            ; the start lights, while they are up
         or a
         call nz,lights_draw
+        call hud_pre            ; (their colours, and the canisters' cells cleared)
         call nos_draw           ; the NOS canisters you hold, in the window's corner
         call dmg_draw           ; and your car's damage, in the other corner
         call fr_col             ; the frame's right-hand line, which the copy carries with the window
@@ -2415,10 +2416,10 @@ nd_col:
 ;   NOS canisters.
 ; ---------------------------------------------------------------------
 DMG_MAX  equ 8
-DMG_ROWS equ 17                 ; the gauge: the icon's 13 rows and 2 clear ones above and below (dmgicon.asm)
+DMG_ROWS equ 16                 ; the gauge: 2 colour cells high - a clear row, the icon's 13, two clear (dmgicon.asm)
 DMG_COOL equ 12
 DMG_SLOW equ 8                  ; (8 points: 64 of the 448 - a seventh off the top speed)
-DMG_B    equ BUF + 0x800*2 + 7*0x100 + 1*32 + 2      ; buffer row 143 (third 2, char row 1, line 7), byte 2: the window's left edge
+DMG_B    equ BUF + 0x800*2 + 0*0x100 + 2*32 + 2      ; buffer row 144 (third 2, char row 2, line 0), byte 2: the window's last two cell rows, its left edge
 dmg_hit:
         ld hl,dmg_cool
         ld a,(hl)
@@ -2439,19 +2440,15 @@ dmg_draw:
         adc a,dmg_emp/256
         ld h,a
         ld c,(hl)
-        ld hl,dmg_heart         ; for each byte: the table's pixels to keep, the outline, the fill
+        ld hl,dmg_heart         ; for each byte: the outline, the fill
         ld de,DMG_B
         ld b,DMG_ROWS
-dd_1:                           ; the icon goes ON the table: only the icon and 2 pixels round it are
-                                ; cleared - a mask its own shape, which you do not see (Grant, 14 Nov
-                                ; 2026: "a masked item, so a decent mask - but invisible mask"), in the
-                                ; window's own blue. (Three bytes written out, not called: 3,000 T saved)
-        ld a,(de)
-        and (hl)                ; what the table keeps
+dd_1:                           ; every byte of its 3 x 2 cells is written: they are the icon's alone,
+                                ; so they can have its colour (magenta: hud_pre) with nothing else in
+                                ; them to take it - "a decent mask to prevent colour clash"
+        ld a,(hl)               ; the outline,
         inc hl
-        or (hl)                 ; the outline
-        inc hl
-        inc c                   ; the fill, unless this row is an empty one (C not 0)
+        inc c                   ; and the fill, unless this row is an empty one (C not 0)
         dec c
         jr nz,dd_a
         or (hl)
@@ -2459,12 +2456,9 @@ dd_a:
         inc hl
         ld (de),a
         inc e
-        ld a,(de)
-        and (hl)                ; what the table keeps
+        ld a,(hl)               ; the outline,
         inc hl
-        or (hl)                 ; the outline
-        inc hl
-        inc c                   ; the fill, unless this row is an empty one (C not 0)
+        inc c                   ; and the fill, unless this row is an empty one (C not 0)
         dec c
         jr nz,dd_b
         or (hl)
@@ -2472,12 +2466,9 @@ dd_b:
         inc hl
         ld (de),a
         inc e
-        ld a,(de)
-        and (hl)                ; what the table keeps
+        ld a,(hl)               ; the outline,
         inc hl
-        or (hl)                 ; the outline
-        inc hl
-        inc c                   ; the fill, unless this row is an empty one (C not 0)
+        inc c                   ; and the fill, unless this row is an empty one (C not 0)
         dec c
         jr nz,dd_c
         or (hl)
@@ -2504,7 +2495,7 @@ dd_2:
 dd_3:
         djnz dd_1
         ret
-dmg_emp: db 3,4,5,6,7,8,10,12,17        ; rows without fill (the first 2 are margin) for damage 0 to 8
+dmg_emp: db 2,3,4,5,6,7,9,11,16         ; rows without fill (the first is clear) for damage 0 to 8
         include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
 
 ; ---------------------------------------------------------------------

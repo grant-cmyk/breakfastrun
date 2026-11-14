@@ -1580,3 +1580,19 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   faster rhythm altogether: about 9,000 T a picture (the copy 4,400, the cloth 1,700, the
   frame's column 2,400, tiles). tests/drive_test.py: the computer cars' "set off" check asks for
   20 pixels in 2 s, not 30 (one car made exactly 30 at the slower rhythm).
+
+## 2026-11-14 21:41 SAST - the NOS bottles red, the health bolt magenta
+
+- Grant: "could you make the NOS bottles in the bottom right red ink and the health lightning bolt
+  magenta. So these would need a decent mask to prevent colour clash".
+- HOW: a colour cell holds one ink, so each icon now owns its cells. `hud_pre` (src/plate_slow.asm,
+  called each picture before `nos_draw`) sets the gauge's 3 x 2 cells to magenta on cyan (0x2B)
+  and each HELD bottle's 2 cells to red on cyan (0x2A), an empty slot back to the cloth's blue
+  (0x29). The mask is the whole cell: a held bottle's cells are cleared in the buffer first, and
+  `dmg_draw` now writes all 16 rows x 3 bytes of the gauge (src/dmgicon.asm: outline, fill per
+  byte; tools/make_damage_icons.py game_rows()). So the cloth's dots and any car passing behind
+  are not drawn inside those cells - nothing there can take the wrong colour.
+- COST of that: a car driving into the bottom-left 24 x 16 or under a held bottle is hidden there.
+- SPEED, measured (tests/zxlap.py): alone 19 / 239 / 9 (unchanged); in the pack 17 / 252 / 6.
+- TESTS: damage, plate, title, drive, nos, o, setup, drift, stuck all PASS. damage_test checks the
+  six gauge cells are 0x2B; drive_test checks the bottle red and the bolt magenta.

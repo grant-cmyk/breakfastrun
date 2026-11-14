@@ -94,6 +94,71 @@ pf_3:
         pop bc
         pop hl
         jp pl_down
+; HUD_PRE, each picture before the canisters and the gauge are drawn (Grant, 14 Nov 2026: "make
+; the NOS bottles in the bottom right red ink and the health lightning bolt magenta. So these
+; would need a decent mask to prevent colour clash"). They do not scroll, so their colour cells
+; can have an ink of their own - as long as nothing else is in those cells: the gauge's 3 x 2
+; cells are written whole by dmg_draw; a canister's 1 x 2 are cleared here when you hold it
+; (and are the window's own colour again when you do not).
+HP_AT   equ 0x5800 + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL   ; the window's last two cell rows on the screen
+HP_NB   equ BUF + 0x800*2 + 2*32 + 2 + WIN_W - 1            ; the first canister's upper cell in the buffer (its last byte)
+hud_pre:
+        ld a,0x2B               ; the gauge: magenta on the table's cyan
+        ld hl,HP_AT
+        ld (hl),a
+        inc l
+        ld (hl),a
+        inc l
+        ld (hl),a
+        ld l,(HP_AT + 32) AND 255
+        ld (hl),a
+        inc l
+        ld (hl),a
+        inc l
+        ld (hl),a
+        ld a,(INV)              ; the canisters: red
+        ld hl,HP_AT + WIN_W - 1
+        ld de,HP_NB
+        call hp_slot
+        ld a,(INV+1)
+        ld hl,HP_AT + WIN_W - 2
+        ld de,HP_NB - 1
+        call hp_slot
+        ld a,(INV+2)
+        ld hl,HP_AT + WIN_W - 3
+        ld de,HP_NB - 2
+hp_slot:                        ; A = the slot (0: empty), HL = its upper cell on the screen, DE = in the buffer
+        or a
+        ld a,WIN_ATTR2
+        jr z,hp_2
+        ex de,hl                ; held: its two cells cleared (16 lines of the one byte)
+        xor a
+        ld b,8
+hp_0:
+        ld (hl),a
+        inc h
+        djnz hp_0
+        ld a,h
+        sub 8
+        ld h,a
+        ld a,l
+        add a,32
+        ld l,a
+        xor a
+        ld b,8
+hp_1:
+        ld (hl),a
+        inc h
+        djnz hp_1
+        ex de,hl
+        ld a,0x2A
+hp_2:
+        ld (hl),a
+        ld bc,32
+        add hl,bc
+        ld (hl),a
+        ret
+WIN_ATTR2 equ 0x29              ; the window's own colours: blue on cyan
 pl_key:  dw 0                   ; the place and lap pl_bmp was composed for
 pl_lin:  db 0                   ; pl_down's rows: 1 in pl_bmp, 0 in the buffer
 pl_bmp:  defs PL_W*PL_H          ; the plate, composed

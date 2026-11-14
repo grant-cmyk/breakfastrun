@@ -165,8 +165,8 @@ def window_bad(sp):
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
-    mask[WH - 13:WH - 1, WW - 24:WW] = False     # the NOS canisters in the corner
-    mask[WH - 17:WH, 0:24] = False                    # the health gauge in the other corner
+    mask[WH - 16:WH, WW - 24:WW] = False     # the NOS canisters in the corner
+    mask[WH - 16:WH, 0:24] = False                    # the health gauge in the other corner
     mask[2:20, WW - 40:WW] = False                       # your place on its plate, in the top right corner
     mask[21:34, WW - 48:WW] = False                      # ... and its message's plate
     for n in range(N):
@@ -205,7 +205,7 @@ with Racer(headless=True) as sp:
     check(all(attr(r, c) == 0x30 for r in (21, 22, 23) for c in range(0, 10)) and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
           and not sb[168:192, 0:88].any() and sb[168:184, 168:184].any(),
           'under the window: plain table bottom left (your place and lap are on the plate in the window); the crew chief on blue')
-    check(sb[WY + WH - 12:WY + WH - 2, WW:WW + 8].any() and attr(19, WW // 8) == 0x29, 'your NOS canister is shown in the window\'s corner, in the window\'s colours')
+    check(sb[WY + WH - 12:WY + WH - 2, WW:WW + 8].any() and attr(19, WW // 8) == 0x2A and attr(18, WW // 8) == 0x2A and attr(19, 1) == 0x2B, 'your NOS canister is shown in the window\'s corner in red, the health bolt in magenta (their colour cells their own)')
     check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(TOWER_Y + 2 * i, 25) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
