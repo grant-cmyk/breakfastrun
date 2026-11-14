@@ -161,6 +161,7 @@ cpu_move:
         add ix,de
         pop bc
         djnz cpu_move
+        call bumps_o            ; cars that touch, and the cereal O's
 
         call race_progress      ; your waypoints and laps, everyone's progress
         call hud_update         ; the panel, message bar and lap strip
@@ -276,9 +277,12 @@ tk_rest:
         add ix,de
         pop bc
         djnz tk_ai
-        ld a,(ticks)            ; bumps: every pair (gen_bumps.asm), on
-        and 1                   ; alternate frames - cars move a pixel or
-        ret nz                  ; two between, well inside the 11-px test
+        ret
+; BUMPS_O: once a picture, after everyone has moved (it was on alternate TV
+; frames: the computer cars only move once a picture now, and nobody moves
+; far enough in a picture to get through a car or an O untested - the speed
+; pass of 14 Nov 2026): every pair of cars (gen_bumps.asm), then the O's
+bumps_o:
         call bump_all
         ld ix,cars              ; and off the cereal O's
         ld b,NCARS
@@ -2033,8 +2037,9 @@ dc_cnt:
         ld a,(dc_tab)
         ld b,a
         ld a,(dc_count)
+        push ix                 ; (the rows to go: in IXL - a register, not memory,
+        ld ixl,a                ; saves 22 T a row; IX is put back at the end)
 dc_loop:
-        ld (dc_n),a
         ld a,(de)               ; mask byte (0: nothing in this byte - skip it
         inc de                  ; and its ink: 14 in 100 of the big cars' bytes)
         or a
@@ -2145,9 +2150,9 @@ dc_e2_x:
         sub 8
         ld h,a
 dc_same:
-        ld a,(dc_n)
-        dec a
+        dec ixl
         jp nz,dc_loop
+        pop ix
         ret
 
 ; ---------------------------------------------------------------------
@@ -2924,13 +2929,11 @@ bdx:      dw 0
 bdy:      dw 0
 tb:       defs 9
 dc_row0:  db 0
-dc_first: db 0
 dc_count: db 0
 dist_cur: dw 0
 mc_y:     db 0
 mc_h:     db 0
 mc_n:     db 0
-dc_n:     db 0
 dt_rows:  db 0
 save_sp:  dw 0
 cf_sp:    dw 0
