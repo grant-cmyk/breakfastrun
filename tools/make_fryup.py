@@ -72,8 +72,32 @@ def line_mug(saucer=False):
     arc = ((np.abs(np.hypot(x - c, y - c) - 9.5) <= 0.8) & (x < c - 3) & (y < c - 3)).astype(np.uint8)       # a glint on the coffee
     cut |= arc; cut[int(c) + 6:int(c) + 8, int(c) + 5:int(c) + 7] = 1
     return mc.blended('Black coffee, a black line mug%s, %d x %d' % (' and saucer' if saucer else '', w, h), ink, mc.BLACK, cut=cut)
+def mug3d(saucer=False):
+    """The mug seen from a little to one side, not straight down (Grant, 14 Nov 2026: "a semi 3d
+    effect, so ever so slightly see underneath it - the handle and the cup ... more of a cup
+    feeling than just a circle"): the rim is an oval, the mug's side shows below it down to its
+    base, the handle hangs off the side. Still one ink, black, on the cloth's cyan."""
+    W, H = (66, 52) if saucer else (58, 44); cx, cy = (25.0, 13.0) if saucer else (21.0, 12.0)
+    y, x = np.mgrid[0:H, 0:W]
+    ell = lambda ex, ey, a, b: (((x - ex) / a) ** 2 + ((y - ey) / b) ** 2 <= 1).astype(np.uint8)
+    drop = 15; top = ell(cx, cy, 20, 11.5); base = ell(cx, cy + drop, 17, 9.5)
+    side = ((y >= cy) & (y <= cy + drop) & (np.abs(x - cx) <= 20 - 3 * (y - cy) / drop)).astype(np.uint8)
+    sil = top | base | side                                          # the mug's whole outline
+    inner = 1 - mc.grow(mc.grow(1 - sil))                            # 2 pixels inside it: cyan, but for ...
+    rim = top & (1 - ell(cx, cy, 18, 9.5))                           # ... the rim's line,
+    coffee = ell(cx, cy + 0.5, 15.5, 7.4)                            # the coffee, nearly to the rim,
+    shade = (side | base) & (1 - top) & inner & (((x + y) % 2 == 0) & (x > cx + 5)).astype(np.uint8)   # and a shadow down the far side
+    hx, hy = cx + 23, cy + 9                                         # the handle: a loop off the side, below the rim
+    handle = ell(hx, hy, 9, 8) & (1 - ell(hx, hy, 6, 5)) & (1 - sil)
+    ink = sil | handle; cut = inner & (1 - rim) & (1 - coffee) & (1 - shade)
+    cut |= ((np.abs(np.hypot((x - cx) / 15.5, (y - cy - 0.5) / 7.4) - 0.62) <= 0.07) & (x < cx - 3) & (y < cy)).astype(np.uint8)   # a glint on the coffee
+    if saucer:                                                       # the saucer: an oval under the mug, part hidden by it
+        s_out = ell(cx + 2, cy + drop + 3, 30, 14); s_in = ell(cx + 2, cy + drop + 3, 28, 12)
+        ring = s_out & (1 - s_in) & (1 - ink); lip = ell(cx + 2, cy + drop + 2, 22, 8) & (1 - ell(cx + 2, cy + drop + 2, 20.5, 6.5)) & (1 - sil) & (1 - handle)
+        ink = ink | ring | lip
+    return mc.blended('Black coffee, the mug a little from the side%s, %d x %d' % (', on a saucer' if saucer else '', W, H), ink, mc.BLACK, cut=cut & ink)
 if __name__ == '__main__':
-    objs = [fryup(), line_mug(), line_mug(True), coffee_mug()]
+    objs = [fryup(), mug3d(), mug3d(True), line_mug()]
     for o in objs: mc.verify(o)
     print('no clash at any of the 64 positions')
     DESIGN = os.path.join(HERE, '..', 'docs', 'design')
@@ -88,15 +112,15 @@ if __name__ == '__main__':
         big, one, two = mc.show(b, a, 4), mc.show(b, a, 1), mc.show(b, a, 2)
         card = Image.new('RGB', (max(big.width, one.width + two.width + 20), big.height + two.height + 56), BG)
         ImageDraw.Draw(card).text((0, 0), o.name, fill=FG, font=fs); card.paste(big, (0, 28)); card.paste(one, (0, big.height + 44)); card.paste(two, (one.width + 20, big.height + 44)); cards.append(card)
-    gb, ga = mc.compose(clean, [(objs[0], -6, -65), (objs[1], 104, -22)], sprites=(mc.grow((win ^ clean).astype(np.uint8)), win))   # in the game's window, on the table ABOVE the road: nothing may spill into the road (Grant, 14 Nov 2026)
+    gb, ga = mc.compose(clean, [(objs[0], -6, -65), (objs[1], 104, -24)], sprites=(mc.grow((win ^ clean).astype(np.uint8)), win))   # in the game's window, on the table ABOVE the road: nothing may spill into the road (Grant, 14 Nov 2026)
     sb[8:152, 8:184] = gb; sa[1:19, 1:23] = ga; scr = render(sb, sa, border=6, s=3)
     notes = ['In the game\'s window: both stand on the table above the road, clear of it and of the O\'s, so only part is in view.',
              'PLATE: blue rim, a plain cyan plate, the egg in white with no outline, the yolk\'s cells yellow on white, red bacon.',
-             'MUG (new): a black line drawing on the cloth\'s cyan - the mug is cyan, the coffee fills it. With a saucer beside it.',
-             'The earlier white mug is last, to compare.',
+             'MUG (new): seen a little from the side - an oval rim, the mug\'s side and base below it, the handle off the side. Then on a saucer.',
+             'The straight-down line mug is last, to compare.',
              'Every cell checked: one ink colour and one paper colour, at all 64 positions against the grid.']
     out = Image.new('RGB', (sum(c.width + 30 for c in cards) + scr.width + 40, max(max(c.height for c in cards), scr.height + 30 * len(notes) + 20) + 80), BG); d = ImageDraw.Draw(out)
-    d.text((20, 14), 'Fried egg and bacon on a cyan plate, and black coffee in a mug three ways, from above (mock-up)', fill=(255, 255, 255), font=f)
+    d.text((20, 14), 'Fried egg and bacon on a cyan plate, and black coffee in a mug seen a little from the side, from above (mock-up)', fill=(255, 255, 255), font=f)
     x = 20
     for c in cards: out.paste(c, (x, 60)); x += c.width + 30
     out.paste(scr, (x, 60))
