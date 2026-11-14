@@ -15,10 +15,12 @@ every one:
     the diagonal: each pixel is the majority of the pixels one or more checks below it);
   - there is no message bar: place, lap and time live in the dashboard or the side column, and
     FINAL LAP / FINISHED have a named home;
-  - the start is a 3, 2, 1, GO countdown IN the window, each figure made of whole 8 x 8 cells of
-    one solid colour (the cell's paper AND ink are set to that colour, so whatever is under it is
-    hidden and nothing can clash; no pixels are drawn - taking it away is putting the cells back
-    to blue on cyan);
+  - the start is three LIGHTS in the window (Grant, later the same day: "the three 2 one go is
+    too much. I like the original idea of the lights - so three blocks, they change colour as the
+    countdown goes"): three blocks of 2 x 2 whole cells, unlit (black), then red one at a time,
+    then all green, then gone. A block is its cells' paper AND ink set to one colour, so whatever
+    is under it is hidden and nothing can clash; no pixels are drawn - taking it away is putting
+    the cells back to blue on cyan;
   - the border (the game can only give it one colour, and never a BRIGHT one) matches the
     surround: yellow, black or blue - so a blue surround uses the Spectrum's plain blue;
   - kept: race order in the cars' colours, mini-map, your face, crew chief and bubble, the three
@@ -35,7 +37,7 @@ every one:
 Made up for the pictures: the best-lap time, the times in the FINAL LAP / FINISHED pictures, and
 the top 8 lines of the window (see above). Everything else is lifted from the real screens.
 
-Writes docs/design/screen_options2.png (D, E, F: the race screen 3x, the countdown as four
+Writes docs/design/screen_options2.png (D, E, F: the race screen 3x, the start lights as five
 pictures, the two messages, notes) and screen_option_d.png, _e.png, _f.png (the race screen 3x).
 Usage: make_screen_options2.py"""
 import os, sys
@@ -85,20 +87,15 @@ class Dump:
         self.frame = f
 RACING = Dump('mock_128_racing.bin'); BEFORE = Dump('mock_128_before.bin')
 
-# the countdown figures: one letter here is one whole cell
-FIG = {'3': ["XXXXXX", "XXXXXX", "....XX", "..XXXX", "..XXXX", "....XX", "....XX", "XXXXXX", "XXXXXX"],
-       '2': ["XXXXXX", "XXXXXX", "....XX", "XXXXXX", "XXXXXX", "XX....", "XX....", "XXXXXX", "XXXXXX"],
-       '1': ["..XX..", ".XXX..", "XXXX..", "..XX..", "..XX..", "..XX..", "..XX..", "XXXXXX", "XXXXXX"],
-       'G': ["XXXXXX", "XXXXXX", "XX....", "XX....", "XX.XXX", "XX.XXX", "XX..XX", "XXXXXX", "XXXXXX"],
-       'O': ["XXXXXX", "XXXXXX", "XX..XX", "XX..XX", "XX..XX", "XX..XX", "XX..XX", "XXXXXX", "XXXXXX"]}
-SOLID = {'red': 0x52, 'yellow': 0x76, 'green': 0x64, 'white': 0x7F}    # paper = ink, BRIGHT
-COUNT = {'3': [('3', 9, 'red')], '2': [('2', 9, 'yellow')], '1': [('1', 9, 'green')],
-         'GO': [('G', 5, 'green'), ('O', 13, 'white')]}
+# the start lights (Grant, 14 Nov 2026: "the three 2 one go is too much. I like the original idea
+# of the lights - so three blocks, they change colour as the countdown goes"): three blocks of
+# 2 x 2 whole cells, a cell apart, centred near the top of the window (cols 8-9, 11-12, 14-15,
+# rows 4-5). A block is its cells' paper AND ink set to one colour - no pixels are drawn.
+UNLIT, RED, GREEN = 0x00, 0x52, 0x64           # black; bright red; bright green
+COUNT = {'off': (UNLIT, UNLIT, UNLIT), 'r1': (RED, UNLIT, UNLIT), 'r2': (RED, RED, UNLIT),
+         'r3': (RED, RED, RED), 'go': (GREEN, GREEN, GREEN)}
 def countdown(a, state):
-    for fig, c0, col in COUNT.get(state, []):
-        for j, row in enumerate(FIG[fig]):
-            for i, v in enumerate(row):
-                if v == 'X': a[6 + j, c0 + i] = SOLID[col]
+    for k, at in enumerate(COUNT.get(state, ())): a[4:6, 8 + 3 * k:10 + 3 * k] = at
 
 def big(b, s, x, y):                           # ROM letters twice size
     t = np.zeros((8, 8 * len(s)), dtype=np.uint8); rom(t, s, 0, 0)
@@ -202,12 +199,12 @@ option_f.border = 1; option_f.msg = (0, 152, 192, 192)
 
 def check(name, fn):
     """The promises: racing, the window's pixels from y 24 are the real ones (plus the NOS) and
-    every window cell is blue on cyan; in the countdown only whole cells change colour."""
+    every window cell is blue on cyan; at the start lights only whole cells change colour."""
     b, a = fn('race'); t = RACING.b.copy(); nos(t)
     assert (b[24:152, 8:184] == t[24:152, 8:184]).all(), name + ': play window pixels changed'
     assert (a[2:19, 1:23] == WIN).all(), name + ': play window colours changed'
-    b3, a3 = fn('3'); t = BEFORE.b.copy(); nos(t)
-    assert (b3[24:152, 8:184] == t[24:152, 8:184]).all(), name + ': the countdown drew pixels'
+    b3, a3 = fn('r2'); t = BEFORE.b.copy(); nos(t)
+    assert (b3[24:152, 8:184] == t[24:152, 8:184]).all(), name + ': the start lights drew pixels'
 
 OPTIONS = [('D - Breakfast table (yellow border)', option_d,
             ['Place, lap and time head ONE joined column on the right: place, LAP, TIME, RACE, MAP - no gaps.',
@@ -235,22 +232,22 @@ if __name__ == '__main__':
         check(title, fn)
         b, a = fn('race'); main = render(b, a, border=fn.border, s=3)
         o = os.path.join(DESIGN, 'screen_option_%s.png' % title[0].lower()); main.save(o); print('wrote', os.path.normpath(o), main.size)
-        strip = [(s if s != 'GO' else 'GO!', crop(fn, s, (0, 8, 192, 160), 2)) for s in ('3', '2', '1', 'GO')]
+        strip = [(s, crop(fn, s, (0, 8, 192, 160), 2)) for s in ('off', 'r1', 'r2', 'r3', 'go')]
         msgs = [(t, crop(fn, s, fn.msg, 2)) for s, t in (('final', 'Last lap'), ('finish', 'At the flag'))]
         rows.append((title, main, strip, msgs, notes))
     gap = 24; mw, mh = rows[0][1].size; cw, ch = rows[0][2][0][1].size
-    W = gap + mw + gap + 2 * cw + gap + gap
+    W = gap + mw + gap + 3 * cw + 2 * gap + gap
     rh = 46 + max(mh, 2 * (ch + 24) + 24 + max(m[1].height for r in rows for m in r[3])) + 92
     out = Image.new('RGB', (W, rh * len(rows) + gap), BG); d = ImageDraw.Draw(out)
     for n, (title, main, strip, msgs, notes) in enumerate(rows):
         y = gap // 2 + n * rh; x = gap
         d.text((x, y + 6), title, fill=(255, 255, 255), font=f); out.paste(main, (x, y + 46))
         x2 = gap + mw + gap
-        d.text((x2, y + 12), 'The start: 3, 2, 1, GO in the window (whole cells of one colour)', fill=FG, font=fl)
+        d.text((x2, y + 12), 'The start lights in the window: unlit, red, red red, red red red, all green (go), then gone', fill=FG, font=fl)
         for k, (t, im) in enumerate(strip):
-            out.paste(im, (x2 + (k % 2) * (cw + gap), y + 46 + (k // 2) * (ch + 12)))
-        ym = y + 46 + 2 * (ch + 12)
+            out.paste(im, (x2 + (k % 3) * (cw + gap), y + 46 + (k // 3) * (ch + 12)))
+        xm = x2 + 2 * (cw + gap); ym = y + 46 + ch + 12
         for k, (t, im) in enumerate(msgs):
-            d.text((x2 + k * (cw + gap), ym), t, fill=FG, font=fl); out.paste(im, (x2 + k * (cw + gap), ym + 22))
+            d.text((xm, ym), t, fill=FG, font=fl); out.paste(im, (xm, ym + 22)); ym += 22 + im.height + 14
         for k, t in enumerate(notes): d.text((gap + 4, y + 46 + mh + 8 + 26 * k), '- ' + t, fill=(222, 221, 214), font=fs)
     o = os.path.join(DESIGN, 'screen_options2.png'); out.save(o); print('wrote', os.path.normpath(o), out.size)
