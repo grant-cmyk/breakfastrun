@@ -53,8 +53,27 @@ def coffee_mug():
             yy, xx = m + 15 + j, m + 15 + i
             if arc[j, i] and o.label[yy, xx] == mc.BLACK + 1: o.bits[yy, xx] = 1; o.ink2[yy, xx] = mc.WHITE + 1
     return o
+def line_mug(saucer=False):
+    """Black coffee in a mug drawn as a BLACK LINE DRAWING on the cloth's cyan (Grant, 14 Nov 2026:
+    "the mug can be cyan or blue, need to allow for the black coffee to be fuller in the mug, so if
+    we do a black line drawing ... the surrounding area of the mug is black on cyan"). One ink,
+    black: the mug's outline, its handle and the coffee itself; the mug's wall is cyan showing
+    between the outline and the coffee, so the coffee can fill the mug. With a saucer: one more ring."""
+    R = 27 if saucer else 20; w, h = 2 * R + (4 if saucer else 16), 2 * R + 1; c = float(R)
+    y, x = np.mgrid[0:h, 0:w]; r = np.hypot(x - c, y - c)
+    ink = (r <= R + .3).astype(np.uint8); cut = np.zeros((h, w), dtype=np.uint8)
+    if saucer:
+        cut |= ((r <= R - 2.2) & (r > 20.3)).astype(np.uint8)        # the saucer: a line, then cyan
+    cut |= ((r <= 17.6) & (r > 15.2)).astype(np.uint8)               # the mug's wall: cyan between outline and coffee
+    hy0, hy1, hx0, hx1 = int(c) - 6, int(c) + 7, int(c) + 18, int(c) + 33   # the handle: an outlined loop
+    ink[hy0:hy1, hx0:min(hx1, w)] = 1; cut[hy0 + 2:hy1 - 2, hx0 + 2:min(hx1, w) - 2] |= 1
+    if saucer: cut[hy0:hy1, int(c) + 21:w] &= ((r > R - 2.2) | (r <= 20.3))[hy0:hy1, int(c) + 21:w].astype(np.uint8)
+    cut &= (1 - ((r <= 20.3) & (r > 17.6)).astype(np.uint8)) | ((x >= hx0 + 2) & (r > 20.3)).astype(np.uint8)   # (the outline stays whole)
+    arc = ((np.abs(np.hypot(x - c, y - c) - 9.5) <= 0.8) & (x < c - 3) & (y < c - 3)).astype(np.uint8)       # a glint on the coffee
+    cut |= arc; cut[int(c) + 6:int(c) + 8, int(c) + 5:int(c) + 7] = 1
+    return mc.blended('Black coffee, a black line mug%s, %d x %d' % (' and saucer' if saucer else '', w, h), ink, mc.BLACK, cut=cut)
 if __name__ == '__main__':
-    objs = [fryup(), coffee_mug()]
+    objs = [fryup(), line_mug(), line_mug(True), coffee_mug()]
     for o in objs: mc.verify(o)
     print('no clash at any of the 64 positions')
     DESIGN = os.path.join(HERE, '..', 'docs', 'design')
@@ -66,17 +85,18 @@ if __name__ == '__main__':
     for o in objs:
         W = (o.w + 23) // 8 * 8; H = (o.h + 23) // 8 * 8
         b, a = mc.compose(world[24:24 + H, 16:16 + W], [(o, (W - o.w) // 2 + 3, (H - o.h) // 2 + 2)])
-        big, one, two = mc.show(b, a, 5), mc.show(b, a, 1), mc.show(b, a, 2)
+        big, one, two = mc.show(b, a, 4), mc.show(b, a, 1), mc.show(b, a, 2)
         card = Image.new('RGB', (max(big.width, one.width + two.width + 20), big.height + two.height + 56), BG)
         ImageDraw.Draw(card).text((0, 0), o.name, fill=FG, font=fs); card.paste(big, (0, 28)); card.paste(one, (0, big.height + 44)); card.paste(two, (one.width + 20, big.height + 44)); cards.append(card)
-    gb, ga = mc.compose(clean, [(objs[0], -6, -65), (objs[1], 108, -14)], sprites=(mc.grow((win ^ clean).astype(np.uint8)), win))   # in the game's window, on the table ABOVE the road: nothing may spill into the road (Grant, 14 Nov 2026)
+    gb, ga = mc.compose(clean, [(objs[0], -6, -65), (objs[1], 104, -22)], sprites=(mc.grow((win ^ clean).astype(np.uint8)), win))   # in the game's window, on the table ABOVE the road: nothing may spill into the road (Grant, 14 Nov 2026)
     sb[8:152, 8:184] = gb; sa[1:19, 1:23] = ga; scr = render(sb, sa, border=6, s=3)
     notes = ['In the game\'s window: both stand on the table above the road, clear of it and of the O\'s, so only part is in view.',
              'PLATE: blue rim, a plain cyan plate, the egg in white with no outline, the yolk\'s cells yellow on white, red bacon.',
-             'MUG: no blue at all. White mug and handle on the cloth, the coffee\'s cells black, a white glint on it.',
+             'MUG (new): a black line drawing on the cloth\'s cyan - the mug is cyan, the coffee fills it. With a saucer beside it.',
+             'The earlier white mug is last, to compare.',
              'Every cell checked: one ink colour and one paper colour, at all 64 positions against the grid.']
     out = Image.new('RGB', (sum(c.width + 30 for c in cards) + scr.width + 40, max(max(c.height for c in cards), scr.height + 30 * len(notes) + 20) + 80), BG); d = ImageDraw.Draw(out)
-    d.text((20, 14), 'Fried egg and bacon on a cyan plate, and black coffee in a white mug, from above (mock-up)', fill=(255, 255, 255), font=f)
+    d.text((20, 14), 'Fried egg and bacon on a cyan plate, and black coffee in a mug three ways, from above (mock-up)', fill=(255, 255, 255), font=f)
     x = 20
     for c in cards: out.paste(c, (x, 60)); x += c.width + 30
     out.paste(scr, (x, 60))
