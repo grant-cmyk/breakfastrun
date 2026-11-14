@@ -2,11 +2,11 @@
 ; HUD - everything round the play window (the layout agreed on the
 ; Claude Design canvas "Breakfast Run Screen Design"):
 ;
-;   cols 0-23, rows 0-2   MESSAGE BAR: start lights, GO!, FINAL LAP!,
-;                         FINISHED nTH - double-size ROM letters; while you
-;                         race and it has no message: your place and lap, large,
-;                         and the race time (bar_tick)
-;   cols 1-23, rows 4-19  the play window (racer.asm), framed
+;   cols 0-23, rows 0-1   the track's name, then the MESSAGE BAR (one row): start
+;                         lights, GO!, FINAL LAP!, FINISHED nTH; while you race
+;                         and it has no message: your place, lap and the race
+;                         time (bar_tick)
+;   cols 1-23, rows 3-19  the play window (racer.asm), framed
 ;   cols 0-23, rows 21-22 LAP and TIME, BEST lap (time, car, lap)
 ;   cols 25-31            PANEL: logo, race order, mini-map
 ;
@@ -141,128 +141,57 @@ cc_col:
         ret
 
 ; ---------------------------------------------------------------------
-; print_big: the 0-terminated text at HL in double-size ROM letters
-; (16 x 16, 2 x 2 cells each) at cell row B, column C, cells coloured A
-; ---------------------------------------------------------------------
-print_big:
-        ld (pb_attr),a
-pb_char:
-        ld a,(hl)
-        or a
-        ret z
-        push hl
-        push bc
-        ld l,a                  ; DE = the letter in the ROM font
-        ld h,0
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        ld de,0x3C00
-        add hl,de
-        ex de,hl
-        ld a,b                  ; pixel row and x of the top-left
-        add a,a
-        add a,a
-        add a,a
-        ld b,a
-        ld a,c
-        add a,a
-        add a,a
-        add a,a
-        ld c,a
-        ld a,8
-pb_line:
-        push af
-        ld a,(de)               ; double each bit: 8 bits -> 16
-        inc de
-        push de
-        ld e,a
-        ld hl,0
-        ld d,8
-pb_bit:
-        add hl,hl
-        add hl,hl
-        rl e
-        jr nc,pb_b0
-        inc l
-        inc l
-        inc l
-pb_b0:
-        dec d
-        jr nz,pb_bit
-        ex de,hl                ; DE = the doubled row
-        call scr_addr           ; two pixel rows of it
-        ld (hl),d
-        inc l
-        ld (hl),e
-        inc b
-        call scr_addr
-        ld (hl),d
-        inc l
-        ld (hl),e
-        inc b
-        pop de
-        pop af
-        dec a
-        jr nz,pb_line
-        pop bc
-        push bc                 ; colour the 2 x 2 cells
-        ld d,2
-        ld e,2
-        ld a,(pb_attr)
-        call set_attrs
-        pop bc
-        pop hl
-        inc hl
-        inc c
-        inc c
-        jr pb_char
-
-; ---------------------------------------------------------------------
 ; THE MESSAGE BAR
 ; ---------------------------------------------------------------------
-msg_clear:                      ; the message bar: rows 1-2 (row 0 is the
-        ld hl,bar_shown         ; track's name). Your place and lap are not on
-        ld b,7                  ; it now: bar_tick draws them afresh
-mc_1:
-        ld (hl),0
+msg_clear:                      ; the message bar: row 1 (row 0 is the track's
+        ld hl,bar_shown         ; name; the play window took the bar's second
+        ld b,7                  ; row - Grant, 14 Nov 2026: "I need to see ahead
+mc_1:                           ; further"). Your place and lap are not on it
+        ld (hl),0               ; now: bar_tick draws them afresh
         inc hl
         djnz mc_1
-        ld b,1
-        ld c,0
-        ld d,2
-        ld e,24
+        ld bc,0x0100
+        ld de,0x0118
         call clear_cells
-        ld b,1
-        ld c,0
-        ld d,2
-        ld e,24
+        ld bc,0x0100
+        ld de,0x0118
         ld a,A_YEL
+        jp set_attrs
+; MSG_AT: the text at HL at row 1, column C, its E cells coloured A
+msg_at:
+        push af
+        push bc
+        push de
+        ld b,1
+        call print_at
+        pop de
+        pop bc
+        pop af
+        ld b,1
+        ld d,b
         jp set_attrs
 
 msg_lights:                     ; three start lights (not lit), GET READY, PRESS Q
         call msg_clear
-        ld b,1
-        ld c,2
-        call ml_lamp
-        ld b,1
-        ld c,5
-        call ml_lamp
-        ld b,1
-        ld c,8
-        call ml_lamp
+        ld c,1
+ml_1:
+        push bc
+        ld hl,txt_lamp
+        ld e,1
+        ld a,A_LOFF
+        call msg_at
+        pop bc
+        inc c
+        inc c
+        ld a,c
+        cp 7
+        jr nz,ml_1
         ld hl,txt_ready
-        ld b,1
-        ld c,12
+        ld bc,0x0107
         call print_at
         ld hl,txt_pressq
-        ld b,2
-        ld c,12
+        ld bc,0x0111
         jp print_at
-ml_lamp:
-        ld hl,txt_lamp
-        ld a,A_LOFF
-        jp print_big
 
 ; START_LIGHTS (once a picture, before the race): Q pressed, the lights come on
 ; one at a time - red, red, red - then all three green, and only then does anyone
@@ -298,53 +227,42 @@ sl_ph:
         ld (start_ph),a
         cp 4
         jr z,sl_green
-        add a,a                 ; light C (1-3): its 2 x 2 cells at column 3C - 1
-        add a,c
+        add a,a                 ; light C (1-3): its cell at column 2C - 1
         dec a
         ld c,a
         ld hl,0x3000+6          ; a beep: 6 frames, flips 48 counts apart
         ld (snd_fxt),hl
-        ld b,1
-        ld d,2
-        ld e,2
         ld a,A_LAMP
+sl_cell:
+        ld b,1
+        ld d,b
+        ld e,b
         jp set_attrs
 sl_green:
         ld hl,0x1800+10         ; a higher beep, longer
         ld (snd_fxt),hl
-        ld c,2
+        ld c,1
+        call sl_g
+        ld c,3
         call sl_g
         ld c,5
-        call sl_g
-        ld c,8
         call sl_g
         ld a,1                  ; and away
         ld (race_on),a
         ret
 sl_g:
-        ld b,1
-        ld d,2
-        ld e,2
         ld a,A_LGRN
-        jp set_attrs
+        jr sl_cell
 
 msg_go:                         ; GO! beside the green lights (they stay till
-        ld b,1                  ; the message goes)
-        ld c,11
-        ld d,2
-        ld e,13
+        ld bc,0x0107            ; the message goes)
+        ld de,0x0111
         call clear_cells
-        ld b,1
-        ld c,11
-        ld d,2
-        ld e,13
-        ld a,A_YEL
-        call set_attrs
         ld hl,txt_go
-        ld b,1
         ld c,14
+        ld e,3
         ld a,A_GO
-        call print_big
+        call msg_at
         ld a,75                 ; 1.5 s
         ld (msg_timer),a
         ret
@@ -352,10 +270,10 @@ msg_go:                         ; GO! beside the green lights (they stay till
 msg_final:
         call msg_clear
         ld hl,txt_final
-        ld b,1
-        ld c,2
+        ld c,7
+        ld e,10
         ld a,A_MSG
-        call print_big
+        call msg_at
         ld a,150                ; 3 s
         ld (msg_timer),a
         ret
@@ -363,11 +281,18 @@ msg_final:
 msg_finished:                   ; FINISHED nTH, which stays
         call msg_clear
         ld hl,txt_finished
-        ld b,1
-        ld c,0
+        ld c,6
+        ld e,12
         ld a,A_MSG
-        call print_big
+        call msg_at
         ld a,(position)         ; "1ST" .. "5TH" after it
+        call place_txt
+        ld bc,0x010F
+        call print_at
+        xor a
+        ld (msg_timer),a
+        ret
+place_txt:                      ; A = a place 1..5 -> HL = its text
         dec a
         add a,a
         add a,a
@@ -375,12 +300,6 @@ msg_finished:                   ; FINISHED nTH, which stays
         ld d,0
         ld hl,txt_places
         add hl,de
-        ld b,1
-        ld c,18
-        ld a,A_MSG
-        call print_big
-        xor a
-        ld (msg_timer),a
         ret
 
 ; ---------------------------------------------------------------------
@@ -1335,6 +1254,6 @@ tm_d1:
         ret
 ; (the HUD's fixed text is in hudtext.asm, kept at the top of memory)
 txt_digit:    db "0",0
-bar_lap:      db "1/",'0'+LAPS  ; the lap, large: n/3
+bar_lap:      db "1/",'0'+LAPS,0  ; the lap: n/3
 txt_blap:     db "LAP",0
 time_txt:     db "0:00.0",0

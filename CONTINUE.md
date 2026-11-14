@@ -1,9 +1,9 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 06:21 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 06:41 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
-**Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 120 in an arcade bezel; five cars at 20 x 20.
+**Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 128 in an arcade bezel (the message bar is one row); five cars at 20 x 20.
 The layout review is built: your place and lap large in the message bar with the race time, no lap
 digits in the race order, 16 x 16 faces in 2 x 2 cell panels, the bubble on columns 11-20, border
 flashes (green GO, red crash, white NOS). NEW: your car's set-up - GRIP, SPEED, ACCEL at levels
@@ -11,12 +11,12 @@ flashes (green GO, red crash, white NOS). NEW: your car's set-up - GRIP, SPEED, 
 row; the computer cars stay at 1, 1, 1.
 
 **Speed:** measure with tests/zxlap.py (zxdev: real TV frames a picture, cost by routine) - NOT
-profile_ticks.py alone, which under-counts late pictures. zxdev lap now: 3 frames x 305, 4 x 9
+profile_ticks.py alone, which under-counts late pictures. zxdev lap now: 3 frames x 298, 4 x 13 (window 128 high)
 (the cars turned at full size cost rows; the row counter and once-a-picture bumps paid for them).
 The late pictures are those with 4-5 cars in view.
 
-**MEMORY IS FULL:** main area 4 bytes free (code_end 0xBFFC), the gap before sq4 ~3, start-up area
-44, TOPMEM 0xFA40 (the extra window row's copier still fits below it). The set-up box, the
+**MEMORY IS NEARLY FULL:** main area 118 bytes free (code_end 0xBF8A), start-up area ~150, TOPMEM
+0xFA40 (the copier now ends just below it, at 0xFA02). The set-up box, the
 in-window NOS, the title screen and more cars ALL need a memory plan first (ideas: draw half the
 headings as mirrors or half-turns of the other half - 16 headings stored today; a 128K build; a
 separate title-screen load).
@@ -25,7 +25,7 @@ separate title-screen load).
 console, C blue dashboard) and playtests build/racer.tap from the branch (the cars turning, the
 slide ending when he stops steering). Then a MEMORY PLAN before building any of: the chosen
 screen design with the set-up box and in-window NOS, the title / attract screen with a choice of
-driver and car (drafts: docs/design/new_cast_mockup.png), the extra window row.
+driver and car (drafts: docs/design/new_cast_mockup.png), where the big messages should go now the bar is one row.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

@@ -138,72 +138,51 @@ bt_dig:
         dec a
         or b
         jr nz,bt_1
-        ld b,2
+        ld b,1
         jp print_at
 bt_1:
         ld a,(msg_timer)        ; a message has the bar
         or a
         ret nz
-        ld a,(position)         ; your place: "1ST".."5TH"
-        dec a
-        add a,a
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,txt_places
-        add hl,de
-        ld de,bar_shown
+        ld hl,bar_shown         ; one thing a picture: your place (bright white
+        ld a,(position)         ; on red, your colour) ...
+        cp (hl)
+        jr z,bt_lap
+        ld (hl),a
+        call place_txt
         ld c,1
-        ld a,0x57               ; (bright white on red)
-        call bar_3
-        ld a,(cars+C_LAPS)      ; the lap (behind the line at the start: 1)
+        ld e,3
+        ld a,0x57
+        jp msg_at
+bt_lap:
+        inc hl                  ; ... the lap (black on bright yellow; behind
+        ld a,(cars+C_LAPS)      ; the line at the start: 1) ...
         or a
         jr nz,bt_2
         inc a
 bt_2:
         add a,'0'
+        cp (hl)
+        jr z,bt_txt
+        ld (hl),a
         ld hl,bar_lap
         ld (hl),a
-        ld c,12
-        ld a,0x70               ; (black on bright yellow)
-        call bar_3
-        ld a,(de)               ; the small text: LAP, and the whole time
+        ld c,13
+        ld e,3
+        ld a,0x70
+        jp msg_at
+bt_txt:
+        ld hl,bar_shown+6       ; ... then LAP, and the whole time
+        ld a,(hl)
         or a
         ret nz
-        inc a
-        ld (de),a
+        inc (hl)
         ld hl,txt_blap
-        ld b,2
-        ld c,9
+        ld bc,0x0109
         call print_at
         ld hl,bar_time
-        ld b,2
-        ld c,19
+        ld bc,0x0113
         jp print_at
-; bar_3: 3 big letters at HL against those shown at DE, from column C in
-; colour A: the first that differs is drawn, and that is all for this picture
-bar_3:
-        ld (pb_attr),a
-        ld b,3
-b3_1:
-        ld a,(de)
-        cp (hl)
-        jr nz,b3_draw
-        inc hl
-        inc de
-        inc c
-        inc c
-        djnz b3_1
-        ret
-b3_draw:
-        ld a,(hl)
-        ld (de),a
-        ld (txt_digit),a
-        pop hl                  ; (not back to bar_tick)
-        ld hl,txt_digit
-        ld b,1
-        ld a,(pb_attr)
-        jp print_big
 
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 ; SU_DRAW: the set-up row: "1G#####  2S#####  3A#####" from column 0

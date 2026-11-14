@@ -190,7 +190,7 @@ def big_turned():
                     "X = ink   o = paper   . = empty. Made by tools/make_data.py from Grant's upright drawings in\n"
                     "tools/big_car_art.txt, turned at FULL SIZE (14 Nov 2026). The game shows columns 2-25 (24 wide).\n"
                     "Edit these by hand to touch them up: make_data.py reads this file and never overwrites it\n"
-                    "(delete it to have it made afresh). The race number is put on upright by make_data.py.\n\n")
+                    "(delete it to have it made afresh). The race number turns with the car.\n\n")
             for k in sorted(up):
                 for h, g in (('22.5', bturn(up[k], BIG_ANG[1])), ('45', bsym45(bturn(up[k], 45)))):
                     f.write('== %s big27 heading %s ==\n' % (NAMES[k], h) + '\n'.join(''.join(CH[v] for v in r) for r in g) + '\n\n')
@@ -215,7 +215,9 @@ def big_frames(k):
     n, nne, ne = BIG0[k], BIGT[k]['22.5'], BIGT[k]['45']
     f = [n, nne, ne, bmdiag(nne)]
     for i in range(4, 16): f.append(brot(f[i - 4]))
-    return [g if h % 4 == 0 else stamp(g, k, h) for h, g in enumerate(f)]
+    return f                                   # (the number turns with the car - Grant, 14 Nov 2026: "I am not
+                                               # concerned that the numbers don't show properly when cars are
+                                               # turning"; stamp() would redraw it upright)
 big_all = [big_frames(k) for k in range(len(KINDS))]
 def big_bytes(g):
     """The frame: grid columns 2..25 (24 wide), grid row r is frame row r + 1 (room for the halo

@@ -1092,3 +1092,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   (black, one instrument column: RACE, CAR, MAP); C blue dashboard (the window stands on an
   L-shaped blue dashboard holding YOU, CAR, RADIO and the MAP; a TV-style banner on top). The
   agent's pick: C. The best-lap time shown is made up; the before-start state is not mocked.
+
+## 2026-11-14 SAST - the window one row taller; the message bar one row; the numbers turn with the cars
+- Grant (with a screenshot of FINISHED 1ST): "visibility on the vertical area is poor I need to
+  see ahead further. The gameplay area needs to get that row above it. That means the messages
+  there move off somewhere else to make space. So where it says finished first -" (cut off there).
+- The window is 176 x 128 (WIN_Y 24, WIN_H 128: rows 3-18), the bezel in row 2. The message bar
+  is row 1 only, all in the ROM's normal letters: three one-cell start lights, GET READY, PRESS Q;
+  GO!; FINAL LAP!; FINISHED nTH; racing: your place on red (columns 1-3), LAP n/3 on bright
+  yellow (13-15), the time (19-22). print_big and the one-big-letter-a-picture code are gone
+  (msg_at prints and colours a text in one call). Claude's choice, as his sentence was cut off:
+  where the big messages should go is still his to say.
+- The camera keeps your car at window (80, 56). Car drawing stops at the window's last line.
+- Cost: the copy routine is 288 bytes longer (to 0xFA02, as planned); zxdev lap 3 frames x 298,
+  4 x 13 (305 / 9 before the row). Memory: 118 bytes free in the main area again (code_end 0xBF8A).
+- Grant: "I am not concerned that the numbers don't show properly when cars are turning" - the
+  upright number is no longer put on the angled headings: each car is his drawing, turned.
+- tools/show_game_cars.py -> docs/design/big_cars_16_headings.png: the cars as the game has them,
+  real size and 4x (he asked to see them).
+- Tests: drive (window 128 high, one-row bar, bezel a row up), nos, O, set-up: all PASS.

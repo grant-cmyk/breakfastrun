@@ -38,10 +38,10 @@ LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
-WIN_Y   equ 32          ; pixel rows 32..151 (120 high: one character row less
-                        ; than the screen allows, for speed - Grant, 9 Nov 2026)
-WIN_W   equ 22
-WIN_H   equ 120
+WIN_Y   equ 24          ; pixel rows 24..151: 128 high (Grant, 14 Nov 2026: "I need to
+                        ; see ahead further" - the row above the window, which the
+WIN_W   equ 22          ; message bar gave up; it was 120 high from 9 Nov)
+WIN_H   equ 128
 BAND_Y  equ (WIN_Y+WIN_H)/8+1    ; the text rows under the window: LAP, TIME, BEST
 FRAMES  equ 23672       ; ROM counter, +1 every TV frame (1/50 s)
 
@@ -2008,7 +2008,7 @@ dc_sk:
 dc_top:
         ld (dc_row0),a          ; now the buffer row itself
         ld b,a
-        ld a,152                ; stop before the driver strip's blocks
+        ld a,16+WIN_H           ; stop at the window's last line (buffer row 16 is its first)
         sub b
         ret z
         ret c
@@ -3287,7 +3287,7 @@ screen_once:
         ld bc,767
         ld (hl),0x30
         ldir
-        ld hl,0x5800+4*32+WIN_COL   ; ...and the window blue ink on cyan paper
+        ld hl,0x5800+(WIN_Y/8)*32+WIN_COL   ; ...and the window blue ink on cyan paper
                                     ; (Grant, 10 Nov 2026: no white - easier on
                                     ; the eyes, and less flicker)
         ld b,WIN_H/8
@@ -3720,8 +3720,7 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ 0xFA40            ; the copy routine ends at 0xF8E2 (120 lines of 36 bytes;
-                                  ; 8 more lines would end at 0xFA02)
+TOPMEM      equ 0xFA40            ; the copy routine ends at 0xFA02 (128 lines of 36 bytes)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
@@ -3768,8 +3767,8 @@ faces     equ BUFA + faces_src - bufa_src
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
         endif
-        if WIN_Y - 32
-        .error cloth_fill starts at buffer row 16 (CL_L0): the window's first line
+        if 16 + WIN_H > 152
+        .error the window's buffer rows run into the blocks kept from buffer row 152
         endif
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide
