@@ -199,12 +199,11 @@ with Racer(headless=True) as sp:
     check(MR != 1 or screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
     print('message bar %r' % msg)
-    check(msg == ' PRESS Q /TIME 0:00', 'before the start the scoreboard says PRESS Q, and TIME 0:00 (%r)' % msg)
+    check(msg.strip(' /') == '', 'under the window, bottom left: nothing any more - no scoreboard (%r)' % msg)
     sb = screen_bits(sp)                            # the driver strip under the window
-    check(all(attr(r, c) == 0x57 for r in (20, 21) for c in range(1, 10)) and all(attr(22, c) == 0x78 for c in range(1, 10))
-          and attr(23, 1) == 0x30 and attr(20, 0) == 0x30 and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
-          and sb[160:176, 8:24].any() and not sb[160:176, 32:80].any() and sb[168:184, 168:184].any() and not sb[160:192, 80:88].any(),
-          'under the window: your face in a red block (your place is on its plate in the window, not here); a white strip; the crew chief on blue')
+    check(all(attr(r, c) == 0x30 for r in (20, 21, 22, 23) for c in range(0, 10)) and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
+          and not sb[160:192, 0:88].any() and sb[168:184, 168:184].any(),
+          'under the window: plain table bottom left (your place and lap are on the plate in the window); the crew chief on blue')
     check(sb[140:150, 176:184].any() and attr(17, 22) == 0x29, 'your NOS canister is shown in the window\'s corner, in the window\'s colours')
     check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(TOWER_Y + 2 * i, 25) == 0x57)
@@ -256,8 +255,7 @@ with Racer(headless=True) as sp:
 
     sp.run(duration=0.6, fast_forward=True)
     bar = screen_text(sp, 22, 1, 9) + '|' + screen_text(sp, 23, 1, 9)
-    check(not screen_bits(sp)[160:176, 32:80].any() and attr(20, 4) == 0x57, 'racing: the red block has only your face - your place is in the window')
-    check(re.fullmatch(r' LAP 1/3 \|TIME 0:0\d', bar) is not None, 'the strip says LAP 1/3, the time runs under it (%r)' % bar)
+    check(not screen_bits(sp)[160:192, 0:88].any() and attr(20, 4) == 0x30, 'racing: still nothing bottom left')
     check(not screen_bits(sp)[TOWER_Y * 8:TOWER_Y * 8 + 80, 240:248].any(), 'the race order no longer shows a lap digit on each row')
 
     # ---- park your car in the infield and watch the computer race 90 s ----
@@ -379,7 +377,7 @@ with Racer(headless=True) as sp:
     sp.run(duration=0.3, fast_forward=True)
     flag, pq = screen_text(sp, 10, 4, 15), screen_text(sp, 12, 8, 7)
     print('after crossing the line on lap 3:', repr(flag), repr(pq), 'race_over', sp.read8(SYM['race_over']))
-    check(sp.read8(SYM['race_over']) != 0 and screen_text(sp, 22, 1, 9) == 'FINISHED!', 'crossing the line on the last lap: FINISHED! on the strip')
+    check(sp.read8(SYM['race_over']) != 0, 'crossing the line on the last lap: the race is over')
     check(flag == 'CHEQUERED FLAG!' and pq == 'PRESS Q', 'every car in: CHEQUERED FLAG! and PRESS Q in the window')
     r1 = g(sp, 'renders'); t1 = g(sp, 'race_time')
     sp.run(duration=0.5, fast_forward=True)
@@ -391,7 +389,7 @@ with Racer(headless=True) as sp:
     hold(sp, ['1'], 0.2)                           # ... and 1 (1UP): a new race
     sp.run(duration=1.5, fast_forward=True)
     p5 = car(sp, 0)
-    check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0 and screen_text(sp, 22, 1, 9) == ' PRESS Q '
+    check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0
           and (p5['x'], p5['y']) == (car(sp, 0)['x'], car(sp, 0)['y']) and frame_ok(sp),
           '1 at the title starts a new race on the grid, the race screen whole again (its frame back)')
     sb = screen_bits(sp)

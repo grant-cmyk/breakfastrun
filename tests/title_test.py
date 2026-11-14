@@ -113,7 +113,7 @@ with Racer(headless=True) as sp:
     tap(sp, 'L'); tap(sp, 'M'); tap(sp, 'N', 0.2, 1.0)
     ok(title_up(sp, 5.0) < 5.0 and bytes(sp.read(TDV('key_ch'), 5)) == b'ZXLMN', 'after the fifth key: back to the title (keys %r)' % bytes(sp.read(TDV('key_ch'), 5)))
     tap(sp, '1', 0.2, 2.0)
-    ok(g(sp, 'renders') > 0 and frame_ok(sp) and screen_text(sp, 22, 1, 9) == ' PRESS L ', '1: the race screen, whole, and its strip says PRESS L')
+    ok(g(sp, 'renders') > 0 and frame_ok(sp), '1: the race screen, whole')
     hold(sp, ['Q'], 1.0); hold(sp, ['O', 'P', 'A'], 0.5)
     ok(sp.read8(SYM['start_go']) == 0 and sp.read8(SYM['cars'] + 11) == 0, 'the old keys (Q O P A) do nothing now')
     press(sp, 'L', True); t = 0.0
@@ -135,8 +135,8 @@ with Racer(headless=True) as sp:
 with Racer(headless=True) as sp:
     load(sp)
     tap(sp, '1', 0.3, 2.0)
-    ok(g(sp, 'renders') > 0 and frame_ok(sp) and screen_text(sp, 22, 1, 9) == ' PRESS Q ' and car(sp, 0)['vx'] == 0,
-       '1 at the title: the race screen, your car on the grid, PRESS Q')
+    ok(g(sp, 'renders') > 0 and frame_ok(sp) and car(sp, 0)['vx'] == 0,
+       '1 at the title: the race screen, your car on the grid')
     scr0 = screen_bits(sp)
     ok(list(sp.read(SYM['su_lv'], 4)) == [1, 1, 1, 2], 'the 1 that left the title did not spend a set-up point (%s)' % list(sp.read(SYM['su_lv'], 4)))
     tap(sp, '1', 0.2, 0.3); tap(sp, '3', 0.2, 0.3)
@@ -160,7 +160,7 @@ with Racer(headless=True) as sp:
     tap(sp, '1', 0.3, 2.0)
     sb = screen_bits(sp)
     same = all((sb[y0:y1, x0:x1] == scr0[y0:y1, x0:x1]).all() for (y0, y1, x0, x1) in ((0, 8, 0, 256), (0, 64, 192, 256), (8, 152, 0, 8), (8, 152, 184, 192), (152, 160, 0, 192)))
-    ok(frame_ok(sp) and same and sp.read8(SYM['race_on']) == 0 and screen_text(sp, 22, 1, 9) == ' PRESS Q ' and car(sp, 0)['vx'] == 0,
+    ok(frame_ok(sp) and same and sp.read8(SYM['race_on']) == 0 and car(sp, 0)['vx'] == 0,
        '1: a new race on the grid; the race screen put back whole (frame, logo, mini-map)')
     t = go_green(sp); sp.run(duration=1.0, fast_forward=True); press(sp, 'Q', False)
     ok(t < 4.0 and car(sp, 0)['vx'] > 1.0 and list(sp.read(SYM['su_lv'], 3)) == [2, 1, 2], 'and it races: green after %.1f s, the set-up kept' % t)

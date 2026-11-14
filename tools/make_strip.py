@@ -27,11 +27,9 @@ for r in range(20, 24):
 YOU, CREW = ns['YOU'], ns['CREW']
 for j in range(16):
     for i in range(16):
-        b[160 + j, 8 + i] = YOU[j][i] == 'X'
         b[168 + j, 168 + i] = CREW[j][i] == 'X'
-for c in range(1, 10):
-    a[20 * 32 + c] = a[21 * 32 + c] = 0x57
-    a[22 * 32 + c] = 0x78
+# (14 Nov 2026: no scoreboard bottom left any more - your face, the strip and the time have gone:
+# "the in game display works really well - so that bottom left reporting is not needed at all")
 for r in (21, 22):
     for c in (21, 22): a[r * 32 + c] = 0x4F
 # the bubble's tail: a white point in the chief's panel (column 21, rows 172-179). It is

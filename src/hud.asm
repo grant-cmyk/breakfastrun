@@ -338,9 +338,7 @@ msg_final:                      ; FINAL LAP on the strip for 3 s (bar_tick shows
 msg_finished:                   ; at the flag: your place, whole, and FINISHED! on the
         xor a                   ; strip - drawn here and now, as the pictures stop
         ld (msg_timer),a
-        ld hl,txt_strip+20
-        ld bc,22*256+1
-        jp print_at
+        ret                     ; (FINISHED! went with the strip: the window says CHEQUERED FLAG!)
 place_txt:                      ; A = a place 1..5 (0 before the race: 1) -> HL = its text
         or a
         jr nz,pt_1
@@ -671,7 +669,7 @@ hu_best:
         call best_panel
 hu_order:
         call strip_triggers     ; what the crew chief says
-        call bar_tick           ; the scoreboard: your place, the strip, the time
+        ; (no scoreboard under the window any more: your place and lap are on the plate in it - Grant, 14 Nov 2026)
         ld a,(renders)          ; spread the HUD out: the order on one
         and 3                   ; picture in four, the map on another, the
         jp z,tower_update       ; clock on the other two
