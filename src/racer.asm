@@ -192,7 +192,6 @@ draw_all:
         ld b,a
         ld a,(FRAMES)
         sub b
-        ld (mu_el),a            ; (the ditty's burst looks at this: mu_burst)
         ld hl,pace
         cp (hl)
         jr c,ws_in_time
@@ -2400,9 +2399,10 @@ nd_col:
 ;   NOS canisters.
 ; ---------------------------------------------------------------------
 DMG_MAX  equ 8
+DMG_ROWS equ 17                 ; the gauge: the icon's 13 rows and 2 clear ones above and below (dmgicon.asm)
 DMG_COOL equ 12
 DMG_SLOW equ 8                  ; (8 points: 64 of the 448 - a seventh off the top speed)
-DMG_B    equ BUF + 0x800*2 + 3*0x100 + 1*32 + 2      ; buffer row 139 (third 2, char row 1, line 3), byte 2: the window's left edge
+DMG_B    equ BUF + 0x800*2 + 7*0x100 + 0*32 + 2      ; buffer row 135 (third 2, char row 0, line 7), byte 2: the window's left edge
 dmg_hit:
         ld hl,dmg_cool
         ld a,(hl)
@@ -2416,20 +2416,23 @@ dmg_hit:
         inc (hl)
         ret
 dmg_draw:
-        ld a,(dmg)              ; how many of the heart's rows, from the top, are empty
+        ld a,(dmg)              ; how many of the gauge's rows, from the top, have no fill
         add a,dmg_emp AND 255
         ld l,a
         ld a,0
         adc a,dmg_emp/256
         ld h,a
         ld c,(hl)
-        ld hl,dmg_heart         ; a row: outline, fill (left byte), outline, fill (right byte)
+        ld hl,dmg_heart         ; for each byte: the table's pixels to keep, the outline, the fill
         ld de,DMG_B
-        ld b,13
+        ld b,DMG_ROWS
 dd_1:
-        call dd_byte            ; both bytes written whole: the heart has its own clear patch
-        inc e                   ; ("it needs to be masked": Grant, 14 Nov 2026)
+        call dd_byte            ; the icon goes ON the table: only the icon and 2 pixels round
+        inc e                   ; it are cleared - a mask its own shape, which you do not see
+        call dd_byte            ; (Grant, 14 Nov 2026: "a masked item, so a decent mask - but
+        inc e                   ; invisible mask"), in the window's own blue
         call dd_byte
+        dec e
         dec e
         ld a,c
         or a
@@ -2449,18 +2452,21 @@ dd_2:
 dd_3:
         djnz dd_1
         ret
-dd_byte:                        ; the outline, with the fill unless this row is an empty one
-        ld a,c
-        or a
-        ld a,(hl)
+dd_byte:
+        ld a,(de)
+        and (hl)                ; what the table keeps
         inc hl
+        or (hl)                 ; the outline
+        inc hl
+        inc c                   ; the fill, unless this row is an empty one (C not 0)
+        dec c
         jr nz,dd_4
         or (hl)
 dd_4:
         inc hl
         ld (de),a
         ret
-dmg_emp: db 1,2,3,4,5,6,8,10,13        ; empty rows (the first has no fill) for damage 0 to 8
+dmg_emp: db 3,4,5,6,7,8,10,12,17        ; rows without fill (the first 2 are margin) for damage 0 to 8
         include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
 
 ; ---------------------------------------------------------------------
@@ -2712,44 +2718,9 @@ snd_wait:
         ld a,(snd_bump)
         or a
         jr nz,sw_crash
-        ld a,(snd_gap)
-        or a
-        jr nz,sw_engine
-        ld hl,FRAMES            ; no sound: wait for the interrupt, counting the wait in
-        ld a,(hl)               ; units of 279 T - the picture's spare time, for mu_burst
-        ld c,0
-sw_m:
-        ld b,19
-sw_m1:
-        djnz sw_m1
-        inc c
-        jr z,sw_sat
-        cp (hl)
-        jr z,sw_m
-        jr sw_m2
-sw_sat:
-        dec c
-        halt
-sw_m2:
-        ld hl,mu_slack
-        ld a,(hl)
-        add a,c
-        jr nc,sw_m3
-        ld a,255
-sw_m3:
-        ld (hl),a
-        ret
-sw_engine:                      ; one flip, then the gap (51 T a count)
-        ld b,a
-        ld a,(snd_port)
-        xor 24
-        ld (snd_port),a
-        out (254),a
-sw_e1:
-        ex (sp),hl
-        ex (sp),hl
-        djnz sw_e1
-        ret
+        halt                    ; no crash noise: just wait for the interrupt (the engine's tone
+        ret                     ; in the wait, and the count of the picture's spare time for
+                                ; the ditty's burst, have both gone: 14 Nov 2026)
 sw_crash:                       ; 16 random flips, random short gaps
         ld c,16
         ld a,(snd_port)         ; (the border as it is: red, if it is flashing)
@@ -3456,9 +3427,6 @@ op_min:   db 0                  ; and its first and last ink pixel
 op_max:   db 0
         include "objects.asm"
         endif
-mu_slack: db 0                  ; the picture's spare time so far, in units of 279 T
-mu_used:  db 0                  ; ... what the last burst used
-mu_el:    db 0                  ; TV frames the last picture's work took
 mu_ph:    db 0                  ; ... frames this note still sounds for
 mu_off:   db 0                  ; ... where its burst is in mu_ptab
 mu_ptr:   dw mu_tune            ; ... the next note in the tune (music.asm is kept at TD: see td_end2)

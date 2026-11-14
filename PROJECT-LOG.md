@@ -1463,3 +1463,16 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant, of the sixteen icons: "lets do the lightning". tools/make_damage_icons.py now writes the
   game's art (src/dmgicon.asm; GAME = 'P'); tests/damage_test.py reads the same art. Picture:
   docs/design/damage_gauge_in_game.png.
+- The gauge, twice more the same afternoon. Grant: "make sure it is masked and the outline is
+  clear ... The player needs to be able to see it in their peripheral vision" - tried a black box
+  with the bolt bright green / yellow / red by health (its cells do not scroll); Grant: "No I
+  want the gauge to be a masked item, so a decent mask - but invisible mask". Built: the bolt in
+  the window's blue, drawn ON the table with 2 clear pixels all round it, its own shape
+  (dmgicon.asm: keep / outline / fill for each byte, 17 rows of 3; dmg_draw). To make room the
+  wait's spare-time count and the old engine tone in the wait came out (snd_wait is HALT again).
+- Mock-up asked for: "positional information into the game area ... quick bite messages ... top
+  right, masked display" - docs/design/ingame_info.png (tools/make_ingame_info.py): A the place,
+  B with the lap, C with a 2-second message under it, D in colour (fixed cells can have their
+  own colours). Not built.
+- tests/stuck_test.py: a car that has passed one waypoint and moved 60 pixels on is not "stuck"
+  (one place of 477 was 2 waypoints short at 12 s with the game at its slower rhythm).

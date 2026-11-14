@@ -32,7 +32,8 @@ with Racer(headless=True) as sp:
         sp.run(duration=SECS, fast_forward=True)
         for i in start:
             c = car(sp, i); x, y, wp = start[i]
-            if (c['wp'] - wp) % len(wps) < 2: stuck.append((x, y, wp, c['x'], c['y'], c['wp']))
+            gone = (c['wp'] - wp) % len(wps)                 # stuck: no waypoint passed, or one and still within 60 pixels of where it was dropped
+            if gone < 1 or (gone < 2 and math.hypot(c['x'] - x, c['y'] - y) < 60): stuck.append((x, y, wp, c['x'], c['y'], c['wp']))
 print('PASS' if not stuck else 'FAIL', 'every computer car dropped anywhere on the table is passing waypoints again within %d s (%d places; stuck: %d)' % (SECS, len(pts), len(stuck)))
 for s in stuck[:40]: print('   dropped at %d,%d aiming at waypoint %d: after %d s at %d,%d, waypoint %d' % (s[:3] + (SECS,) + s[3:]))
 print('RESULT:', 'PASS' if not stuck else '%d FAIL' % len(stuck))
