@@ -341,6 +341,8 @@ with Racer(headless=True) as sp:
     # head-on: you and a computer car coast at each other (no keys, so nothing
     # pushes back after the bump); just after they touch, each moves away
     for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58)   # (parked apart: they bump nothing)
+    at_copy_done(sp)                               # (write the cars' places between pictures, not while
+                                                   # the game is half-way through moving them)
     put(sp, 0, 200, SY - 8, 16); put(sp, 1, 222, SY - 8, 48)   # 22 apart: they meet in a few frames
     sp.write(CARS + 6, bytes([0x80, 0x01]))        # you rolling right at 1.5 px/frame
     sp.write(CARS + CS + 6, bytes([0x80, 0xFE]))   # CPU A rolling left at 1.5 px/frame

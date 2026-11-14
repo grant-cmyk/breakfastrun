@@ -221,8 +221,10 @@ def big_frames(k):
 # The SMALL cars (Grant, 14 Nov 2026: "keep the ability to have two car options - the smaller cars
 # and the bigger cars. We may end up going with smaller cars"): the 16 x 16 cars of tools/car_art.txt,
 # which the race order on the right uses. CARS=small in the environment puts them in the game: each
-# heading goes on the same grid, 5 in from its corner (so the car's box starts at the car's place),
-# and the game's frames, table and draw routine are exactly the same - only shorter.
+# heading goes on the same grid, in the frame's first 16 columns - so a row is 2 bytes of picture
+# and an empty third, which the draw routine skips (a third faster) - and the game draws the frame
+# at the car's own x (CAR_U in src/options.asm). The price: no 1-pixel clear edge to the car's left
+# and right (it keeps the one above and below). Frames, table and draw routine are otherwise the same.
 SMALL_CARS = os.environ.get('CARS', 'big') == 'small'
 def small_frames(k):
     out = []
@@ -231,7 +233,7 @@ def small_frames(k):
         for y in range(16):
             for x in range(16):
                 v = g[y][x]
-                G[y + 5][x + 5] = (INK if (x + y) % 2 == 0 else PAPER) if v == DITH else v
+                G[y + 5][x + FX] = (INK if (x + y) % 2 == 0 else PAPER) if v == DITH else v
         out.append(G)
     return out
 big_all = [small_frames(k) if SMALL_CARS else big_frames(k) for k in range(len(KINDS))]
@@ -243,6 +245,7 @@ def big_bytes(g):
     rows = []
     for y in range(H):
         m = [1 if any(solid[y + j][x + i] for j in (-1, 0, 1) for i in (-1, 0, 1) if 0 <= y + j < H and 0 <= x + i < FW) else 0 for x in range(FW)]
+        if SMALL_CARS: m[16:] = [0] * (FW - 16)       # (the small cars: 2 bytes a row)
         k = [1 if 0 <= y - 1 < GN and g[y - 1][x + FX] == INK else 0 for x in range(FW)]
         rows.append((any(m), [int(''.join(map(str, v[b * 8:b * 8 + 8])), 2) for b in range(3) for v in (m, k)]))
     used = [y for y in range(H) if rows[y][0]]

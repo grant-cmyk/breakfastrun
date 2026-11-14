@@ -229,15 +229,14 @@ yg_grip:
         xor a
 yg_g3:
         ld (yg_sl),a
-        or a                    ; the hiss: harder for a bigger slide
-        jr z,yg_g4
-        ld hl,(yg_vs)
-        call abs_hl
-        ld a,1
-        ld de,128
+        or a                    ; the hiss: only for a real slide (sideways at half a
+        jr z,yg_g4              ; pixel a frame or more), harder for a bigger one. A
+        ld hl,(yg_vs)           ; small slide is silent: it hissed in every corner, and
+        call abs_hl             ; "the sound being made sounds like skidding. It is just
+        ld de,128               ; annoying" (Grant, 14 Nov 2026)
         or a
         sbc hl,de
-        ld a,1
+        ld a,0
         jr c,yg_g4
         inc a
         ld de,128

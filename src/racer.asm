@@ -1969,8 +1969,8 @@ draw_car:
         ld de,(camx)
         or a
         sbc hl,de
-        ld de,12                ; u = wx + 12: the frame's buffer x - 1
-        add hl,de               ; (frame at wx - 3, buffer x 0 = window x -16)
+        ld de,CAR_U             ; u = the frame's buffer x - 1: the frame is at wx - 3 for the
+        add hl,de               ; big cars (CAR_U 12), at wx for the small (15); buffer x 0 = window x -16
         ld a,h
         or a
         ret nz
@@ -2239,13 +2239,23 @@ ld_l1:
         add a,a
         add a,a
         add a,a
-        ld (ld_x+1),a
-        ld b,BUF_TOP+16-WIN_Y
-ld_row:
+        ld (ld_x),a
+        ld b,BUF_TOP+16-WIN_Y   ; its two character rows: 8 lines each, a page apart
+        call ld_half            ; (one address sum a row, then INC H - it was one a line)
+        ld b,BUF_TOP+24-WIN_Y
+        call ld_half
+        inc c
+        ld a,c
+        cp 4
+        jr nz,ld_lamp
+        ret
+ld_half:
         push bc
-ld_x:
-        ld c,0                  ; (patched: the lamp's x)
+        ld a,(ld_x)
+        ld c,a
         call buf_addr
+        ld b,8
+ld_h1:
         ld a,(de)
         ld (hl),a
         inc de
@@ -2253,16 +2263,12 @@ ld_x:
         ld a,(de)
         ld (hl),a
         inc de
+        dec l
+        inc h
+        djnz ld_h1
         pop bc
-        inc b
-        ld a,b
-        cp BUF_TOP+32-WIN_Y
-        jr nz,ld_row
-        inc c
-        ld a,c
-        cp 4
-        jr nz,ld_lamp
         ret
+ld_x:   db 0                    ; the lamp's x in the buffer
 ld_rail:                        ; C lines of the 10 bytes at DE, from HL; DE on to the next kind
         push bc
         push de

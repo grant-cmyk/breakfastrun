@@ -1253,3 +1253,26 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Limits found: plain colours only (BRIGHT would brighten the edge's blue), one ink (blue), 8 px
   of solid blue between two colours, corners rounded by one line only; minimum 17 x 17, 48 up
   looks best. Cost: 10-35 colour writes a picture for each object in view. Not built.
+
+## 2026-11-14 SAST - speed "good"; small skids silent; objects from above; a ditty and a title screen asked for
+- Speed: the start lamps drawn with one address sum a character row (off the grid 14.0 -> 15.0);
+  the small cars stored in the frame's first 16 columns, so a row is 2 bytes and the third is
+  skipped (no 1-pixel clear edge left and right; CAR_U in src/options.asm, written by build.sh).
+  zxdev lap 3 frames x 301, 4 x 12. Grant: "speed of the game is good".
+- Sound: "the sound is not good - the sound being made sounds like skidding. It is just annoying
+  ... I like the idea of a little ditty sound playing in the background ... car noises to bangs
+  and hits and accelerates and pickups - so primarily events. A small sound on a skid is useful."
+  For now: the hiss only for a real slide (sideways 0.5 px a frame or more); small slides are
+  silent. A third agent is composing ditties within the game's limits (docs/sound/, not built).
+- Coloured objects, second and third rounds (tools/make_colour_objects.py,
+  docs/design/colour_objects.png): Grant: they "will not appear in the race area" (scenery beside
+  the track) and must be seen from straight above; "the egg definitely needs yellow yolk ...
+  some white milk. A black coffee in a cup". Now eleven objects from above: fried egg (yellow yolk
+  on white: two colours, so the yolk has a 10-px blue surround; 84 across), glass of milk, black
+  coffee on a saucer, toast, waffle, sugar cubes, butter, place mat and plate, bowl of cereal, mug
+  of tea, jam lid. Round shapes need an 11-px rim. Finding: off the road there is little room
+  (about 44 px deep in the views captured), so big objects show part in view. Not built.
+- A fourth agent is designing the title / attract screen (Grant: 1UP / 2UP, K for keys, an attract
+  sequence showing the drivers, a car skidding round): storyboards and an animation, not code.
+- tests: setup_test checks GRIP by the tyres' grip numbers (the slide-length measure moved with
+  the timing); drive_test's head-on check writes the cars' places between pictures.

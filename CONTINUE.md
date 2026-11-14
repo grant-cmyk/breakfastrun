@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 08:12 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 08:36 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -11,16 +11,19 @@ start lights hanging in the window, your NOS as small canisters in the window's 
 the Skid Lab grip model, the heading settling on the pictured one; set-up keys 1 2 3 before the
 start (not shown on screen). `bash build.sh` -> build/racer.tap.
 
-**Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 293, 4 x 19; 14.0 pictures a second off the
-grid. THE SPEED HUNT IS NEXT: first the lights (drawn a line at a time with buf_addr while they are
-up), then the usual list (the copy 44k at 144 lines, the cloth, the cars).
+**Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 301, 4 x 12; 15.5 pictures a second off the
+grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
-**Memory:** main area about 1.1 KB free (code_end 0xBB8C). The big cars do not fit.
+**Memory:** main area about 1.1 KB free (code_end 0xBB8A). The big cars do not fit.
 
-**Next step:** Grant plays build/racer.tap (the G3 layout). Then the speed hunt. Then, as he
-chooses: coloured objects in the window (docs/design/colour_objects.png - the solid-edge rule,
-mocked up, not built); a bigger gameplay area still (he asked; the slim frame leaves 7 px each
-side); the title / attract screen with a choice of driver and car (docs/design/new_cast_mockup.png).
+**Next step:** SOUND - Grant finds the skid hiss annoying (small slides are silent now) and wants
+a little background ditty with car noises kept to events (bangs, hits, accelerate, pick-ups, a
+small skid tick): choose from the ditties in docs/sound/ (DITTIES.md) when the agent has made
+them, then build the player into the interrupt. In design, not built: coloured objects beside
+the track seen from above (docs/design/colour_objects.png: the solid-edge rule); the title /
+attract screen (docs/design/TITLE-SCREEN.md and title_*.png/gif when the agent has made them) with
+1UP / 2UP, K for keys, a choice of driver and car (docs/design/new_cast_mockup.png). Also asked:
+a bigger gameplay area still (the slim frame leaves 7 px each side).
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test
