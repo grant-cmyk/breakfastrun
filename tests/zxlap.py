@@ -34,6 +34,11 @@ while w16(SYM['renders']) == 0: rpc('run', frames=5)
 key('Q', True)
 while mem(SYM['race_on'], 1)[0] == 0: rpc('run', frames=1)
 rpc('profile', on=True)
+# the tables kept in the back buffer's bottom rows must come through a lap untouched (the taller
+# window once drew map tiles over them: "the road shape has broken", Grant, 14 Nov 2026)
+BUF = 0xC000; TABLES = {'logo (BUFB)': 0x1160, 'constants (BUFD)': 0x1360, 'map row index (BUFE)': 0x1460,
+                        'letters (BUFF)': 0x1560, 'messages (BUFG)': 0x1660, 'messages (BUFH)': 0x1760}
+tables0 = {n: mem(BUF + a, 154) for n, a in TABLES.items()}   # (154: each strip's last 6 bytes take the interrupt's pushes)
 CARS = SYM['cars']
 x0 = w16(CARS + 1); wp = 0
 while wps[wp][0] < x0 + 30: wp += 1
@@ -56,6 +61,7 @@ while laps < 1 and fr < 1500:
             vis = sum(1 for i in range(5) if -16 < cs[i * SYM['c_size'] + 1] + 256 * cs[i * SYM['c_size'] + 2] - cx < 176 and -16 < cs[i * SYM['c_size'] + 4] + 256 * cs[i * SYM['c_size'] + 5] - cy < 120)
             slow[(fr - f_last, vis, (r - 1) & 3)] += 1
         r_last, f_last = r, fr
+broken = [n for n, a in TABLES.items() if mem(BUF + a, 154) != tables0[n]]
 rep = rpc('profile_report', top=20000)
 rpc('quit') if False else z.kill()
 labels = sorted((a, n) for n, a in SYM.items() if 0x5F00 <= a < 0xFFF0)
@@ -88,6 +94,7 @@ pics = sum(frames.values()) or 1
 total = rep['total_t_states']
 print('zxdev lap: %d TV frames, %d pictures, %.0f T a picture all told (3 frames = 209,664)' % (fr, pics, total / pics))
 print('TV frames per picture:', dict(sorted(frames.items())))
+print('PASS the tables in the buffer\'s bottom rows are untouched after the lap' if not broken else 'FAIL tables overwritten during the lap: %s' % ', '.join(broken))
 if os.environ.get('SLOW'):
     print('pictures by (cars in view, HUD slot): at 3 frames / at 4 or more')
     for vis in range(6):

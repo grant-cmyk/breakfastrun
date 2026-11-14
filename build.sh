@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Build Breakfast Run: build/racer.tap (with its BASIC loader), racer.bin and racer.sym.
-# Usage: build.sh [big|small] [128|136]     the cars (default big) and the window's height (default 128)
+# Usage: build.sh [small|big] [136|128]     the cars (default small) and the window's height (default 136)
 # Run from anywhere. Needs pasmo and the retro plugin's zxspectrum skill (its build.sh).
 # A build that is not the default is also copied to build/racer_<cars>_<height>.tap.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-CARSOPT="${1:-big}"; ROWS="${2:-128}"
+CARSOPT="${1:-small}"; ROWS="${2:-136}"
 TALL=0; [ "$ROWS" = "136" ] && TALL=1
 printf '; Build options (written by build.sh)\nOPT_TALL equ %s                  ; 0: the window 176 x 128; 1: 176 x 136 (the message bar on row 0)\n' "$TALL" > "$ROOT/src/options.asm"
 CARS="$CARSOPT" python3 "$ROOT/tools/make_data.py" | grep -i "cars:"

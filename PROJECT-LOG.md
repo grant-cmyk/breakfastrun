@@ -1161,3 +1161,28 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   rail under the window's top edge; an unlit lamp is an empty white ring, lit a full bright red
   disc, go bright green (tools/make_start_lights.py). And: "would like 136 high and to test big
   and small cars" - build/racer_big_136.tap and racer_small_136.tap sent.
+
+## 2026-11-14 SAST - small cars, 136 high: chosen; the broken track in the 136 trial found and fixed
+- Grant: "I prefer the smaller cars on 136 but note that in the trial, the road shape has broken -
+  areas are blocked"; then "lets keep to the small car design - playability definitely improves
+  and it may help for speed".
+- Fault 1 (the broken track): the map's tiles are drawn up to 8 lines past the window's last
+  line. With the window 136 high from buffer row 16 that reached buffer rows 152-159 - the first
+  32 bytes of every table kept there (the map's row index, the thrust table and driving styles,
+  the letters, the messages, the faces, the logo). Fix: BUF_TOP - the taller window starts at
+  buffer row 8, so the tiles end at row 151 (an .error guards it). drive_test did not catch it
+  (it never drives a lap with the tall window); tests/zxlap.py now reads the tables before and
+  after its lap: FAIL on the faulty build (all seven tables), PASS on the fixed one.
+- Fault 2, found by that check and older than this session: the last 6 bytes of each of those
+  tables are where the interrupt's pushes land when it arrives as the cloth fill finishes a line
+  at the start of the buffer's last third. The faces' last 6 bytes and (since M_SETUP was added)
+  the end of a message sat there. Fix: tools/make_strip.py packs to 154 bytes a table, the
+  .error is at 154, and the faces (which need all 160) are in the program (BUFA is empty).
+- Also: drive_test reads the window's top line, height and the message bar's row from the
+  symbols, so it runs on either height.
+- The default build is now SMALL cars, 136 high (`bash build.sh`; build/racer.tap and
+  build/racer_small_136.tap). zxdev lap: 3 frames x 311, 4 x 5. Tests on it: drive, nos, O,
+  set-up, and the lap's table check: all PASS. Main area: about 2.1 KB free (code_end 0xB798).
+- The big cars no longer fit beside the faces in the program (`bash build.sh big 128` stops at
+  "code and data run into the back buffer"): their drawings and the generator switch are kept,
+  but building them again needs the memory plan. The earlier big and 128 tapes are removed.

@@ -44,6 +44,11 @@ WIN_Y   equ 24-8*OPT_TALL       ; the window: 128 high from pixel row 24 (Grant,
 WIN_W   equ 22                  ; the message bar then on row 0 in place of the track's name
 WIN_H   equ 128+8*OPT_TALL
 MSG_ROW equ 1-OPT_TALL
+BUF_TOP equ 16-8*OPT_TALL       ; the window's first line in the back buffer: row 16, or row 8
+                                ; for the taller window - the map's tiles are drawn up to 8
+                                ; lines past the window's last line, and buffer row 152 on
+                                ; holds tables (the taller window from row 16 drew tiles over
+                                ; them: "the road shape has broken", Grant, 14 Nov 2026)
 BAND_Y  equ (WIN_Y+WIN_H)/8+1    ; the text rows under the window: LAP, TIME, BEST
 FRAMES  equ 23672       ; ROM counter, +1 every TV frame (1/50 s)
 
@@ -1725,7 +1730,7 @@ draw_tiles:
         inc de
         ld a,(de)
         ld (dt_call+2),a
-        ld a,16                 ; first tile row starts at buffer row 16 - v
+        ld a,BUF_TOP            ; first tile row starts at buffer row BUF_TOP - v
         sub l
         push bc
         ld b,a
@@ -1950,13 +1955,13 @@ draw_car:
         ld de,(camy)
         or a
         sbc hl,de
-        ld de,42                ; w = wy + 42 = the frame's buffer row + 32
-        add hl,de               ; (frame at wy - 6, window row 0 = buffer row 16)
+        ld de,26+BUF_TOP        ; w = the frame's buffer row + 32
+        add hl,de               ; (frame at wy - 6, window row 0 = buffer row BUF_TOP)
         ld a,h
         or a
         ret nz
         ld a,l
-        cp 184                  ; buffer rows -32..151
+        cp BUF_TOP+WIN_H+32     ; buffer rows -32..the window's last
         ret nc
         ld (dc_row0),a
         ; picture: big_tab[kind * 16 + heading]: the frame's address, its first
@@ -2010,7 +2015,7 @@ dc_sk:
 dc_top:
         ld (dc_row0),a          ; now the buffer row itself
         ld b,a
-        ld a,16+WIN_H           ; stop at the window's last line (buffer row 16 is its first)
+        ld a,BUF_TOP+WIN_H      ; stop at the window's last line
         sub b
         ret z
         ret c
@@ -2332,7 +2337,7 @@ flash:
 ; Any order is safe: the interrupt routine pushes 6 bytes, and below the
 ; start of every line are the 8 margin bytes of another.
 ; ---------------------------------------------------------------------
-CL_L0   equ 2*32+24             ; the low byte of line 0's byte 24 (buffer row 16)
+CL_L0   equ (BUF_TOP/8)*32+24   ; the low byte of line 0's byte 24 (buffer row BUF_TOP)
 CL_PUSH macro                     ; bytes 23..0 of a line from the pairs BC, DE, HL, IY
         rept 3
         push bc
@@ -3141,6 +3146,7 @@ gd_2:
         include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
         include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
         include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
+        include "faces.asm"     ; the drivers' faces for the race order
         if OPT_TALL
         include "hudtext_gfx.asm"
         include "tdtab.asm"
@@ -3246,9 +3252,6 @@ start_once:                     ; (start, from the start-up area)
         ldir
         ; and into the buffer's unused bottom rows: the blocks sit back to back,
         ; so HL runs on from one into the next (checked at the end)
-        ld de,BUFA
-        ld bc,bufa_end-bufa_src
-        ldir
         ld de,BUFB
         ld bc,bufb_end-bufb_src
         ldir
@@ -3582,7 +3585,7 @@ mc_src:                         ; HL = buffer address of this row, byte 2 + A
         add a,a
         ld c,a
         ld a,(mc_y)
-        add a,16
+        add a,BUF_TOP
         ld b,a
         jp buf_addr
 mc_dst:                         ; HL = screen address of this row, byte WIN_COL + A
@@ -3710,9 +3713,8 @@ cars_init_src_end:
 high_end:
 ; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn
 ; or shown: cars reach row 151 at most), copied there by start too
-bufa_src:
-        include "faces.asm"     ; the drivers' faces for the race order
-bufa_end:
+bufa_src:                       ; (empty: the faces are in the program now - a block's last
+bufa_end:                       ; 6 bytes are not safe, and the faces need all 160)
 bufb_src:
         include "logo.asm"
 bufb_end:
@@ -3812,13 +3814,13 @@ tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
 omap      equ TOPMEM + omap_src - high_src
 cars_init equ TOPMEM + cars_init_src - high_src
-faces     equ BUFA + faces_src - bufa_src
+faces     equ faces_src
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
         endif
-        if 16 + WIN_H > 152
-        .error the window's buffer rows run into the blocks kept from buffer row 152
+        if BUF_TOP + WIN_H + 8 > 152
+        .error the tiles under the window's last line run into the blocks kept from buffer row 152
         endif
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide
@@ -3832,8 +3834,8 @@ faces     equ BUFA + faces_src - bufa_src
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
-        if (bufa_end - bufa_src) / 161 + (bufb_end - bufb_src) / 161 + (bufd_end - bufd_src) / 161 + (bufg_end - bufg_src) / 161 + (bufe_end - bufe_src) / 161 + (buff_end - buff_src) / 161 + (bufh_end - bufh_src) / 161
-        .error a block for the buffer's bottom rows is over 160 bytes
+        if (bufa_end - bufa_src) / 155 + (bufb_end - bufb_src) / 155 + (bufd_end - bufd_src) / 155 + (bufg_end - bufg_src) / 155 + (bufe_end - bufe_src) / 155 + (buff_end - buff_src) / 155 + (bufh_end - bufh_src) / 155
+        .error a block for the buffer's bottom rows is over 154 bytes (its last 6 are where the interrupt's pushes can land)
         endif
         if (bufa_src - high_end) + (bufb_src - bufa_end) + (bufd_src - bufb_end) + (buff_src - bufd_end) + (bufh_src - buff_end) + (bufg_src - bufh_end) + (bufe_src - bufg_end)
         .error start_once copies the blocks back to back: keep them in this order
