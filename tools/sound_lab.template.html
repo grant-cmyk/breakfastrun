@@ -55,8 +55,14 @@ button:focus-visible { outline: 3px solid var(--table); outline-offset: 2px; }
   </div>
 
   <section>
+    <h2>Kettle's On, driving</h2>
+    <p>You said Kettle's On is still the best, but wanted it less of a ditty and more driving, almost trance-like, with the tempo up. These keep the tune and put a steady pulse under it: every step sounds, the tune's note where one starts and a low pedal note on every other step. The newest tape plays the first.</p>
+    <div class="grid" id="drive"></div>
+  </section>
+
+  <section>
     <h2>Racing ditties, new</h2>
-    <p>Four faster tunes written for racing, all played the half-miner way you said was okay: 4 thousandths of a second of the note, low in pitch, once a picture. The newest tape plays Green Light.</p>
+    <p>Four faster tunes written for racing, all played the half-miner way you said was okay: 4 thousandths of a second of the note, low in pitch, once a picture. </p>
     <div class="grid" id="racers"></div>
   </section>
 
@@ -89,7 +95,7 @@ button:focus-visible { outline: 3px solid var(--table); outline-offset: 2px; }
 <script>
 const AUDIO = /*AUDIO*/{};
 const RACERS = [
-  ['9', 'Green Light', 'Driving and bright, 188 beats a minute. In the newest tape.'],
+  ['9', 'Green Light', 'Driving and bright, 188 beats a minute.'],
   ['10', 'Flat Out', 'A rock and roll boogie riff, 214 beats a minute. The fastest.'],
   ['11', 'Chequered Flag', 'A galloping fanfare, 167 beats a minute.'],
   ['12', 'Second Helpings', 'Bouncy and off the beat, 188 beats a minute.'],
@@ -228,6 +234,8 @@ function showPicks() {
 const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
 const tile = (key, title, what, pick) => el(`<div class="tile"><h3>${title}</h3><p>${what}</p>
   <div class="row"><button class="play" data-audio="${key}">Play</button><button class="choose" data-pick="ditty|${pick}">Choose</button></div></div>`);
+[['13', "Kettle's On, driving", '167 beats a minute, a pulse of 8 notes a second. In the newest tape.'], ['14', "Kettle's On, faster still", '200 beats a minute, a pulse of 10 notes a second.']]
+  .forEach(([n, name, what]) => document.getElementById('drive').appendChild(tile(`ditty${n}_minerhalf`, name, what, name)));
 RACERS.forEach(([n, name, what]) => document.getElementById('racers').appendChild(tile(`ditty${n}_minerhalf`, name, what, name)));
 DITTIES.forEach(([n, name, what]) => document.getElementById('ditties').appendChild(tile(`ditty${n}_minerhalf`, `${n}. ${name}`, what, name)));
 VARS.forEach(([k, name, what]) => document.getElementById('vars').appendChild(tile(`ditty5_${k}`, name, what, "Kettle's On, " + name.toLowerCase())));

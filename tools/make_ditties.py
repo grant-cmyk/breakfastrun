@@ -371,7 +371,27 @@ def helpings():
                 beat=16, beats_per_bar=4, transpose=4, bars=bars, drums=None)
 
 
-RACERS = [greenlight(), flatout(), chequered(), helpings()]
+def drive(d, key, name, step=6, unit=9, pedal=None):
+    """A tune made DRIVING (Grant, 14 Nov 2026: "less ditty and more driving almost trance like -
+    can you up its tempo or beat" - "Kettles on is still the best"): faster (each `unit` frames of
+    the tune becomes `step`), and a steady pulse - every step sounds: the tune's note where one
+    starts, and on every other step a pedal note (one a bar, from `pedal`), so the tune rides on
+    an unbroken run of short notes. Every note is one step long: tools/make_music.py stores a
+    byte a step."""
+    bars = []
+    for i, bar in enumerate(d["bars"]):
+        ped = pedal[i % len(pedal)]; out = []
+        for tok in bar.split():
+            n, length = tok.split(":"); k = int(length) // unit; assert k * unit == int(length)
+            out += [(ped if n == "r" else n)] + [ped] * (k - 1)
+        bars.append(" ".join(f"{n}:{step}" for n in out))
+    return dict(key=key, name=name, mood="driving: a steady pulse under the tune, %d beats a minute" % round(60 * 50.08 / (3 * step)),
+                beat=3 * step, beats_per_bar=d["beats_per_bar"], transpose=d["transpose"], bars=bars, drums=None, step=step)
+
+
+RACERS = [greenlight(), flatout(), chequered(), helpings(),
+          drive(jig(), "ditty13", "Kettle's On, driving", pedal=["G6", "G6", "D7", "D7", "G6", "G6", "D7", "G6", "C7", "G6", "C7", "G6", "G6", "G6", "D7", "G6"]),
+          drive(jig(), "ditty14", "Kettle's On, faster still", step=5, pedal=["G6", "G6", "D7", "D7", "G6", "G6", "D7", "G6", "C7", "G6", "C7", "G6", "G6", "G6", "D7", "G6"])]
 STYLES = ["pips", "plink", "buzz"]
 FAVOURITE = ("ditty1", "plink")         # the one used for the in-game demo
 LOOPS = 2

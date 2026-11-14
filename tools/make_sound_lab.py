@@ -7,7 +7,7 @@ import os, sys, base64, subprocess, tempfile, json
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = sys.argv[1]
 tmp = tempfile.mkdtemp()
-audio = {'ditty%d_minerhalf' % d: None for d in range(1, 13)}          # tools/make_ditty_styles.py
+audio = {'ditty%d_minerhalf' % d: None for d in range(1, 15)}          # tools/make_ditty_styles.py
 for st in ('mhshort', 'mhhigh', 'mhlow'): audio['ditty5_' + st] = None
 for n in audio:
     mp3 = os.path.join(tmp, n + '.mp3')

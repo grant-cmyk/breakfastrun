@@ -2448,13 +2448,13 @@ sp_2:
         if OPT_OBJ              ; (build.sh: OBJECTS=1 - off by default: an object costs about 700 T a
                                 ; tile to draw, and the mug with its margin is 99 tiles - see PROJECT-LOG)
 ; OBJ_PAINT: the coloured objects' colours (Grant, 14 Nov 2026: "build the objects"). An
-; object's pixels are map tiles, drawn like the rest of the table; its colours are REGIONS
-; (src/objects.asm, from tools/make_world.py): for one attribute, the first and last ink pixel
-; over every run of 8 pixel rows. The window scrolls by pixels but colour goes by 8 x 8 cells:
-; for the camera at (op_cx, op_cy) each window cell row that the region reaches looks up the run
-; of rows it covers, and the cells from its leftmost to its rightmost ink get the attribute. The objects are
-; drawn so that this never puts two inks in one cell (8 pixels between colours).
-; A = 0: each region's own attribute; else that attribute for all (to wipe the last picture's).
+; object's pixels are map tiles, drawn like the rest of the table; its colour is a BLOCK
+; (src/objects.asm, from tools/make_world.py): a rectangle of the world - the object's inside,
+; within its thick blue edge - and an attribute. The window scrolls by pixels but colour goes
+; by 8 x 8 cells: for the camera at (op_cx, op_cy), every window cell that holds any of the
+; block gets the attribute. The edge is 8 pixels thick, so such a cell holds only the inside
+; and the edge - never cloth - and the edge's blue is the attribute's ink.
+; A = 0: each block's own attribute; else that attribute for all (to wipe the last picture's).
 WIN_ATTR  equ 0x29              ; the window's own colours: blue on cyan
 OBJ_ATTR0 equ 0x5800 + (WIN_Y/8)*32 + WIN_COL
 obj_paint:
@@ -2471,24 +2471,47 @@ op_reg:
         or a
         sbc hl,de
         ld (op_dx),hl           ; the region's x in the window (signed)
+        ld a,h                  ; right of the window, or more than 255 pixels left of it:
+        or a                    ; not in view - the next block
+        jr z,op_x1
+        inc a
+        jr nz,op_skip
+        jr op_x2
+op_x1:
+        ld a,l
+        cp WIN_W*8
+        jr nc,op_skip
+op_x2:
         ld l,(ix+2)
         ld h,(ix+3)
         ld de,(op_cy)
         or a
         sbc hl,de               ; ... and its first row's y
-        ld c,(ix+5)             ; C = its entries: one for each run of 8 pixel rows that
-        bit 7,h                 ; a cell row can cover - rows j-7 .. j, for j = 0 on
-        jr z,op_pos             ; (the first 7 are the region's top edge part-way down a cell)
-        inc h                   ; above the window's top: cell row 0 covers rows -y .. -y+7,
-        jr nz,op_skip           ; entry -y + 7 - if the region has it
+        ld e,(ix+5)             ; its height - 1: every cell row that the block's rows
+        ld d,0                  ; reach, from its first to its last
+        push hl
+        add hl,de               ; the last row's y: above the window? none of it shows
+        ld a,h
+        rla
+        jr c,op_sk1
+        ld a,h
+        or a
+        jr nz,op_b1
         ld a,l
-        neg
-        jr z,op_skip
-        add a,7
-        jr c,op_skip
-        ld b,0                  ; B = the cell row
-        jr op_go
-op_pos:
+        cp WIN_H
+        jr c,op_b2
+op_b1:
+        ld a,WIN_H-1            ; (below it: down to the window's last cell row)
+op_b2:
+        rrca
+        rrca
+        rrca
+        and 31
+        ld c,a                  ; C = the last cell row
+        pop hl
+        ld b,0                  ; B = the first: 0 if the block starts above the window
+        bit 7,h
+        jr nz,op_row
         ld a,h
         or a
         jr nz,op_skip
@@ -2499,56 +2522,24 @@ op_pos:
         rrca
         rrca
         and 31
-        ld b,a                  ; the cell row its first row is in,
-        ld a,l
-        cpl
-        and 7                   ; and the entry: 7 - (y AND 7)
-op_go:
-        cp c                    ; A = the entry
-        jr nc,op_skip
-        push af
-        push ix
-        pop hl
-        ld e,a
-        ld d,0
-        add hl,de
-        add hl,de
-        ld e,6
-        add hl,de               ; HL -> its two bytes
-        pop af
+        ld b,a
 op_row:
-        ld e,a                  ; (E = the entry, kept)
         ld a,b
         ld (op_r),a
-        ld a,(hl)
+        ld a,(ix+6)
         ld (op_min),a
-        inc hl
-        ld a,(hl)
+        ld a,(ix+7)
         ld (op_max),a
-        push de
         call op_flush
-        pop de
-        ld a,15                 ; 8 entries on (16 bytes), a cell row down
-        add a,l
-        ld l,a
-        jr nc,op_r1
-        inc h
-op_r1:
-        inc b
         ld a,b
-        cp WIN_H/8
-        jr nc,op_skip
-        ld a,e
-        add a,8
-        jr c,op_skip
         cp c
-        jr c,op_row
+        jr z,op_skip
+        inc b
+        jr op_row
+op_sk1:
+        pop hl
 op_skip:
-        ld e,(ix+5)             ; the next region
-        ld d,0
-        add ix,de
-        add ix,de
-        ld e,6
+        ld de,8                 ; the next block
         add ix,de
         jp op_reg
 op_flush:                       ; cell row op_r: the cells from op_min to op_max (HL, BC kept)
@@ -3746,9 +3737,10 @@ isr_q:
         ld a,(you_done)
         or a
         jr nz,mu_off0
-        ld hl,mu_wait           ; time for the next note?
-        dec (hl)
+        ld hl,mu_wait           ; time for the next step? (the tune is a note, a rest or
+        dec (hl)                ; a held note on every MU_STEP frames: a steady pulse)
         jr nz,mu_ring
+        ld (hl),MU_STEP
         ld hl,(mu_ptr)
         ld a,(hl)
         cp 255                  ; the end: round again
@@ -3756,15 +3748,13 @@ isr_q:
         ld hl,mu_tune
         ld a,(hl)
 mu_1:
-        ld (mu_off),a           ; where its burst is in mu_ptab
-        inc hl
-        ld a,(hl)
-        ld (mu_wait),a          ; frames until the one after
-        inc hl
-        ld a,(hl)               ; and the frames it sounds for
-        ld (mu_ph),a
         inc hl
         ld (mu_ptr),hl
+        cp 254                  ; 254: a rest
+        jr z,mu_off0
+        ld (mu_off),a           ; where its burst is in mu_ptab
+        ld a,MU_GATE            ; and the frames it sounds for
+        ld (mu_ph),a
 mu_ring:
         ld a,(mu_ph)            ; (the note itself is sounded once a picture: mu_burst)
         or a
