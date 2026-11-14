@@ -203,8 +203,8 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)                            # the driver strip under the window
     check(all(attr(r, c) == 0x57 for r in (20, 21) for c in range(1, 10)) and all(attr(22, c) == 0x78 for c in range(1, 10))
           and attr(23, 1) == 0x30 and attr(20, 0) == 0x30 and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
-          and sb[160:176, 8:24].any() and sb[160:176, 32:80].any() and sb[168:184, 168:184].any() and not sb[160:192, 80:88].any(),
-          'under the window: your face and your place, large, in one red block; a white strip; the crew chief on blue')
+          and sb[160:176, 8:24].any() and not sb[160:176, 32:80].any() and sb[168:184, 168:184].any() and not sb[160:192, 80:88].any(),
+          'under the window: your face in a red block (your place is on its plate in the window, not here); a white strip; the crew chief on blue')
     check(sb[140:150, 176:184].any() and attr(17, 22) == 0x29, 'your NOS canister is shown in the window\'s corner, in the window\'s colours')
     check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(TOWER_Y + 2 * i, 25) == 0x57)
@@ -256,7 +256,7 @@ with Racer(headless=True) as sp:
 
     sp.run(duration=0.6, fast_forward=True)
     bar = screen_text(sp, 22, 1, 9) + '|' + screen_text(sp, 23, 1, 9)
-    check(screen_bits(sp)[160:176, 32:80].any() and attr(20, 4) == 0x57, 'racing: your place, large, in the red block')
+    check(not screen_bits(sp)[160:176, 32:80].any() and attr(20, 4) == 0x57, 'racing: the red block has only your face - your place is in the window')
     check(re.fullmatch(r' LAP 1/3 \|TIME 0:0\d', bar) is not None, 'the strip says LAP 1/3, the time runs under it (%r)' % bar)
     check(not screen_bits(sp)[TOWER_Y * 8:TOWER_Y * 8 + 80, 240:248].any(), 'the race order no longer shows a lap digit on each row')
 

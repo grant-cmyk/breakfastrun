@@ -2079,10 +2079,14 @@ draw_car:
         ret c
         ret z
         ld (dc_count),a
-        ld a,b                  ; DE += rows skipped * 6
+        ld a,b                  ; DE += rows skipped * 6 (a small car's rows are 4 bytes: its
+        add a,a                 ; third pair of bytes is always empty and is not kept)
+        if CAR_U = 15
         add a,a
+        else
         add a,b
         add a,a
+        endif
         add a,e
         ld e,a
         jr nc,dc_sk
@@ -2188,6 +2192,10 @@ dc_e1:
         inc de                  ; (its ink byte)
         inc l
 dc_e1_x:
+        if CAR_U = 15
+        dec l                   ; (small cars: no third pair) back to the row's first byte
+        dec l
+        else
         ld a,(de)               ; mask byte (0: nothing in this byte - skip it
         inc de                  ; and its ink: 14 in 100 of the big cars' bytes)
         or a
@@ -2221,6 +2229,7 @@ dc_e2:
         inc de                  ; (its ink byte)
         dec l
         dec l
+        endif
 dc_e2_x:
         inc h                   ; next pixel row down (screen layout)
         ld a,h
@@ -3690,6 +3699,8 @@ isr_e:
         ld (snd_port),a
         out (254),a
 isr_q:
+        if OPT_MUSIC            ; (MUSIC=1 bash build.sh. Off by default: in the race it was "just background
+                                ; beeping, so musicality completely lost" and it cost speed - Grant, 14 Nov 2026)
         ; ---- the ditty (Grant, 14 Nov 2026: "a little ditty sound playing in the
         ;      background" - "please try the spilt milk"): music.asm, made by
         ;      tools/make_music.py. Only A, H and L, and no calls: see below ----
@@ -3766,6 +3777,7 @@ mu_d2:
 mu_off0:
         xor a
         ld (mu_ph),a
+        endif
 mu_out:
                                 ; (only A, H and L here: the interrupt may land
         ld a,(snd_fxt)          ; while the cloth fill has SP in the buffer, which

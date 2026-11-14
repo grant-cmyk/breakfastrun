@@ -79,19 +79,9 @@ bt_dig:
         ld bc,23*256+9
         jp print_at
 bt_1:
-        ld a,(position)         ; ONE thing a picture. Your place, large: the first of
-        call place_txt          ; its 3 letters that is not as shown
-        ld de,bar_shown
-        ld bc,0x0304
-bt_p:
-        ld a,(de)
-        cp (hl)
-        jr nz,bt_big
-        inc hl
-        inc de
-        inc c
-        inc c
-        djnz bt_p
+        ld de,bar_shown+3       ; ONE thing a picture. (Your place is no longer here in big
+                                ; letters: it is on its plate in the window - "I only need my
+                                ; place in one place - that is in game": Grant, 14 Nov 2026)
         ld a,(race_on)          ; the strip: PRESS Q before the start,
         or a
         ld a,1
@@ -146,14 +136,6 @@ bt_txt:
         ld hl,bar_time
         ld bc,23*256+6
         jp print_at
-bt_big:
-        ld a,(hl)               ; one big letter: row 20, column C, white on your red
-        ld (de),a
-        ld (txt_digit),a
-        ld hl,txt_digit
-        ld b,20
-        ld a,0x57
-        jp print_big
 
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both

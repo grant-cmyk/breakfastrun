@@ -93,8 +93,8 @@ ad_row:
         call a_radr
         exx
         jr c,ad_vis
-        ld a,e                  ; a row off the cloth: past its 6 bytes
-        add a,6
+        ld a,e                  ; a row off the cloth: past its 4 bytes (a small car's row: two pairs)
+        add a,4
         ld e,a
         jr nc,ad_o
         inc d
@@ -140,13 +140,29 @@ ad_b:
 ad_s:
         inc l
         inc c
-        djnz ad_b
+        dec b
+        jr z,ad_done
+        ld a,b
+        dec a
+        jr nz,ad_b
+        exx                     ; the third byte across: the row has no bytes of its own for
+        ld (a_sde),de           ; it (two pairs a row since 14 Nov 2026) - a pair of zeros, so
+        ld de,a_zero            ; only what the second byte carries over is drawn
+        exx
+        jr ad_b
+ad_done:
+        exx
+        ld de,(a_sde)
+        exx
 ad_next:
         pop af
         inc a
         pop bc
         djnz ad_row
         ret
+
+a_sde:  dw 0                    ; the frame's next row, kept while the zeros are read
+a_zero: db 0,0
 
 ; A_RADR: A = a row (+ 32). Carry: it is on the cloth - HL = the screen address
 ; of the car's first byte in it, C = that byte's column on the cloth (signed)

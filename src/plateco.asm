@@ -17,7 +17,7 @@ pl_draw:
         or a
         ret nz
         ld hl,PL_B
-        ld bc,24*256+5
+        ld bc,18*256+5
         call pl_fill
         ld a,(position)         ; the figure: the ROM's own, 8 x 8 (1 before the race)
         or a
@@ -64,7 +64,7 @@ pd_3:
         or a
         ret z
         ld hl,PL_M
-        ld bc,13*256+6
+        ld bc,7*256+6
         call pl_fill
         ld hl,PL_M+4*0x100
         ld de,pl_msg
@@ -109,54 +109,42 @@ pl_down:                        ; HL: the next line down (the buffer is laid out
         sub 8
         ld h,a
         ret
-pl_fill:                        ; HL = its top left byte, B = rows, C = bytes: a plate, 3 pixels in at each side
-        ld e,b
+pl_fill:                        ; HL = its top left byte, B = its solid rows, C = bytes: a clear line, two
+        ld de,0x0000            ; rounding rows, the solid rows, two rounding rows, a clear line
+        call pf_row
+        ld de,0x07E0
+        call pf_row
+        ld de,0x0FF0
+        call pf_row
 pf_1:
-        ld a,e                  ; how near the top or the bottom: 0 clear, 1 and 2 the rounded
-        sub b                   ; corners, 3 on solid
-        ld d,a
-        ld a,b
-        dec a
-        cp d
-        jr c,pf_2
-        ld a,d
-pf_2:
-        cp 3
-        jr c,pf_3
-        ld a,3
-pf_3:
+        ld de,0x1FF8            ; (3 pixels in at each side)
+        call pf_row
+        djnz pf_1
+        ld de,0x0FF0
+        call pf_row
+        ld de,0x07E0
+        call pf_row
+        ld de,0x0000
+pf_row:                         ; a row: D its left byte, E its right, solid between (clear if D is 0)
         push hl
         push bc
-        push de
-        ld d,a
-        add a,a
-        add a,d
-        add a,pf_tab AND 255
-        ld e,a
-        ld a,0
-        adc a,pf_tab/256
-        ld d,a
-        ld a,(de)               ; the left byte,
+        ld (hl),d
+        inc l
+        ld a,d
+        or a
+        jr z,pf_2
+        ld a,0xFF
+pf_2:
+        ld b,c
+        dec b
+        dec b
+pf_3:
         ld (hl),a
         inc l
-        inc de
-        ld a,(de)               ; the middle ones,
-        dec c
-        dec c
-pf_4:
-        ld (hl),a
-        inc l
-        dec c
-        jr nz,pf_4
-        inc de
-        ld a,(de)               ; the right
-        ld (hl),a
-        pop de
+        djnz pf_3
+        ld (hl),e
         pop bc
         pop hl
-        call pl_down
-        djnz pf_1
-        ret
-pf_tab: db 0x00,0x00,0x00, 0x07,0xFF,0xE0, 0x0F,0xFF,0xF0, 0x1F,0xFF,0xF8
+        jp pl_down
         include "plate.asm"     ; pl_dig (tools/make_plate.py; pl_suf and pl_lap are under 0x8000, pl_msg at TD)
 

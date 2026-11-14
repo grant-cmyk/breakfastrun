@@ -1501,3 +1501,21 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   about 7,000 to spare at 3 frames once the music took its share. So the game now runs at a
   steady 12.5 pictures a second. To win it back: draw_car with 2-byte frames for the small cars
   (their third byte is always zero) - less time a car, and about 2.4 KB of memory.
+
+## 2026-11-14 SAST (evening, later) - place in one place; music off in the race; speed won back
+- Grant: "there is no suggestion of music, just background beeping, so musicality completely
+  lost. I only need my place in one place - that is in game" - "but win back the speed".
+- The big place in the red block under the window is gone (bar_tick; msg_finished no longer
+  prints it): the red block is your face only. Your place is on the plate in the window.
+- The ditty in the race is OFF by default (OPT_MUSIC; MUSIC=1 bash build.sh puts it back): three
+  ways of playing it were tried in the game today and none sounded like music to Grant, and each
+  cost speed. A 48K tune that holds (Manic Miner's) spends 40% of a TV frame on it every pass.
+  Suggested instead: the tune on the title screen, where nothing else needs the time.
+- Speed: the plate's fill rewritten (a row routine, no table); the small cars' frame rows are 4
+  bytes, not 6 - their third pair was always empty (make_data ROWB; draw_car and the title's
+  a_draw changed to match). Racing alone (zxlap ALONE=1): 220 pictures at 3 frames / 97 at 4 (it
+  was 0 / 245 with the music and the first plate; 247 / 85 before today's damage gauge, plate
+  and oil can). In the pack the game is at 4 frames nearly always, as it was.
+- Memory: the cars now take 4,864 bytes under 0x8000, not 7,296 - 2,432 bytes free there (it is
+  slower "contended" memory: fine for data and for code that is not time-critical). Program:
+  code_end 0xBF7C, 132 bytes free.

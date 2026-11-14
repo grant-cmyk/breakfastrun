@@ -338,11 +338,6 @@ msg_final:                      ; FINAL LAP on the strip for 3 s (bar_tick shows
 msg_finished:                   ; at the flag: your place, whole, and FINISHED! on the
         xor a                   ; strip - drawn here and now, as the pictures stop
         ld (msg_timer),a
-        ld a,(position)
-        call place_txt
-        ld bc,20*256+4
-        ld a,0x57
-        call print_big
         ld hl,txt_strip+20
         ld bc,22*256+1
         jp print_at

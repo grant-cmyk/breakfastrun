@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 18:53 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 19:49 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -14,9 +14,9 @@ start (not shown on screen). `bash build.sh` -> build/racer.tap.
 **Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 301, 4 x 12; 15.5 pictures a second off the
 grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
-**Memory:** FULL - 11 bytes free in the program (code_end 0xBFF5), 12 under 0x8000, none in the table block at 0x5B4C. Code added before sq4.asm's include costs a whole page when it crosses one: add after faces.asm. The next feature needs room found first.
+**Memory:** 132 bytes free in the program (code_end 0xBF7C; code added before sq4.asm's include costs a whole page when it crosses one - add after faces.asm); about 2,440 bytes free under 0x8000 since the small cars' frames went to 4 bytes a row (contended memory: data, or code that is not time-critical); none in the table block at 0x5B4C.
 
-**Next step:** Grant to playtest the tape: YOUR PLACE ON A PLATE in the window, top right (small nd / rd, the lap, FINAL LAP! under it - docs/design/place_plate_in_game.png); DAMAGE (an icon bottom left whose fill empties from the top - a heart now; Grant wants a mechanical one: choose from docs/design/damage_icons.png, tools/make_damage_icons.py; hits slow the car; an oil can on the left-hand side mends it, about once a lap - docs/design/damage_in_game.png), the title (plain options 1 / 2 / K), and the ditty
+**Next step:** (the ditty is OFF in the race now - OPT_MUSIC; Grant found every in-race version "background beeping"; suggested: play it on the title screen instead.) Grant to playtest the tape: YOUR PLACE ON A PLATE in the window, top right (small nd / rd, the lap, FINAL LAP! under it - docs/design/place_plate_in_game.png); DAMAGE (an icon bottom left whose fill empties from the top - a heart now; Grant wants a mechanical one: choose from docs/design/damage_icons.png, tools/make_damage_icons.py; hits slow the car; an oil can on the left-hand side mends it, about once a lap - docs/design/damage_in_game.png), the title (plain options 1 / 2 / K), and the ditty
 now "Kettle's On, driving" (ditty13; a faster one, ditty14, is in the Sound Lab,
 https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS). Then the COLOURED OBJECTS: OBJECTS=1 python3
 tools/make_world.py; OBJECTS=1 bash build.sh puts eight small square ones on the table
