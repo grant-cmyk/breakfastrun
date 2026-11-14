@@ -1155,3 +1155,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Start lights for layout G3, by the second agent (tools/make_start_lights.py,
   docs/design/start_lights.png): L1 a gantry bar with three round lamps (its pick), L2 hanging
   pods, L3 glowing lenses with chequered ends at go. For Grant to choose.
+
+## 2026-11-14 SAST - start lights: L2
+- Grant, of docs/design/start_lights.png: "l2" - the pods: three black lamp boxes hanging from a
+  rail under the window's top edge; an unlit lamp is an empty white ring, lit a full bright red
+  disc, go bright green (tools/make_start_lights.py). And: "would like 136 high and to test big
+  and small cars" - build/racer_big_136.tap and racer_small_136.tap sent.

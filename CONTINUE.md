@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 07:12 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 07:15 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 128 in an arcade bezel (the message bar is one row); five cars at 20 x 20.
@@ -23,7 +23,7 @@ separate title-screen load).
 
 **Next step:** Grant plays the four builds (build/racer_big_128.tap, racer_small_128.tap,
 racer_big_136.tap, racer_small_136.tap; made by `bash build.sh [big|small] [128|136]`) and says
-which cars and which height; picks the start lights (docs/design/start_lights.png: L1, L2, L3) and
+which cars and which height; the start lights are chosen: L2, the pods (docs/design/start_lights.png); he
 approves layout G3 (docs/design/screen_options4.png). Then: build G3 on the chosen height, then the
 speed hunt (tests/zxlap.py). Later: the title / attract screen with a choice of driver and car.
 
