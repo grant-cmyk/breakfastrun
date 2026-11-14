@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 10:57 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 11:36 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -14,16 +14,17 @@ start (not shown on screen). `bash build.sh` -> build/racer.tap.
 **Speed:** tests/zxlap.py (zxdev). Now: 3 frames x 301, 4 x 12; 15.5 pictures a second off the
 grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
-**Memory:** main area about 0.7 KB free (code_end 0xBD1D). The big cars do not fit.
+**Memory:** main area about 0.5 KB free (code_end 0xBDE9). The big cars do not fit.
 
-**Next step:** Grant to playtest the tape with his sound picks built (Spilt Milk as buzz in the
-interrupt; putter, short screech, crunch, bonk on an O, coin run, whoosh up) and say whether the
-ditty stays or one of the four new ones (5-8 in the Sound Lab, https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS,
-built by tools/make_sound_lab.py) replaces it: `python3 tools/make_music.py dittyN` then
-`bash build.sh`. GRIP is what cuts the skidding (level 1 slides a lot). In design, not built:
-coloured objects beside the track seen from above (docs/design/colour_objects.png); the title /
-attract screen (docs/design/TITLE-SCREEN.md, title_*.png/gif). Also asked: a bigger gameplay
-area still. Watch: pictures at 4 frames when you race in the pack (PROJECT-LOG, 14 Nov later).
+**Next step:** Grant to playtest the tape with the ditty played the Manic Miner way (Green
+Light, "half-miner": 4 ms of the note, low, once a picture, using only each picture's spare
+time; it starts at the green light) and choose a tune in the Sound Lab
+(https://claude.ai/artifact/5DjCUne3uxZ7dZvpd48HNS, built by tools/make_sound_lab.py): four
+racing ditties (9-12) and the earlier eight, all half-miner. To change the tune:
+`python3 tools/make_music.py dittyN` then `bash build.sh`. In design, not built: coloured
+objects beside the track seen from above (docs/design/colour_objects.png) - a full gameplay
+mock-up with several objects was offered; the title / attract screen
+(docs/design/TITLE-SCREEN.md, title_*.png/gif). Also asked: a bigger gameplay area still.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

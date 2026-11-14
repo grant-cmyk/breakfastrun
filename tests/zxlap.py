@@ -3,6 +3,7 @@ instruction by instruction: where every T-state of a lap goes, by routine (the n
 below each instruction - cars_init, data and tables excluded by name), and how many TV frames each
 picture took. More detail than profile_ticks.py (which splits a picture into its stages).
 Usage: python3 tests/zxlap.py [tape] [sym]      ZXDEV=path to zxdev (default: ../zx-emulator/zxdev)
+       ALONE=1: the computer cars stay on the grid
        add LIST=routine to list that routine's instructions, heaviest first"""
 import os, sys, json, math, subprocess, re
 from collections import defaultdict, Counter
@@ -34,6 +35,8 @@ while w16(SYM['renders']) == 0: rpc('run', frames=5)
 key('Q', True)
 while mem(SYM['race_on'], 1)[0] == 0: rpc('run', frames=1)
 rpc('profile', on=True)
+if os.environ.get('ALONE'):                     # the computer cars never leave the grid: you race alone (the
+    for i in range(1, 5): rpc('write', addr=SYM['cars'] + i * SYM['c_size'] + 19, value=0)   # lightest case: C_PACE 0)
 # the tables kept in the back buffer's bottom rows must come through a lap untouched (the taller
 # window once drew map tiles over them: "the road shape has broken", Grant, 14 Nov 2026)
 BUF = 0xC000; TABLES = {'messages (BUFA)': 0x1080, 'constants (BUFD)': 0x1380, 'messages (BUFE)': 0x1480,
@@ -43,7 +46,7 @@ CARS = SYM['cars']
 x0 = w16(CARS + 1); wp = 0
 while wps[wp][0] < x0 + 30: wp += 1
 start_wp, laps, fr = wp, 0, 0
-r_last = w16(SYM['renders']); f_last = 0; frames = Counter(); slow = Counter()
+notes = []; r_last = w16(SYM['renders']); f_last = 0; frames = Counter(); slow = Counter()
 while laps < 1 and fr < 1500:
     c = mem(CARS, 11)
     x, y, ang = c[1] + 256 * c[2] + 8, c[4] + 256 * c[5] + 8, c[10]
@@ -60,6 +63,7 @@ while laps < 1 and fr < 1500:
             cs = mem(CARS, SYM['c_size'] * 5); cx, cy = w16(SYM['camx']), w16(SYM['camy'])
             vis = sum(1 for i in range(5) if -16 < cs[i * SYM['c_size'] + 1] + 256 * cs[i * SYM['c_size'] + 2] - cx < 176 and -16 < cs[i * SYM['c_size'] + 4] + 256 * cs[i * SYM['c_size'] + 5] - cy < 120)
             slow[(fr - f_last, vis, (r - 1) & 3)] += 1
+        if 'mu_ph' in SYM and mem(SYM['mu_ph'], 1)[0]: notes.append(mem(SYM['mu_used'], 1)[0])
         r_last, f_last = r, fr
 broken = [n for n, a in TABLES.items() if mem(BUF + a, 122) != tables0[n]]
 rep = rpc('profile_report', top=20000)
@@ -95,6 +99,7 @@ total = rep['total_t_states']
 print('zxdev lap: %d TV frames, %d pictures, %.0f T a picture all told (3 frames = 209,664)' % (fr, pics, total / pics))
 print('TV frames per picture:', dict(sorted(frames.items())))
 print('PASS the tables in the buffer\'s bottom rows are untouched after the lap' if not broken else 'FAIL tables overwritten during the lap: %s' % ', '.join(broken))
+if notes: print('the ditty: %d pictures with a note due, %d of them silent (no time to spare); average burst %.1f ms' % (len(notes), sum(1 for u in notes if u == 0), sum(notes) / len(notes) * 279 / 3500))
 if os.environ.get('SLOW'):
     print('pictures by (cars in view, HUD slot): at 3 frames / at 4 or more')
     for vis in range(6):

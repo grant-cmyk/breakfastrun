@@ -1322,3 +1322,25 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Four new ditties in make_ditties.py: 5 Kettle's On, 6 Crumbs!, 7 Pop-Up Toaster, 8 Butter
   Fingers (WAVs in docs/sound/, all pass the tool's checks; nobody has heard them yet).
 - zxlap: 158 pictures at 3 frames, 143 at 4 - as before the music (151 / 145). code_end 0xBD1D.
+
+## 2026-11-14 SAST (afternoon) - the ditty the Manic Miner way, in spare time only
+- Grant did not like pips, plink or buzz, nor five more styles ("none of those sound right. Can
+  you play manic miner and see how the sound holds more"). Measured in zxdev from his snapshot:
+  Manic Miner's in-game tune is a burst 7-8 ms long (28,000 T) about 11 times a second at
+  640-1,200 Hz. Ours were 1 ms at 2,000-4,400 Hz. "A half-miner is okay" (4 ms once a picture, 17
+  semitones lower). "Play with options so impact on speed is minimised." "Something more upbeat
+  for racing." "The ditty only starts playing after the green lights ... so race on."
+- Built: the interrupt only steps the tune (from race_on until you_done); the main loop sounds
+  the note once a picture (mu_burst, after the copy). The wait for the TV frame (snd_wait) is now
+  a counting loop: the picture's spare time in units of 279 T (mu_slack). A burst's budget is
+  the last picture's spare time + what its burst used - a margin (14 units), capped at the whole
+  4 ms burst, never under two cycles (about 1.5 ms); after a late picture, no burst.
+- Measured (tests/zxlap.py; ALONE=1 keeps the computer cars on the grid): in the pack 119
+  pictures at 3 frames / 161 at 4 (no music: 149 / 156 - laps differ this much run to run);
+  alone 260 / 65 (no music 274 / 55). Notes average 3.5 ms of the 4.0; about 1 in 10 gives way
+  to an effect. Tried and dropped: a fixed 4 ms burst every picture (in the pack: 5-frame
+  pictures), 4 ms / 2 ms by the pace (71 / 200 in the pack), spare time only with no minimum
+  (the tune dropped out for 2 notes in 3).
+- Four racing ditties in make_ditties.py (RACERS: 9 Green Light, 10 Flat Out, 11 Chequered Flag,
+  12 Second Helpings); the tape plays Green Light: `python3 tools/make_music.py ditty9`. Every
+  ditty rendered half-miner (tools/make_ditty_styles.py key:minerhalf) for the Sound Lab.

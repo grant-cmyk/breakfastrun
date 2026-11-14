@@ -190,6 +190,7 @@ draw_all:
         ld b,a
         ld a,(FRAMES)
         sub b
+        ld (mu_el),a            ; (the ditty's burst looks at this: mu_burst)
         ld hl,pace
         cp (hl)
         jr c,ws_in_time
@@ -224,6 +225,7 @@ wait_show:
         ld a,(FRAMES)
         ld (last_shown),a
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
+        call mu_burst           ; the ditty's note, once a picture
         call snd_picture        ; this picture's engine pitch; the crash fades
         ld hl,(renders)
         inc hl
@@ -2422,6 +2424,96 @@ sp_2:
         add a,30
         ld (snd_rate),a
         ret
+; MU_BURST: the ditty's note the way Manic Miner sounds its tune (Grant, 14 Nov 2026: "can you
+; play manic miner and see how the sound holds more" - "A half-miner is okay"): a burst of the
+; note milliseconds long, low in pitch, once a picture, for as long as the note lasts (the
+; interrupt steps the tune). A cycle: flip, 17 + 16 n T, flip, 30 + 16 m T.
+; "Play with options so impact on speed is minimised": the burst only ever uses time the
+; picture had to SPARE. The wait for the TV frame (snd_wait) counts how long it waited, in
+; units of 279 T (mu_slack: 250 a frame); the last picture's spare time, plus what its own
+; burst used, less a margin, is this burst's budget - up to the whole burst (4 ms). With time
+; to spare the note is full; when the picture is tight it thins to two cycles (about 1.5 ms),
+; which is all the music can cost. After a late picture: no burst, and measure again.
+MU_MARGIN equ 14                ; units kept back (3,900 T): pictures differ a little
+mu_burst:
+        ld hl,mu_slack          ; the last picture's spare time (and start counting again)
+        ld c,(hl)
+        ld (hl),0
+        ld a,(mu_used)
+        add a,c
+        jr nc,mb_0
+        ld a,255
+mb_0:
+        sub MU_MARGIN
+        jr nc,mb_00
+        xor a
+mb_00:
+        ld c,a                  ; C = the budget
+        xor a
+        ld (mu_used),a
+        ld hl,pace              ; the last picture finished late (over the rhythm, as the
+        ld a,(mu_el)            ; main loop reckons it): nothing this time
+        dec a
+        cp (hl)
+        ret nc
+        ld a,(mu_ph)
+        or a
+        ret z
+        ld a,(snd_fxt)          ; an event is sounding (an effect, the skid, a crash): the
+        ld hl,snd_skt           ; tune keeps its place but gives way to it
+        or (hl)
+        ld hl,snd_bump
+        or (hl)
+        ret nz
+        ld a,(mu_off)
+        add a,mu_ptab AND 255
+        ld l,a
+        ld a,0
+        adc a,mu_ptab/256
+        ld h,a
+        ld b,(hl)               ; cycles in a whole burst, n, m, units a cycle
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld e,(hl)
+        inc hl
+        ld a,(hl)
+        ld (mb_u+1),a
+        add a,a                 ; never under two cycles (about 1.5 ms): the tune must not
+        cp c                    ; drop out when the picture is tight - the one part of the
+        jr c,mb_min             ; music that can cost speed
+        ld c,a
+mb_min:
+        ld a,(snd_port)
+        ld l,a
+        ld h,0                  ; H = units used
+mb_c:
+        ld a,c                  ; another cycle only while the budget lasts
+mb_u:   sub 0
+        jr c,mb_x
+        ld c,a
+        ld a,(mb_u+1)
+        add a,h
+        ld h,a
+        ld a,l
+        xor 24
+        out (254),a
+        ld l,d
+mb_d1:
+        dec l
+        jr nz,mb_d1
+        xor 24
+        out (254),a
+        ld l,e
+mb_d2:
+        dec l
+        jr nz,mb_d2
+        ld l,a
+        djnz mb_c
+mb_x:
+        ld a,h
+        ld (mu_used),a
+        ret
 snd_wait:
         ld a,(snd_bump)
         or a
@@ -2429,7 +2521,29 @@ snd_wait:
         ld a,(snd_gap)
         or a
         jr nz,sw_engine
-        halt                    ; no sound: just wait for the interrupt
+        ld hl,FRAMES            ; no sound: wait for the interrupt, counting the wait in
+        ld a,(hl)               ; units of 279 T - the picture's spare time, for mu_burst
+        ld c,0
+sw_m:
+        ld b,19
+sw_m1:
+        djnz sw_m1
+        inc c
+        jr z,sw_sat
+        cp (hl)
+        jr z,sw_m
+        jr sw_m2
+sw_sat:
+        dec c
+        halt
+sw_m2:
+        ld hl,mu_slack
+        ld a,(hl)
+        add a,c
+        jr nc,sw_m3
+        ld a,255
+sw_m3:
+        ld (hl),a
         ret
 sw_engine:                      ; one flip, then the gap (51 T a count)
         ld b,a
@@ -3135,6 +3249,9 @@ snd_bump: db 0                  ; crash noise: pictures left
 O_FREE   equ 6
 o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
 mu_wait:  db 1                  ; the ditty: frames until its next note
+mu_slack: db 0                  ; the picture's spare time so far, in units of 279 T
+mu_used:  db 0                  ; ... what the last burst used
+mu_el:    db 0                  ; TV frames the last picture's work took
 mu_ph:    db 0                  ; ... frames this note still sounds for
 mu_off:   db 0                  ; ... where its burst is in mu_ptab
 mu_ptr:   dw mu_tune            ; ... the next note in the tune
@@ -3398,7 +3515,13 @@ isr_q:
         ; ---- the ditty (Grant, 14 Nov 2026: "a little ditty sound playing in the
         ;      background" - "please try the spilt milk"): music.asm, made by
         ;      tools/make_music.py. Only A, H and L, and no calls: see below ----
-        ld hl,mu_wait           ; time for the next note (or drum)?
+        ld a,(race_on)          ; only from the green light (Grant, 14 Nov 2026: "the ditty
+        or a                    ; only starts playing after the green lights in the game and
+        jr z,mu_out             ; the timer going - so race on") until you finish
+        ld a,(you_done)
+        or a
+        jr nz,mu_off0
+        ld hl,mu_wait           ; time for the next note?
         dec (hl)
         jr nz,mu_ring
         ld hl,(mu_ptr)
@@ -3413,59 +3536,20 @@ mu_1:
         ld a,(hl)
         ld (mu_wait),a          ; frames until the one after
         inc hl
-        ld a,(hl)               ; and the frames it sounds for (a burst on each: "buzz")
+        ld a,(hl)               ; and the frames it sounds for
         ld (mu_ph),a
         inc hl
         ld (mu_ptr),hl
 mu_ring:
-        ld a,(mu_ph)
+        ld a,(mu_ph)            ; (the note itself is sounded once a picture: mu_burst)
         or a
         jr z,mu_out
         dec a
         ld (mu_ph),a
-        ld a,(mu_off)
-        add a,mu_ptab AND 255
-        ld l,a
-        ld a,0
-        adc a,mu_ptab/256
-        ld h,a
-        ld a,(snd_fxt)          ; an event is sounding (an effect, the skid, a crash):
-        or a                    ; the tune keeps its place but gives way to it
-        jr nz,mu_out
-        ld a,(snd_skt)
-        or a
-        jr nz,mu_out
-        ld a,(snd_bump)
-        or a
-        jr nz,mu_out
-        ld a,(hl)               ; cycles (0: nothing this frame)
-        or a
-        jr z,mu_out
-        inc hl
-        ld a,(hl)
-        ld (mu_p1+1),a
-        inc hl
-        ld a,(hl)
-        ld (mu_p2+1),a
-        dec hl
-        dec hl
-        ld h,(hl)
-        ld a,(snd_port)
-mu_c:
-        xor 24                  ; a cycle: flip, 20 + 16 n T, flip, 36 + 16 m T
-        out (254),a
-mu_p1:  ld l,0
-mu_d1:
-        dec l
-        jr nz,mu_d1
-        xor 24
-        out (254),a
-mu_p2:  ld l,0
-mu_d2:
-        dec l
-        jr nz,mu_d2
-        dec h
-        jr nz,mu_c
+        jr mu_out
+mu_off0:
+        xor a
+        ld (mu_ph),a
 mu_out:
                                 ; (only A, H and L here: the interrupt may land
         ld a,(snd_fxt)          ; while the cloth fill has SP in the buffer, which

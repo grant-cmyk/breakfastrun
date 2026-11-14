@@ -308,6 +308,70 @@ def butterfingers():
 
 
 DITTIES = [march(), swing(), stopstart(), musicbox(), jig(), chase(), toaster(), butterfingers()]
+
+# ---- four racers (Grant, 14 Nov 2026: "something more upbeat for racing"), written for the
+#      half-miner way of playing (tools/make_ditty_styles.py, tools/make_music.py): a burst a
+#      picture, so no note is shorter than 6 TV frames. Not rendered as pips / plink / buzz. ----
+def greenlight():
+    e, q = 8, 16
+    a = f"C7:{e} C7:{e} E7:{e} G7:{e} E7:{e} C7:{e} E7:{q}"
+    bars = [a,
+        f"D7:{e} D7:{e} F7:{e} A7:{e} F7:{e} D7:{e} F7:{q}",
+        f"E7:{e} E7:{e} G7:{e} E7:{e} D7:{e} C7:{e} D7:{q}",
+        f"G6:{e} B6:{e} D7:{e} G7:{e} G7:{q} r:{q}",
+        a,
+        f"F7:{e} F7:{e} A7:{e} F7:{e} E7:{e} D7:{e} E7:{q}",
+        f"D7:{e} E7:{e} F7:{e} D7:{e} B6:{e} G6:{e} B6:{e} D7:{e}",
+        f"C7:{q} G6:{e} G6:{e} C7:{q} r:{q}"]
+    return dict(key="ditty9", name="Green Light", mood="driving, bright, 188 beats a minute",
+                beat=16, beats_per_bar=4, transpose=4, bars=bars, drums=None)
+
+
+def flatout():
+    e, q = 7, 14
+    a = f"E6:{e} G#6:{e} B6:{e} C#7:{e} D7:{e} C#7:{e} B6:{e} G#6:{e}"
+    bars = [a, a,
+        f"A6:{e} C#7:{e} E7:{e} F#7:{e} G7:{e} F#7:{e} E7:{e} C#7:{e}",
+        a,
+        f"B6:{e} D#7:{e} F#7:{e} G#7:{e} A6:{e} C#7:{e} E7:{e} F#7:{e}",
+        a,
+        f"E6:{e} G#6:{e} B6:{e} E7:{q} r:{e} B6:{q}",
+        f"E7:{q} r:{q} E6:{q} r:{q}"]
+    return dict(key="ditty10", name="Flat Out", mood="a rock and roll boogie riff, 214 beats a minute",
+                beat=14, beats_per_bar=4, transpose=7, bars=bars, drums=None)
+
+
+def chequered():
+    L, S, q = 12, 6, 18
+    a = f"G6:{L} G6:{S} B6:{q} D7:{L} D7:{S} G7:{q}"
+    bars = [a,
+        f"E7:{L} E7:{S} G7:{q} D7:{q} r:{q}",
+        f"C7:{L} C7:{S} E7:{q} B6:{L} B6:{S} D7:{q}",
+        f"A6:{L} B6:{S} C7:{q} D7:{q} r:{q}",
+        a,
+        f"A7:{L} G7:{S} E7:{q} G7:{q} r:{q}",
+        f"C7:{L} E7:{S} G7:{q} B6:{L} D7:{S} G7:{q}",
+        f"A6:{q} D7:{q} G6:{q} r:{q}"]
+    return dict(key="ditty11", name="Chequered Flag", mood="a galloping fanfare, 167 beats a minute",
+                beat=18, beats_per_bar=4, transpose=4, bars=bars, drums=None)
+
+
+def helpings():
+    e, q = 8, 16
+    a = f"C7:{e} E7:{e} r:{e} E7:{e} G7:{e} E7:{e} C7:{q}"
+    bars = [a,
+        f"B6:{e} D7:{e} r:{e} D7:{e} G7:{e} D7:{e} B6:{q}",
+        f"A6:{e} C7:{e} r:{e} C7:{e} E7:{e} C7:{e} A6:{q}",
+        f"G6:{e} B6:{e} D7:{e} G7:{e} F7:{e} D7:{e} B6:{q}",
+        a,
+        f"F7:{e} A7:{e} r:{e} A7:{e} F7:{e} D7:{e} A6:{q}",
+        f"G6:{e} A6:{e} B6:{e} C7:{e} D7:{e} E7:{e} F7:{e} G7:{e}",
+        f"C7:{q} r:{e} G7:{e} C7:{q} r:{q}"]
+    return dict(key="ditty12", name="Second Helpings", mood="bouncy, off the beat, 188 beats a minute",
+                beat=16, beats_per_bar=4, transpose=4, bars=bars, drums=None)
+
+
+RACERS = [greenlight(), flatout(), chequered(), helpings()]
 STYLES = ["pips", "plink", "buzz"]
 FAVOURITE = ("ditty1", "plink")         # the one used for the in-game demo
 LOOPS = 2
