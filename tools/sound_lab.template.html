@@ -66,6 +66,12 @@ button:focus-visible { outline: 3px solid var(--table); outline-offset: 2px; }
   </section>
 
   <section>
+    <h2>Kettle's On, the Manic Miner way</h2>
+    <p>Measured from your Manic Miner snapshot: its tune is a burst of the note 8 thousandths of a second long, about 11 times a second, at a much lower pitch than anything above. That is what makes its notes hold. These four play Kettle's On the same way. They cost the game real time, shown on each.</p>
+    <div class="grid" id="miner"></div>
+  </section>
+
+  <section>
     <h2>Kettle's On, five more ways</h2>
     <p>You liked the tune but not pips, plink or buzz. These are five different ways to sound the same notes. Two of them drop an octave for a lower, woodier sound.</p>
     <div class="grid" id="styles"></div>
@@ -209,7 +215,7 @@ function showPicks() {
   document.querySelectorAll('[data-pick]').forEach(b => {
     const [g, v] = b.dataset.pick.split('|'); const on = picks[g] === v;
     b.setAttribute('aria-pressed', on); b.textContent = on ? 'Chosen' : 'Choose';
-    b.closest('.tile').classList.toggle('chosen', on && (g !== 'ditty' || !!b.closest('#styles')));
+    b.closest('.tile').classList.toggle('chosen', on && (g !== 'ditty' || !!b.closest('#styles, #miner')));
   });
   try { localStorage.setItem('br-sound-picks-3', JSON.stringify(picks)); } catch (e) {}
 }
@@ -230,6 +236,15 @@ const STYLES = [
   ['echo', 'Echo', 'A pip, then the same note twice more, fainter each time.'],
   ['hum', 'Hum', 'An octave lower and held. Soft and low.'],
 ];
+const MINER = [
+  ['miner', 'Miner', 'The Manic Miner recipe: 8 ms of the note once a picture. Cost: the game runs at a steady 12.5 pictures a second.'],
+  ['minerhalf', 'Half Miner', '4 ms of the note once a picture. Cost: about half of Miner; likely still 12.5 pictures a second most of the time.'],
+  ['held', 'Held', 'The same sound time as Miner, spread over every TV frame, so the note is smoother. Cost: as Miner.'],
+  ['heldlight', 'Held, light', 'A shorter touch of the note on every frame. Cost: a little over half of Miner.'],
+];
+const mg = document.getElementById('miner');
+MINER.forEach(([k, name, what]) => mg.appendChild(el(`<div class="tile"><h3>${name}</h3><p>${what}</p>
+  <div class="row"><button class="play" data-audio="ditty5_${k}">Play</button><button class="choose" data-pick="ditty|Kettle's On, ${k}">Choose</button></div></div>`)));
 const sg = document.getElementById('styles');
 STYLES.forEach(([k, name, what]) => sg.appendChild(el(`<div class="tile"><h3>${name}</h3><p>${what}</p>
   <div class="row"><button class="play" data-audio="ditty5_${k}">Play</button><button class="choose" data-pick="ditty|Kettle's On, ${k}">Choose</button></div></div>`)));

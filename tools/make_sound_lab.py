@@ -11,7 +11,7 @@ audio = {}
 for d in range(1, 9):
     for st in ('pips', 'plink', 'buzz'):
         audio['ditty%d_%s' % (d, st)] = None
-for st in ('marimba', 'flute', 'shimmer', 'echo', 'hum'): audio['ditty5_' + st] = None   # tools/make_ditty_styles.py
+for st in ('marimba', 'flute', 'shimmer', 'echo', 'hum', 'miner', 'minerhalf', 'held', 'heldlight'): audio['ditty5_' + st] = None   # tools/make_ditty_styles.py
 audio['demo_in_game'] = None
 for n in audio:
     mp3 = os.path.join(tmp, n + '.mp3')
