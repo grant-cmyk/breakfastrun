@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 08:51 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 10:28 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 144 in a slim
@@ -16,14 +16,15 @@ grid. Grant, 14 Nov: "speed of the game is good" - no speed hunt owed.
 
 **Memory:** main area about 1.1 KB free (code_end 0xBB8A). The big cars do not fit.
 
-**Next step:** SOUND - Grant finds the skid hiss annoying (small slides are silent now) and wants
-a little background ditty with car noises kept to events (bangs, hits, accelerate, pick-ups, a
-small skid tick): choose from the ditties in docs/sound/ (DITTIES.md) when the agent has made
-them, then build the player into the interrupt. In design, not built: coloured objects beside
-the track seen from above (docs/design/colour_objects.png: the solid-edge rule); the title /
-attract screen (docs/design/TITLE-SCREEN.md and title_*.png/gif when the agent has made them) with
-1UP / 2UP, K for keys, a choice of driver and car (docs/design/new_cast_mockup.png). Also asked:
-a bigger gameplay area still (the slim frame leaves 7 px each side).
+**Next step:** SOUND - Grant to play the Sound Lab artifact (built by tools/make_sound_lab.py;
+the link is in the session's report) and paste back his picks: a ditty and style, and an option
+for each event (accelerate, skid, hit, bang, pick-up, NOS). Then build the picks: the ditty
+player in the interrupt and the chosen event sounds. The game is already quiet between events.
+GRIP is now what cuts the skidding (level 1 slides a lot; five levels). In design, not built:
+coloured objects beside the track seen from above (docs/design/colour_objects.png); the title /
+attract screen (docs/design/TITLE-SCREEN.md, title_*.png/gif) with 1UP / 2UP, K for keys, a
+choice of driver and car. Also asked: a bigger gameplay area still. Watch: pictures at 4 frames
+when you race in the pack (see PROJECT-LOG, 14 Nov later).
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

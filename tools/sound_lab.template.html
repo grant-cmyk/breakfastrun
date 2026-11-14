@@ -1,0 +1,240 @@
+<title>Breakfast Run Sound Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* layout: one column of sections; inside each, a grid of small option tiles. The Spectrum's
+   table yellow and ink blue carry the page; the picks bar at the bottom collects the choices. */
+:root {
+  --bg: #fbf7e4; --panel: #fffdf3; --fg: #1b2140; --muted: #5d6384; --line: #d9d2ad;
+  --ink: #1c2fd0; --ink-fg: #ffffff; --table: #f2d21a; --pick: #0a8f5b; --tag: #e9e2bb;
+  --display: "Space Grotesk", "Trebuchet MS", sans-serif; --body: Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12152b; --panel: #1b1f3d; --fg: #eef0ff; --muted: #a3a9cf; --line: #343a66;
+  --ink: #8fa0ff; --ink-fg: #10132a; --table: #f2d21a; --pick: #46d39a; --tag: #2a2f58; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12152b; --panel: #1b1f3d; --fg: #eef0ff; --muted: #a3a9cf; --line: #343a66;
+  --ink: #8fa0ff; --ink-fg: #10132a; --table: #f2d21a; --pick: #46d39a; --tag: #2a2f58; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 28px 120px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 34px; }
+h1 { font: 700 34px/1.1 var(--display); margin: 0; text-wrap: balance; }
+h1 span { background: var(--table); color: #1b2140; padding: 0 8px; border-radius: 4px; }
+h2 { font: 700 21px/1.2 var(--display); margin: 0; }
+h3 { font: 600 15px/1.3 var(--body); margin: 0; }
+p { margin: 0; max-width: 68ch; color: var(--muted); }
+.head { display: flex; flex-direction: column; gap: 10px; }
+section { display: flex; flex-direction: column; gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px;
+  display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tile.chosen { border-color: var(--pick); box-shadow: inset 0 0 0 1px var(--pick); }
+.tile p { font-size: 13.5px; flex: 1; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tag { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; background: var(--tag);
+  color: var(--fg); padding: 2px 7px; border-radius: 99px; }
+button { font: 600 13.5px var(--body); border-radius: 6px; padding: 8px 12px; cursor: pointer;
+  border: 1px solid var(--ink); background: transparent; color: var(--ink); min-height: 36px; }
+button.play { background: var(--ink); color: var(--ink-fg); }
+button.on { background: var(--table); color: #1b2140; border-color: var(--table); }
+button.choose[aria-pressed="true"] { background: var(--pick); border-color: var(--pick); color: var(--ink-fg); }
+button:focus-visible { outline: 3px solid var(--table); outline-offset: 2px; }
+.event { border-top: 2px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.picks { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 2px solid var(--ink);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.picks .in { max-width: 980px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
+#picktext { flex: 1; min-width: 0; font-size: 13px; color: var(--fg); max-height: 4.5em; overflow: auto; user-select: all; }
+.note { font-size: 13px; }
+</style>
+
+<div class="wrap">
+  <div class="head">
+    <h1><span>Breakfast Run</span> Sound Lab</h1>
+    <p>Everything here is the Spectrum's one-bit speaker, simulated. Press play, choose one in each group, then copy your picks from the bar at the bottom and paste them back to Claude. Sound starts only when you press a button.</p>
+  </div>
+
+  <section>
+    <h2>Background ditty</h2>
+    <p>Four tunes, each played three ways. Pips is one tiny burst a note. Plink lets the note ring a little, like a music box. Buzz holds the note and rattles. Each recording is the tune twice round.</p>
+    <div class="grid" id="ditties"></div>
+    <div class="tile">
+      <h3>In the game</h3>
+      <p>Toast Rack March as plink, with a crash, pick-up chirps, a NOS rush and skid ticks over it.</p>
+      <div class="row"><button class="play" data-audio="demo_in_game">Play the mix</button></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Event sounds</h2>
+    <p>The game is now quiet between events. Each group below is one event; the option marked "in this build" is what the newest tape plays. The others are ready to build if you choose them.</p>
+    <div id="events"></div>
+  </section>
+  <p class="note">The ditties are recordings made by the game's tools. The event sounds are made in this page from the same speaker timings the game would use, so the real machine will sound close to this, not identical.</p>
+</div>
+
+<div class="picks"><div class="in">
+  <div id="picktext"></div>
+  <button id="copy" class="play">Copy picks</button>
+  <button id="stop">Stop</button>
+</div></div>
+
+<script>
+const AUDIO = /*AUDIO*/{};
+const DITTIES = [
+  ['1', 'Toast Rack March', 'A jaunty little march, 125 beats a minute. The most tune-like. Light tick-tock under it.'],
+  ['2', 'Marmalade Swing', 'Bouncy, lazy long-short swing, 143 beats a minute. The busiest of the four.'],
+  ['3', 'Spilt Milk', 'Cheeky and stop-start, like tiptoeing. Leaves the most room for event sounds.'],
+  ['4', 'Sunny Side Up', 'A calm music-box waltz, 100 beats a minute. The gentlest, the least racy.'],
+];
+// ---- the one-bit speaker: a list of flip times (seconds) becomes a sound ----
+const T = 1 / 3500000, FR = 0.02;
+let rs = 7; const rnd = () => (rs = (rs * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+// a burst: n flips, gap T-states apart (a number, or a function of the flip's index)
+function burst(out, t0, n, gap) { let t = t0; for (let i = 0; i < n; i++) { out.push(t); t += (typeof gap === 'function' ? gap(i) : gap) * T; } }
+const lerp = (a, b, k) => a + (b - a) * k;
+const EVENTS = [
+  { id: 'accel', name: 'Accelerating', what: 'Heard while the car picks up speed: off the line, out of a corner, after a bump. Silent once it is up to speed.', opts: [
+    { id: 'A1', name: 'Putter', now: true, what: 'Single clicks that come faster as the car gains speed, from 6 to 15 a second.',
+      make: o => { let acc = 0; for (let f = 0; f < 80; f++) { const sp = lerp(8, 84, f / 80); acc += 2 * sp + 30; if (acc >= 256) { acc -= 256; o.push(f * FR); } } } },
+    { id: 'A2', name: 'Rev', what: 'A buzz that rises in pitch for about a second, like an engine winding up.',
+      make: o => { for (let f = 0; f < 50; f++) burst(o, f * FR, 6, lerp(1300, 520, f / 50)); } },
+    { id: 'A3', name: 'Gear blips', what: 'Three short rising notes, one for each gear.',
+      make: o => { [900, 700, 520].forEach((g, k) => { for (let f = 0; f < 4; f++) burst(o, (k * 7 + f) * FR, 8, g); }); } },
+    { id: 'A4', name: 'Low growl', what: 'A slow, low rattle that only speeds up a little. Quieter in character than the rev.',
+      make: o => { for (let f = 0; f < 60; f++) burst(o, f * FR, 2, lerp(3400, 2400, f / 60)); } },
+    { id: 'A0', name: 'No sound', what: 'Accelerating is silent.', make: o => {} },
+  ] },
+  { id: 'skid', name: 'Skidding', what: 'Heard as a slide starts. It does not repeat until the car has gripped and slides again.', opts: [
+    { id: 'S1', name: 'Short screech', now: true, what: 'A tenth of a second of scratchy noise.',
+      make: o => { for (let f = 0; f < 5; f++) burst(o, f * FR, 4, () => (3 + Math.floor(rnd() * 8)) * 16); } },
+    { id: 'S2', name: 'Tyre squeal', what: 'A high note that droops, about an eighth of a second.',
+      make: o => { for (let f = 0; f < 6; f++) burst(o, f * FR, 9, lerp(400, 560, f / 6)); } },
+    { id: 'S3', name: 'Tick-tick-tick', what: 'Soft ticks while the slide lasts (half a second shown here).',
+      make: o => { for (let f = 0; f < 25; f += 3) burst(o, f * FR, 2, 300); } },
+    { id: 'S4', name: 'Two-tone chirp', what: 'Two quick notes, high then lower, like rubber catching.',
+      make: o => { for (let f = 0; f < 2; f++) burst(o, f * FR, 9, 380); for (let f = 3; f < 5; f++) burst(o, f * FR, 7, 520); } },
+    { id: 'S9', name: 'Long hiss (the old sound)', what: 'The hiss that ran for the whole slide. Here for comparison: this is the one you found annoying.',
+      make: o => { for (let f = 0; f < 45; f++) burst(o, f * FR, 6, () => (3 + Math.floor(rnd() * 8)) * 16); } },
+  ] },
+  { id: 'hit', name: 'Hitting another car', what: 'Car against car.', opts: [
+    { id: 'H1', name: 'Crunch', now: true, what: 'A third of a second of rough noise.',
+      make: o => { for (let p = 0; p < 6; p++) burst(o, p * 0.06, 16, () => 150 + Math.floor(rnd() * 32) * 13); } },
+    { id: 'H2', name: 'Thud', what: 'A low double knock that fades.',
+      make: o => { [0, 1, 2, 4, 6].forEach((f, k) => burst(o, f * FR, 2, 2600 + k * 250)); } },
+    { id: 'H3', name: 'Clack', what: 'Two sharp taps, like billiard balls.',
+      make: o => { burst(o, 0, 8, 260); burst(o, 3 * FR, 6, 300); } },
+    { id: 'H4', name: 'Short crunch', what: 'The crunch at a third of its length.',
+      make: o => { for (let p = 0; p < 2; p++) burst(o, p * 0.06, 16, () => 150 + Math.floor(rnd() * 32) * 13); } },
+  ] },
+  { id: 'bang', name: 'Banging into a cereal O', what: 'Car against something solid on the table.', opts: [
+    { id: 'B1', name: 'Crunch', now: true, what: 'The same noise as hitting a car.',
+      make: o => { for (let p = 0; p < 6; p++) burst(o, p * 0.06, 16, () => 150 + Math.floor(rnd() * 32) * 13); } },
+    { id: 'B2', name: 'Bonk', what: 'A note that falls, cartoon style.',
+      make: o => { for (let f = 0; f < 6; f++) burst(o, f * FR, 7, lerp(330, 620, f / 6)); } },
+    { id: 'B3', name: 'Ping', what: 'A bright note that dies away, like tapping a bowl.',
+      make: o => { [9, 7, 5, 3, 2].forEach((n, f) => burst(o, f * FR, n, 430)); } },
+    { id: 'B4', name: 'Crack', what: 'One very short burst of noise.',
+      make: o => { burst(o, 0, 24, () => 60 + Math.floor(rnd() * 12) * 13); } },
+  ] },
+  { id: 'pick', name: 'Picking up a NOS', what: 'Driving over a canister.', opts: [
+    { id: 'P1', name: 'Rising chirp', now: true, what: 'A quick slide up in pitch.',
+      make: o => { for (let l = 11; l >= 0; l--) burst(o, (11 - l) * FR, 6, (3 * l + 20) * 16); } },
+    { id: 'P2', name: 'Ding-ding', what: 'Two clear notes, the second higher.',
+      make: o => { for (let f = 0; f < 3; f++) burst(o, f * FR, 8, 480); for (let f = 4; f < 8; f++) burst(o, f * FR, 9, 360); } },
+    { id: 'P3', name: 'Coin run', what: 'Four fast notes climbing.',
+      make: o => { [560, 470, 400, 330].forEach((g, k) => { burst(o, k * 2 * FR, 8, g); burst(o, (k * 2 + 1) * FR, 5, g); }); } },
+  ] },
+  { id: 'fire', name: 'Firing the NOS', what: 'Pressing the boost.', opts: [
+    { id: 'F1', name: 'Rush', now: true, what: 'Half a second of rushing noise.',
+      make: o => { for (let f = 0; f < 25; f++) burst(o, f * FR, 6, () => (8 + Math.floor(rnd() * 32)) * 16); } },
+    { id: 'F2', name: 'Whoosh up', what: 'A buzz that climbs steeply for a third of a second.',
+      make: o => { for (let f = 0; f < 18; f++) burst(o, f * FR, 8, lerp(950, 260, f / 18)); } },
+    { id: 'F3', name: 'Siren', what: 'Two notes swapping quickly.',
+      make: o => { for (let f = 0; f < 18; f++) burst(o, f * FR, 8, (f >> 1) & 1 ? 420 : 560); } },
+  ] },
+];
+let ctx = null, node = null, tag = null, onBtn = null;
+function stopAll() {
+  if (node) { try { node.stop(); } catch (e) {} node = null; }
+  if (tag) { tag.pause(); tag = null; }
+  if (onBtn) { onBtn.classList.remove('on'); onBtn = null; }
+}
+function playFlips(make, btn) {
+  stopAll(); rs = 7;
+  const flips = []; make(flips);
+  if (!flips.length) return;
+  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === 'suspended') ctx.resume();
+  const sr = ctx.sampleRate, n = Math.ceil((flips[flips.length - 1] + 0.12) * sr);
+  const buf = ctx.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  flips.sort((a, b) => a - b);
+  let lvl = -1, k = 0, lp = 0, dc = 0;
+  for (let i = 0; i < n; i++) {                       // the speaker level, a little softened, no steady offset
+    const t0 = i / sr, t1 = (i + 1) / sr; let area = 0, t = t0;
+    while (k < flips.length && flips[k] < t1) { area += lvl * (flips[k] - t); t = flips[k]; lvl = -lvl; k++; }
+    area += lvl * (t1 - t);
+    lp += 0.55 * (area * sr - lp); dc += 0.004 * (lp - dc);
+    d[i] = 0.3 * (lp - dc);
+  }
+  node = ctx.createBufferSource(); node.buffer = buf; node.connect(ctx.destination); node.start();
+  onBtn = btn; btn.classList.add('on');
+  const me = node; node.onended = () => { if (node === me) stopAll(); };
+}
+function playAudio(name, btn) {
+  stopAll();
+  tag = new Audio('data:audio/mpeg;base64,' + AUDIO[name]);
+  onBtn = btn; btn.classList.add('on');
+  const me = tag; tag.onended = () => { if (tag === me) stopAll(); };
+  tag.play().catch(() => stopAll());
+}
+// ---- the picks ----
+let picks = { ditty: '' };
+EVENTS.forEach(e => picks[e.id] = e.opts.find(o => o.now).id);
+try { Object.assign(picks, JSON.parse(localStorage.getItem('br-sound-picks') || '{}')); } catch (e) {}
+function showPicks() {
+  const parts = ['Ditty: ' + (picks.ditty || 'not chosen yet')];
+  EVENTS.forEach(e => { const o = e.opts.find(o => o.id === picks[e.id]) || e.opts[0]; parts.push(e.name + ': ' + o.id + ' ' + o.name); });
+  document.getElementById('picktext').textContent = 'My sound picks. ' + parts.join('. ') + '.';
+  document.querySelectorAll('[data-pick]').forEach(b => {
+    const [g, v] = b.dataset.pick.split('|'); const on = picks[g] === v;
+    b.setAttribute('aria-pressed', on); b.textContent = on ? 'Chosen' : 'Choose';
+    b.closest('.tile').classList.toggle('chosen', on && g !== 'ditty');
+  });
+  try { localStorage.setItem('br-sound-picks', JSON.stringify(picks)); } catch (e) {}
+}
+const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
+const dg = document.getElementById('ditties');
+DITTIES.forEach(([n, name, what]) => {
+  const t = el(`<div class="tile"><h3>${n}. ${name}</h3><p>${what}</p></div>`);
+  ['pips', 'plink', 'buzz'].forEach(st => {
+    const label = st[0].toUpperCase() + st.slice(1);
+    t.appendChild(el(`<div class="row"><button class="play" data-audio="ditty${n}_${st}">Play ${label}</button><button class="choose" data-pick="ditty|${name}, ${st}">Choose</button></div>`));
+  });
+  dg.appendChild(t);
+});
+const ev = document.getElementById('events');
+EVENTS.forEach(e => {
+  const s = el(`<div class="event"><h3>${e.name}</h3><p>${e.what}</p><div class="grid"></div></div>`);
+  e.opts.forEach(o => {
+    const t = el(`<div class="tile"><div class="row"><h3>${o.id} ${o.name}</h3>${o.now ? '<span class="tag">in this build</span>' : ''}</div><p>${o.what}</p>
+      <div class="row"><button class="play" data-ev="${e.id}|${o.id}">Play</button><button class="choose" data-pick="${e.id}|${o.id}">Choose</button></div></div>`);
+    s.querySelector('.grid').appendChild(t);
+  });
+  ev.appendChild(s);
+});
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.audio) { b === onBtn ? stopAll() : playAudio(b.dataset.audio, b); }
+  else if (b.dataset.ev) { const [g, v] = b.dataset.ev.split('|'); playFlips(EVENTS.find(e => e.id === g).opts.find(o => o.id === v).make, b); }
+  else if (b.dataset.pick) { const [g, v] = b.dataset.pick.split('|'); picks[g] = v; showPicks(); }
+  else if (b.id === 'stop') stopAll();
+  else if (b.id === 'copy') {
+    const txt = document.getElementById('picktext').textContent;
+    const done = () => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy picks', 1500); };
+    const sel = () => { const r = document.createRange(); r.selectNodeContents(document.getElementById('picktext')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Selected: copy it'; };
+    try { navigator.clipboard.writeText(txt).then(done, sel); } catch (e) { sel(); }
+  }
+});
+showPicks();
+</script>

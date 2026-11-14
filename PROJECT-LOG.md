@@ -1287,3 +1287,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   time to run true to the picture after the steering is let go: 0.5-0.6 s after a 0.14 s turn,
   0.6-0.7 s after 0.3 s, 0.8-1.1 s after 0.5 s (it was 0.3-0.4 s for all); slip up to 60-75
   degrees in the long turn. It still ends on the pictured heading.
+
+## 2026-11-14 SAST (later) - grip is bought; sounds are events; wedged cars escape; Sound Lab
+- Grant: "have the car skid/slide more. The idea is that the player will need to 'buy' improved
+  grip to reduce the skidding." GRIP level 1 is now 16/8/8/5 (gripping, with Q, sliding, both;
+  it was 22/12/12/7); levels 2-5: 20/11/11/7, 25/14/14/9, 30/18/18/11, 36/22/22/14. At level 1 a
+  full-speed corner slides 0.7-1.2 s after the steering is let go (tests/drift_test.py).
+- Grant: "the tank got stuck in the top middle section ... in between the loops/circles and could
+  not get out." tests/stuck_test.py (new) drops the computer cars on 477 places over the table:
+  37 left a car wedged against the O's that edge the road. Fix (racer.asm, bumps_o): a computer
+  car that bounces off O's 6 times (O_FREE) without reaching its waypoint passes through them
+  until it does. 0 stuck now.
+- Grant: "reduce the amount of noise to focus on events." The engine sounds only while the car
+  picks up speed (below SND_CRUISE, 3/4 of top speed); the skid is a 5-frame screech as a slide
+  starts (snd_skt), not a hiss for the whole slide. Crash, pick-up and NOS sounds unchanged.
+- With the main loop's wait now a HALT (no engine tone in it) and the autopilot sliding in the
+  pack all lap, tests/zxlap.py shows 151 pictures at 3 frames and 145 at 4 (it was 304 / 11 with
+  the car clear of the pack). Not yet checked whether Grant sees a slowdown.
+- Sound Lab artifact (tools/make_sound_lab.py + tools/sound_lab.template.html): the four ditties
+  in three styles, and 3-5 options for each of six event sounds, with a picks line to copy back.
