@@ -38,25 +38,47 @@ def fryup(d=104):
         o.bits[rasher == 1] = 1; o.ink2[rasher == 1] = mc.RED + 1
         o.bits[fat] = 0; o.ink2[fat] = 0
     return o
+def coffee_mug():
+    """Black coffee in a white mug, from above (Grant, 14 Nov 2026: "coffee should be black in a
+    mug/cup"): no blue at all. The mug's wall and handle are WHITE ink on the cloth's cyan; the
+    coffee is a hole in it whose cells have BLACK paper - the wall is 8+ pixels thick, so no cell
+    holds both coffee and cloth. The glint on the coffee is the same white ink."""
+    w, h = 60, 46; c = 22.5                                     # (the wall is 11.4 thick: 8 pixels on the diagonal too)
+    body = mc.disc(w, h, c, c, 22.4); handle = np.zeros((h, w), dtype=np.uint8); handle[16:30, 42:59] = 1; handle[16, 58] = handle[29, 58] = 0
+    hole = np.zeros((h, w), dtype=np.uint8); hole[20:26, 49:54] = 1                 # the handle's hole: cloth shows through
+    o = mc.blended('Black coffee in a white mug, 60 x 46', (body | handle) & (1 - hole), mc.WHITE, mc.disc(w, h, c, c, 11.0), mc.BLACK)
+    m = mc.MARGIN + 1; arc = mc.ring(7.5, 1.3); arc[6:, :] = 0; arc[:, 6:] = 0       # a glint: white ink on the black
+    for j in range(arc.shape[0]):
+        for i in range(arc.shape[1]):
+            yy, xx = m + 15 + j, m + 15 + i
+            if arc[j, i] and o.label[yy, xx] == mc.BLACK + 1: o.bits[yy, xx] = 1; o.ink2[yy, xx] = mc.WHITE + 1
+    return o
 if __name__ == '__main__':
-    o = fryup(); mc.verify(o); print('no clash at any of the 64 positions')
+    objs = [fryup(), coffee_mug()]
+    for o in objs: mc.verify(o)
+    print('no clash at any of the 64 positions')
     DESIGN = os.path.join(HERE, '..', 'docs', 'design')
     sb, sa = load(os.path.join(DESIGN, 'mock_objects_racing.bin')); win = sb[8:152, 8:184].copy(); clean = mc.clean_cloth(win)
     world = np.tile(clean[0:64, 0:64], (4, 4))
-    W = (o.w + 23) // 8 * 8; H = (o.h + 23) // 8 * 8
-    b, a = mc.compose(world[24:24 + H, 16:16 + W], [(o, (W - o.w) // 2 + 3, (H - o.h) // 2 + 2)])
-    big, one, two = mc.show(b, a, 6), mc.show(b, a, 1), mc.show(b, a, 2)
-    gb, ga = mc.compose(clean, [(o, 36, -36)], sprites=(mc.grow((win ^ clean).astype(np.uint8)), win))    # in the game's window, above the road
-    sb[8:152, 8:184] = gb; sa[1:19, 1:23] = ga; scr = render(sb, sa, border=6, s=3)
     try: f = ImageFont.truetype('DejaVuSans-Bold.ttf', 24); fs = ImageFont.truetype('DejaVuSans.ttf', 18)
     except OSError: f = fs = ImageFont.load_default()
-    BG, FG = (17, 18, 22), (236, 235, 230)
-    out = Image.new('RGB', (big.width + scr.width + 60, max(big.height + 60 + two.height + 40, scr.height + 110) + 20), BG); d = ImageDraw.Draw(out)
-    d.text((20, 14), 'Fried egg and bacon on a cyan plate, from above: 104 pixels across (mock-up)', fill=(255, 255, 255), font=f)
-    out.paste(big, (20, 60)); out.paste(one, (20, 60 + big.height + 20)); out.paste(two, (20 + one.width + 20, 60 + big.height + 20))
-    d.text((20 + one.width + two.width + 60, 60 + big.height + 20), 'real size, and twice size', fill=FG, font=fs)
-    out.paste(scr, (big.width + 40, 60))
-    for k, t in enumerate(['In the game\'s window, part in view above the road.', 'Blue rim, cyan plate, white egg, yellow yolk, red bacon: no clash.',
-                           'The plate is the cloth\'s cyan without its dots; the yolk\'s cells are yellow on white.']):
-        d.text((big.width + 40, 60 + scr.height + 10 + 26 * k), t, fill=FG, font=fs)
+    BG, FG = (17, 18, 22), (236, 235, 230); cards = []
+    for o in objs:
+        W = (o.w + 23) // 8 * 8; H = (o.h + 23) // 8 * 8
+        b, a = mc.compose(world[24:24 + H, 16:16 + W], [(o, (W - o.w) // 2 + 3, (H - o.h) // 2 + 2)])
+        big, one, two = mc.show(b, a, 5), mc.show(b, a, 1), mc.show(b, a, 2)
+        card = Image.new('RGB', (max(big.width, one.width + two.width + 20), big.height + two.height + 56), BG)
+        ImageDraw.Draw(card).text((0, 0), o.name, fill=FG, font=fs); card.paste(big, (0, 28)); card.paste(one, (0, big.height + 44)); card.paste(two, (one.width + 20, big.height + 44)); cards.append(card)
+    gb, ga = mc.compose(clean, [(objs[0], -6, -65), (objs[1], 108, -14)], sprites=(mc.grow((win ^ clean).astype(np.uint8)), win))   # in the game's window, on the table ABOVE the road: nothing may spill into the road (Grant, 14 Nov 2026)
+    sb[8:152, 8:184] = gb; sa[1:19, 1:23] = ga; scr = render(sb, sa, border=6, s=3)
+    notes = ['In the game\'s window: both stand on the table above the road, clear of it and of the O\'s, so only part is in view.',
+             'PLATE: blue rim, a plain cyan plate, the egg in white with no outline, the yolk\'s cells yellow on white, red bacon.',
+             'MUG: no blue at all. White mug and handle on the cloth, the coffee\'s cells black, a white glint on it.',
+             'Every cell checked: one ink colour and one paper colour, at all 64 positions against the grid.']
+    out = Image.new('RGB', (sum(c.width + 30 for c in cards) + scr.width + 40, max(max(c.height for c in cards), scr.height + 30 * len(notes) + 20) + 80), BG); d = ImageDraw.Draw(out)
+    d.text((20, 14), 'Fried egg and bacon on a cyan plate, and black coffee in a white mug, from above (mock-up)', fill=(255, 255, 255), font=f)
+    x = 20
+    for c in cards: out.paste(c, (x, 60)); x += c.width + 30
+    out.paste(scr, (x, 60))
+    for k, t in enumerate(notes): d.text((x, 60 + scr.height + 10 + 28 * k), t, fill=FG, font=fs)
     p = os.path.join(DESIGN, 'egg_bacon_plate.png'); out.save(p); print('wrote', os.path.normpath(p), out.size)

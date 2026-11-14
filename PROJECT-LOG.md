@@ -1357,3 +1357,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the world beside the road, clear of the O's; every cell checked for one ink and one paper.
   The blended (no blue edge) objects did not get placed: they need 12 px clear all round and the
   strips beside the road are too narrow where the tool looked. Not built into the game.
+- Coloured objects, Grant's steers (14 Nov, midday): "happy with those colour images"; the egg and
+  bacon plate must be CYAN so the egg's white shows with no outline, the yolk's cells yellow on
+  white ("happy with the plate"); "coffee should be black in a mug/cup" (drawn: white mug, no
+  blue, black coffee); "remember these shapes should not spill into the road area". Sheet:
+  docs/design/egg_bacon_plate.png (tools/make_fryup.py). Nothing built into the game yet.
