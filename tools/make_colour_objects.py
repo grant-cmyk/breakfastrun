@@ -40,6 +40,12 @@ an egg" - the yolk drawn in a SECOND INK, yellow, on the white paper, with 8+ pi
 white between it and any blue; compose() asserts one ink and one paper in every cell), a glass of milk in place of the carton top, and a black
 coffee on a white saucer (black paper).
 
+Then (Grant: "for certain things, if we can give them space, then they can use 2 different
+colours, and to create the illusion of being more blended, in the area just around it - perhaps
+have cyan or blue as one of the two colours"): BLENDED objects with no blue edge - the shape is
+ink in its own colour on the cloth's cyan paper, a second colour inside is paper, and 7 pixels
+of cloth all round are wiped plain so that no blue ink can share a cell with it.
+
 Writes docs/design/colour_objects.png: the objects (6x, 1x, 2x), the proof (one object scrolled
 0-7 pixels across and down, and what goes wrong without the rule), and a whole race screen.
 Usage: make_colour_objects.py"""
@@ -73,6 +79,7 @@ class Obj:
                     for fy in (cy, h - 1 - cy): self.shape[fy, fx] = 0
         self.bits = self.shape.copy(); self.label = np.zeros((h, w), dtype=np.uint8)
         self.ink2 = np.zeros((h, w), dtype=np.uint8)           # a second ink colour (+1) for some ink pixels; 0 = blue
+        self.wipe = np.zeros((h, w), dtype=np.uint8)           # cloth made plain here (blended objects' margin)
     def panel(self, x0, y0, x1, y1, colour):
         """An inside, x0..x1-1 by y0..y1-1: only where there are 8 pixels of object every way."""
         ok = np.zeros_like(self.shape)
@@ -192,39 +199,96 @@ def jam():
     o.text('JAM', 16, 24)
     for (x, y) in ((27, 15), (21, 18), (33, 18), (27, 39), (21, 36), (33, 36)): o.ink(pic(["XX", "XX"]), x, y)
     return o
+
+# ---- "blended" objects: no blue edge. The shape is INK in the object's colour on the cloth's own
+# cyan paper; a second colour inside is PAPER (the yolk is a hole in the white ink, in cells whose
+# paper is yellow). The pixels never change with the scroll, only the cells' colours. The price is
+# space: 7 pixels of cloth all round are wiped plain, so no blue dot can share a cell with it.
+MARGIN = 7
+def blended(name, ink, colour, hole=None, hole_colour=None, cut=None):
+    h, w = ink.shape; o = Obj(name, w + 2 * MARGIN + 2, h + 2 * MARGIN + 2); m = MARGIN + 1
+    full = np.zeros((o.h, o.w), dtype=np.uint8); full[m:m + h, m:m + w] = ink
+    o.shape = full.copy(); o.bits = full.copy(); o.label[:] = 0; o.ink2 = full * (colour + 1)
+    if hole is not None:                                       # the second colour: only where 8 pixels inside the shape
+        far = 1 - full
+        for _ in range(8): far = grow(far)
+        hm = np.zeros_like(full); hm[m:m + h, m:m + w] = hole; hm &= (1 - far)
+        o.bits[hm == 1] = 0; o.ink2[hm == 1] = 0; o.label[hm == 1] = hole_colour + 1
+    if cut is not None:                                        # thin lines of cloth colour drawn into the shape
+        cm = np.zeros_like(full); cm[m:m + h, m:m + w] = cut; cm &= full
+        o.bits[cm == 1] = 0; o.ink2[cm == 1] = 0
+    near = full.copy()
+    for _ in range(MARGIN): near = grow(near)
+    o.wipe = near & (1 - full)
+    return o
+def blob(n, f):
+    c = (n - 1) / 2; y, x = np.mgrid[0:n, 0:n]; t = np.arctan2(y - c, x - c)
+    return (np.hypot(x - c, y - c) <= f(t)).astype(np.uint8)
+def egg_blended():
+    n = 46; white = blob(n, lambda t: 20.4 + 1.4 * np.sin(2 * t + 0.7) + 0.9 * np.sin(3 * t + 2))
+    yolk = disc(n, n, 22.5, 22.5, 6.0); yolk[20, 20] = yolk[19, 21] = yolk[21, 19] = 0     # a white glint on the yolk
+    return blended('Fried egg, 46 across, WHITE on the cloth, YELLOW yolk, no blue', white, WHITE, yolk, YELLOW)
+def puddle():
+    n = 48; m = blob(n, lambda t: 15 + 4 * np.sin(2 * t) + 3 * np.sin(3 * t + 1) + 1.5 * np.sin(5 * t))
+    m |= disc(n, n, 42, 9, 2.6) | disc(n, n, 6, 40, 2.0) | disc(n, n, 44, 38, 1.6)
+    return blended('Spilt milk, 48 across, white', m, WHITE)
+def banana():
+    w, h = 56, 34; y, x = np.mgrid[0:h, 0:w]; r = np.hypot(x - 27.5, y + 14); t = np.arctan2(y + 14, x - 27.5)
+    u = (t - np.pi / 2) / 0.95                                 # -1 .. 1 along the fruit
+    m = ((np.abs(u) <= 1) & (np.abs(r - 38) <= 6.5 * np.sqrt(np.clip(1 - u ** 2, 0, 1)) + 1.2)).astype(np.uint8)
+    line = ((np.abs(u) <= 0.8) & (np.abs(r - 39.5) <= 0.5)).astype(np.uint8)
+    return blended('Banana, 56 x 34, yellow', m, YELLOW, cut=line)
+def strawberry():
+    w, h = 40, 44; y, x = np.mgrid[0:h, 0:w]
+    half = np.where(y < 16, 18.5 * np.sqrt(np.clip(1 - ((y - 16) / 16.0) ** 2, 0, 1)), 18.5 * np.clip(1 - np.clip((y - 16) / 28.0, 0, 1) ** 1.7, 0, 1))
+    m = (np.abs(x - 19.5) <= half).astype(np.uint8)
+    seeds = np.zeros((h, w), dtype=np.uint8)
+    for (sx, sy) in ((19, 12), (14, 16), (24, 16), (19, 20), (15, 23), (23, 23), (19, 26)): seeds[sy:sy + 2, sx:sx + 2] = 1
+    return blended('Strawberry, 40 x 44, red with YELLOW seeds', m, RED, seeds, YELLOW)
+BLENDED = [egg_blended(), puddle(), banana(), strawberry()]
 OBJECTS = [egg(), glass(), coffee(), toast(), waffle(), sugar(), butter(), mat(), bowl(), mug(), jam()]
 for o in OBJECTS: o.label[o.label == 99] = WHITE + 1
 
 # ---- the Spectrum: bits and attributes for a piece of window with objects on it
-def compose(cloth, things, sprites=None, wrong=False):
+def compose(cloth, things, sprites=None, mode=None):
     """cloth: the bits of a cell-aligned piece of window. things: [(obj, x, y)]. sprites: (mask,
-    bits) drawn over everything, as the game draws cars. Returns bits, attrs (the rule applied)."""
+    bits) drawn over everything, as the game draws cars. Returns bits, attrs. For every cell it
+    ASSERTS the Spectrum's rule: all ink pixels one ink colour, all paper pixels one paper colour
+    (and none of an object's coloured inside in a cell that also holds cloth).
+    mode 'nomargin': a blended object without its plain margin, unchecked - to show the fault.
+    mode 'thin': a thin outline, colour only in cells wholly inside, unchecked - to compare."""
     H, W = cloth.shape; b = cloth.copy(); lab = np.zeros((H, W), dtype=np.uint8); cov = np.zeros((H, W), dtype=np.uint8); ik = np.zeros((H, W), dtype=np.uint8)
     for o, x, y in things:
         for j in range(o.h):
             for i in range(o.w):
                 yy, xx = y + j, x + i
-                if 0 <= yy < H and 0 <= xx < W and o.shape[j, i]:
+                if not (0 <= yy < H and 0 <= xx < W): continue
+                if o.wipe[j, i] and mode != 'nomargin': b[yy, xx] = 0
+                if o.shape[j, i]:
                     b[yy, xx] = o.bits[j, i]; lab[yy, xx] = o.label[j, i]; cov[yy, xx] = 1; ik[yy, xx] = o.ink2[j, i]
     a = np.full((H // 8, W // 8), WIN, dtype=np.uint8)
     for r in range(H // 8):
         for c in range(W // 8):
             sl = (slice(r * 8, r * 8 + 8), slice(c * 8, c * 8 + 8))
             cl, cc, cb, ci = lab[sl], cov[sl], b[sl], ik[sl]
-            if wrong:                                          # the naive way: colour every cell the object touches
-                if cc.any(): a[r, c] = WHITE * 8 + BLUE
+            if mode == 'thin':
+                if cc.all(): a[r, c] = (int(cl.max()) - 1) * 8 + BLUE
                 continue
             papers = set(cl[cb == 0].tolist()); inks = set(ci[cb == 1].tolist()); cols = set(cl[cl > 0].tolist())
-            # never: two papers, two inks, or any of an object's inside in a cell that also holds cloth
-            assert len(papers) <= 1 and len(inks) <= 1 and len(cols) <= 1 and (not cols or cc.all()), 'colour clash'
-            if cols: a[r, c] = (cols.pop() - 1) * 8 + (inks.pop() - 1 if inks and max(inks) else BLUE)
+            if mode is None:
+                assert len(papers) <= 1 and len(inks) <= 1 and len(cols) <= 1 and (not cols or cc.all()), 'colour clash'
+            paper = (max(cols) - 1) if cols else CYAN
+            ink = (max(inks) - 1) if inks and max(inks) else BLUE
+            a[r, c] = paper * 8 + ink
     if sprites is not None: b[sprites[0] == 1] = sprites[1][sprites[0] == 1]
     return b, a
 def verify(o):
-    """Every one of the 64 positions against the cell grid: compose() asserts there is no clash."""
-    for dy in range(8):
-        for dx in range(8):
-            compose(np.zeros((o.h + 24 - o.h % 8, o.w + 24 - o.w % 8), dtype=np.uint8), [(o, 8 + dx, 8 + dy)])
+    """Every one of the 64 positions against the cell grid, on empty cloth and on cloth that is ALL
+    blue ink (the worst case for a blended object's margin): compose() asserts there is no clash."""
+    for fill in (0, 1):
+        for dy in range(8):
+            for dx in range(8):
+                compose(np.full((o.h + 24 - o.h % 8, o.w + 24 - o.w % 8), fill, dtype=np.uint8), [(o, 8 + dx, 8 + dy)])
 def show(b, a, s):
     H, W = b.shape; im = Image.new('RGB', (W, H)); px = im.load()
     for y in range(H):
@@ -244,8 +308,8 @@ def clean_cloth(w):
             v[ys, xs] += w[yd, xd]; n[ys, xs] += 1
     return (v * 2 > n).astype(np.uint8)
 if __name__ == '__main__':
-    for o in OBJECTS: verify(o)
-    print('verified: no clash at any of the 64 positions, for all', len(OBJECTS), 'objects')
+    for o in OBJECTS + BLENDED: verify(o)
+    print('verified: no clash at any of the 64 positions, for all', len(OBJECTS) + len(BLENDED), 'objects')
     try:
         f = ImageFont.truetype('DejaVuSans-Bold.ttf', 24); fs = ImageFont.truetype('DejaVuSans.ttf', 17); fb = ImageFont.truetype('DejaVuSans.ttf', 20)
     except OSError: f = fs = fb = ImageFont.load_default()
@@ -255,80 +319,113 @@ if __name__ == '__main__':
     world = np.tile(clean[0:64, 0:64], (4, 4))                 # plain cloth, as much as needed
     parts = []
     # 1. the objects: 6x, then real size and twice size, each on a bit of cloth, off the cell grid
-    tiles = []
-    for o in OBJECTS:
-        W = (o.w + 23) // 8 * 8; H = (o.h + 23) // 8 * 8
-        b, a = compose(world[:H, :W], [(o, (W - o.w) // 2 + 3, (H - o.h) // 2 + 2)])
-        tiles.append((o.name, show(b, a, 5), show(b, a, 1), show(b, a, 2)))
-    rows = []
-    for chunk in (tiles[:5], tiles[5:]):
-        hmax = max(t[1].height for t in chunk)
-        row = Image.new('RGB', (sum(max(t[1].width, 300) + 20 for t in chunk), hmax + 60 + max(t[3].height for t in chunk) + 20), BG); d = ImageDraw.Draw(row); x = 0
-        for name, big, one, two in chunk:
-            n1, n2 = name.split(', ', 1)
-            d.text((x, 0), n1, fill=(255, 255, 255), font=fs); d.text((x, 20), n2, fill=FG, font=fs)
-            row.paste(big, (x, 46)); row.paste(one, (x, hmax + 60)); row.paste(two, (x + one.width + 16, hmax + 60)); x += max(big.width, 300) + 20
-        rows.append(row)
-    row = Image.new('RGB', (max(r.width for r in rows), sum(r.height for r in rows)), BG); y = 0
-    for r in rows: row.paste(r, (0, y)); y += r.height
-    parts.append(('1. The objects, all seen from straight above: a solid blue edge 8 pixels thick, a coloured inside. Shown 5x, then real size and twice size.', row))
+    def sheet_of(objs, per_row):
+        tiles = []
+        for o in objs:
+            W = (o.w + 23) // 8 * 8; H = (o.h + 23) // 8 * 8
+            b, a = compose(world[24:24 + H, 16:16 + W], [(o, (W - o.w) // 2 + 3, (H - o.h) // 2 + 2)])
+            tiles.append((o.name, show(b, a, 5), show(b, a, 1), show(b, a, 2)))
+        rows = []
+        for k in range(0, len(tiles), per_row):
+            chunk = tiles[k:k + per_row]; hmax = max(t[1].height for t in chunk)
+            row = Image.new('RGB', (sum(max(t[1].width, 330) + 20 for t in chunk), hmax + 60 + max(t[3].height for t in chunk) + 20), BG); d = ImageDraw.Draw(row); x = 0
+            for name, big, one, two in chunk:
+                n1, n2 = name.split(', ', 1)
+                d.text((x, 0), n1, fill=(255, 255, 255), font=fs); d.text((x, 20), n2, fill=FG, font=fs)
+                row.paste(big, (x, 46)); row.paste(one, (x, hmax + 60)); row.paste(two, (x + one.width + 16, hmax + 60)); x += max(big.width, 330) + 20
+            rows.append(row)
+        row = Image.new('RGB', (max(r.width for r in rows), sum(r.height for r in rows)), BG); y = 0
+        for r in rows: row.paste(r, (0, y)); y += r.height
+        return row
+    parts.append(('1. Objects with a SOLID BLUE EDGE, all seen from straight above: an edge 8 pixels thick, a coloured inside. Shown 5x, then real size and twice size.', sheet_of(OBJECTS, 6)))
+    parts.append(('1b. BLENDED objects - no blue edge: the shape is ink in its own colour on the cloth\'s cyan, with 7 pixels of cloth wiped plain all round (look where the dots stop).', sheet_of(BLENDED, 4)))
+    egg_b = BLENDED[0]
     # 2. the proof: one object scrolled 0-7 pixels across, then down; and without the rule
-    o = OBJECTS[0]; colour = WHITE
-    thin = Obj('thin', o.w, o.h); thin.shape = o.shape.copy()  # the same egg with only a 2-pixel outline
-    core = 1 - grow(grow((1 - o.shape).astype(np.uint8)))
-    yolk = (o.ink2 > 0).astype(np.uint8)
-    thin.bits = (o.shape & (1 - core)) | (grow(grow(yolk)) & (1 - yolk))
-    thin.label[:] = 0; thin.label[core == 1] = colour + 1
+    o = egg_b
     PW, PH = (o.w + 47) // 8 * 8, (o.h + 31) // 8 * 8
-    for title, axis in (('2a. The proof: the fried egg (white paper, yellow yolk in a second ink) and the cloth scrolled 0 to 7 pixels ACROSS the cell grid (white ticks = cell edges). Neither colour ever leaves the egg.', 0),
-                        ('2b. The same scrolled 0 to 7 pixels DOWN. Last picture: what happens WITHOUT the rule (thin edge, colour on every cell the egg touches).', 1)):
+    for title, axis in (('2a. The proof: the blended egg and the cloth scrolled 0 to 7 pixels ACROSS the cell grid (white ticks = cell edges). Every cell: one ink colour, one paper colour.', 0),
+                        ('2b. The same scrolled 0 to 7 pixels DOWN. Last picture: what happens WITHOUT the plain margin - the cloth\'s dots next to the egg turn white.', 1)):
         fr = []
         for k in list(range(8)) + ['wrong']:
             dx, dy = (3, 5) if k == 'wrong' else ((k, 0) if axis == 0 else (0, k))
-            b, a = compose(world[8 - dy:8 - dy + PH, 8 - dx:8 - dx + PW], [((thin if k == 'wrong' else o), 20 + dx, 8 + dy)], wrong=(k == 'wrong'))
+            b, a = compose(world[40 - dy:40 - dy + PH, 8 - dx:8 - dx + PW], [(o, 20 + dx, 8 + dy)], mode='nomargin' if k == 'wrong' else None)
             im = show(b, a, 3); fm = Image.new('RGB', (im.width + 8, im.height + 30), BG); fd = ImageDraw.Draw(fm); fm.paste(im, (8, 30))
             for t in range(0, im.width + 1, 24): fd.line([(8 + t, 22), (8 + t, 29)], fill=(255, 255, 255))
             for t in range(0, im.height + 1, 24): fd.line([(0, 30 + t), (7, 30 + t)], fill=(255, 255, 255))
-            fd.text((8, 0), 'WITHOUT the rule' if k == 'wrong' else '+%d px' % k, fill=(255, 120, 120) if k == 'wrong' else FG, font=fs)
+            fd.text((8, 0), 'WITHOUT the margin' if k == 'wrong' else '+%d px' % k, fill=(255, 120, 120) if k == 'wrong' else FG, font=fs)
             fr.append(fm)
         row = Image.new('RGB', (sum(i.width + 10 for i in fr), fr[0].height), BG); x = 0
         for i in fr: row.paste(i, (x, 0)); x += i.width + 10
         parts.append((title, row))
+    # 2c. the same egg three ways, and a car crossing it
+    x_ = (win ^ clean).astype(np.uint8); g = grow(x_); seen = np.zeros_like(g); best = None
+    for sy, sx in zip(*np.nonzero(g)):                        # find one car: the biggest blob about a car's size
+        if seen[sy, sx]: continue
+        st = [(sy, sx)]; seen[sy, sx] = 1; px = []
+        while st:
+            cy, cx = st.pop(); px.append((cy, cx))
+            for ny, nx in ((cy + 1, cx), (cy - 1, cx), (cy, cx + 1), (cy, cx - 1)):
+                if 0 <= ny < g.shape[0] and 0 <= nx < g.shape[1] and g[ny, nx] and not seen[ny, nx]: seen[ny, nx] = 1; st.append((ny, nx))
+        ys = [q[0] for q in px]; xs = [q[1] for q in px]
+        if max(ys) - min(ys) < 30 and max(xs) - min(xs) < 30 and (best is None or len(px) > len(best)): best = px
+    def with_car(o, cx, cy, mode=None):
+        W = (o.w + 39) // 8 * 8; H = (o.h + 23) // 8 * 8; ox, oy = (W - o.w) // 2 + 3, (H - o.h) // 2 + 2
+        cl = world[40:40 + H, 8:8 + W]; m = np.zeros((H, W), dtype=np.uint8); sb_ = np.zeros((H, W), dtype=np.uint8)
+        if cx is not None:
+            cx, cy = ox + o.w // 2 - 24, oy + o.h // 2 - 6
+            y0 = min(q[0] for q in best); x0 = min(q[1] for q in best)
+            for (qy, qx) in best: m[cy + qy - y0, cx + qx - x0] = 1; sb_[cy + qy - y0, cx + qx - x0] = win[qy, qx]
+        return compose(cl, [(o, ox, oy)], sprites=(m, sb_) if cx is not None else None, mode=mode)
+    thin = Obj('thin', 46, 46); thin.shape = egg_b.shape[8:54, 8:54].copy(); core = 1 - grow(grow(1 - thin.shape))
+    yk = disc(46, 46, 22.5, 22.5, 6.0); thin.bits = (thin.shape & (1 - core)) | (yk & (1 - disc(46, 46, 22.5, 22.5, 4.6))); thin.label = thin.shape * (WHITE + 1)
+    cmp_ = [('Solid blue edge, yolk in a 2nd ink (66 across)', with_car(OBJECTS[0], None, 0)),
+            ('BLENDED: white on the cloth (46 across + margin)', with_car(egg_b, None, 0)),
+            ('Thin blue outline, colour a cell inside: WORSE', with_car(thin, None, 0, 'thin')),
+            ('A car crossing the solid-edge egg', with_car(OBJECTS[0], 2, 30)),
+            ('A car crossing the blended egg: it turns white', with_car(egg_b, 4, 26))]
+    row = Image.new('RGB', (sum(max(c[1][0].shape[1] * 4, 380) + 110 for c in cmp_), 96 * 4 + 40), BG); d = ImageDraw.Draw(row); x = 0
+    for name, (b, a) in cmp_:
+        d.text((x, 0), name, fill=FG, font=fs); row.paste(show(b, a, 1), (x, 30)); row.paste(show(b, a, 4), (x + b.shape[1] + 12, 30)); x += max(b.shape[1] * 4, 380) + 110
+    parts.append(('2c. One egg, three styles (real size, then 4x) - and what a car looks like crossing it.', row))
     # 3. the game's own screen: objects on the table OFF the road (the road runs between the rows
     #    of O's: across the middle and up the right-hand side here), and a car that has left the road
-    x_ = (win ^ clean).astype(np.uint8); spr = grow(x_); sbits = win.copy()
+    spr = grow(x_); sbits = win.copy()
     by = {o.name.split(',')[0]: o for o in OBJECTS}
-    things = [(by['Fried egg'], 2, -24), (by['Glass of milk'], 74, -5)]
+    things = [(egg_b, 4, -18), (by['Glass of milk'], 74, -5)]
     b, a = compose(clean, things, sprites=(spr, sbits))
     sb[8:152, 8:184] = b; sa[1:19, 1:23] = a
     scr = render(sb, sa, border=6, s=3)
-    notes = ['THE RULE, part 1: a solid blue edge at least 8 pixels thick; a cell is coloured only if it holds some',
-             '  of the inside. Checked by the script at all 64 pixel positions for every object: no clash.',
+    notes = ['THREE WAYS to put colour in the window. The script checks every object at all 64 pixel positions:',
+             '  in every cell, all the ink is one colour and all the paper is one colour. No clash.',
              '',
-             'TOP DOWN: everything is drawn as seen from straight above the table. The edge does a job in',
-             '  each drawing: the crust of the toast, the rim of the bowl and the glass, the wall of the cup.',
+             '1. SOLID BLUE EDGE (part 1): an edge of the window\'s own blue, 8 pixels thick; a cell is coloured',
+             '  only if it holds some of the inside. Best for SQUARE, made things: toast, waffle, boxes, cups.',
+             '  Needs no space round it - it can touch the O\'s, the road, or another object.',
              '',
-             'A SECOND INK (the egg): the yolk is drawn in ink, and the cells that hold it are white paper',
-             '  with YELLOW ink - so there is no blue in the egg. It works as long as no cell holds yolk and',
-             '  blue together: 8 pixels of plain white, measured along each axis, between the yolk and any',
-             '  blue (11 on the round). The egg is 66 across with a 12-pixel yolk. Same trick: the butter',
-             '  is now a yellow pat on a white dish. A car driving over the yolk turns yellow in those cells.',
+             '2. A SECOND INK inside (the big egg, the butter): a solid shape in a second ink colour on the',
+             '  object\'s paper, kept 8 pixels (along each axis) from any blue.',
              '',
-             'THE COFFEE: black paper works - the cup wall is the blue between the black and the white saucer.',
-             '  Blue drawing on black is dim: the highlight barely shows, so the coffee is best left plain.',
+             '3. BLENDED (part 1b): no blue at all. The shape is ink in its own colour on the cloth\'s cyan, so',
+             '  its outline can be any shape and meets the cloth directly. A second colour inside (the yolk,',
+             '  the seeds) is paper, 8 pixels in from the outline. THE PRICE IS SPACE: nothing blue may share',
+             '  a cell with it, so 7 pixels of cloth all round are wiped plain (8 from blue to shape), and it',
+             '  must stand that far from the O\'s, the road lines and other objects. Best for SOFT, natural',
+             '  things: an egg, spilt milk, a banana, a strawberry. Green on cyan is too weak to use.',
              '',
-             'WHERE: landmarks on the table beside the track, never on the road. In this view the only room',
-             '  off the road is the strip above it, 44 pixels deep: the egg is half in view (scrolling in from',
-             '  the top, with no clash) and the milk beside it. The coffee (76 across) did not fit this view.',
+             'CARS: a car is blue ink. Crossing a solid-edge object it stays blue. Crossing a BLENDED object',
+             '  it turns that object\'s colour, cell by cell (see 2c) - so blended objects go where cars',
+             '  rarely are. A thin blue outline with the colour a cell inside (2c, middle) is worse than',
+             '  either: the colour sits in a blocky step inside the outline and jumps as the screen scrolls.',
              '',
-             'COST: per picture, for each object in view, the game colours the cells that hold its inside',
-             '  and puts back the ones it has left: about 10 to 60 colour writes each for these sizes.',
+             'WHERE: beside the track, never on the road. In this view the room off the road is a strip 44',
+             '  pixels deep: the blended egg (most of it in view) and the glass of milk.',
              '',
-             'LIMITS: plain colours only, not BRIGHT. One ink per cell: blue, or a second ink kept 8 clear. Over the solid blue',
-             '  edge a car shows only as its thin outline. Objects must not overlap each other, but may touch.']
+             'COST: per picture, per object in view: colouring the cells it is in and putting back the ones',
+             '  it left - about 10 to 60 colour writes. The pixels of an object never change with the scroll.',
+             '  Plain colours only, not BRIGHT.']
     row = Image.new('RGB', (scr.width + 30 + 1000, scr.height), BG); d = ImageDraw.Draw(row); row.paste(scr, (0, 0))
-    for k, t in enumerate(notes): d.text((scr.width + 30, 8 + 27 * k), t, fill=FG, font=fb)
-    parts.append(('3. In the game as it is today (3x): the fried egg (half in view) and the glass of milk on the table above the road.', row))
+    for k, t in enumerate(notes): d.text((scr.width + 30, 4 + 25 * k), t, fill=FG, font=fb)
+    parts.append(('3. In the game as it is today (3x): the BLENDED fried egg and the solid-edge glass of milk on the table above the road.', row))
     W = max(p[1].width for p in parts) + 40; H = sum(p[1].height + 60 for p in parts) + 20
     out = Image.new('RGB', (W, H), BG); d = ImageDraw.Draw(out); y = 14
     for title, im in parts:
