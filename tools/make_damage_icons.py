@@ -122,6 +122,136 @@ OFFFFFFFFFFFFFFO
 ......OFFO......
 .......OO.......""",
 }
+MORE = {     # a second round (Grant, 14 Nov 2026: "can you try a few more icons for health/damage")
+ 'I  Oil drop': """
+.......OO.......
+......OFFO......
+......OFFO......
+.....OFFFFO.....
+....OFFFFFFO....
+...OFFFFFFFFO...
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+...OFFFFFFFFO...
+....OFFFFFFO....
+.....OOOOOO.....""",
+ 'J  Nut': """
+....OOOOOOOO....
+...OFFFFFFFFO...
+..OFFFFFFFFFFO..
+.OFFFFOOOOFFFFO.
+OFFFFO....OFFFFO
+OFFFO......OFFFO
+OFFFO......OFFFO
+OFFFO......OFFFO
+OFFFFO....OFFFFO
+.OFFFFOOOOFFFFO.
+..OFFFFFFFFFFO..
+...OFFFFFFFFO...
+....OOOOOOOO....""",
+ 'K  Shield': """
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+.OFFFFFFFFFFFFO.
+.OFFFFFFFFFFFFO.
+..OFFFFFFFFFFO..
+...OFFFFFFFFO...
+....OFFFFFFO....
+.....OFFFFO.....
+......OOOO......""",
+ 'L  Spark plug': """
+......OOOO......
+......OFFO......
+.....OOFFOO.....
+.....OFFFFO.....
+.....OFFFFO.....
+....OOFFFFOO....
+...OFFFFFFFFO...
+...OOOFFFFOOO...
+.....OFFFFO.....
+.....OFFFFO.....
+.....OOFFOO.....
+......OFFOOO....
+......OOOO.O....""",
+ 'M  Car from the side': """
+................
+....OOOOOOO.....
+...OFFFFFFFO....
+..OFFFFFFFFFO...
+.OFFFFFFFFFFFO..
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO
+..OFFO....OFFO..
+..OFFO....OFFO..
+...OO......OO...""",
+ 'N  Crash helmet': """
+....OOOOOOOO....
+..OOFFFFFFFFOO..
+.OFFFFFFFFFFFFO.
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFOOOOOOOOOO
+OFFFFO.........O
+OFFFFO.........O
+OFFFFFOOOOOOOOOO
+OFFFFFFFFFFFFFO.
+OFFFFFFFFFFFFO..
+.OFFFFFFFFFFO...
+..OOOOOOOOOO....""",
+ 'O  Dial': """
+....OOOOOOOO....
+..OOFFFFFFFFOO..
+.OFFFFFFFFFFFFO.
+.OFFFFFFFFOOFFO.
+OFFFFFFFFOOFFFFO
+OFFFFFFFOOFFFFFO
+OFFFFFFOOFFFFFFO
+OFFFFFOOOOFFFFFO
+OFFFFFOOOOFFFFFO
+.OFFFFFFFFFFFFO.
+.OFFFFFFFFFFFFO.
+..OOFFFFFFFFOO..
+....OOOOOOOO....""",
+ 'P  Lightning': """
+......OOOOOOO...
+.....OFFFFFO....
+....OFFFFFO.....
+...OFFFFFO......
+..OFFFFFOOOOO...
+.OFFFFFFFFFFO...
+.OOOOOFFFFFO....
+.....OFFFFO.....
+....OFFFFO......
+...OFFFO........
+..OFFO..........
+.OFO............
+.OO.............""",
+ 'Q  Wheel': """
+....OOOOOOOO....
+..OOFFFFFFFFOO..
+.OFFFOOOOOOFFFO.
+.OFFO......OFFO.
+OFFO........OFFO
+OFFO...OO...OFFO
+OFFO..OFFO..OFFO
+OFFO...OO...OFFO
+OFFO........OFFO
+.OFFO......OFFO.
+.OFFFOOOOOOFFFO.
+..OOFFFFFFFFOO..
+....OOOOOOOO....""",
+}
+for k in MORE:
+    MORE[k] = MORE[k].strip().split('\n'); assert len(MORE[k]) == 13 and all(len(r) == 16 for r in MORE[k]), k
 for k in ICONS:
     ICONS[k] = ICONS[k].strip().split('\n'); assert len(ICONS[k]) == 13 and all(len(r) == 16 for r in ICONS[k]), k
 def draw(art, dmg, s):
@@ -133,18 +263,20 @@ def draw(art, dmg, s):
         for x, c in enumerate(r):
             if c == 'O' or (c == 'F' and y >= EMP[dmg]): px[2 + x, 2 + y] = (0, 0, 215)
     return im.resize((20 * s, 17 * s), Image.NEAREST)
-if __name__ == '__main__':
+def sheet(icons, title, name):
     try: f = ImageFont.truetype('DejaVuSans-Bold.ttf', 22); fs = ImageFont.truetype('DejaVuSans.ttf', 17)
     except OSError: f = fs = ImageFont.load_default()
-    BG, FG = (17, 18, 22), (236, 235, 230); LV = (0, 2, 4, 6, 8); S = 6
-    W = 360 + len(LV) * (20 * S + 14) + 5 * 34 + 40; rowh = 17 * S + 26
-    out = Image.new('RGB', (W, 70 + len(ICONS) * rowh + 10), BG); d = ImageDraw.Draw(out)
-    d.text((20, 12), 'Health gauge icons, 16 x 13: the outline stays, the fill empties from the top (mock-up)', fill=(255, 255, 255), font=f)
-    x0 = 360
+    BG, FG = (17, 18, 22), (236, 235, 230); LV = (0, 2, 4, 6, 8); S = 6; x0 = 360
+    W = x0 + len(LV) * (20 * S + 14) + 5 * 34 + 40; rowh = 17 * S + 26
+    out = Image.new('RGB', (W, 70 + len(icons) * rowh + 10), BG); d = ImageDraw.Draw(out)
+    d.text((20, 12), title, fill=(255, 255, 255), font=f)
     for i, lv in enumerate(LV): d.text((x0 + i * (20 * S + 14), 44), ['whole', '2 hits', '4 hits', '6 hits', '8: wrecked'][i], fill=FG, font=fs)
     d.text((x0 + len(LV) * (20 * S + 14) + 10, 44), 'real size', fill=FG, font=fs)
-    for n, (name, art) in enumerate(ICONS.items()):
-        y = 70 + n * rowh; d.text((20, y + 40), name, fill=FG, font=f)
+    for n, (nm, art) in enumerate(icons.items()):
+        y = 70 + n * rowh; d.text((20, y + 40), nm, fill=FG, font=f)
         for i, lv in enumerate(LV): out.paste(draw(art, lv, S), (x0 + i * (20 * S + 14), y))
         for i, lv in enumerate(LV): out.paste(draw(art, lv, 1), (x0 + len(LV) * (20 * S + 14) + 10 + i * 34, y + 40))
-    p = os.path.join(HERE, '..', 'docs', 'design', 'damage_icons.png'); out.save(p); print('wrote', os.path.normpath(p), out.size)
+    p = os.path.join(HERE, '..', 'docs', 'design', name); out.save(p); print('wrote', os.path.normpath(p), out.size)
+if __name__ == '__main__':
+    sheet(ICONS, 'Health gauge icons, 16 x 13: the outline stays, the fill empties from the top (mock-up)', 'damage_icons.png')
+    sheet(MORE, 'More health gauge icons, 16 x 13 (mock-up)', 'damage_icons_2.png')
