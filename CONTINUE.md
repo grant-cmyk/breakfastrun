@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 06:58 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 07:12 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Window 176 x 128 in an arcade bezel (the message bar is one row); five cars at 20 x 20.
@@ -21,13 +21,11 @@ in-window NOS, the title screen and more cars ALL need a memory plan first (idea
 headings as mirrors or half-turns of the other half - 16 headings stored today; a 128K build; a
 separate title-screen load).
 
-**Next step:** Grant approves the page layout G3 (docs/design/screen_options4.png) or marks changes.
-Then build, in this order: (1) a build-time SWITCH between the big cars and the small 16 x 16 cars
-(Grant, 14 Nov: keep both; small may win - it also frees about 5 KB and halves car drawing, by
-estimate); (2) the second window row (176 x 136) and the G3 layout together - three start-light
-blocks in the window, no message bar, place / lap / time bottom left, the map under the logo, no
-car strengths on the race screen; (3) the speed hunt (tests/zxlap.py). Later: the title / attract
-screen with a choice of driver and car (drafts: docs/design/new_cast_mockup.png).
+**Next step:** Grant plays the four builds (build/racer_big_128.tap, racer_small_128.tap,
+racer_big_136.tap, racer_small_136.tap; made by `bash build.sh [big|small] [128|136]`) and says
+which cars and which height; picks the start lights (docs/design/start_lights.png: L1, L2, L3) and
+approves layout G3 (docs/design/screen_options4.png). Then: build G3 on the chosen height, then the
+speed hunt (tests/zxlap.py). Later: the title / attract screen with a choice of driver and car.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

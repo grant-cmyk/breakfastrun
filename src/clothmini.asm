@@ -138,7 +138,7 @@ bt_dig:
         dec a
         or b
         jr nz,bt_1
-        ld b,1
+        ld b,MSG_ROW
         jp print_at
 bt_1:
         ld a,(msg_timer)        ; a message has the bar
@@ -178,10 +178,10 @@ bt_txt:
         ret nz
         inc (hl)
         ld hl,txt_blap
-        ld bc,0x0109
+        ld bc,MSG_ROW*256+9
         call print_at
         ld hl,bar_time
-        ld bc,0x0113
+        ld bc,MSG_ROW*256+19
         jp print_at
 
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
@@ -270,3 +270,6 @@ yg_gtab: db G_GRIP, G_Q, G_SLIDE, G_QSLIDE   ; (your set-up's grip: su_apply wri
 yg_pushv: dw G_PUSH             ; ... its push
 yg_topv:  dw G_TOP              ; ... its top speed
 yg_topn:  dw G_TOP              ; this frame's top speed (twice it with NOS)
+        if OPT_TALL
+        include "hudtext_flag.asm"
+        endif

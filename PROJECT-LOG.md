@@ -1134,3 +1134,24 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   draw_car has both row widths). The 16 x 16 cars are in tools/car_art.txt (2 bytes a row, 16
   rows): about 5.8 KB for five cars against 10.7 KB, and roughly half the drawing time - Claude's
   estimates, not measured. The bump test (11 px) and the O test are the same for both.
+
+## 2026-11-14 SAST - four builds to try: big or small cars, the window 128 or 136 high
+- Grant: "I would like to try the gameplay with options of the bigger or smaller cars, but with
+  the extra row(s) available to see how gameplay works out."
+- `bash build.sh [big|small] [128|136]` (default big 128 = build/racer.tap); each build is also
+  copied to build/racer_<cars>_<height>.tap. CARS=small makes tools/make_data.py put the 16 x 16
+  cars (tools/car_art.txt) on the same grid, frames and table - no change to the game's code.
+  OPT_TALL (src/options.asm, written by build.sh) makes the window 136 high from pixel row 16
+  and puts the message bar on row 0 in place of the track's name (a stopgap until layout G3 is
+  built); the copy routine then ends at 0xFB22, TOPMEM is 0xF0 higher, and the race box's text,
+  the small font, the race order's little pictures and the tile table move into the program
+  (hudtext.asm is split into hudtext_flag / _track / _gfx for it). Big cars at 136: 8 bytes free.
+- zxdev lap (pictures at 3 TV frames / at 4): big 128: 298 / 13; small 128: 308 / 4; big 136:
+  298 / 15; small 136: 309 / 5. The small cars free about 2.4 KB of the main area even in the
+  same 3-bytes-a-row frames (7,296 bytes of pictures against 10,740).
+- Tests are run on the default build (big, 128): drive, nos, O, set-up all PASS. The other
+  three builds were run and looked at (docs/design/four_builds.png), not put through the tests
+  (drive_test assumes the 128 window and the bar on row 1).
+- Start lights for layout G3, by the second agent (tools/make_start_lights.py,
+  docs/design/start_lights.png): L1 a gantry bar with three round lamps (its pick), L2 hanging
+  pods, L3 glowing lenses with chequered ends at go. For Grant to choose.

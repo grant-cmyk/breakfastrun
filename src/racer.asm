@@ -38,10 +38,12 @@ LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
-WIN_Y   equ 24          ; pixel rows 24..151: 128 high (Grant, 14 Nov 2026: "I need to
-                        ; see ahead further" - the row above the window, which the
-WIN_W   equ 22          ; message bar gave up; it was 120 high from 9 Nov)
-WIN_H   equ 128
+        include "options.asm"   ; OPT_TALL
+WIN_Y   equ 24-8*OPT_TALL       ; the window: 128 high from pixel row 24 (Grant, 14 Nov 2026:
+                                ; "I need to see ahead further"), or with OPT_TALL 136 from 16,
+WIN_W   equ 22                  ; the message bar then on row 0 in place of the track's name
+WIN_H   equ 128+8*OPT_TALL
+MSG_ROW equ 1-OPT_TALL
 BAND_Y  equ (WIN_Y+WIN_H)/8+1    ; the text rows under the window: LAP, TIME, BEST
 FRAMES  equ 23672       ; ROM counter, +1 every TV frame (1/50 s)
 
@@ -3139,6 +3141,11 @@ gd_2:
         include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
         include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
         include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
+        if OPT_TALL
+        include "hudtext_gfx.asm"
+        include "tdtab.asm"
+txt_track_src:
+        endif
 isr:
         push af
         push hl
@@ -3310,10 +3317,12 @@ win_attr:
         ld b,1                  ; logo, 7 x 2 cells at the top of the panel
         ld c,25
         call draw_logo
+        if 1-OPT_TALL
         ld hl,txt_track         ; the track's name, along the top
         ld b,0
         ld c,1
         call print_at
+        endif
         ld hl,txt_race
         ld b,TOWER_Y-1
         ld c,25
@@ -3660,7 +3669,12 @@ high_src:
         include "hudtext.asm"   ; the HUD's fixed text
         include "toprows.asm"   ; some of the map's row lists
         include "strip_t.asm"   ; a message or two
+        if 1-OPT_TALL           ; (with the taller window the copy routine is longer and
+        include "hudtext_flag.asm"   ; there is less room up here: these four go into the
+        include "hudtext_track.asm"  ; program instead - or, the track's name, nowhere)
+        include "hudtext_gfx.asm"
         include "tdtab.asm"     ; the tile routine for each camy AND 7
+        endif
 cars_init_src:
         db 0
         dw STARTX
@@ -3720,7 +3734,7 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ 0xFA40            ; the copy routine ends at 0xFA02 (128 lines of 36 bytes)
+TOPMEM      equ 0xFA40+0xF0*OPT_TALL  ; the copy routine ends at 0xFA02 (128 lines of 36 bytes) or 0xFB22 (136)
 BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
 BUFB      equ BUF+0x1160        ; the same, the next pixel line down
 BUFD      equ BUF+0x1360        ; constant tables
@@ -3747,17 +3761,53 @@ txt_go    equ TOPMEM + txt_go_src - high_src
 txt_final equ TOPMEM + txt_final_src - high_src
 txt_finished equ TOPMEM + txt_finished_src - high_src
 txt_places equ TOPMEM + txt_places_src - high_src
+        if 1-OPT_TALL
 txt_flag  equ TOPMEM + txt_flag_src - high_src
+        else
+txt_flag equ txt_flag_src
+        endif
+        if 1-OPT_TALL
 txt_youfin equ TOPMEM + txt_youfin_src - high_src
+        else
+txt_youfin equ txt_youfin_src
+        endif
+        if 1-OPT_TALL
 txt_track equ TOPMEM + txt_track_src - high_src
+        else
+txt_track equ txt_track_src
+        endif
 txt_none  equ TOPMEM + txt_none_src - high_src
+        if 1-OPT_TALL
 sfont     equ TOPMEM + sfont_src - high_src
+        else
+sfont equ sfont_src
+        endif
+        if 1-OPT_TALL
 flag_top  equ TOPMEM + flag_top_src - high_src
+        else
+flag_top equ flag_top_src
+        endif
+        if 1-OPT_TALL
 clock_top equ TOPMEM + clock_top_src - high_src
+        else
+clock_top equ clock_top_src
+        endif
 CLOCK8    equ clock_top+4       ; the clock in one cell (8 rows straight)
+        if 1-OPT_TALL
 grid_order equ TOPMEM + grid_order_src - high_src
+        else
+grid_order equ grid_order_src
+        endif
+        if 1-OPT_TALL
 car_colours equ TOPMEM + car_colours_src - high_src
+        else
+car_colours equ car_colours_src
+        endif
+        if 1-OPT_TALL
 tdraw_table equ TOPMEM + tdraw_table_src - high_src
+        else
+tdraw_table equ tdraw_table_src
+        endif
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
 omap      equ TOPMEM + omap_src - high_src

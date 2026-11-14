@@ -150,10 +150,10 @@ mc_1:                           ; further"). Your place and lap are not on it
         ld (hl),0               ; now: bar_tick draws them afresh
         inc hl
         djnz mc_1
-        ld bc,0x0100
+        ld bc,MSG_ROW*256
         ld de,0x0118
         call clear_cells
-        ld bc,0x0100
+        ld bc,MSG_ROW*256
         ld de,0x0118
         ld a,A_YEL
         jp set_attrs
@@ -162,13 +162,13 @@ msg_at:
         push af
         push bc
         push de
-        ld b,1
+        ld b,MSG_ROW
         call print_at
         pop de
         pop bc
         pop af
-        ld b,1
-        ld d,b
+        ld b,MSG_ROW
+        ld d,1
         jp set_attrs
 
 msg_lights:                     ; three start lights (not lit), GET READY, PRESS Q
@@ -187,10 +187,10 @@ ml_1:
         cp 7
         jr nz,ml_1
         ld hl,txt_ready
-        ld bc,0x0107
+        ld bc,MSG_ROW*256+7
         call print_at
         ld hl,txt_pressq
-        ld bc,0x0111
+        ld bc,MSG_ROW*256+17
         jp print_at
 
 ; START_LIGHTS (once a picture, before the race): Q pressed, the lights come on
@@ -234,9 +234,8 @@ sl_ph:
         ld (snd_fxt),hl
         ld a,A_LAMP
 sl_cell:
-        ld b,1
-        ld d,b
-        ld e,b
+        ld b,MSG_ROW
+        ld de,0x0101
         jp set_attrs
 sl_green:
         ld hl,0x1800+10         ; a higher beep, longer
@@ -255,7 +254,7 @@ sl_g:
         jr sl_cell
 
 msg_go:                         ; GO! beside the green lights (they stay till
-        ld bc,0x0107            ; the message goes)
+        ld bc,MSG_ROW*256+7     ; the message goes)
         ld de,0x0111
         call clear_cells
         ld hl,txt_go
@@ -287,7 +286,7 @@ msg_finished:                   ; FINISHED nTH, which stays
         call msg_at
         ld a,(position)         ; "1ST" .. "5TH" after it
         call place_txt
-        ld bc,0x010F
+        ld bc,MSG_ROW*256+15
         call print_at
         xor a
         ld (msg_timer),a
