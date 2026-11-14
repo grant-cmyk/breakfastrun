@@ -225,6 +225,22 @@ wait_show:
         ld a,(FRAMES)
         ld (last_shown),a
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
+        if OPT_OBJ
+        ld hl,(ob_cx)           ; the coloured objects: wipe the colours put up for the
+        ld (op_cx),hl           ; last picture's camera, then put them up for this one's
+        ld hl,(ob_cy)
+        ld (op_cy),hl
+        ld a,WIN_ATTR
+        call obj_paint
+        ld hl,(camx)
+        ld (op_cx),hl
+        ld (ob_cx),hl
+        ld hl,(camy)
+        ld (op_cy),hl
+        ld (ob_cy),hl
+        xor a
+        call obj_paint
+        endif
         call mu_burst           ; the ditty's note, once a picture
         call snd_picture        ; this picture's engine pitch; the crash fades
         ld hl,(renders)
@@ -2424,6 +2440,198 @@ sp_2:
         add a,30
         ld (snd_rate),a
         ret
+        if OPT_OBJ              ; (build.sh: OBJECTS=1 - off by default: an object costs about 700 T a
+                                ; tile to draw, and the mug with its margin is 99 tiles - see PROJECT-LOG)
+; OBJ_PAINT: the coloured objects' colours (Grant, 14 Nov 2026: "build the objects"). An
+; object's pixels are map tiles, drawn like the rest of the table; its colours are REGIONS
+; (src/objects.asm, from tools/make_world.py): for one attribute, the first and last ink pixel
+; over every run of 8 pixel rows. The window scrolls by pixels but colour goes by 8 x 8 cells:
+; for the camera at (op_cx, op_cy) each window cell row that the region reaches looks up the run
+; of rows it covers, and the cells from its leftmost to its rightmost ink get the attribute. The objects are
+; drawn so that this never puts two inks in one cell (8 pixels between colours).
+; A = 0: each region's own attribute; else that attribute for all (to wipe the last picture's).
+WIN_ATTR  equ 0x29              ; the window's own colours: blue on cyan
+OBJ_ATTR0 equ 0x5800 + (WIN_Y/8)*32 + WIN_COL
+obj_paint:
+        ld (op_force),a
+        ld ix,obj_tab
+op_reg:
+        ld l,(ix+0)
+        ld h,(ix+1)
+        ld a,h
+        and l
+        inc a
+        ret z                   ; 0xFFFF: the end
+        ld de,(op_cx)
+        or a
+        sbc hl,de
+        ld (op_dx),hl           ; the region's x in the window (signed)
+        ld l,(ix+2)
+        ld h,(ix+3)
+        ld de,(op_cy)
+        or a
+        sbc hl,de               ; ... and its first row's y
+        ld c,(ix+5)             ; C = its entries: one for each run of 8 pixel rows that
+        bit 7,h                 ; a cell row can cover - rows j-7 .. j, for j = 0 on
+        jr z,op_pos             ; (the first 7 are the region's top edge part-way down a cell)
+        inc h                   ; above the window's top: cell row 0 covers rows -y .. -y+7,
+        jr nz,op_skip           ; entry -y + 7 - if the region has it
+        ld a,l
+        neg
+        jr z,op_skip
+        add a,7
+        jr c,op_skip
+        ld b,0                  ; B = the cell row
+        jr op_go
+op_pos:
+        ld a,h
+        or a
+        jr nz,op_skip
+        ld a,l
+        cp WIN_H
+        jr nc,op_skip
+        rrca
+        rrca
+        rrca
+        and 31
+        ld b,a                  ; the cell row its first row is in,
+        ld a,l
+        cpl
+        and 7                   ; and the entry: 7 - (y AND 7)
+op_go:
+        cp c                    ; A = the entry
+        jr nc,op_skip
+        push af
+        push ix
+        pop hl
+        ld e,a
+        ld d,0
+        add hl,de
+        add hl,de
+        ld e,6
+        add hl,de               ; HL -> its two bytes
+        pop af
+op_row:
+        ld e,a                  ; (E = the entry, kept)
+        ld a,b
+        ld (op_r),a
+        ld a,(hl)
+        ld (op_min),a
+        inc hl
+        ld a,(hl)
+        ld (op_max),a
+        push de
+        call op_flush
+        pop de
+        ld a,15                 ; 8 entries on (16 bytes), a cell row down
+        add a,l
+        ld l,a
+        jr nc,op_r1
+        inc h
+op_r1:
+        inc b
+        ld a,b
+        cp WIN_H/8
+        jr nc,op_skip
+        ld a,e
+        add a,8
+        jr c,op_skip
+        cp c
+        jr c,op_row
+op_skip:
+        ld e,(ix+5)             ; the next region
+        ld d,0
+        add ix,de
+        add ix,de
+        ld e,6
+        add ix,de
+        jp op_reg
+op_flush:                       ; cell row op_r: the cells from op_min to op_max (HL, BC kept)
+        ld a,(op_r)
+        cp 255
+        jr z,of_x
+        ld a,(op_min)
+        cp 255
+        jr z,of_x
+        push hl
+        push bc
+        ld a,(op_max)
+        ld e,a
+        ld d,0
+        ld hl,(op_dx)
+        add hl,de               ; the last pixel's window x: left of the window? none
+        bit 7,h
+        jr nz,of_p
+        ld a,h
+        or a
+        jr nz,of_c1
+        ld a,l
+        cp WIN_W*8
+        jr c,of_k1
+of_c1:
+        ld l,WIN_W*8-1          ; (right of it: up to its edge)
+of_k1:
+        ld c,l
+        ld a,(op_min)
+        ld e,a
+        ld hl,(op_dx)
+        add hl,de               ; the first pixel's
+        bit 7,h
+        jr z,of_k2
+        ld hl,0
+of_k2:
+        ld a,h
+        or a
+        jr nz,of_p
+        ld a,l
+        cp WIN_W*8
+        jr nc,of_p
+        rrca
+        rrca
+        rrca
+        and 31
+        ld b,a                  ; B = first cell, C = how many
+        ld a,c
+        rrca
+        rrca
+        rrca
+        and 31
+        sub b
+        inc a
+        ld c,a
+        ld a,(op_r)
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld e,b
+        add hl,de
+        ld de,OBJ_ATTR0
+        add hl,de
+        ld a,(op_force)
+        or a
+        jr nz,of_f
+        ld a,(ix+4)
+of_f:
+        ld b,c
+of_l:
+        ld (hl),a
+        inc hl
+        djnz of_l
+of_p:
+        pop bc
+        pop hl
+of_x:
+        ld a,255
+        ld (op_min),a
+        xor a
+        ld (op_max),a
+        ret
+
+        endif
 ; MU_BURST: the ditty's note the way Manic Miner sounds its tune (Grant, 14 Nov 2026: "can you
 ; play manic miner and see how the sound holds more" - "A half-miner is okay"): a burst of the
 ; note milliseconds long, low in pitch, once a picture, for as long as the note lasts (the
@@ -3248,6 +3456,19 @@ snd_bump: db 0                  ; crash noise: pictures left
 O_FREE   equ 6
 o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
 mu_wait:  db 1                  ; the ditty: frames until its next note
+        if OPT_OBJ
+ob_cx:    dw 0                  ; the coloured objects: the camera their colours were last put up for
+ob_cy:    dw 0
+op_cx:    dw 0                  ; ... obj_paint's camera,
+op_cy:    dw 0
+op_dx:    dw 0                  ; the region's x in the window,
+op_force: db 0                  ; the attribute for all (0: each region's own),
+op_sy:    db 0                  ; the window line being looked at,
+op_r:     db 0                  ; the cell row being gathered (255: none yet),
+op_min:   db 0                  ; and its first and last ink pixel
+op_max:   db 0
+        include "objects.asm"
+        endif
 mu_slack: db 0                  ; the picture's spare time so far, in units of 279 T
 mu_used:  db 0                  ; ... what the last burst used
 mu_el:    db 0                  ; TV frames the last picture's work took

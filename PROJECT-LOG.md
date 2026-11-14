@@ -1367,3 +1367,21 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   line_mug, mug3d, mug3d(saucer)); he sent back the picture of the side-view mug ON A SAUCER
   (66 x 52) with no words - read as his pick (my reading; he had been "leaning to" the
   straight-down one a minute before he saw it).
+
+## 2026-11-14 SAST (afternoon) - coloured objects built as an option; too slow to switch on
+- Grant: "build the objects." Built behind a switch (OBJECTS=1 python3 tools/make_world.py, then
+  OBJECTS=1 bash build.sh; off by default): tools/make_world.py places a coloured object (the mug
+  on a saucer, tools/make_fryup.py mug3d) as map tiles, off the road, and writes its colour
+  regions to src/objects.asm; obj_paint (racer.asm) puts the colours into the window's attribute
+  cells after each copy - one look-up per cell row (the first and last ink pixel over each run
+  of 8 pixel rows) - wiping the last picture's first. tests/objects_test.py: over 36 camera
+  positions every cell with the mug's ink has its colour and no other ink. Picture:
+  docs/design/mug_in_game.png.
+- MEASURED, and why it is off: with the mug wholly in view a picture takes about 349,000 T (5 TV
+  frames: under 10 pictures a second) against 210,000 without. The map's tiles cost about 700 T
+  each to draw (masked ones more: tdm_line 60,000 T), and the mug with its plain margin is 11 x 9
+  = 99 tiles. obj_paint itself is about 13,000 T with the mug in view. Memory: the mug fits only
+  by giving up the twelve old blue breakfast things (KEEP_OLD); the egg-and-bacon plate (13 x 13
+  tiles, about 1.5 KB) does not fit at all.
+- What would make it work: a faster way to draw a big object (not tile by tile), or small
+  objects only (3 x 3 cells or so: about 7,000 T). Not started.

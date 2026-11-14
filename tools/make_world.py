@@ -6,7 +6,7 @@
   start line  = a black-and-white checker band across the road
 The scrolling window is ONE colour pair (a Spectrum can only colour 8x8 blocks,
 which cannot follow a smooth pixel scroll), so everything here is ink on paper."""
-import math, os
+import math, os, sys
 from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'src', 'world.asm')
@@ -132,11 +132,15 @@ import importlib.util
 spec = importlib.util.spec_from_file_location('bf', os.path.join(HERE, 'make_breakfast.py'))
 bf = importlib.util.module_from_spec(spec); spec.loader.exec_module(bf)
 I = bf.ITEMS
-wanted = [('plate', 32, 24), ('knife', 39, 24), ('fork', 30, 24), ('spoon', 41, 24),
+# (14 Nov 2026: with OBJECTS=1 the blue things give their memory to the coloured objects - there
+# is no room for both. KEEP_OLD says how many of them stay.)
+all_old = [('plate', 32, 24), ('knife', 39, 24), ('fork', 30, 24), ('spoon', 41, 24),
           ('egg', 24, 21), ('toast', 25, 31), ('juice', 44, 32), ('bacon', 34, 33),
           ('juice', 3, 3), ('toast', 60, 3), ('egg', 63, 47), ('bacon', 3, 50), ('plate', 61, 22),
           ('egg', 2, 24), ('toast', 30, 1), ('fork', 66, 36), ('knife', 68, 36), ('juice', 45, 50),
           ('bacon', 14, 2), ('egg', 24, 49)]
+KEEP_OLD = int(os.environ.get('KEEP_OLD', 0 if os.environ.get('OBJECTS') else 99))
+wanted = all_old[:KEEP_OLD]
 # Each thing is masked so it sits on the tablecloth, but a tile only needs its
 # mask (slower to draw) where the mask covers a dark, dithered check. So try
 # positions near the one wanted and take the one with fewest such tiles.
@@ -158,6 +162,58 @@ def dark_tiles(shape, tx, ty):
         X, Y = tx * 8 + x, ty * 8 + y
         if ((X >> 5) + (Y >> 5)) & 1: tl.add((X >> 3, Y >> 3))
     return len(tl)
+# ---- the COLOURED objects (Grant, 14 Nov 2026: "build the objects"; tools/make_fryup.py draws
+#      them, with the colour rules of tools/make_colour_objects.py). Their pixels are map tiles
+#      like everything else; their colours are regions the game paints into the attribute cells
+#      each picture (src/objects.asm, obj_paint in racer.asm): for each colour, the span of
+#      its ink on every pixel row. They stand OFF the road ("these shapes should not spill
+#      into the road area"), on whole tiles, clear of the O's and the other things. ----
+sys.path.insert(0, HERE)
+import make_fryup as mf
+CYAN_INK = lambda c: 0x28 + c                                   # paper cyan, this ink
+COLOURED = [(mf.mug3d(True), 47, 38)] if os.environ.get('OBJECTS') else []   # (object, wanted tile x, y). Off unless OBJECTS=1
+extra_mask = []; regions = []
+for o, wtx, wty in COLOURED:
+    w, h = (o.w + 7) // 8, (o.h + 7) // 8; best = None
+    for dy in range(-6, 7):
+        for dx in range(-6, 7):
+            if free(wtx + dx, wty + dy, w, h) and (best is None or abs(dx) + abs(dy) < best[0]): best = (abs(dx) + abs(dy), wtx + dx, wty + dy)
+    if not best:
+        print('no room near there; places with room:', [(x, y) for y in range(0, H - h, 2) for x in range(0, W - w, 2) if free(x, y, w, h)])
+    assert best, 'no room for ' + o.name
+    _, tx, ty = best
+    for j in range(h + 1):
+        for i in range(w + 1): taken.add((tx + i, ty + j))
+    for y in range(o.h):
+        for x in range(o.w):
+            if o.shape[y, x] or o.wipe[y, x]: extra_mask.append((tx * 8 + x, ty * 8 + y))
+            if o.shape[y, x] and o.bits[y, x]: px[tx * 8 + x, ty * 8 + y] = 1; ipx[tx * 8 + x, ty * 8 + y] = 1
+    for col in sorted(set(o.ink2[o.bits == 1].tolist())):       # a region for each ink colour (0 = blue: none needed)
+        if col == 0: continue
+        m = (o.ink2 == col) & (o.bits == 1); ys = [y for y in range(o.h) if m[y].any()]
+        spans = [((int(m[y].nonzero()[0][0]), int(m[y].nonzero()[0][-1])) if m[y].any() else (255, 0)) for y in range(ys[0], ys[-1] + 1)]
+        regions.append((o.name, tx * 8, ty * 8 + ys[0], CYAN_INK(col - 1), spans))
+    for lab in sorted(set(o.label[(o.label > 0) & (o.bits == 0)].tolist())):   # and for each paper colour inside (a yolk)
+        m = (o.label == lab) & (o.bits == 0); ys = [y for y in range(o.h) if m[y].any()]
+        ink = int(o.ink2[mf.mc.grow(m.astype('uint8')) == 1].max()) - 1
+        spans = [((int(m[y].nonzero()[0][0]), int(m[y].nonzero()[0][-1])) if m[y].any() else (255, 0)) for y in range(ys[0], ys[-1] + 1)]
+        regions.append((o.name, tx * 8, ty * 8 + ys[0], (lab - 1) * 8 + ink, spans))
+    print('coloured: %s at pixel %d, %d' % (o.name, tx * 8, ty * 8))
+def runs8(spans):
+    """For j = -7 .. rows - 1: the first and last ink pixel over rows j .. j + 7 (what a colour
+    cell covers when its top line is row j) - the game looks one of these up for each cell row."""
+    out = []
+    for j in range(-7, len(spans)):
+        got = [sp for sp in spans[max(0, j):j + 8] if sp[0] != 255]
+        out.append((min(a for a, b in got), max(b for a, b in got)) if got else (255, 0))
+    return out
+with open(os.path.join(HERE, '..', 'src', 'objects.asm'), 'w') as g:
+    g.write('; GENERATED by tools/make_world.py - the coloured objects\' colours. A region: world x, y of\n; its first row (2 words), the attribute, the entries, then for each run of 8 pixel rows (the\n; first is rows -7 to 0) its first and last ink pixel from x (255: none). The list ends with 0xFFFF.\nobj_tab:\n')
+    for name, x, y, attr, spans in regions:
+        spans = runs8(spans); assert len(spans) < 248
+        g.write('        dw %d,%d                ; %s\n        db 0x%02X,%d\n' % (x, y, name, attr, len(spans)))
+        for k in range(0, len(spans), 8): g.write('        db ' + ','.join('%d,%d' % sp for sp in spans[k:k + 8]) + '\n')
+    g.write('        dw 0xFFFF\n')
 placed = []
 for name, tx, ty in wanted:
     shape = I[name]
@@ -212,6 +268,7 @@ while q:
     if 0 <= y < PH and 0 <= x < PW and not seen[y, x] and not d[y, x]:
         seen[y, x] = True; q.extend(((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)))
 imask = d | ~seen
+for (x, y) in extra_mask: imask[y, x] = True                # (a coloured object hides the cloth under all of it, margin too)
 # cut into tiles: plain ones first (ink only, OR'd onto the cloth), then the
 # masked ones (from TM_FIRST), each with an index into the de-duplicated masks
 def tbytes(get, tx, ty):
