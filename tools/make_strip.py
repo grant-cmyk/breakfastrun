@@ -16,21 +16,23 @@ NOS, SMALL = ns['NOS'], ns['SMALL']
 # the fixed picture: the strip with empty slots and an empty message box
 bits, attr = ns['load']()
 b, a = ns['strip'](())
-b[169:183, 33:47] = 0                                 # slot 1 empty: the game draws the icon
-b[160:192, 88:192] = 0                                # no bubble: the game draws it while the
-b[160:192, 0:32] = 0                                  # crew chief talks (Grant)
+# Layout G3 (Grant, 14 Nov 2026): the strip's fixed picture is your face in the scoreboard's red
+# block (columns 1-9, rows 20-21: the face at columns 1-2, your place drawn large beside it by the
+# game), a white strip under it (row 22: PRESS Q / LAP n/3 / FINAL LAP / FINISHED!), the time's
+# row (23), and the crew chief at columns 21-22, rows 21-22 on blue. No inventory slots (the NOS
+# is shown in the window), no bubble (the game draws it while the chief talks).
+b[160:192, 0:192] = 0
 for r in range(20, 24):
-    for c in list(range(0, 4)) + list(range(11, 24)): a[r * 32 + c] = 0x30
-# the layout review (Grant, 10 Nov 2026: "the faces at the bottom are too blocky"): the two
-# faces at their own 16 x 16 size, each in a 2 x 2 cell panel (rows 21-22): you in columns
-# 1-2 on your red, the crew chief in columns 21-22 on blue
+    for c in range(24): a[r * 32 + c] = 0x30
 YOU, CREW = ns['YOU'], ns['CREW']
 for j in range(16):
     for i in range(16):
-        b[168 + j, 8 + i] = YOU[j][i] == 'X'
+        b[160 + j, 8 + i] = YOU[j][i] == 'X'
         b[168 + j, 168 + i] = CREW[j][i] == 'X'
+for c in range(1, 10):
+    a[20 * 32 + c] = a[21 * 32 + c] = 0x57
+    a[22 * 32 + c] = 0x78
 for r in (21, 22):
-    for c in (1, 2): a[r * 32 + c] = 0x57
     for c in (21, 22): a[r * 32 + c] = 0x4F
 # the bubble's tail: a white point in the chief's panel (column 21, rows 172-179). It is
 # drawn over the left of his face, so the game keeps those 8 bytes of the face to put back

@@ -34,7 +34,7 @@ srs_1:
         call nos_place
         ld a,5
         ld (MSG_ST),a           ; no bubble (it goes, if one was up)
-        jp inv_draw
+        ret
 
 msg_say:                        ; A = message: the chief starts talking
         add a,a
@@ -105,7 +105,7 @@ st_sh1:
         jr nz,st_next
         ld a,0x78               ; drawn: white, then the words
         call bb_attr
-        ld a,170                ; (2 lines: rows 170-174 and 176-180)
+        ld a,173                ; (2 lines: rows 173-177 and 179-183)
         ld (MSG_Y),a
         call line_x
         ld a,3
@@ -145,8 +145,9 @@ stt_end:
         ld (MSG_ST),a
         ret
 ; BUBBLE: A = 1 draws, 0 clears the crew chief's speech bubble in char row B
-; (20-22) - its 8 lines. It fills its cells exactly (the layout review, Grant, 10 Nov
-; 2026): columns 11-20, rows 20-22 - the box x 88-167, y 160-183, rounded - so no
+; (20-23) - its 8 lines. It fills its cells exactly (the layout review, Grant, 10 Nov
+; 2026; four rows again with layout G3): columns 11-20, rows 20-23 - the box x 88-167,
+; y 160-191, rounded - so no
 ; white shows round it. Its tail is a white point in the chief's blue panel (column
 ; 21, rows 172-179), over the left of his face: BB_TAIL has those 8 bytes with the
 ; tail, then the 8 without it, to put the face back.
@@ -175,11 +176,11 @@ bb_ln:
         ld a,c
         cp 160
         jr z,bb_lin
-        cp 183
+        cp 191
         jr z,bb_lin
         cp 161
         jr z,bb_crn
-        cp 182
+        cp 190
         jr z,bb_crn
         sub 172                 ; the tail: rows 172-179
         cp 8
@@ -238,10 +239,8 @@ bb_w2:
         djnz bb_ln
         ret
 
-bb_step:                        ; A = 1 draw, 0 clear: B = 20: char rows 20 and 21;
-        bit 1,b                 ; B = 22: row 22 (half the bubble a tick)
-        jp nz,bubble
-        push af
+bb_step:                        ; A = 1 draw, 0 clear: char rows B and B + 1 (half the
+        push af                 ; bubble a tick: rows 20-21, then 22-23)
         push bc
         call bubble
         pop bc
@@ -251,7 +250,7 @@ bb_step:                        ; A = 1 draw, 0 clear: B = 20: char rows 20 and 
 bb_attr:                        ; A = the bubble's colour: columns 11-20, rows 20-22
         ld b,20
         ld c,11
-        ld d,3
+        ld d,4
         ld e,10
         jp set_attrs
 
@@ -616,7 +615,6 @@ nt_3:
         xor 1
         ld (NOS_SHOW),a
         call nos_place
-        call inv_draw
         ld hl,0*256+12          ; the pick-up chirp: 12 frames (L), kind 0 (H)
         ld (snd_fxt),hl
         ld a,M_NOS
@@ -645,7 +643,6 @@ nf_2:
         ld (hl),0
         ld a,BOOST_FR
         ld (BOOST_T),a
-        call inv_draw
         ld hl,BOOST_FR*256+7    ; the border white while it burns (the layout review)
         call flash
         ld hl,1*256+25          ; the rush of the NOS: 25 frames (L), kind 1 (H)

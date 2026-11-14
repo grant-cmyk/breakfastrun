@@ -21,7 +21,7 @@ A_LAMP  equ 0x42                ; bright red on black: a start light, lit
 A_LOFF  equ 0x01                ; blue on black: a start light, not lit yet
 A_LGRN  equ 0x44                ; bright green on black: all three - go
 A_LAP   equ 0x4F                ; bright white on blue
-TOWER_Y equ 5                   ; first row of the race order (RACE above it)
+TOWER_Y equ 10                  ; first row of the race order (RACE above it)
 A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 
 ; ---------------------------------------------------------------------
@@ -141,57 +141,147 @@ cc_col:
         ret
 
 ; ---------------------------------------------------------------------
-; THE MESSAGE BAR
+; print_big: the 0-terminated text at HL in double-size ROM letters
+; (16 x 16, 2 x 2 cells each) at cell row B, column C, cells coloured A
 ; ---------------------------------------------------------------------
-msg_clear:                      ; the message bar: row 1 (row 0 is the track's
-        ld hl,bar_shown         ; name; the play window took the bar's second
-        ld b,7                  ; row - Grant, 14 Nov 2026: "I need to see ahead
-mc_1:                           ; further"). Your place and lap are not on it
-        ld (hl),0               ; now: bar_tick draws them afresh
+print_big:
+        ld (pb_attr),a
+pb_char:
+        ld a,(hl)
+        or a
+        ret z
+        push hl
+        push bc
+        ld l,a                  ; DE = the letter in the ROM font
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld de,0x3C00
+        add hl,de
+        ex de,hl
+        ld a,b                  ; pixel row and x of the top-left
+        add a,a
+        add a,a
+        add a,a
+        ld b,a
+        ld a,c
+        add a,a
+        add a,a
+        add a,a
+        ld c,a
+        ld a,8
+pb_line:
+        push af
+        ld a,(de)               ; double each bit: 8 bits -> 16
+        inc de
+        push de
+        ld e,a
+        ld hl,0
+        ld d,8
+pb_bit:
+        add hl,hl
+        add hl,hl
+        rl e
+        jr nc,pb_b0
+        inc l
+        inc l
+        inc l
+pb_b0:
+        dec d
+        jr nz,pb_bit
+        ex de,hl                ; DE = the doubled row
+        call scr_addr           ; two pixel rows of it
+        ld (hl),d
+        inc l
+        ld (hl),e
+        inc b
+        call scr_addr
+        ld (hl),d
+        inc l
+        ld (hl),e
+        inc b
+        pop de
+        pop af
+        dec a
+        jr nz,pb_line
+        pop bc
+        push bc                 ; colour the 2 x 2 cells
+        ld d,2
+        ld e,2
+        ld a,(pb_attr)
+        call set_attrs
+        pop bc
+        pop hl
+        inc hl
+        inc c
+        inc c
+        jr pb_char
+
+; ---------------------------------------------------------------------
+; THE SCOREBOARD AND THE START LIGHTS (layout G3 - Grant, 14 Nov 2026). The play window
+; has the whole height above the driver strip, so nothing is written above it any more:
+;   bottom left (columns 1-9): your face and your place, large, in one red block (rows
+;     20-21); a white strip under it (row 22) - PRESS Q before the start, then LAP n/3,
+;     FINAL LAP for 3 s, FINISHED! at the flag; the race time under that (row 23): bar_tick;
+;   in the window: three start lights hanging from a rail under its top edge (design L2):
+;     empty white rings, then red, red, red, then all green; gone 1.5 s after green.
+;     Their pixels are drawn into the back buffer every picture while they are up
+;     (lights_draw, racer.asm); their colours are set here when they change.
+; ---------------------------------------------------------------------
+A_CARD  equ 0x78                ; black on bright white
+LT_COL  equ 7                   ; the rail: row 1, columns 7-16; the lamps: rows 2-3,
+                                ; columns 8-9, 11-12, 14-15
+msg_lights:                     ; a new race: everything on the scoreboard afresh,
+        ld hl,bar_shown         ; the lights up and not lit
+        ld b,7
+mc_1:
+        ld (hl),0
         inc hl
         djnz mc_1
-        ld bc,MSG_ROW*256
-        ld de,0x0118
-        call clear_cells
-        ld bc,MSG_ROW*256
-        ld de,0x0118
-        ld a,A_YEL
-        jp set_attrs
-; MSG_AT: the text at HL at row 1, column C, its E cells coloured A
-msg_at:
-        push af
+        ld a,1
+        ld (lt_on),a
+; LIGHTS_ATTR: the lights' colours for start_ph (0 none lit, 1-3 red, 4 all green)
+lights_attr:
+        ld bc,0x0100+LT_COL     ; the rail: black on the window's cyan
+        ld de,0x010A
+        ld a,0x28
+        call set_attrs
+        ld c,LT_COL+1
+        ld l,1                  ; L = lamp 1..3
+la_1:
+        ld a,(start_ph)
+        ld h,0x44               ; all green
+        cp 4
+        jr z,la_2
+        ld h,0x42               ; red, if this lamp's turn has come
+        cp l
+        jr nc,la_2
+        ld h,0x47               ; not lit: a white ring in its black box
+la_2:
+        push hl
         push bc
-        push de
-        ld b,MSG_ROW
-        call print_at
-        pop de
+        ld a,h
+        ld b,2
+        ld de,0x0202
+        call set_attrs
         pop bc
-        pop af
-        ld b,MSG_ROW
-        ld d,1
-        jp set_attrs
-
-msg_lights:                     ; three start lights (not lit), GET READY, PRESS Q
-        call msg_clear
-        ld c,1
-ml_1:
-        push bc
-        ld hl,txt_lamp
-        ld e,1
-        ld a,A_LOFF
-        call msg_at
-        pop bc
+        pop hl
         inc c
         inc c
-        ld a,c
-        cp 7
-        jr nz,ml_1
-        ld hl,txt_ready
-        ld bc,MSG_ROW*256+7
-        call print_at
-        ld hl,txt_pressq
-        ld bc,MSG_ROW*256+17
-        jp print_at
+        inc c
+        inc l
+        ld a,l
+        cp 4
+        jr nz,la_1
+        ret
+lights_off:                     ; the lights go: their cells the window's colours again
+        xor a
+        ld (lt_on),a
+        ld bc,0x0100+LT_COL
+        ld de,0x030A
+        ld a,0x29
+        jp set_attrs
 
 ; START_LIGHTS (once a picture, before the race): Q pressed, the lights come on
 ; one at a time - red, red, red - then all three green, and only then does anyone
@@ -227,71 +317,40 @@ sl_ph:
         ld (start_ph),a
         cp 4
         jr z,sl_green
-        add a,a                 ; light C (1-3): its cell at column 2C - 1
-        dec a
-        ld c,a
-        ld hl,0x3000+6          ; a beep: 6 frames, flips 48 counts apart
+        ld hl,0x3000+6          ; a red light: a beep - 6 frames, flips 48 counts apart
         ld (snd_fxt),hl
-        ld a,A_LAMP
-sl_cell:
-        ld b,MSG_ROW
-        ld de,0x0101
-        jp set_attrs
+        jp lights_attr
 sl_green:
-        ld hl,0x1800+10         ; a higher beep, longer
+        ld hl,0x1800+10         ; green: a higher beep, longer
         ld (snd_fxt),hl
-        ld c,1
-        call sl_g
-        ld c,3
-        call sl_g
-        ld c,5
-        call sl_g
         ld a,1                  ; and away
         ld (race_on),a
-        ret
-sl_g:
-        ld a,A_LGRN
-        jr sl_cell
+        jp lights_attr
 
-msg_go:                         ; GO! beside the green lights (they stay till
-        ld bc,MSG_ROW*256+7     ; the message goes)
-        ld de,0x0111
-        call clear_cells
-        ld hl,txt_go
-        ld c,14
-        ld e,3
-        ld a,A_GO
-        call msg_at
-        ld a,75                 ; 1.5 s
+msg_go:                         ; green: the lights stay 1.5 s more
+        ld a,75
+        ld (lt_t),a
+        ret
+msg_final:                      ; FINAL LAP on the strip for 3 s (bar_tick shows it)
+        ld a,150
         ld (msg_timer),a
         ret
-
-msg_final:
-        call msg_clear
-        ld hl,txt_final
-        ld c,7
-        ld e,10
-        ld a,A_MSG
-        call msg_at
-        ld a,150                ; 3 s
+msg_finished:                   ; at the flag: your place, whole, and FINISHED! on the
+        xor a                   ; strip - drawn here and now, as the pictures stop
         ld (msg_timer),a
-        ret
-
-msg_finished:                   ; FINISHED nTH, which stays
-        call msg_clear
-        ld hl,txt_finished
-        ld c,6
-        ld e,12
-        ld a,A_MSG
-        call msg_at
-        ld a,(position)         ; "1ST" .. "5TH" after it
+        ld a,(position)
         call place_txt
-        ld bc,MSG_ROW*256+15
-        call print_at
-        xor a
-        ld (msg_timer),a
-        ret
-place_txt:                      ; A = a place 1..5 -> HL = its text
+        ld bc,20*256+4
+        ld a,0x57
+        call print_big
+        ld hl,txt_strip+20
+        ld bc,22*256+1
+        jp print_at
+place_txt:                      ; A = a place 1..5 (0 before the race: 1) -> HL = its text
+        or a
+        jr nz,pt_1
+        inc a
+pt_1:
         dec a
         add a,a
         add a,a
@@ -584,9 +643,18 @@ hu_msg:
         xor a
 hu_mt:
         ld (msg_timer),a
-        or a
-        call z,msg_clear
 hu_final:
+        ld a,(lt_t)             ; the lights' last 1.5 s
+        or a
+        jr z,hu_f1
+        ld hl,dt
+        sub (hl)
+        jr nc,hu_lt
+        xor a
+hu_lt:
+        ld (lt_t),a
+        call z,lights_off
+hu_f1:
         ld a,(race_over)
         or a
         jp nz,hud_over
@@ -608,9 +676,7 @@ hu_best:
         call best_panel
 hu_order:
         call strip_triggers     ; what the crew chief says
-        ld a,(race_on)          ; your place, lap and time in the message bar
-        or a
-        call nz,bar_tick
+        call bar_tick           ; the scoreboard: your place, the strip, the time
         ld a,(renders)          ; spread the HUD out: the order on one
         and 3                   ; picture in four, the map on another, the
         jp z,tower_update       ; clock on the other two
@@ -1014,7 +1080,7 @@ tc_row:
 ; puts back the map under the old dots, then draws the new ones.
 ; ---------------------------------------------------------------------
 MAP_X   equ 25*8                ; screen pixel of the map's top-left
-MAP_Y   equ 17*8
+MAP_Y   equ 19                  ; (the map's own picture starts 6 lines down: it shows on lines 25-61)
 map_init:                       ; a new race: the last race's dots off the map (the
         jp map_off              ; map itself is drawn once, by screen_once)
 
@@ -1253,6 +1319,7 @@ tm_d1:
         ret
 ; (the HUD's fixed text is in hudtext.asm, kept at the top of memory)
 txt_digit:    db "0",0
-bar_lap:      db "1/",'0'+LAPS,0  ; the lap: n/3
-txt_blap:     db "LAP",0
+bar_lap:      db " LAP 1/",'0'+LAPS," ",0  ; the strip while racing
+txt_strip:    db " PRESS Q ",0,"FINAL LAP",0,"FINISHED!",0   ; ... and its other three (10 bytes each)
+txt_time:     db "TIME",0
 time_txt:     db "0:00.0",0

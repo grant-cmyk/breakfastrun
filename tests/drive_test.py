@@ -115,13 +115,14 @@ def screen_text(sp, row, col, n):
     return out
 
 def frame_ok(sp):
+    # the slim frame (layout G3): a 2-pixel line, rounded, 3 pixels of table inside it
     bits = screen_bits(sp)
-    t = WY - 7
-    top = bits[t:WY, 5:187].all() and bits[152:159, 5:187].all()     # 7-px bands
-    sides = bits[t + 4:155, 1:8].all() and bits[t + 4:155, 184:191].all()
-    corners = not bits[t, 1:5].any() and not bits[158, 187:191].any() and bits[t, 5] and bits[t + 3, 2]
-    outside = not bits[t - 1, 0:192].any() and not bits[159, 0:192].any() and not bits[t:159, 0].any() and not bits[t:159, 191].any()
-    return bool(top and sides and corners and outside)
+    lines = bits[3, 5:187].all() and bits[4, 4:188].all() and bits[155, 4:188].all() and bits[156, 5:187].all()
+    sides = bits[5:155, 3:5].all() and bits[5:155, 187:189].all()
+    gap = not bits[5:8, 5:187].any() and not bits[152:155, 5:187].any() and not bits[8:152, 5:8].any() and not bits[8:152, 184:187].any()
+    outside = not bits[0:3, 0:192].any() and not bits[3, 0:5].any() and not bits[157:160, 0:192].any() and not bits[5:155, 0:3].any()
+    attrs = all(sp.read8(0x5800 + c) == 0x31 for c in range(24)) and sp.read8(0x5800 + 19 * 32) == 0x31
+    return bool(lines and sides and gap and outside and attrs)
 
 class Racer(Spectrum):
     armed = False                           # stop at copy_done only when asked
@@ -153,6 +154,8 @@ def window_bad(sp):
     bits = screen_bits(sp)[WY:152, 8:184]            # the window: cells 1-22, rows 3-18
     want = world[camy:camy + WH, camx:camx + 176] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + 176])
     mask = np.ones_like(want, dtype=bool)
+    mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
+    mask[139 - WY:151 - WY, 160 - 8:184 - 8] = False  # the NOS canisters in the corner
     for n in range(N):
         c = car(sp, n)
         cx, cy = c['x'] - camx, c['y'] - camy
@@ -175,22 +178,24 @@ with Racer(headless=True) as sp:
     p0 = car(sp, 0); cs0 = [car(sp, i) for i in CPUS]
     print('you', p0); [print('CPU', i, c) for i, c in zip(CPUS, cs0)]
     check(p0['vx'] == 0 and p0['ang'] == 16, 'your car waits on the start line')
-    check(frame_ok(sp), 'a 7-pixel bezel with rounded corners surrounds the play window')
+    check(frame_ok(sp), 'a slim blue frame with rounded corners surrounds the play window')
     logo = [[c == '#' for c in l.strip()] for l in open(os.path.join(ROOT, 'build', 'logo.txt'))]
     sb = screen_bits(sp)
-    check((sb[8:24, 200:256] == np.array(logo)).all(), 'the BREAKFAST RUN logo is at the top of the panel')
-    msg = screen_text(sp, MR, 7, 9) + '/' + screen_text(sp, MR, 17, 7)
+    check((sb[0:16, 200:256] == np.array(logo)).all(), 'the BREAKFAST RUN logo is at the top right')
+    check(not sb[16:24, 200:256].any() and sb[25:62, 200:256].any() and not sb[64:72, 200:256].any(), 'the mini-map is under the logo, a clear row above and below it')
+    msg = screen_text(sp, 22, 1, 9) + '/' + screen_text(sp, 23, 1, 9)
     check(MR != 1 or screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
     print('message bar %r' % msg)
-    check(msg == 'GET READY/PRESS Q', 'before the start: GET READY, PRESS Q in the message bar')
+    check(msg == ' PRESS Q /TIME 0:00', 'before the start the scoreboard says PRESS Q, and TIME 0:00 (%r)' % msg)
     sb = screen_bits(sp)                            # the driver strip under the window
-    check(attr(21, 1) == 0x57 and attr(22, 2) == 0x57 and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
-          and attr(20, 0) == 0x30 and attr(23, 23) == 0x30 and sb[168:184, 8:24].any() and sb[168:184, 168:184].any()
-          and not sb[160:168, 0:32].any() and sb[170:182, 33:47].any() and not sb[170:182, 49:63].any(),
-          'under the window, the driver strip: you (16 x 16) on a 2 x 2 red panel, your NOS in slot 1, the crew chief on a 2 x 2 blue panel')
-    check(all(attr(5 + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
-    place = lambda: next(i + 1 for i in range(5) if attr(5 + 2 * i, 25) == 0x57)
+    check(all(attr(r, c) == 0x57 for r in (20, 21) for c in range(1, 10)) and all(attr(22, c) == 0x78 for c in range(1, 10))
+          and attr(23, 1) == 0x30 and attr(20, 0) == 0x30 and attr(21, 21) == 0x4F and attr(22, 22) == 0x4F
+          and sb[160:176, 8:24].any() and sb[160:176, 32:80].any() and sb[168:184, 168:184].any() and not sb[160:192, 80:88].any(),
+          'under the window: your face and your place, large, in one red block; a white strip; the crew chief on blue')
+    check(sb[140:150, 176:184].any() and attr(17, 22) == 0x29, 'your NOS canister is shown in the window\'s corner, in the window\'s colours')
+    check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
+    place = lambda: next(i + 1 for i in range(5) if attr(TOWER_Y + 2 * i, 25) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
     check(len(CPUS) == 4, 'there are four computer cars')
     check(all(c['vx'] == 0 and c['vy'] == 0 for c in cs0), 'computer cars wait on the grid until you press Q')
@@ -199,8 +204,9 @@ with Racer(headless=True) as sp:
     shot(sp, 'stage3_start.png')
 
     # ---- the start lights: Q, then red, red, red, all green - nobody moves till green ----
-    lamps = lambda: [attr(MR, c) for c in (1, 3, 5)]
-    check(lamps() == [0x01] * 3, 'before Q: the three start lights, not lit (%s)' % lamps())
+    lamps = lambda: [attr(2, c) for c in (8, 11, 14)]
+    check(lamps() == [0x47] * 3 and attr(1, 7) == 0x28 and attr(3, 15) == 0x47 and screen_bits(sp)[10:13, 60:132].all(),
+          'before Q: three start lights hang from a rail in the window, not lit - white rings (%s)' % lamps())
     press(sp, 'Q', True); sp.run(duration=0.3, fast_forward=True)
     l1 = lamps(); x1 = [car(sp, n)['x'] for n in range(N)]
     sp.run(duration=0.8, fast_forward=True); l2 = lamps()
@@ -208,7 +214,7 @@ with Racer(headless=True) as sp:
     x3 = [car(sp, n)['x'] for n in range(N)]; print('  x on red', x1, x3)
     still = x3 == x1 and sp.read8(SYM['race_on']) == 0
     print('start lights after Q:', l1, l2, l3)
-    check(l1 == [0x42, 1, 1] and l2 == [0x42, 0x42, 1] and l3 == [0x42] * 3, 'Q: the lights come on one at a time - red, red, red')
+    check(l1 == [0x42, 0x47, 0x47] and l2 == [0x42, 0x42, 0x47] and l3 == [0x42] * 3, 'Q: the lights come on one at a time - red, red, red')
     check(still, 'holding Q on red: nobody moves')
     tg = go_green(sp)
     check(sp.read8(SYM['race_on']) == 1 and lamps() == [0x44] * 3, 'then all three green: the race is on (%.1f s after Q)' % (1.9 + tg))
@@ -225,19 +231,19 @@ with Racer(headless=True) as sp:
     check(fps >= 13, 'at least 13 pictures a second off the start, five cars bunched (got %.1f)' % fps)
     check(all(car(sp, i)['x'] > CPU0X + 30 for i in CPUS), 'pressing Q started the race: all four computer cars set off')
     sb = screen_bits(sp)
-    check(attr(20, 11) == 0x78 and attr(22, 20) == 0x78 and attr(23, 12) == 0x30 and attr(21, 10) == 0x30
-          and sb[160, 90:166].all() and sb[183, 90:166].all() and sb[170:181, 90:166].any(),
-          'at the green light the crew chief talks: his bubble fills columns 11-20, rows 20-22, words in it')
+    check(attr(20, 11) == 0x78 and attr(23, 20) == 0x78 and attr(21, 10) == 0x30
+          and sb[160, 90:166].all() and sb[191, 90:166].all() and sb[172:184, 90:166].any(),
+          'at the green light the crew chief talks: his bubble fills columns 11-20, rows 20-23, words in it')
+    check(attr(2, 8) == 0x29 and attr(1, 7) == 0x29 and sp.read8(SYM['lt_on']) == 0, 'the start lights have gone, their cells the window\'s colours again')
     check((sb[172:180, 168] == 1).all() and sb[175, 168:172].all(), "the bubble's tail is a point in the chief's panel")
     press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
     cx, cy = pc_['x'] - g(sp, 'camx'), pc_['y'] - g(sp, 'camy')
     check((cx, cy) == (80, WH // 2 - 8), 'camera keeps your car exactly in the middle of the 176 x %d window (%d,%d)' % (WH, cx, cy))
 
     sp.run(duration=0.6, fast_forward=True)
-    bar = screen_text(sp, MR, 9, 3) + '|' + screen_text(sp, MR, 19, 4) + '|' + screen_text(sp, MR, 1, 3) + '|' + screen_text(sp, MR, 13, 3)
-    check(attr(MR, 1) == 0x57 and attr(MR, 3) == 0x57 and attr(MR, 13) == 0x70 and attr(MR, 15) == 0x70,
-          'racing: your place on red and your lap on bright yellow in the message bar')
-    check(re.fullmatch(r'LAP\|0:0\d\|\d(ST|ND|RD|TH)\|1/3', bar) is not None, 'with LAP and the race time beside them (%r)' % bar)
+    bar = screen_text(sp, 22, 1, 9) + '|' + screen_text(sp, 23, 1, 9)
+    check(screen_bits(sp)[160:176, 32:80].any() and attr(20, 4) == 0x57, 'racing: your place, large, in the red block')
+    check(re.fullmatch(r' LAP 1/3 \|TIME 0:0\d', bar) is not None, 'the strip says LAP 1/3, the time runs under it (%r)' % bar)
     check(not screen_bits(sp)[TOWER_Y * 8:TOWER_Y * 8 + 80, 240:248].any(), 'the race order no longer shows a lap digit on each row')
 
     # ---- park your car in the infield and watch the computer race 90 s ----
@@ -301,8 +307,8 @@ with Racer(headless=True) as sp:
     def cellrows(row, col):
         return [sp.read8(0x4000 | ((row & 0x18) << 8) | ((row & 7) << 5) | col | (k << 8)) for k in range(8)]
     flagwant = [0, 0, 0, 0, 0x66, 0x66, 0x18, 0x18, 0x66, 0x66, 0, 0, 0, 0, 0, 0]
-    ok_flags = all(cellrows(5 + 2 * i, 30) + cellrows(6 + 2 * i, 30) == flagwant for i in range(4))
-    gap_ink = [sum(bin(b).count('1') for c in (28, 29) for b in cellrows(5 + 2 * i, c) + cellrows(6 + 2 * i, c)) for i in range(5)]
+    ok_flags = all(cellrows(TOWER_Y + 2 * i, 30) + cellrows(TOWER_Y + 1 + 2 * i, 30) == flagwant for i in range(4))
+    gap_ink = [sum(bin(b).count('1') for c in (28, 29) for b in cellrows(TOWER_Y + 2 * i, c) + cellrows(TOWER_Y + 1 + 2 * i, c)) for i in range(5)]
     check(ok_flags, 'finished cars: a mini chequered flag beside the car')
     check(gap_ink[0] == 0 and all(g > 0 for g in gap_ink[1:4]), 'the race order shows gaps to the leader (ink per place %s: none for the leader)' % gap_ink)
     check(g(sp, 'race_time') > 50 * 85, 'the race clock is running (%.1f s)' % (g(sp, 'race_time') / 50))
@@ -357,7 +363,7 @@ with Racer(headless=True) as sp:
     sp.run(duration=0.3, fast_forward=True)
     flag, pq = screen_text(sp, 10, 4, 15), screen_text(sp, 12, 8, 7)
     print('after crossing the line on lap 3:', repr(flag), repr(pq), 'race_over', sp.read8(SYM['race_over']))
-    check(sp.read8(SYM['race_over']) != 0 and attr(MR, 6) == 0x57 and screen_text(sp, MR, 6, 8) == 'FINISHED', 'crossing the line on the last lap: FINISHED in the message bar')
+    check(sp.read8(SYM['race_over']) != 0 and screen_text(sp, 22, 1, 9) == 'FINISHED!', 'crossing the line on the last lap: FINISHED! on the strip')
     check(flag == 'CHEQUERED FLAG!' and pq == 'PRESS Q', 'every car in: CHEQUERED FLAG! and PRESS Q in the window')
     r1 = g(sp, 'renders'); t1 = g(sp, 'race_time')
     sp.run(duration=0.5, fast_forward=True)
@@ -365,7 +371,7 @@ with Racer(headless=True) as sp:
     hold(sp, ['Q'], 0.3)                           # let go, then press: a new race
     sp.run(duration=1.5, fast_forward=True)
     p5 = car(sp, 0)
-    check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0 and screen_text(sp, MR, 7, 9) == 'GET READY'
+    check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0 and screen_text(sp, 22, 1, 9) == ' PRESS Q '
           and (p5['x'], p5['y']) == (car(sp, 0)['x'], car(sp, 0)['y']), 'Q after the finish starts a new race on the grid')
     sb = screen_bits(sp)
     check(sp.read16(SYM['rec_lap']) == bl and sp.read16(SYM['best_lap']) == 0xFFFF

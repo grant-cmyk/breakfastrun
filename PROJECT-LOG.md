@@ -1214,3 +1214,42 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   TOPMEM 0xFC50 (the copy routine ends at 0xFC42).
 - zxdev lap: 3 frames x 299, 4 x 12 (311 / 5 at 136 high). Main area: about 1.4 KB free
   (code_end 0xBA53). Tests: drift, drive, nos, O, set-up, and the lap's table check: all PASS.
+
+## 2026-11-14 SAST - layout G3 built; coloured objects in the window mocked up
+- Grant, of the full-height build: "that plays well - go"; then "the breakfast run logo should be
+  a row up - so top right".
+- Layout G3 in the game (docs/design/g3_built.png: before the start, two reds, green, racing):
+  the slim blue frame (draw_frame: a 2-pixel rounded line, 3 pixels of table inside it; its cells
+  blue on yellow); the logo at rows 0-1; the mini-map under it on screen lines 25-61 (MAP_Y 19:
+  only its 37 lines in use are drawn) with a clear row above and below; RACE at row 9, the race
+  order rows 10-19 (TOWER_Y 10), the lap record at row 20; bottom left your face and your place,
+  large, in one red block (columns 1-9, rows 20-21; print_big is back, one letter a picture), a
+  white strip (row 22: PRESS Q, LAP n/3, FINAL LAP for 3 s, FINISHED!), TIME m:ss (row 23):
+  bar_tick; the bubble four rows again (20-23), the chief at columns 21-22.
+- The start lights, design L2 (tools/make_lights.py -> src/lights.asm): a rail in the window's
+  row 1 (columns 7-16) and three 2 x 2 cell lamps under it (rows 2-3): white rings, then red
+  discs one at a time, then all green, gone 1.5 s after green (lt_on, lt_t). Their pixels go into
+  the back buffer every picture while they are up (lights_draw), their colours onto the screen
+  when they change (lights_attr / lights_off).
+- NOS: a 7 x 10 canister for each one held, in the window's bottom right corner, in the window's
+  colours, each replacing its byte of the cloth on 10 lines (nos_draw). The inventory slots and
+  inv_draw are gone.
+- The old message bar (msg_clear, msg_at, the row-23 stopgap) is gone.
+- Tests rewritten for the layout (drive_test: frame, logo, map, scoreboard, lights, bubble, NOS,
+  strip texts). All PASS: drive, drift, nos, O, set-up, the lap's table check.
+- zxdev lap: 3 frames x 293, 4 x 19; off the grid 14.0 pictures a second (15.5 before): the
+  lights are drawn with a buf_addr call a line while they are up - first thing for the speed hunt.
+  Main area about 1.1 KB free (code_end 0xBB8C).
+- Grant asked how far the picture scrolls a time: the camera is the car's own position, so it
+  moves by the car's speed x the picture's TV frames - at top speed 1.75 px a frame x 3 = 5 or 6
+  pixels a picture (less when slower; 7 at 4 frames), to the exact pixel, not 1 pixel at a time.
+- Grant: "features that put colour into the gameplay area ... a big mask so at no stage do
+  character rows interfere with areas around them ... big coloured objects - preferably square.
+  Like a box". Mock-up by the second agent (tools/make_colour_objects.py,
+  docs/design/colour_objects.png): the SOLID EDGE rule - an object has a solid blue edge at least
+  8 pixels thick and only cells holding some of its inside take its colour, so the colour's
+  boundary is always under the edge. Checked at all 64 pixel positions for seven objects (cereal
+  box, juice carton, milk carton, jam jar, butter dish, sugar cubes, a two-colour tea tin).
+  Limits found: plain colours only (BRIGHT would brighten the edge's blue), one ink (blue), 8 px
+  of solid blue between two colours, corners rounded by one line only; minimum 17 x 17, 48 up
+  looks best. Cost: 10-35 colour writes a picture for each object in view. Not built.

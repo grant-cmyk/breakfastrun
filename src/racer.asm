@@ -182,6 +182,10 @@ draw_all:
         add ix,de
         pop bc
         djnz draw_all
+        ld a,(lt_on)            ; the start lights, while they are up
+        or a
+        call nz,lights_draw
+        call nos_draw           ; the NOS canisters you hold, in the window's corner
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
         ld a,(FRAMES)
@@ -2203,6 +2207,131 @@ copy_done:
         ret
 
 ; ---------------------------------------------------------------------
+; LIGHTS_DRAW: the start lights into the back buffer (every picture while they are up:
+; the window is copied from the buffer, so anything in it has to be drawn there). The
+; rail fills its cells (row 1, columns 7-16), each lamp its 2 x 2 cells (rows 2-3): a
+; ring if it is not lit, the full lamp if it is. Their colours: lights_attr (hud.asm).
+; Window cell (row r, column c) is buffer row BUF_TOP + 8r - WIN_Y, buffer byte c + 1.
+; ---------------------------------------------------------------------
+lights_draw:
+        ld b,BUF_TOP+8-WIN_Y    ; the rail: 8 lines, all in one character row (INC H)
+        ld c,(LT_COL+1)*8
+        call buf_addr
+        ld de,lt_rail
+        ld c,2                  ; lines 0-1, then 2-4, then 5-7
+        call ld_rail
+        ld c,3
+        call ld_rail
+        ld c,3
+        call ld_rail
+        ld c,1                  ; the lamps: C = lamp 1..3
+ld_lamp:
+        ld de,lt_ring
+        ld a,(start_ph)
+        cp c
+        jr c,ld_l1
+        ld de,lt_lamp           ; lit (or all green)
+ld_l1:
+        ld a,c                  ; its bytes: column 5 + 3C, + 1 for the buffer
+        add a,a
+        add a,c
+        add a,LT_COL-1
+        add a,a
+        add a,a
+        add a,a
+        ld (ld_x+1),a
+        ld b,BUF_TOP+16-WIN_Y
+ld_row:
+        push bc
+ld_x:
+        ld c,0                  ; (patched: the lamp's x)
+        call buf_addr
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc l
+        ld a,(de)
+        ld (hl),a
+        inc de
+        pop bc
+        inc b
+        ld a,b
+        cp BUF_TOP+32-WIN_Y
+        jr nz,ld_row
+        inc c
+        ld a,c
+        cp 4
+        jr nz,ld_lamp
+        ret
+ld_rail:                        ; C lines of the 10 bytes at DE, from HL; DE on to the next kind
+        push bc
+        push de
+        push hl
+        ld b,10
+ld_r1:
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc l
+        djnz ld_r1
+        pop hl
+        pop de
+        pop bc
+        inc h
+        dec c
+        jr nz,ld_rail
+        ld a,e
+        add a,10
+        ld e,a
+        ret nc
+        inc d
+        ret
+
+; NOS_DRAW: a small canister for each one you hold (INV), in the window's bottom right
+; corner, in the window's own colours: each replaces its byte of the cloth on 10 lines,
+; so it stands clear of what is behind it (layout G3; the inventory slots have gone).
+; Window lines 132-135 are buffer rows 140-143 (one character row), 136-141 rows 144-149.
+NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 1*32 + 23     ; buffer row 140 (third 2, char row 1, line 4), byte 23
+NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 2*32 + 23     ; buffer row 144 (third 2, char row 2, line 0)
+nos_draw:
+        ld hl,INV
+        ld c,0                  ; C = slot 0..2: bytes 23, 22, 21
+nd_1:
+        ld a,(hl)
+        or a
+        jr z,nd_next
+        push hl
+        ld de,nos_can
+        ld hl,NOS_BA
+        ld a,l
+        sub c
+        ld l,a
+        ld b,4
+        call nd_col
+        ld hl,NOS_BB
+        ld a,l
+        sub c
+        ld l,a
+        ld b,6
+        call nd_col
+        pop hl
+nd_next:
+        inc hl
+        inc c
+        ld a,c
+        cp 3
+        jr nz,nd_1
+        ret
+nd_col:
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        djnz nd_col
+        ret
+        include "lights.asm"    ; the lamps, the rail, the canister
+
+; ---------------------------------------------------------------------
 ; SOUND (the beeper): played in the time the loop would otherwise spend
 ; waiting for its next picture, so it costs no frames (the zxspectrum
 ; skill's sound notes, from Traverse USA). Each piece is short - at most
@@ -2984,6 +3113,8 @@ snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
 snd_fxk:  db 0                  ; ... which: 0 NOS picked up, 1 NOS fired, 2 up: a beep
 snd_port: db 6                  ; what port 254 last had: border yellow
 flash_t:  db 0                  ; a border flash: TV frames left
+lt_on:    db 0                  ; 1: the start lights are up
+lt_t:     db 0                  ; TV frames they stay after green
 ; the driver strip's variables (strip.asm), and the engine's - kept together, in this order:
 ; strip_reset clears the first 17
 MSG_P:    dw 0                  ; the next letter
@@ -3355,6 +3486,10 @@ screen_once:
         ld bc,767
         ld (hl),0x30
         ldir
+        ld bc,0                 ; ...the window's slim frame blue on the table (its
+        ld de,0x1418            ; cells: rows 0-19, columns 0-23)...
+        ld a,0x31
+        call set_attrs
         ld hl,0x5800+(WIN_Y/8)*32+WIN_COL   ; ...and the window blue ink on cyan paper
                                     ; (Grant, 10 Nov 2026: no white - easier on
                                     ; the eyes, and less flicker)
@@ -3375,7 +3510,7 @@ win_attr:
         djnz win_attr
 
         call draw_frame
-        ld b,1                  ; logo, 7 x 2 cells at the top of the panel
+        ld b,0                  ; logo, 7 x 2 cells at the top right
         ld c,25
         call draw_logo
         ld hl,txt_race
@@ -3416,8 +3551,8 @@ so_attr:
         ex de,hl
         pop bc
         djnz so_attr
-        ld de,minimap_src       ; the mini-map, black on yellow (Grant: no white
-        ld b,MAP_Y              ; box); the cars' dots are XORed on and off it
+        ld de,minimap_src+6*7   ; the mini-map, black on yellow, under the logo (its lines
+        ld b,MAP_Y+6            ; 6-42: screen lines 25-61); the cars' dots are XORed on it
 so_map:
         ld c,MAP_X
         call scr_addr
@@ -3429,7 +3564,7 @@ so_map:
         inc a
         ld (so_y),a
         ld b,a
-        cp MAP_Y+48
+        cp MAP_Y+43
         jr nz,so_map
         ld hl,shown_dot         ; no dots on it yet
         ld b,2*NCARS
@@ -3438,71 +3573,52 @@ so_d:
         inc hl
         djnz so_d
         ret
-so_y:   db MAP_Y
+so_y:   db MAP_Y+6
 
-; DRAW_FRAME: an arcade bezel round the window - a 7-pixel black band, its
-; outer corners rounded, with no line of its own against the picture.
-; Drawn once; the scroller never writes outside the window, so it stays.
-; Each row: the left edge byte (column WIN_COL-1), then 22 solid bytes on the
-; top and bottom bands only, then the right edge byte (column WIN_COL+WIN_W).
+; DRAW_FRAME: the window's slim frame (layout G3 - Grant, 14 Nov 2026: "what i like in E is
+; the border changes around the gameplay area"): a 2-pixel line with rounded corners, 3
+; pixels of table between it and the picture. Lines 3-4 and 155-156, columns 3-4 and
+; 187-188 of the screen. Drawn once; the scroller never writes outside the window.
 draw_frame:
-        ld b,WIN_Y-7
-df_row:
-        ld c,(WIN_COL-1)*8
+        ld b,3
+        ld de,0x07E0
+        call df_h
+        ld b,4
+        ld de,0x0FF0
+        call df_h
+        ld b,155
+        ld de,0x0FF0
+        call df_h
+        ld b,156
+        ld de,0x07E0
+        call df_h
+        ld b,5
+df_v:
+        ld c,0
         call scr_addr
-        ld de,0xFE7F            ; D right edge, E left edge: 7 pixels each
-        ld a,b
-        sub WIN_Y-7             ; rows 0..3 of the top band are rounded
-        cp 4
-        jr c,df_round
-        ld a,WIN_Y+WIN_H+6
-        sub b                   ; and rows 0..3 up from the bottom
-        cp 4
-        jr nc,df_put
-df_round:
-        push hl
-        add a,a
-        ld hl,df_corn
-        add a,l
-        ld l,a
-        jr nc,df_r1
-        inc h
-df_r1:
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        pop hl
-df_put:
-        ld (hl),e
-        ld a,b
-        cp WIN_Y
-        jr c,df_fill
-        cp WIN_Y+WIN_H
-        jr c,df_skip
-df_fill:                        ; top and bottom bands: solid across the window
-        inc l
-        ld a,WIN_W
-df_f1:
-        ld (hl),0xFF
-        inc l
-        dec a
-        jr nz,df_f1
-        jr df_right
-df_skip:                        ; beside the window: jump over it
+        ld (hl),0x18
         ld a,l
-        add a,WIN_W+1
+        add a,23
         ld l,a
-df_right:
-        ld (hl),d
+        ld (hl),0x18
         inc b
         ld a,b
-        cp WIN_Y+WIN_H+7
-        jr nz,df_row
+        cp 155
+        jr nz,df_v
         ret
-df_corn:                        ; left, right edge bytes for the 4 rounded rows
-        db 0x07,0xE0, 0x1F,0xF8, 0x3F,0xFC, 0x3F,0xFC
-
-
+df_h:                           ; line B: D at column 0, solid across, E at column 23
+        ld c,0
+        call scr_addr
+        ld (hl),d
+        ld a,22
+df_h1:
+        inc l
+        ld (hl),0xFF
+        dec a
+        jr nz,df_h1
+        inc l
+        ld (hl),e
+        ret
 ; draw_logo: the 56 x 24 logo at cell row B, column C, with its colours
 draw_logo:
         ld a,b
@@ -3534,7 +3650,7 @@ dl_byte:
         dec a
         jr nz,dl_row
         ld hl,logo_attr         ; 2 rows of 7 attributes
-        ld de,0x5800+1*32+25
+        ld de,0x5800+0*32+25
         ld b,2
 dl_attr:
         push bc
