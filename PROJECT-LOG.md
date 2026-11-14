@@ -1362,3 +1362,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   white ("happy with the plate"); "coffee should be black in a mug/cup" (drawn: white mug, no
   blue, black coffee); "remember these shapes should not spill into the road area". Sheet:
   docs/design/egg_bacon_plate.png (tools/make_fryup.py). Nothing built into the game yet.
+- Mug: Grant asked for a black line drawing on cyan with the coffee fuller, then "a semi 3d
+  effect ... more of a cup feeling than just a circle". Three drawn (tools/make_fryup.py:
+  line_mug, mug3d, mug3d(saucer)); he sent back the picture of the side-view mug ON A SAUCER
+  (66 x 52) with no words - read as his pick (my reading; he had been "leaning to" the
+  straight-down one a minute before he saw it).
