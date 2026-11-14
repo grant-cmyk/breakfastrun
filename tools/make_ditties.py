@@ -31,10 +31,11 @@ gets only crumbs, all inside the 50 Hz interrupt routine:
 
 So a note cannot be held. What fits is a short burst of flips at the start of
 a frame. One flip-to-flip gap (a half-period) is 1,750,000 / frequency
-T-states, so only HIGH notes fit: C6 (1,047 Hz) is 836 T a half-period, four
-of them is already 3,344 T. Below about C6 there is no room for two whole
-cycles, and the note stops having a pitch. The ditties therefore live in a
-music-box register, C6 to about E7.
+T-states, so only HIGH notes fit: C7 (2,093 Hz) is 836 T a half-period, and
+the four of them that make two whole cycles are already 3,344 T. Below about
+B6 (1,976 Hz) there is room for one cycle only, and one cycle is a click, not
+a note. The ditties therefore live in a music-box register, B6 to about D8
+(2-4.7 kHz): every tune is moved ("transpose") so its lowest note is B6.
 
 THE PLAYER THIS TOOL SIMULATES (T-state exact)
 ----------------------------------------------
@@ -50,8 +51,8 @@ something to play it runs this loop, D = flips, E = the note's period byte:
           jr nz,pip         ; 12 T
                             ; = 33 + 13 x E  T-states from flip to flip
 
-so every pitch is rounded to the nearest 13 T (at worst about 1% off at the
-top of the range - a sixth of a semitone; the tool prints the worst case).
+so every pitch is rounded to the nearest 13 T (at worst about 1.7% off at the
+top of the range - a quarter of a semitone; the tool prints the worst case).
 The burst's cost is flips x half-period, and that is what the cost table adds
 up. Flip times are computed in T-states at 3.5 MHz, the 0/1 speaker signal is
 built from them at 4 x 44.1 kHz with exact edge positions, then band-limited
@@ -69,13 +70,15 @@ THREE WAYS TO PLAY A NOTE
          box or a plucked string. Costs about twice the pips. (This is the
          "better trick within the budget": a 1-bit speaker has no volume, but
          fewer cycles per frame sounds quieter, so a fade can be faked.)
-  buzz   on EVERY frame of the note, two cycles (one cycle for the low notes,
-         where two would not fit the budget): a held, buzzy note with a strong
-         50 Hz rattle under it.
+  buzz   two cycles on EVERY frame for the first half of the note (8 frames
+         at most - any longer and the average cost breaks the budget): a
+         short held, buzzy note with a strong 50 Hz rattle in it.
 
-Percussion is nearly free: "o" is a single flip (a soft click/thud, ~40 T),
-"x" is two flips 111 T apart (a thin tick, ~150 T). No noise is used in the
-music: hiss is kept for the crash, so the tune never sounds like the skid.
+Percussion is cheap: "o" is two flips 501 T apart (a soft thud, ~540 T), "x"
+is two flips 111 T apart (a thin tick, ~150 T). On a frame where a note also
+starts there is no room for the thud, so it shrinks to the tick. No noise is
+used in the music: hiss is kept for the crash and the skid, so the tune never
+sounds like them.
 
 The in-game demo mixes event sounds over the favourite ditty. One speaker:
 on a frame where an event is sounding, the music's burst is simply skipped
@@ -106,10 +109,11 @@ SEQ_T = 120                 # the note timer etc, every frame (estimate)
 LOOP_BASE_T = 33            # the pip loop: 33 + 13 x E from flip to flip
 LOOP_STEP_T = 13
 
-PIP_T = 3_500               # a pip: as many whole cycles as fit in this
-BUZZ_T = 1_700              # a buzz frame: two cycles if they fit in this
+PIP_T = 3_600               # a pip: as many whole cycles as fit in this
+BUZZ_GATE = 8               # a buzz note sounds for at most this many frames
 BURST_LIMIT_T = 4_000       # the brief's limit for one burst
-THUD_T = 40                 # a single flip
+LAST_T = 40                 # after a burst's last flip: just the way out
+THUD_GAP_T = LOOP_BASE_T + LOOP_STEP_T * 36     # 501 T: the thud's width
 TICK_GAP_T = LOOP_BASE_T + LOOP_STEP_T * 6      # 111 T: the thin tick's width
 
 NOTE_NAMES = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
@@ -164,7 +168,7 @@ def march():
         f"C7:{q} r:{e} G6:{e} C7:{q} r:{q}",
     ]
     return dict(key="ditty1", name="Toast Rack March", mood="jaunty little march",
-                beat=24, beats_per_bar=4, transpose=-7, bars=bars,
+                beat=24, beats_per_bar=4, transpose=4, bars=bars,
                 drums=["o.x.o.x."] * 8)
 
 
@@ -181,7 +185,7 @@ def swing():
         f"G6:{q} r:{L} D7:{S} G7:{q} r:{q}",
     ]
     return dict(key="ditty2", name="Marmalade Swing", mood="bouncy, lazy swing",
-                beat=21, beats_per_bar=4, transpose=-7, bars=bars,
+                beat=21, beats_per_bar=4, transpose=4, bars=bars,
                 drums=["o..x..o..x.."] * 8)
 
 
@@ -198,7 +202,7 @@ def stopstart():
         f"r:{q} D7:{s} D7:{s} r:{e} C7:{q} r:{q}",
     ]
     return dict(key="ditty3", name="Spilt Milk", mood="cheeky, stop-start, tiptoe",
-                beat=20, beats_per_bar=4, transpose=0, bars=bars,
+                beat=20, beats_per_bar=4, transpose=7, bars=bars,
                 drums=["o.....x."] * 8)
 
 
@@ -215,7 +219,7 @@ def musicbox():
         f"C7:{h} r:{q}",
     ]
     return dict(key="ditty4", name="Sunny Side Up", mood="calm morning music box (a waltz)",
-                beat=30, beats_per_bar=3, transpose=0, bars=bars, drums=None)
+                beat=30, beats_per_bar=3, transpose=7, bars=bars, drums=None)
 
 
 DITTIES = [march(), swing(), stopstart(), musicbox()]
@@ -280,10 +284,8 @@ def note_bursts(style, midi, length):
                 2: max(2, (full // 4) & ~1),
                 3: 2}
     elif style == "buzz":
-        flips = 4 if 4 * hp <= BUZZ_T else 2
-        gate = max(2, length - max(1, length // 4))     # a gap before the next
-        plan = {f: flips for f in range(gate)}
-        plan[0] = max(flips, min(full, 4))              # a firmer first frame
+        gate = min(BUZZ_GATE, max(2, length // 2))
+        plan = {f: 4 for f in range(gate)}
     else:
         raise ValueError(style)
     return {f: n for f, n in plan.items() if f < length}
@@ -307,10 +309,11 @@ def music_frames(ditty, style, loops=LOOPS):
         for t, ch in drums.items():
             lst = frames.setdefault(base + t, [])
             spent = sum(sum(b) for b in lst)
-            if ch == "x" and spent + TICK_GAP_T + THUD_T <= BURST_LIMIT_T - SEQ_T:
-                lst.append([TICK_GAP_T, THUD_T])
-            else:
-                lst.append([THUD_T])
+            room = BURST_LIMIT_T - SEQ_T - spent - LAST_T
+            if ch == "o" and THUD_GAP_T <= room:
+                lst.append([THUD_GAP_T, LAST_T])
+            elif TICK_GAP_T <= room:
+                lst.append([TICK_GAP_T, LAST_T])
     return frames, starts
 
 
