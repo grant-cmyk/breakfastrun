@@ -25,12 +25,10 @@ BUF_HI  equ 0xC0        ; (so the next pixel row down is INC H, and a row
                         ; copies to the screen as one block). Window pixel
                         ; (0,0) is buffer row 16, byte 2; the rows and bytes
                         ; around it are margins for cars half out of view.
-BUFC    equ BUF+0x1260  ; race-order variables, in the buffer's unused bottom rows
+BUFC    equ BUF+0x1280  ; race-order variables, in the buffer's unused bottom rows
         ; (defined up here: code before hud.asm uses equs built on it, and pasmo
         ; would give that code a stale first-pass value)
-cloth_pat equ BUFC+96    ; 4 kinds of dotted cloth line, 8 bytes each (32-aligned)
-snd_rate equ BUFC+149   ; engine in the interrupt: flips per 256 frames (0 quiet)
-snd_acc equ BUFC+150    ; ... its running count
+cloth_pat equ BUFC+64    ; 4 kinds of dotted cloth line, 8 bytes each (32-aligned)
 TAB_HI  equ 0xD8        ; shift tables: 16 pages 0xD8..0xE7
 PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
 NCARS   equ 5           ; you + 4 computer cars
@@ -38,17 +36,17 @@ LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
-        include "options.asm"   ; OPT_TALL
-WIN_Y   equ 24-8*OPT_TALL       ; the window: 128 high from pixel row 24 (Grant, 14 Nov 2026:
-                                ; "I need to see ahead further"), or with OPT_TALL 136 from 16,
-WIN_W   equ 22                  ; the message bar then on row 0 in place of the track's name
-WIN_H   equ 128+8*OPT_TALL
-MSG_ROW equ 1-OPT_TALL
-BUF_TOP equ 16-8*OPT_TALL       ; the window's first line in the back buffer: row 16, or row 8
-                                ; for the taller window - the map's tiles are drawn up to 8
-                                ; lines past the window's last line, and buffer row 152 on
-                                ; holds tables (the taller window from row 16 drew tiles over
-                                ; them: "the road shape has broken", Grant, 14 Nov 2026)
+        include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
+WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
+WIN_W   equ 22                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
+WIN_H   equ 144                 ; "take the very top row of the display as well"; it was 120
+                                ; high on 9 Nov, 128 and 136 earlier on 14 Nov)
+MSG_ROW equ 23                  ; the message bar: the bottom row, until the new layout is built
+BUF_TOP equ 8                   ; the window's first line in the back buffer. The map's tiles
+                                ; are drawn up to 8 lines past its last line: buffer rows
+                                ; 152-159 are left free for that, and the tables kept in the
+                                ; buffer start at row 160 (a taller window once drew tiles
+                                ; over them: "the road shape has broken", Grant, 14 Nov 2026)
 BAND_Y  equ (WIN_Y+WIN_H)/8+1    ; the text rows under the window: LAP, TIME, BEST
 FRAMES  equ 23672       ; ROM counter, +1 every TV frame (1/50 s)
 
@@ -384,7 +382,7 @@ ph_nl:
 ph_nr:
         ld a,(ix+C_KIND)        ; you: no push here (the grip model has its own)
         or a
-        jp z,ph_push_set
+        jp z,ph_snap
         push de
         ld a,(ix+C_ANG)         ; BC, DE = push for the way the car faces
         call heading_push
@@ -567,6 +565,32 @@ ph_yset:
         ld (ix+C_VY+1),a
 ph_yok:
         ret
+
+; PH_SNAP (you): the car can point 64 ways but has 16 pictures, so between pictures it
+; ran up to 11 degrees off the way its picture points - which looks like sliding to one
+; side for ever (Grant, 14 Nov 2026: "the car drift is still there ... once the car is
+; facing a direction it should stay true to the direction it is facing"). So when you let
+; go of the steering, the heading carries on the way you were turning, a step a frame, to
+; the next heading that has a picture, and stops there: the car goes where it points.
+ph_snap:
+        ld a,e
+        and CT_L+CT_R
+        jr z,ph_sn1
+        rra                     ; steering: remember which way (left: -1, right: +1)
+        sbc a,a
+        or 1
+        ld (ph_dir),a
+        jp ph_push_set
+ph_sn1:
+        ld a,(ix+C_ANG)
+        ld d,a
+        and 3
+        jp z,ph_push_set        ; on a pictured heading already
+        ld a,(ph_dir)
+        add a,d
+        and 63
+        ld (ix+C_ANG),a
+        jp ph_push_set
 
 ; ---------------------------------------------------------------------
 ; SKID (IX = car; DE, BC = this frame's push): friction takes 1/8 of the speed
@@ -2948,6 +2972,7 @@ pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
 pace_hold: db 0
 pace_skip: db 0          ; 1: this picture does not set the pace (GO's)
 ph_steps: db 1
+ph_dir:   db 1                  ; the way you last steered: 1 right, 0xFF left
 oc_x:     dw 0                  ; o_check: car centre - 4, and its distances
 oc_y:     dw 0
 oc_dx:    dw 0
@@ -2959,6 +2984,27 @@ snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
 snd_fxk:  db 0                  ; ... which: 0 NOS picked up, 1 NOS fired, 2 up: a beep
 snd_port: db 6                  ; what port 254 last had: border yellow
 flash_t:  db 0                  ; a border flash: TV frames left
+; the driver strip's variables (strip.asm), and the engine's - kept together, in this order:
+; strip_reset clears the first 17
+MSG_P:    dw 0                  ; the next letter
+MSG_ST:   db 0                  ; 0 quiet (no bubble), 1-2 the bubble appears, 3 typing,
+                                ; 4 shown (MSG_T), 5-6 the bubble goes
+MSG_Y:    db 0                  ; pixel row of the line being typed
+MSG_X:    db 0                  ; pixel x of the next letter
+WAVE_T:   db 0                  ; wave updates of talking left
+COOL:     db 0                  ; pictures before a nag can follow another
+TRG_POS:  db 0                  ; your place, as last seen
+TRG_BS:   db 0                  ; best_seq, as last seen
+TRG_LAP:  db 0                  ; your lap, as last seen
+HIT_O:    db 0                  ; you hit an O (set in tick)
+INV:      db 0,0,0              ; the inventory: 3 slots, 0 empty, 1 NOS
+INV_SH:   db 0,0,0              ; ... as shown
+NOS_SHOW: db 0                  ; 0: canister A on the track, 1: B
+BOOST_T:  db 0                  ; TV frames of boost left
+SPACE_UP: db 0                  ; SPACE was up (so a press is new)
+MSG_T:    db 0                  ; strip ticks the message stays up once typed
+snd_rate: db 0                  ; engine in the interrupt: flips per 256 frames (0 quiet)
+snd_acc:  db 0                  ; ... its running count
 ai_s:     db 0
 ph_cnt:   db 0
 ph_px:    dw 0
@@ -3146,6 +3192,8 @@ gd_2:
         include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
         include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
         include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
+        include "rowidx.asm"    ; the map: each tile row's list
+        include "omap.asm"      ; the cereal O's: one bit a tile
         include "faces.asm"     ; the drivers' faces for the race order
         if OPT_TALL
         include "hudtext_gfx.asm"
@@ -3252,24 +3300,27 @@ start_once:                     ; (start, from the start-up area)
         ldir
         ; and into the buffer's unused bottom rows: the blocks sit back to back,
         ; so HL runs on from one into the next (checked at the end)
+        ld de,BUFA
+        ld bc,bufa_end-bufa_src
+        call so_blk
         ld de,BUFB
         ld bc,bufb_end-bufb_src
-        ldir
+        call so_blk
         ld de,BUFD
         ld bc,bufd_end-bufd_src
-        ldir
+        call so_blk
         ld de,BUFF
         ld bc,buff_end-buff_src
-        ldir
+        call so_blk
         ld de,BUFH
         ld bc,bufh_end-bufh_src
-        ldir
+        call so_blk
         ld de,BUFG
         ld bc,bufg_end-bufg_src
-        ldir
+        call so_blk
         ld de,BUFE
         ld bc,bufe_end-bufe_src
-        ldir
+        call so_blk
         call make_tables
         call make_copier        ; the program writes its own copy routine
         call screen_once        ; everything on the screen that never changes
@@ -3277,6 +3328,13 @@ start_once:                     ; (start, from the start-up area)
         ld (snd_rate),a
         call im2_on
         jp new_race
+
+so_blk:                         ; LDIR, unless there is nothing to copy (BC = 0 would copy 64K)
+        ld a,b
+        or c
+        ret z
+        ldir
+        ret
 
 ; ---------------------------------------------------------------------
 ; SCREEN_ONCE: everything on the screen that never changes - the colours, the
@@ -3320,12 +3378,6 @@ win_attr:
         ld b,1                  ; logo, 7 x 2 cells at the top of the panel
         ld c,25
         call draw_logo
-        if 1-OPT_TALL
-        ld hl,txt_track         ; the track's name, along the top
-        ld b,0
-        ld c,1
-        call print_at
-        endif
         ld hl,txt_race
         ld b,TOWER_Y-1
         ld c,25
@@ -3497,6 +3549,7 @@ dl_attr:
         ret
 
         include "strip_img.asm" ; the driver strip's fixed picture and colours
+        include "logo.asm"      ; the logo (drawn once, from here)
         include "minimap.asm"   ; the mini-map's picture (drawn once, below)
 
 ; ---------------------------------------------------------------------
@@ -3713,10 +3766,10 @@ cars_init_src_end:
 high_end:
 ; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn
 ; or shown: cars reach row 151 at most), copied there by start too
-bufa_src:                       ; (empty: the faces are in the program now - a block's last
-bufa_end:                       ; 6 bytes are not safe, and the faces need all 160)
-bufb_src:
-        include "logo.asm"
+bufa_src:
+        include "strip_a.asm"   ; messages
+bufa_end:
+bufb_src:                       ; (free: the logo is drawn once, straight from the start-up area)
 bufb_end:
 bufd_src:
         include "thrust.asm"    ; the push for each heading
@@ -3732,29 +3785,28 @@ bufg_src:
         include "strip_g.asm"
 bufg_end:
 bufe_src:
-        include "rowidx.asm"    ; the map: each tile row's list
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ 0xFA40+0xF0*OPT_TALL  ; the copy routine ends at 0xFA02 (128 lines of 36 bytes) or 0xFB22 (136)
-BUFA      equ BUF+0x1060        ; buffer row 152 (third 2, char row 3), 160 bytes
-BUFB      equ BUF+0x1160        ; the same, the next pixel line down
-BUFD      equ BUF+0x1360        ; constant tables
-BUFG      equ BUF+0x1660        ; messages
-BUFF      equ BUF+0x1560        ; the strip's letters, NOS icon, messages
-BUFH      equ BUF+0x1760        ; more messages
+TOPMEM      equ 0xFC50            ; the copy routine ends at 0xFC42 (144 lines of 36 bytes)
+BUFA      equ BUF+0x1080        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+BUFB      equ BUF+0x1180        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+BUFD      equ BUF+0x1380        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+BUFG      equ BUF+0x1680        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+BUFF      equ BUF+0x1580        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+BUFH      equ BUF+0x1780        ; a table strip: 128 bytes from buffer row 160 (122 safe)
 LFONT     equ BUFF + lfont_src - buff_src
 NOS_ICON  equ BUFF + nos_icon_src - buff_src
 MSG_INDEX equ BUFF + msg_index_src - buff_src
 BB_TAIL   equ BUFG + bb_tail_src - bufg_src
-BUFE      equ BUF+0x1460        ; the map's row index
-row_index equ BUFE + row_index_src - bufe_src
+BUFE      equ BUF+0x1480        ; a table strip: 128 bytes from buffer row 160 (122 safe)
+row_index equ row_index_src         ; (in the program: the strips are 128 bytes now)
 wp_tab    equ waypoints             ; (in the program: 46 of them outgrew BUFG)
 thrust_tab equ BUFD + thrust_tab_src - bufd_src
 ai_styles equ BUFD + ai_styles_src - bufd_src
 rev4      equ BUFD + rev4_src - bufd_src
-logo_bits equ BUFB + logo_bits_src - bufb_src
-logo_attr equ BUFB + logo_attr_src - bufb_src
+logo_bits equ logo_bits_src
+logo_attr equ logo_attr_src
 txt_race  equ TOPMEM + txt_race_src - high_src
 txt_ready equ TOPMEM + txt_ready_src - high_src
 txt_pressq equ TOPMEM + txt_pressq_src - high_src
@@ -3812,15 +3864,15 @@ tdraw_table equ tdraw_table_src
         endif
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
-omap      equ TOPMEM + omap_src - high_src
+omap      equ omap_src
 cars_init equ TOPMEM + cars_init_src - high_src
 faces     equ faces_src
 
         if WIN_W - 22
         .error make_copier is written for a 22-byte window row
         endif
-        if BUF_TOP + WIN_H + 8 > 152
-        .error the tiles under the window's last line run into the blocks kept from buffer row 152
+        if BUF_TOP + WIN_H + 8 > 160
+        .error the tiles under the window's last line run into the tables kept from buffer row 160
         endif
         if MAPW - 72
         .error surface assumes the map is 72 tiles (9 bytes of bits) wide
@@ -3834,8 +3886,8 @@ faces     equ faces_src
         if TOPMEM + high_end - high_src > 0xFFF4
         .error the top-of-memory data runs into the interrupt jump at 0xFFF4
         endif
-        if (bufa_end - bufa_src) / 155 + (bufb_end - bufb_src) / 155 + (bufd_end - bufd_src) / 155 + (bufg_end - bufg_src) / 155 + (bufe_end - bufe_src) / 155 + (buff_end - buff_src) / 155 + (bufh_end - bufh_src) / 155
-        .error a block for the buffer's bottom rows is over 154 bytes (its last 6 are where the interrupt's pushes can land)
+        if (bufa_end - bufa_src) / 123 + (bufb_end - bufb_src) / 123 + (bufd_end - bufd_src) / 123 + (bufg_end - bufg_src) / 123 + (bufe_end - bufe_src) / 123 + (buff_end - buff_src) / 123 + (bufh_end - bufh_src) / 123
+        .error a block for the buffer's bottom rows is over 122 bytes (128, less the last 6, where the interrupt's pushes can land)
         endif
         if (bufa_src - high_end) + (bufb_src - bufa_end) + (bufd_src - bufb_end) + (buff_src - bufd_end) + (bufh_src - buff_end) + (bufg_src - bufh_end) + (bufe_src - bufg_end)
         .error start_once copies the blocks back to back: keep them in this order

@@ -1,26 +1,28 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-14 07:31 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-14 07:55 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
-**Status:** Track 1, BREAKFAST AT TIFFANY'S. DECIDED 14 Nov: the SMALL 16 x 16 cars, the window
-176 x 136 (both are `bash build.sh`'s defaults; build/racer.tap). In that build the message bar is
-a stopgap on row 0 (place, lap, time; the old start lights). Your car has the Skid Lab grip model
-(the slide ends about 0.3 s after you stop steering) and a set-up (GRIP, SPEED, ACCEL; keys 1 2 3
-before the start). NOS, lap record, crew chief's radio, border flashes as before.
+**Status:** Track 1, BREAKFAST AT TIFFANY'S. The SMALL 16 x 16 cars; the window 176 x 144 (rows
+1-18, the frame's top band in row 0): `bash build.sh`, build/racer.tap. The message bar is a
+stopgap on row 23 (place, lap, time; the old start lights); no track name, no set-up row on the
+screen. Your car: the Skid Lab grip model; when you let go of the steering the heading settles on
+the nearest pictured heading (ph_snap), so the car goes where its picture points. Set-up keys
+1 2 3 before the start (GRIP, SPEED, ACCEL), NOS, lap record, crew chief's radio, border flashes.
 
-**Speed:** measure with tests/zxlap.py (zxdev: real TV frames a picture, cost by routine, and a
-check that the tables in the buffer's bottom rows survive the lap). Now: 3 frames x 311, 4 x 5.
+**Speed:** tests/zxlap.py (zxdev: real TV frames a picture, cost by routine, and a check that the
+tables in the buffer's bottom rows survive the lap). Now: 3 frames x 299, 4 x 12.
 
-**Memory:** main area about 2.1 KB free with the small cars (code_end 0xB798). The big cars do
-not fit any more (the faces moved into the program): building them needs a memory plan.
+**Memory:** main area about 1.4 KB free (code_end 0xBA53). The big cars do not fit (a memory plan
+would be needed). The tables in the buffer are 128-byte strips from buffer row 160, 122 bytes safe.
 
-**Next step:** Grant plays build/racer.tap (small cars, 136 high) and approves layout G3
-(docs/design/screen_options4.png) - then build G3: the L2 start lights (pods) in the window
-(docs/design/start_lights.png), no message bar, your face and big place bottom left with lap and
-time, the map under the logo, the race order below it, no car strengths on the race screen, a
-slim blue window frame. Then the speed hunt. Later: the title / attract screen with a choice of
-driver and car (drafts: docs/design/new_cast_mockup.png).
+**Next step:** build layout G3 (docs/design/screen_options4.png) on this build: the L2 start
+lights (pods; docs/design/start_lights.png) in the window, your face and big place bottom left
+with a lap strip (which carries FINAL LAP / FINISHED) and the time, the map under the logo with a
+row of table between, the race order below it, the bubble and chief, NOS as small canisters in
+the window's corner, a slim blue window frame, the border yellow. Grant also wants to see whether
+the gameplay area can grow more (the slim frame frees the bezel's 7 px each side). Then the speed
+hunt. Later: the title / attract screen with a choice of driver and car.
 
 **Open:** the set-up is yours only - "rock/paper/scissors" needs the computer cars to have
 set-ups too (C_PACE and the skid are their only knobs today); GRIP's step is small in the test

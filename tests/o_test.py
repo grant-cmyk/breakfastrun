@@ -6,7 +6,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 src = open(os.path.join(HERE, 'drive_test.py')).read()
 src = src[:src.index('with Racer(headless=True)')].replace("os.path.dirname(os.path.abspath(__file__))", repr(HERE))
 exec(src)
-top = open(os.path.join(ROOT, 'src', 'topdata.asm')).read()
+top = open(os.path.join(ROOT, 'src', 'omap.asm')).read()
 rows = [l.split('defb')[1] for l in top[top.index('omap_src:'):].splitlines()[1:] if 'defb' in l][:MAPH]
 obits = [[int(c) for b in r.split(',') for c in b.strip().lstrip('%')] for r in rows]
 os_ = [(tx, ty) for ty in range(MAPH) for tx in range(MAPW) if obits[ty][tx]]

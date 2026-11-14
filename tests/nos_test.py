@@ -7,7 +7,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 src = open(os.path.join(HERE, 'drive_test.py')).read()
 src = src[:src.index('with Racer(headless=True)')].replace("os.path.dirname(os.path.abspath(__file__))", repr(HERE))
 exec(src)
-INV, BOOST, SHOW = SYM['bufc'] + 139, SYM['bufc'] + 146, SYM['bufc'] + 145
+INV, BOOST, SHOW = SYM['inv'], SYM['boost_t'], SYM['nos_show']
 fails = 0
 def ok(c, m):
     global fails

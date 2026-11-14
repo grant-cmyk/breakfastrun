@@ -45,7 +45,7 @@ top = open(os.path.join(ROOT, 'src', 'topdata.asm')).read()
 tsect = lambda a, b: [int(v, 0) for l in top[top.index(a):top.index(b)].splitlines() if 'defb' in l
                       for v in l.split('defb')[1].split(';')[0].split(',')]
 midx = tsect('tmask_idx_src:', 'tmask_src:')
-mbytes = tsect('tmask_src:', 'omap_src:')
+mbytes = [int(v, 0) for l in top[top.index('tmask_src:'):].splitlines() if 'defb' in l for v in l.split('defb')[1].split(';')[0].split(',')]
 world = np.zeros((MAPH * 8, MAPW * 8), dtype=np.uint8)
 wmask = np.zeros((MAPH * 8, MAPW * 8), dtype=bool)    # breakfast things: cover the cloth
 for ty in range(MAPH):
@@ -180,7 +180,7 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)
     check((sb[8:24, 200:256] == np.array(logo)).all(), 'the BREAKFAST RUN logo is at the top of the panel')
     msg = screen_text(sp, MR, 7, 9) + '/' + screen_text(sp, MR, 17, 7)
-    check(MR == 0 or screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
+    check(MR != 1 or screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
     print('message bar %r' % msg)
     check(msg == 'GET READY/PRESS Q', 'before the start: GET READY, PRESS Q in the message bar')
@@ -235,8 +235,8 @@ with Racer(headless=True) as sp:
 
     sp.run(duration=0.6, fast_forward=True)
     bar = screen_text(sp, MR, 9, 3) + '|' + screen_text(sp, MR, 19, 4) + '|' + screen_text(sp, MR, 1, 3) + '|' + screen_text(sp, MR, 13, 3)
-    check(attr(MR, 1) == 0x57 and attr(MR, 3) == 0x57 and attr(MR, 13) == 0x70 and attr(MR, 15) == 0x70 and attr(MR + 1, 1) == 0x30,
-          'racing: your place on red and your lap on bright yellow in the message bar (one row: the window has the other)')
+    check(attr(MR, 1) == 0x57 and attr(MR, 3) == 0x57 and attr(MR, 13) == 0x70 and attr(MR, 15) == 0x70,
+          'racing: your place on red and your lap on bright yellow in the message bar')
     check(re.fullmatch(r'LAP\|0:0\d\|\d(ST|ND|RD|TH)\|1/3', bar) is not None, 'with LAP and the race time beside them (%r)' % bar)
     check(not screen_bits(sp)[TOWER_Y * 8:TOWER_Y * 8 + 80, 240:248].any(), 'the race order no longer shows a lap digit on each row')
 
@@ -285,15 +285,15 @@ with Racer(headless=True) as sp:
     print('lap record panel ink x', xs.min() if len(xs) else None, xs.max() if len(xs) else None)
     check(bl < 0xFFFF and sp.read16(SYM['rec_lap']) == bl and len(xs) and abs((xs.min() + xs.max()) / 2 - 227.5) <= 1.5,
           'the best lap is the lap record, shown with its clock, centred under the race order (x %s-%s)' % (xs.min() if len(xs) else '-', xs.max() if len(xs) else '-'))
-    talking = sp.read8(SYM['bufc'] + 130)               # (a message may still be up: let it end -
+    talking = sp.read8(SYM['msg_st'])               # (a message may still be up: let it end -
     for _ in range(40):                                  # the longer track moved the moment it is
-        if sp.read8(SYM['bufc'] + 130) == 0: break       # checked into one)
+        if sp.read8(SYM['msg_st']) == 0: break       # checked into one)
         sp.run(duration=0.1, fast_forward=True)
     sb2 = screen_bits(sp)
     if sb2[160:184, 88:168].any() or attr(21, 12) != 0x30:   # (to see what is there)
         ys, xs2 = np.nonzero(sb2[160:184, 88:168]); print('  strip ink rows', sorted(set(ys + 160))[:12], 'x', sorted(set(xs2 + 88))[:12], 'attr(21,12) %02X' % attr(21, 12))
         shot(sp, 'bubble_debug.png')
-    check(sp.read8(SYM['bufc'] + 130) == 0 and not sb2[160:184, 88:168].any() and attr(21, 12) == 0x30,
+    check(sp.read8(SYM['msg_st']) == 0 and not sb2[160:184, 88:168].any() and attr(21, 12) == 0x30,
           'the crew chief quiet: no speech bubble (radio state when first looked: %d)' % talking)
     check(place() == 5 and sp.read8(SYM['position']) == 5, 'parked while four cars race: your red row is 5th in the tower')
     # the four computer cars are in by now: the race order shows no faces while racing - a mini

@@ -185,75 +185,6 @@ bt_txt:
         jp print_at
 
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
-; SU_DRAW: the set-up row: "1G#####  2S#####  3A#####" from column 0
-su_draw:
-        ld hl,su_lv
-        ld c,0                  ; C = the part's first column: 0, 8, 16
-su_d1:
-        push hl
-        push bc
-        ld a,c                  ; its key - only while it can be pressed
-        rrca
-        rrca
-        rrca
-        ld e,a
-        add a,'1'
-        ld b,a
-        ld a,(race_on)
-        or a
-        jr z,su_d2
-        ld b,' '
-su_d2:
-        ld hl,su_txt
-        ld (hl),b
-        ld d,0                  ; its letter
-        ld hl,su_names
-        add hl,de
-        ld a,(hl)
-        ld hl,su_txt+1
-        ld (hl),a
-        dec hl
-        ld b,23
-        call print_at
-        pop bc
-        pop hl
-        push hl
-        push bc
-        ld d,(hl)               ; D = filled pips to go, E = pips to go
-        ld e,5
-        inc c
-su_d3:
-        inc c
-        push de
-        push bc
-        ld a,d
-        or a
-        ld de,su_pip
-        jr nz,su_d4
-        ld de,su_pip+8
-su_d4:
-        ld b,23
-        call tr_glyph
-        pop bc
-        pop de
-        ld a,d
-        or a
-        jr z,su_d5
-        dec d
-su_d5:
-        dec e
-        jr nz,su_d3
-        pop bc
-        pop hl
-        inc hl
-        ld a,c
-        add a,8
-        ld c,a
-        cp 24
-        jr nz,su_d1
-        ret
-su_pip:   db 0,0x7E,0x7E,0x7E,0x7E,0x7E,0x7E,0   ; a level you have
-          db 0,0x7E,0x42,0x42,0x42,0x42,0x7E,0   ; ... and one you have not
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both
         db G_GRIP, G_Q, G_SLIDE, G_QSLIDE       ; 1 (0.085 px a frame of sideways speed)
         db 25, 16, 16, 10                        ; 2
@@ -263,8 +194,6 @@ su_gtab:                        ; the grip at each level: gripping, with Q, slid
 su_lv:    db 1,1,1              ; your levels: GRIP, SPEED, ACCEL
 su_pts:   db 2                  ; points still to spend
 su_up:    db 0                  ; 1: no set-up key was down last picture
-su_txt:   db "1G",0
-su_names: db "GSA"
 ; (from grip.asm)
 yg_gtab: db G_GRIP, G_Q, G_SLIDE, G_QSLIDE   ; (your set-up's grip: su_apply writes it)
 yg_pushv: dw G_PUSH             ; ... its push

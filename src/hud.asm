@@ -316,7 +316,7 @@ ST_ACC  equ BUFC+44             ; small text: the row being built (2)
 ST_X    equ BUFC+46             ;   where the next character goes
 ST_T    equ BUFC+47             ;   the text (2)
 ST_COL  equ BUFC+49             ;   its byte column
-PNUM    equ BUFC+56             ; the place number, 16 rows (tower_row)
+PNUM    equ BUFC+96             ; the place number, 16 rows (tower_row)
 ST_X0   equ BUFC+50             ;   where the first character goes (pixels)
 gaps_reset:                     ; a new race: nothing noted, nothing shown
         ld hl,CP_G
@@ -406,7 +406,6 @@ hu_go:                          ; GO: the race order redraws without the faces
         ld (pace_skip),a        ; (a busy picture: it does not set the pace)
         ld hl,25*256+4          ; the border green for half a second
         call flash
-        call su_draw            ; (the set-up row loses its key numbers)
         ld hl,shown_order
         ld b,NCARS
 hg_1:
@@ -739,7 +738,8 @@ su_apply:
         ld de,yg_gtab
         ld bc,4
         ldir
-        jp su_draw              ; (su_draw and its tables: in clothmini.asm, the gap before sq4)
+        ret                     ; (the set-up is not shown on the race screen: Grant, 14 Nov
+                                ; 2026, "don't worry about displaying the car strengths")
 
 ; ---------------------------------------------------------------------
 ; THE RACE ORDER (the tower): rows TOWER_Y.. of the panel, 2 rows a place:

@@ -1,6 +1,7 @@
 """Your car's set-up on the real ROM (Grant, 13 Nov 2026): three parts - GRIP, SPEED, ACCEL - at
 levels 1..5; every car starts at 1, 1, 1 and you have 2 points to add before the start with keys
-1, 2, 3 (0 takes them back). Checks the keys, the HUD row, and what each part does to the car:
+1, 2, 3 (0 takes them back). Checks the keys and what each part does to the car (the set-up is
+not shown on the race screen - Grant, 14 Nov 2026):
 the top speed, the frames to reach 1.5 px a frame from rest, and how long the slide lasts after a hard turn.
 Prints PASS/FAIL lines and RESULT."""
 import os, math
@@ -46,12 +47,10 @@ def run_setup(keys):
         r['slide'] = n
         return r
 base = run_setup([]); print('1,1,1:', base)
-ok(base['lv'] == [1, 1, 1, 2] and base['pips'] == [1, 1, 1], 'every part starts at level 1, with 2 points to spend (%s, pips %s)' % (base['lv'], base['pips']))
-ok(base['row0'] == '1G2S3A', 'the HUD row shows each part with its key before the start (%r)' % base['row0'])
-ok(base['row1'] == ' G S A', 'and without the keys once the race is on (%r)' % base['row1'])
+ok(base['lv'] == [1, 1, 1, 2], 'every part starts at level 1, with 2 points to spend (%s)' % base['lv'])
 ok(1.70 <= base['top'] <= 1.76, 'at 1, 1, 1 the top speed is 1.75 px a frame, as before (%.2f)' % base['top'])
 spd = run_setup(['2', '2']); print('speed +2:', spd)
-ok(spd['lv'] == [1, 3, 1, 0] and spd['pips'] == [1, 3, 1], 'key 2 twice: SPEED at level 3, shown as 3 pips (%s, pips %s)' % (spd['lv'], spd['pips']))
+ok(spd['lv'] == [1, 3, 1, 0], 'key 2 twice: SPEED at level 3 (%s)' % spd['lv'])
 ok(1.92 <= spd['top'] <= 1.98, 'SPEED 3: the top speed is 1.97 px a frame (%.2f)' % spd['top'])
 acc = run_setup(['3', '3']); print('accel +2:', acc)
 ok(acc['lv'] == [1, 1, 3, 0] and abs(acc['top'] - base['top']) < 0.02, 'key 3 twice: ACCEL at level 3, the top speed unchanged (%.2f)' % acc['top'])

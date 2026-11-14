@@ -364,7 +364,7 @@ for my in range(MH):                              # on the bottom straight only 
     if on_road(smx, my) and MMY0 + my * 32 // 3 > PH // 2: mm[my][smx] = 1   # crosses the top dip too)
 obits = [[0] * W for _ in range(H)]                # where the cereal O's are: cars bounce off them
 for ox, oy in OS: obits[oy // 8][ox // 8] = 1
-with open(TOPDATA, 'a') as f:
+with open(os.path.join(HERE, '..', 'src', 'omap.asm'), 'w') as f:   # (in the program: see racer.asm)
     f.write('\n; the cereal O\'s: one BIT per tile (1 = an O: solid - cars bounce off it),\n')
     f.write('; %d bytes a row, leftmost tile in the top bit\nomap_src:\n' % (W // 8))
     for r in obits:

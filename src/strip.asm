@@ -6,20 +6,6 @@
 ; no picture runs late. strip_tick runs on 2 pictures in 4: one types, the
 ; other moves the wave.
 ; ---------------------------------------------------------------------
-MSG_P   equ BUFC+128            ; the next letter (2)
-MSG_ST  equ BUFC+130            ; 0 quiet (no bubble), 1-2 the bubble appears, 3 typing,
-                                ; 4 shown (MSG_T), 5-6 the bubble goes
-MSG_Y   equ BUFC+131            ; pixel row of the line being typed
-MSG_X   equ BUFC+132            ; pixel x of the next letter
-WAVE_T  equ BUFC+133            ; wave updates of talking left
-COOL    equ BUFC+134            ; pictures before a nag can follow another
-TRG_POS equ BUFC+135            ; your place, as last seen
-TRG_BS  equ BUFC+136            ; best_seq, as last seen
-TRG_LAP equ BUFC+137            ; your lap, as last seen
-HIT_O   equ BUFC+138            ; you hit an O (set in tick)
-INV     equ BUFC+139            ; the inventory: 3 slots, 0 empty, 1 NOS
-INV_SH  equ BUFC+142            ; ... as shown (3)
-MSG_T   equ BUFC+148            ; strip ticks the message stays up once typed
 BOX_X   equ 89                  ; the box's inside: x 89-166 (BOX_W wide)
 BOX_W   equ 78
 WAVE_X  equ 116                 ; the wave: 13 lines, 2 px apart, rows 161-167
@@ -566,9 +552,6 @@ race_box:
 ; in the middle of the top area, one at a time; driving over one puts it in
 ; your first empty slot (none taken if all 3 are full).
 ; ---------------------------------------------------------------------
-NOS_SHOW equ BUFC+145           ; 0: canister A on the track, 1: B
-BOOST_T  equ BUFC+146           ; TV frames of boost left
-SPACE_UP equ BUFC+147           ; SPACE was up (so a press is new)
 BOOST_FR equ 50
 
 nos_place:                      ; show the canister NOS_SHOW names, hide the other

@@ -70,9 +70,10 @@ MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light (stage 2
 # whole, the ends of BUFE (after the row index) and BUFG (after the waypoints)
 _nwp = int(re.search(r'NWP\s+equ\s+(\d+)', open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()).group(1))
 _maph = int(re.search(r'MAPH\s+equ\s+(\d+)', open(os.path.join(ROOT, 'src', 'world.asm')).read()).group(1))
-# (154, not 160: the last 6 bytes of each strip are where the interrupt's pushes land when it
-# arrives just as the cloth fill finishes a line at the start of the buffer's last third)
-AREAS = [('F', 'BUFF', 154), ('H', 'BUFH', 154), ('E', 'BUFE', 154 - 2 * _maph), ('G', 'BUFG', 154),   # (the waypoints: in the program)
+# Each strip is 128 bytes of the back buffer's bottom rows (from buffer row 160: the rows above
+# are left for the tiles drawn past the window's last line), and its last 6 bytes are where the
+# interrupt's pushes land when it arrives just as the cloth fill finishes a line - so 122.
+AREAS = [('F', 'BUFF', 122), ('H', 'BUFH', 122), ('E', 'BUFE', 122), ('G', 'BUFG', 122), ('A', 'BUFA', 122),
          ('T', 'TOPMEM', 16)]                          # (T: a few bytes at the top of memory)
 out = {k: [] for k, _, _ in AREAS}; used = {k: 0 for k, _, _ in AREAS}
 def put(k, text, n): out[k].append(text); used[k] += n
@@ -93,7 +94,7 @@ for i, (n, t) in enumerate(MSGS):
         raise SystemExit('no room for message %s' % n)
 put('G', "; the bubble's tail over the chief's face (column 21, rows 172-179): shown, then gone\nbb_tail_src:\n        defb %s\n        defb %s\n"
     % (','.join('0x%02X' % (t | f) for t, f in zip(TAIL, FACE_L)), ','.join('0x%02X' % f for f in FACE_L)), 16)
-SEC = {'F': ('buff_src', 'BUFF'), 'H': ('bufh_src', 'BUFH'), 'E': ('bufe_src', 'BUFE'), 'G': ('bufg_src', 'BUFG'), 'T': ('high_src', 'TOPMEM')}
+SEC = {'F': ('buff_src', 'BUFF'), 'H': ('bufh_src', 'BUFH'), 'E': ('bufe_src', 'BUFE'), 'G': ('bufg_src', 'BUFG'), 'A': ('bufa_src', 'BUFA'), 'T': ('high_src', 'TOPMEM')}
 out['F'].insert(len(out['F']) - sum(1 for n in where if where[n] == 'F'),
     "; the crew chief's messages, by number (their addresses once copied): lines split\n; by |, ended by 0\nmsg_index_src:\n" +
     ''.join('        dw %s_t - %s + %s\n' % (n, SEC[where[n]][0], SEC[where[n]][1]) for n, _ in MSGS))

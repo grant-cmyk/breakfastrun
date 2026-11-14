@@ -1186,3 +1186,31 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - The big cars no longer fit beside the faces in the program (`bash build.sh big 128` stops at
   "code and data run into the back buffer"): their drawings and the generator switch are kept,
   but building them again needs the memory plan. The earlier big and 128 tapes are removed.
+
+## 2026-11-14 SAST - the window the full height (176 x 144); the drift found: heading against picture
+- Grant: "track is right. Note that the car drift is still there. I would also like to have the
+  game now updated to take the very top row of the display as well"; then "work on the drift
+  and update the gameplay area for a next build, and then incorporate the changed layout"; and
+  he would like to see whether the gameplay area can grow more still.
+- The drift. Measured against the car's PICTURE this time (tests/drift_test.py): the car can
+  point 64 ways but has 16 pictures, so after any turn it ran 6 to 17 degrees off the way its
+  picture points, for ever (previous build: slip 9 9 9 11 12 12; 17 17 17 17). The earlier fix
+  (full grip when not steering) was real but measured against the true heading, which was not
+  what he was seeing. Fix (ph_snap in racer.asm, your car only): when you let go of the
+  steering the heading carries on the way you were turning, a step a frame, to the next heading
+  that has a picture. Now 0 within 0.3-0.4 s for turns of 0.14, 0.3 and 0.5 s, both ways.
+  Side effect to know: the smallest change of direction is now one picture (22.5 degrees).
+- The window: WIN_Y 8, WIN_H 144 (rows 1-18; the frame's top band in row 0). No row is left
+  above it: the message bar (place, lap, time, start lights, GO!, FINAL LAP!, FINISHED) is on
+  row 23 as a stopgap, the track's name is not shown, and the set-up row is gone from the race
+  screen (keys 1 2 3 still work before the start). The 128 / 136 options are removed.
+- Room for it in the back buffer: BUF_TOP 8, so the tiles drawn past the window's last line use
+  buffer rows 152-159, and the tables kept in the buffer now start at row 160: 128 bytes a strip
+  (122 safe). Moved into the program: the map's row index, the O map (src/omap.asm, written by
+  tools/make_world.py), the driver strip's variables and the engine's (now ordinary labels), the
+  faces; the logo is drawn straight from the start-up area. BUFC's cloth patterns are at +64,
+  PNUM at +96. tools/make_strip.py packs messages into strips F, H, E, G, A at 122 bytes each.
+  The table copies at start-up go through so_blk (nothing is copied when a strip is empty).
+  TOPMEM 0xFC50 (the copy routine ends at 0xFC42).
+- zxdev lap: 3 frames x 299, 4 x 12 (311 / 5 at 136 high). Main area: about 1.4 KB free
+  (code_end 0xBA53). Tests: drift, drive, nos, O, set-up, and the lap's table check: all PASS.
