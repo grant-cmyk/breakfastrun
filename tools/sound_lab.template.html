@@ -66,6 +66,12 @@ button:focus-visible { outline: 3px solid var(--table); outline-offset: 2px; }
   </section>
 
   <section>
+    <h2>Kettle's On, five more ways</h2>
+    <p>You liked the tune but not pips, plink or buzz. These are five different ways to sound the same notes. Two of them drop an octave for a lower, woodier sound.</p>
+    <div class="grid" id="styles"></div>
+  </section>
+
+  <section>
     <h2>Event sounds</h2>
     <p>The game is now quiet between events. Each group below is one event; the option marked "in this build" is what the newest tape plays. The others are ready to build if you choose them.</p>
     <div id="events"></div>
@@ -193,9 +199,9 @@ function playAudio(name, btn) {
   tag.play().catch(() => stopAll());
 }
 // ---- the picks ----
-let picks = { ditty: 'Spilt Milk, buzz' };
+let picks = { ditty: '' };
 EVENTS.forEach(e => picks[e.id] = e.opts.find(o => o.now).id);
-try { Object.assign(picks, JSON.parse(localStorage.getItem('br-sound-picks-2') || '{}')); } catch (e) {}
+try { Object.assign(picks, JSON.parse(localStorage.getItem('br-sound-picks-3') || '{}')); } catch (e) {}
 function showPicks() {
   const parts = ['Ditty: ' + (picks.ditty || 'not chosen yet')];
   EVENTS.forEach(e => { const o = e.opts.find(o => o.id === picks[e.id]) || e.opts[0]; parts.push(e.name + ': ' + o.id + ' ' + o.name); });
@@ -203,9 +209,9 @@ function showPicks() {
   document.querySelectorAll('[data-pick]').forEach(b => {
     const [g, v] = b.dataset.pick.split('|'); const on = picks[g] === v;
     b.setAttribute('aria-pressed', on); b.textContent = on ? 'Chosen' : 'Choose';
-    b.closest('.tile').classList.toggle('chosen', on && g !== 'ditty');
+    b.closest('.tile').classList.toggle('chosen', on && (g !== 'ditty' || !!b.closest('#styles')));
   });
-  try { localStorage.setItem('br-sound-picks-2', JSON.stringify(picks)); } catch (e) {}
+  try { localStorage.setItem('br-sound-picks-3', JSON.stringify(picks)); } catch (e) {}
 }
 const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
 const dg = document.getElementById('ditties');
@@ -217,6 +223,16 @@ DITTIES.forEach(([n, name, what]) => {
   });
   dg.appendChild(t);
 });
+const STYLES = [
+  ['marimba', 'Marimba', 'An octave lower. A woody tock with a pitch as each note starts.'],
+  ['flute', 'Flute', 'Thin, quiet pulses held for most of the note. The softest edge.'],
+  ['shimmer', 'Shimmer', 'The note and the octave above it swap every frame, so it sounds like two notes at once.'],
+  ['echo', 'Echo', 'A pip, then the same note twice more, fainter each time.'],
+  ['hum', 'Hum', 'An octave lower and held. Soft and low.'],
+];
+const sg = document.getElementById('styles');
+STYLES.forEach(([k, name, what]) => sg.appendChild(el(`<div class="tile"><h3>${name}</h3><p>${what}</p>
+  <div class="row"><button class="play" data-audio="ditty5_${k}">Play</button><button class="choose" data-pick="ditty|Kettle's On, ${k}">Choose</button></div></div>`)));
 const ev = document.getElementById('events');
 EVENTS.forEach(e => {
   const s = el(`<div class="event"><h3>${e.name}</h3><p>${e.what}</p><div class="grid"></div></div>`);
