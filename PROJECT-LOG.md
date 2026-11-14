@@ -1596,3 +1596,17 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - SPEED, measured (tests/zxlap.py): alone 19 / 239 / 9 (unchanged); in the pack 17 / 252 / 6.
 - TESTS: damage, plate, title, drive, nos, o, setup, drift, stuck all PASS. damage_test checks the
   six gauge cells are 0x2B; drive_test checks the bottle red and the bolt magenta.
+
+## 2026-11-14 21:55 SAST - the view leads the car
+
+- Grant: "would it be feasible to have the car position in the screen adjust to allow to see
+  ahead more on the track" - then "go".
+- `cam_lead` (src/plateco.asm), called by `camera`: lead_x / lead_y aim at the car's speed that
+  way x 24/256 (42 px at top speed), held to 40 px across and 32 up or down, and move 3 px a
+  picture at most. It follows the direction of TRAVEL (not the nose). Tuning: LEAD_X, LEAD_Y, LEAD_STEP.
+- tests/lead_test.py (new) PASS: centred at rest, 40 px ahead at speed, slid there, back when stopped.
+- SPEED (zxlap): alone 22 / 238 / 15 (was 19 / 239 / 9); pack 3 / 248 / 11 - more road in view, a little more to draw.
+- OPEN: tests/drift_test.py (a 0.30 s right turn) and tests/stuck_test.py (1 place of 477) FAIL
+  with the lead on and PASS with LEAD_X/Y set to 0. The camera is read by no driving code; the
+  picture times change, and both tests are timed by the clock. NOT YET PROVED to be timing only.
+- Memory: code_end 0xBFE9 - 23 bytes free in that area.

@@ -252,7 +252,8 @@ with Racer(headless=True) as sp:
     check((sb[172:180, 168] == 1).all() and sb[175, 168:172].all(), "the bubble's tail is a point in the chief's panel")
     press(sp, 'Q', True); at_copy_done(sp); pc_ = car(sp, 0); press(sp, 'Q', False)
     cx, cy = pc_['x'] - g(sp, 'camx'), pc_['y'] - g(sp, 'camy')
-    check((cx, cy) == (WW // 2 - 8, WH // 2 - 8), 'camera keeps your car exactly in the middle of the %d x %d window (%d,%d)' % (WW, WH, cx, cy))
+    s8_ = lambda v: v - 256 if v > 127 else v; ldx, ldy = s8_(sp.read8(SYM['lead_x'])), s8_(sp.read8(SYM['lead_y']))
+    check((cx, cy) == (WW // 2 - 8 - ldx, WH // 2 - 8 - ldy) and abs(ldx) <= 40 and abs(ldy) <= 32, 'the camera keeps your car in the middle of the %d x %d window less its lead ahead (car at %d,%d; lead %d,%d; tests/lead_test.py has the rest)' % (WW, WH, cx, cy, ldx, ldy))
 
     sp.run(duration=0.6, fast_forward=True)
     bar = screen_text(sp, 22, 1, 9) + '|' + screen_text(sp, 23, 1, 9)

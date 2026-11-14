@@ -1758,21 +1758,36 @@ bu_write:
 ; CAMERA: put your car in the middle of the window
 ; ---------------------------------------------------------------------
 camera:
+        call cam_lead           ; (plateco.asm) the view leads the car the way it is going
         ld hl,(cars+C_X)
-        ld de,WIN_W*4-8         ; window is 176 wide, car is 16: 80 to its left
+        ld a,(lead_x)
+        ld e,a
+        rla
+        sbc a,a
+        ld d,a
+        add hl,de
+        ld de,WIN_W*4-8         ; the car 16 wide in the window's middle, less the lead
         or a
         sbc hl,de
-        jr nc,cx_pos
+        bit 7,h
+        jr z,cx_pos
         ld hl,0
 cx_pos:
         ld de,MAPW*8-WIN_W*8-24
         call clamp_hl
         ld (camx),hl
         ld hl,(cars+C_Y)
-        ld de,WIN_H/2-8         ; the car in the middle, top to bottom
+        ld a,(lead_y)
+        ld e,a
+        rla
+        sbc a,a
+        ld d,a
+        add hl,de
+        ld de,WIN_H/2-8         ; the car in the middle, top to bottom, less the lead
         or a
         sbc hl,de
-        jr nc,cy_pos
+        bit 7,h
+        jr z,cy_pos
         ld hl,0
 cy_pos:
         ld de,MAPH*8-WIN_H-8

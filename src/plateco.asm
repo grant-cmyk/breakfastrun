@@ -202,3 +202,72 @@ fc_1:
 fc_2:
         djnz fc_1
         ret
+
+; ---------------------------------------------------------------------
+; THE VIEW LEADS THE CAR (Grant, 14 Nov 2026: "have the car position in the screen adjust to
+; allow to see ahead more on the track"). lead_x, lead_y: how far the camera is ahead of the
+; car, in pixels, signed. Each aims at the car's speed that way x 24 / 256 (42 at top speed),
+; held to LEAD_X / LEAD_Y, and moves LEAD_STEP pixels a picture at most - it slides, never jumps.
+; ---------------------------------------------------------------------
+LEAD_X    equ 40
+LEAD_Y    equ 32
+LEAD_STEP equ 3
+cam_lead:
+        ld hl,(cars+C_VX)
+        ld c,LEAD_X
+        ld de,lead_x
+        call cl_one
+        ld hl,(cars+C_VY)
+        ld c,LEAD_Y
+        inc de
+cl_one:
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld a,h                  ; (x 8, kept in A:B)
+        ld b,l
+        add hl,hl
+        push de
+        ld d,a
+        ld e,b
+        add hl,de               ; x 24: H = the lead to aim at
+        pop de
+        ld a,h
+        or a
+        jp m,cl_neg
+        cp c
+        jr c,cl_aim
+        ld a,c
+        jr cl_aim
+cl_neg:
+        neg
+        cp c
+        jr c,cl_n2
+        ld a,c
+cl_n2:
+        neg
+cl_aim:
+        ld b,a                  ; B = the aim; (DE) = the lead now
+        ld a,(de)
+        sub b
+        ret z
+        jp m,cl_up
+        cp LEAD_STEP+1
+        jr c,cl_set
+        ld a,(de)
+        sub LEAD_STEP
+        ld (de),a
+        ret
+cl_up:
+        cp 256-LEAD_STEP
+        jr nc,cl_set
+        ld a,(de)
+        add a,LEAD_STEP
+        ld (de),a
+        ret
+cl_set:
+        ld a,b
+        ld (de),a
+        ret
+lead_x:   db 0
+lead_y:   db 0
