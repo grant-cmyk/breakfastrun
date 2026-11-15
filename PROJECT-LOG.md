@@ -1837,3 +1837,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   cells only (the egg's art is as built): bright green with RUN red / yellow / white; darker
   green; a dull band with a bright egg; BREAKFAST white too. Nothing built - the game still has
   the bright yellow band.
+
+## 2026-11-15 SAST (morning) - mock-up: the word RUN on the green band
+
+- Grant: "okay egg looks great. Now the run should not touch the bottom white area, it should be
+  surround by green. Can you mockup some alternative fonts or effects for the RUN word".
+- tools/make_run_options.py -> docs/design/run_options.png: the band a row taller (rows 3-7) so
+  green is under RUN; eight styles - 1 as now, 2 solid slant, 3 speed lines, 4 red plate,
+  5 chequered, 6 cut lines, 7 wide, 8 small. The green band itself (egg white-on-green, yolk
+  yellow-on-white) is agreed but NOT built yet: it goes in with the RUN he picks.
