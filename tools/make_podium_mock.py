@@ -61,6 +61,28 @@ def tight(s, panel=BW, text=K, bar=B, bar_ink=BW, steps=(BY, C, M)):
     s.fill(16, 10, 4, 3, steps[2]); big_digit(s, '3', 17, 10, K, steps[2]); smallc(s, NAMES[b], 16, 19, 98, K)
     smallc(s, 'FASTEST LAP', 6, 19, 106, text); smallc(s, '%s 0:21.4' % NAMES[FAST[0]], 6, 19, 114, text)
     s.fill(6, 15, 14, 1, bar); smallc(s, 'PRESS ANY KEY', 6, 19, 121, bar_ink)
+NAMES2 = ['YOU', 'FRANK', 'JANE', 'BRUNO', 'SPIKE']   # proposed: a name each, not a colour (Grant, 15 Nov 2026: "each player needs a name")
+def inside(s, order, fast, panel, text, bar, bar_ink):
+    """The podium kept inside the card, a margin of the card's own colour all round it, each step in
+    its driver's colour (Grant: "Podium must be inside the rectangle area ... so in situations like
+    cyan, does not blend into the background"). The card is a colour no driver has."""
+    w, a, b = order
+    s.fill(5, 3, 16, 13, panel)
+    s.fill(5, 3, 16, 1, bar); smallc(s, 'CHEQUERED FLAG', 5, 20, 25, bar_ink)
+    smallc(s, 'WINNER', 5, 20, 34, text)
+    s.fill(11, 5, 4, 9, COL[w]); face(s, WIN[w], 11, 5, K, COL[w], 2); big_digit(s, '1', 12, 9, K, COL[w]); smallc(s, NAMES2[w], 11, 14, 91, K)
+    s.fill(7, 8, 4, 6, COL[a]); face(s, FACE[a], 8, 8, K, COL[a]); big_digit(s, '2', 8, 10, K, COL[a]); smallc(s, NAMES2[a], 7, 10, 99, K)
+    s.fill(15, 9, 4, 5, COL[b]); face(s, FACE[b], 16, 9, K, COL[b]); big_digit(s, '3', 16, 11, K, COL[b]); smallc(s, NAMES2[b], 15, 18, 106, K)
+    smallc(s, 'FASTEST LAP  %s 0:21.4' % NAMES2[fast], 5, 20, 114, text)
+    s.fill(5, 15, 16, 1, bar); smallc(s, 'PRESS ANY KEY', 5, 20, 121, bar_ink)
+def p_in_y():
+    s = base(); inside(s, (2, 1, 0), 2, BY, K, B, BW); return s
+def p_in_k():
+    s = base(); inside(s, (2, 1, 0), 2, K, BW, BY, K); return s
+def p_in_y2():
+    s = base(); inside(s, (1, 4, 3), 1, BY, K, B, BW); return s
+def p_in_k2():
+    s = base(); inside(s, (1, 4, 3), 1, K, BW, BY, K); return s
 def p_tight():
     s = base(); tight(s); return s
 def p_tight_n():
@@ -111,6 +133,11 @@ def faces_sheet():
             d.text((x0, y0 + 16 * Z + 6), NAMES[i] + ('', ' - HAPPY', ' - SAD')[k], fill=(255, 220, 90), font=f1)
     im.save(os.path.join(L.D, 'podium_faces.png')); print('wrote podium_faces.png', im.size)
 if __name__ == '__main__':
+    L.sheet([('A4  Inside a yellow card', 'JANE (white) wins, FRANK (cyan) 2nd, YOU 3rd: nothing touches the cloth', p_in_y),
+             ('A5  Inside a black card', 'the same result on black', p_in_k),
+             ('A4  another result', 'FRANK (cyan) wins, SPIKE 2nd, BRUNO 3rd', p_in_y2),
+             ('A5  another result', 'the same on black', p_in_k2)],
+            'Breakfast Run - the podium inside its card, a name and a colour for each driver', 'podium_inside.png')
     L.sheet([('A2  Podium card, tight', 'A drawn tighter: small letters, everything centred; 14 x 13 cells', p_tight),
              ('A3  The same, plain steps', 'as A2 with white steps for 2nd and 3rd: the faces carry the colour', p_tight_n)],
             'Breakfast Run - the winner display, tightened (sample result: CYAN wins, YOU 2nd, PINK 3rd)', 'podium_tight.png')

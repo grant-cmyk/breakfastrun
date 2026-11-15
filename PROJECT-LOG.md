@@ -1739,3 +1739,13 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant: each driver's face three ways - as now, happy, sad. Drafted in tools/make_podium_mock.py
   (FACE from the game, WIN, SAD); docs/design/podium_faces.png; and an editable page in Claude
   (tools/faces_page.template.html): https://claude.ai/artifact/Nfxfa54baoZdTsPSAgzU8c
+
+## 2026-11-15 SAST (morning) - the podium inside its card; a name for each driver (mock-up)
+
+- Grant: "so each player needs a name. And each player has a colour. Podium must be inside the
+  rectangle area for the display so in situations like cyan, does not 'blend' into the background".
+- docs/design/podium_inside.png (tools/make_podium_mock.py, inside()): the card 16 x 13 cells, a
+  margin of its own colour all round the podium, each step and face in its driver's colour, the
+  card a colour no driver has (A4 yellow, A5 black). Two sample results, one with cyan winning.
+- PROPOSED names (NAMES2, not in the game yet): YOU (red), FRANK (cyan), JANE (white),
+  BRUNO (pink, the tank), SPIKE (green). The game still says CYAN, GREEN, PINK, SLIM JANE.
