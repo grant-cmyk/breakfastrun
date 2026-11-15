@@ -2149,3 +2149,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Three longer track DESIGNS (not in the game): docs/design/tracks/ (TRACKS.md, tracks_overview.png), tools/make_track_designs.py. Tracks 3 and 4 need a taller map; memory must be found first.
 - Asked next (not started in the game): one track that crosses over itself - a bridge, ramps, the car hidden under the road.
 - Memory after this: low area 0 bytes free, table block 7, main about 10.
+
+## 15 Nov 2026 16:23 SAST - mug right, NOS left; lap plate fix; bridge choices
+- The mug gauge is at the window's right edge and the canisters at its left (Grant: "the coffee mug on the right and the NOS to the left").
+- The plate's lap stays at 3/3 after the finish line (was 4/3).
+- Sugar spoon icons for the NOS: a mock-up sheet, docs/design/sugar_icons.png (tools/make_sugar_mock.py). Not in the game.
+- Track 5's bridge (background design, not in the game): Grant chose the concrete bridge P4 with the tunnel mouth as D1, a plain 50% dither, and blue/white kerb walls. track5.png still shows D2 (one line different); switch it to D1 when the design is next touched.

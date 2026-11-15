@@ -95,29 +95,29 @@ HP_AT   equ 0x5800 + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL   ; the window's last 
 HP_NB   equ BUF + 0x800*2 + 2*32 + 2 + WIN_W - 1            ; the first canister's upper cell in the buffer (its last byte)
 hud_pre:
         ld a,0x2B               ; the gauge: magenta on the table's cyan
-        ld hl,HP_AT
+        ld hl,HP_AT + WIN_W - 3 ; (at the window's right edge since 15 Nov 2026; the canisters at its left)
         ld (hl),a
         inc l
         ld (hl),a
         inc l
         ld (hl),a
-        ld l,(HP_AT + 32) AND 255
+        ld l,(HP_AT + 32 + WIN_W - 3) AND 255
         ld (hl),a
         inc l
         ld (hl),a
         inc l
         ld (hl),a
         ld a,(INV)              ; the canisters: red
-        ld hl,HP_AT + WIN_W - 1
-        ld de,HP_NB
+        ld hl,HP_AT
+        ld de,HP_NB - (WIN_W - 1)
         call hp_slot
         ld a,(INV+1)
-        ld hl,HP_AT + WIN_W - 2
-        ld de,HP_NB - 1
+        ld hl,HP_AT + 1
+        ld de,HP_NB - (WIN_W - 1) + 1
         call hp_slot
         ld a,(INV+2)
-        ld hl,HP_AT + WIN_W - 3
-        ld de,HP_NB - 2
+        ld hl,HP_AT + 2
+        ld de,HP_NB - (WIN_W - 1) + 2
 hp_slot:                        ; A = the slot (0: empty), HL = its upper cell on the screen, DE = in the buffer
         or a
         ld a,WIN_ATTR2

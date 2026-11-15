@@ -2383,8 +2383,8 @@ ld_r1:
 ; corner, in the window's own colours: each replaces its byte of the cloth on 10 lines,
 ; so it stands clear of what is behind it (layout G3; the inventory slots have gone).
 ; Window lines 132-135 are buffer rows 140-143 (one character row), 136-141 rows 144-149.
-NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 25     ; buffer row 148 (third 2, char row 2, line 4), byte 24
-NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 25     ; buffer row 152 (third 2, char row 3, line 0)
+NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 2      ; buffer row 148 (third 2, char row 2, line 4), byte 24
+NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 2      ; buffer row 152 (third 2, char row 3, line 0)
 nos_draw:
         ld hl,INV
         ld c,0                  ; C = slot 0..2: bytes 23, 22, 21
@@ -2396,13 +2396,13 @@ nd_1:
         ld de,nos_can
         ld hl,NOS_BA
         ld a,l
-        sub c
+        add a,c                 ; (from the window's left edge inwards: Grant, 15 Nov 2026, "the coffee mug on the right and the NOS to the left")
         ld l,a
         ld b,4
         call nd_col
         ld hl,NOS_BB
         ld a,l
-        sub c
+        add a,c
         ld l,a
         ld b,6
         call nd_col
@@ -2440,7 +2440,7 @@ nd_col:
 DMG_MAX  equ 8
 DMG_COOL equ 12
 DMG_SLOW equ 8                  ; (8 points: 64 of the 448 - a seventh off the top speed)
-DMG_B    equ BUF + 0x800*2 + 0*0x100 + 2*32 + 2      ; buffer row 144 (third 2, char row 2, line 0), byte 2: the window's last two cell rows, its left edge
+DMG_B    equ BUF + 0x800*2 + 0*0x100 + 2*32 + 23     ; buffer row 144 (third 2, char row 2, line 0), byte 2: the window's last two cell rows, its left edge
 dmg_hit:
         ld hl,dmg_cool
         ld a,(hl)

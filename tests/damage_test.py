@@ -22,7 +22,7 @@ fails = 0
 def ok(c, m):
     global fails
     print('PASS' if c else 'FAIL', m); fails += 0 if c else 1
-def patch(sp): return screen_bits(sp)[WY + WH - len(ROWS):WY + WH, 8:32].astype(bool)
+def patch(sp): return screen_bits(sp)[WY + WH - len(ROWS):WY + WH, 176:200].astype(bool)
 def gauge(sp): return int((patch(sp) & (O_ | F_ | STEAM)).sum())   # the icon's pixels lit
 with Racer(headless=True) as sp:
     sp.load_tape(TAP); t = 0
@@ -64,7 +64,7 @@ with Racer(headless=True) as sp:
     for d in range(9): sp.write(SYM['dmg'], bytes([d])); sp.run(duration=0.25, fast_forward=True); lit.append(gauge(sp))
     ok(all(a > b for a, b in zip(lit, lit[1:])) and lit[8] == OUTLINE and not (patch(sp) & CLEAR).any(),
        'damage 0 to 8: the icon empties a step at a time (%s pixels lit); fully damaged only its outline is left; the 2 pixels round it are clear' % lit)
-    GA = 0x5800 + ((WY + WH) // 8 - 2) * 32 + 1                      # the gauge's 3 x 2 colour cells
+    GA = 0x5800 + ((WY + WH) // 8 - 2) * 32 + 22                     # the gauge's 3 x 2 colour cells
     cells = [sp.read8(GA + r * 32 + c) for r in range(2) for c in range(3)]
     ok(all(v == 0x2B for v in cells), 'the gauge\'s six colour cells are magenta ink on the cloth\'s cyan (%s), and nothing but the icon is drawn in them' % ' '.join('%02X' % v for v in cells))
     shot(sp, 'damage_gauge.png')
