@@ -15,7 +15,11 @@ button{font:600 14px var(--font);padding:8px 14px;border-radius:6px;border:1px s
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .driver{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .driver h2{font-family:var(--head);font-size:18px;margin:0}
-.moods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.moods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.moods{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.anim{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+.anim span{display:flex;gap:8px;align-items:center}
+.anim canvas{image-rendering:pixelated;width:48px;height:48px;border:1px solid var(--line)}
 @media (max-width:640px){.moods{grid-template-columns:1fr}}
 .mood{display:flex;flex-direction:column;gap:8px;min-width:0}
 .cap{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -26,24 +30,25 @@ textarea{width:100%;box-sizing:border-box;min-height:140px;font:12px/1.3 var(--m
 </style>
 <main>
 <h1>Breakfast Run: the drivers' faces</h1>
-<p>Each driver three ways: as in the game now, happy (for the winner on the podium) and sad. These are the faces as you drew them on 15 November. Click or drag on a big picture to change its pixels; the small picture beside each name is its real size, doubled. When you are happy with them, copy the text and paste it back to Claude.</p>
+<p>Each driver four ways: as in the game now, with the eyes moved (starts as a copy of now: shift the eyes a pixel), happy and sad. Under each name the podium animation plays: the winner goes now, eyes, now, happy; second and third go now, eyes, now, sad. Click or drag on a big picture to change its pixels; the small picture beside each name is its real size, doubled. When you are happy with them, copy the text and paste it back to Claude.</p>
 <div class="bar"><button id="copy">Copy all faces as text</button><button id="reset">Put back the saved faces</button><span id="said"></span></div>
 <div id="drivers"></div>
 <label for="out" class="cap">The faces as text (# is ink)</label>
 <textarea id="out" readonly></textarea>
 </main>
 <script>
-const DATA=/*DATA*/{};const MOODS=['now','happy','sad'];
+const DATA=/*DATA*/{};const MOODS=['now','eyes','happy','sad'];
 let faces=JSON.parse(JSON.stringify(DATA.faces));
-try{const s=localStorage.getItem('br-faces-6');if(s){const v=JSON.parse(s);if(v.length===faces.length)faces=v}}catch(e){}
+try{const s=localStorage.getItem('br-faces-7');if(s){const v=JSON.parse(s);if(v.length===faces.length&&v[0].length===4)faces=v}}catch(e){}
 const root=document.getElementById('drivers'),out=document.getElementById('out');
 function draw(cv,art,col,grid){const n=cv.width/16,c=cv.getContext('2d');c.fillStyle=col;c.fillRect(0,0,cv.width,cv.height);c.fillStyle='#000';
  art.forEach((r,y)=>{for(let x=0;x<16;x++)if(r[x]==='#')c.fillRect(x*n,y*n,n,n)});
  if(grid){c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=1;for(let i=1;i<16;i++){c.beginPath();c.moveTo(i*n+.5,0);c.lineTo(i*n+.5,cv.height);c.moveTo(0,i*n+.5);c.lineTo(cv.width,i*n+.5);c.stroke()}}}
 function text(){return DATA.names.map((nm,d)=>MOODS.map((m,k)=>nm+' '+m+'\n'+faces[d][k].join('\n')).join('\n\n')).join('\n\n')}
-function save(){out.value=text();try{localStorage.setItem('br-faces-6',JSON.stringify(faces))}catch(e){}}
-function build(){root.textContent='';root.style.cssText='display:flex;flex-direction:column;gap:16px';
- DATA.names.forEach((nm,d)=>{const s=document.createElement('section');s.className='driver';const h=document.createElement('h2');h.textContent=nm;s.appendChild(h);
+function save(){out.value=text();try{localStorage.setItem('br-faces-7',JSON.stringify(faces))}catch(e){}}
+let anims=[],step=0;function tick(){anims.forEach(([c,d,seq])=>draw(c,faces[d][seq[step%4]],DATA.colours[d],false));step++}
+function build(){anims=[];root.textContent='';root.style.cssText='display:flex;flex-direction:column;gap:16px';
+ DATA.names.forEach((nm,d)=>{const s=document.createElement('section');s.className='driver';const h=document.createElement('h2');h.textContent=nm;s.appendChild(h);const an=document.createElement('div');an.className='anim';[['On the top step',[0,1,0,2]],['Second or third',[0,1,0,3]]].forEach(([lab,seq])=>{const sp=document.createElement('span');const c=document.createElement('canvas');c.width=c.height=16;sp.appendChild(c);sp.appendChild(document.createTextNode(lab));an.appendChild(sp);anims.push([c,d,seq])});s.appendChild(an);
   const row=document.createElement('div');row.className='moods';s.appendChild(row);
   MOODS.forEach((m,k)=>{const box=document.createElement('div');box.className='mood';const cap=document.createElement('div');cap.className='cap';
    const sm=document.createElement('canvas');sm.width=sm.height=16;cap.appendChild(sm);cap.appendChild(document.createTextNode(m));
@@ -55,5 +60,5 @@ function build(){root.textContent='';root.style.cssText='display:flex;flex-direc
    box.appendChild(cap);box.appendChild(g);row.appendChild(box)});root.appendChild(s)});save()}
 document.getElementById('copy').addEventListener('click',()=>{const said=document.getElementById('said');navigator.clipboard.writeText(text()).then(()=>said.textContent='Copied.',()=>{out.focus();out.select();said.textContent='Select the text below and copy it.'})});
 document.getElementById('reset').addEventListener('click',()=>{faces=JSON.parse(JSON.stringify(DATA.faces));build();document.getElementById('said').textContent='Saved faces put back.'});
-build();
+build();tick();setInterval(tick,600);
 </script>
