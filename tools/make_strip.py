@@ -53,19 +53,20 @@ def pack(g):
 NOSA = open(os.path.join(HERE, 'face_art.txt')).read()
 nos = re.search(r'== NOS face ==\n((?:[X.]{16}\n){16})', NOSA).group(1).split()
 ys = [y for y in range(16) if 'X' in nos[y]]
-MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light (stage 2 adds the NOS)
+MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light
         ('M_PASS', 'GREAT MOVE!|NICE PASS'),           # you overtook
-        ('M_P1', 'P1!|HOLD HIM OFF'),                  # you took the lead
-        ('M_LOST', 'STAY CALM|GET HIM BACK'),          # you lost a place
-        ('M_PUSH', 'PUSH! PUSH!|HE IS CLOSE'),         # second, close to the leader
-        ('M_BEST', 'SUPERB LAP!|FASTEST YET'),         # your lap is the best yet
-        ('M_HIT', 'GET IT|TOGETHER!'),                 # you hit the O's
-        ('M_LAST', 'LAST LAP!|BRING IT HOME'),         # starting the last lap
+        ('M_P1', 'P1!|HOLD THEM OFF'),                 # you took the lead
+        ('M_LOST', 'STAY CALM|GET IT BACK'),           # you lost a place
+        ('M_PUSH', 'PUSH! PUSH!|LEADER IS CLOSE'),     # second, close to the leader
+        ('M_BEST', 'GREAT LAP!'),                      # your lap is the best yet: its time goes under it (msg_say)
+        ('M_HIT', 'OUCH!|MIND THE CEREAL'),            # you hit the O's
+        ('M_LAST', 'FINAL LAP!|BRING IT HOME'),        # starting the last lap (Grant, 15 Nov 2026: "B small letters")
         ('M_WIN', 'GET IN THERE!|YOU WON!'),           # you won
         ('M_DONE', 'WELL DRIVEN!'),                    # you finished, not first
         ('M_NOS', 'NOS READY!|SPACE TO BOOST'),        # you picked up a canister
         ('M_BOOST', 'NOS!|GO GO GO'),                  # you fired it
-        ('M_SETUP', 'PICK TWO UPGRADES|KEYS ONE TWO THREE')]   # before the start: set your car up                  # you fired it           # you finished, not first
+        ('M_SETUP', 'PICK 2 UPGRADES|KEYS 1 2 3')]     # the lights: set your car up (a line is 15 letters at most: the bubble's width)
+assert all(len(l) <= 15 for _, t in MSGS for l in t.split('|')), 'a bubble line is 15 letters at most'
 # the data goes in the free ends of the buffer's bottom-row strips: BUFF and BUFH
 # whole, the ends of BUFE (after the row index) and BUFG (after the waypoints)
 _nwp = int(re.search(r'NWP\s+equ\s+(\d+)', open(os.path.join(ROOT, 'src', 'waypoints.asm')).read()).group(1))

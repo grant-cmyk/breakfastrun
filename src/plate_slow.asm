@@ -31,15 +31,6 @@ ps_1:
         ld c,3
         ld hl,pl_bmp+3*PL_W+3
         jp pl_pair
-pl_message:                     ; FINAL LAP! on its own plate, straight into the buffer
-        xor a
-        ld (pl_lin),a
-        ld hl,PL_M
-        ld bc,7*256+6
-        call pl_fill
-        ld hl,PL_MT
-        ld de,pl_msg
-        ld c,6
 pl_cols:                        ; C columns of 5 rows from DE, at HL and on to the right
         push hl
         ld b,5
@@ -384,6 +375,8 @@ sc_1:
         ld a,(hl)
         or a
         jr z,sc_2
+        cp '|'                  ; (a line of a crew message ends at | too)
+        jr z,sc_2
         inc hl
         dec c
         dec c
@@ -397,6 +390,8 @@ sc_2:
 sm_text:
         ld a,(hl)
         or a
+        ret z
+        cp '|'
         ret z
         push hl
         call glyph

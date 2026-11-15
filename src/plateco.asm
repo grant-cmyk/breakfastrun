@@ -22,8 +22,11 @@ PL_B    equ BUF + 1*32 + 2*0x100 + 21   ; the place plate: buffer row 10 (window
                                 ; blue border around it")
 PL_M    equ BUF + 3*32 + 5*0x100 + 20   ; the message's: buffer row 29, bytes 18-23, 13 rows
 PL_MT   equ BUF + 4*32 + 1*0x100 + 20   ; ... its letters' first row: buffer row 33
+FL_SRC  equ 0x5000 + 6*32 + 16          ; the FINAL LAP bubble as kept: screen rows 22-23, columns 16-25
+FL_DST  equ BUF + 0x1000 + 1*32 + 8     ; ... and in the window: buffer rows 136-151, bytes 8-17 (screen columns 7-16)
 ; (PL_W and PL_H, pl_bmp's bytes a row and rows: in racer.asm, before the first use)
 pl_draw:
+        call fl_draw            ; the crew chief's bubble, if he is talking (even under the start lights)
         ld a,(lt_on)
         or a
         ret nz
@@ -124,10 +127,43 @@ pd_4:
         ld d,a
 pd_5:
         djnz pd_4
-        ld a,(msg_timer)        ; FINAL LAP! on a second plate while its 3 seconds run
-        or a
-        ret z
-        jp pl_message
+        ret
+fl_draw:
+        ld a,(msg_timer)        ; a crew message - the chief and his speech bubble, at the foot of the window,
+        or a                    ; while its 3 seconds run (Grant, 15 Nov 2026: "a pit crew message in the play
+        ret z                   ; area ... a small pitcrew face and speech bubble"; "B small letters"; the old
+        ld hl,FL_SRC            ; strip under the window went unseen - "the player is focused on the game
+        ld de,FL_DST            ; area"). The picture - his face (screen_once), the message's lines (msg_say) -
+        call fl_8               ; is kept on the SCREEN, under the window, in cells whose ink is
+fl_8:                           ; their paper's colour, so it does not show there. Each picture its 10 x 2
+        ld b,8                  ; cells are copied into the window's (rows 17-18, columns 7-16: white, set
+fl_1:                           ; by msg_final).
+        ld c,255
+        rept 10
+        ldi
+        endm
+        ld a,l
+        sub 10
+        ld l,a
+        ld a,e
+        sub 10
+        ld e,a
+        inc h
+        inc d
+        djnz fl_1
+        ld a,l                  ; the next character row, in the screen and in the buffer alike
+        add a,32
+        ld l,a
+        ld a,e
+        add a,32
+        ld e,a
+        ld a,h
+        sub 8
+        ld h,a
+        ld a,d
+        sub 8
+        ld d,a
+        ret
 pl_pair:                        ; two small figures cut out of the column at HL: number A in bits 7-5,
         push hl                 ; number C beside it in bits 3-1
         call pd_g

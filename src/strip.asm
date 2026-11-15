@@ -42,9 +42,51 @@ srs_1:
         ld (MSG_ST),a           ; no bubble (it goes, if one was up)
         ret
 
-msg_say:                        ; A = message: the chief starts talking
-        if OPT_PIT = 0
-        ret                     ; (no pit talk for now: Grant, 14 Nov 2026 - its code is left out)
+msg_say:                        ; A = a message: the crew chief says it, in his bubble at the foot of the window
+        if OPT_PIT = 0          ; (Grant, 15 Nov 2026: "messages for things like passing somewhere, being first,
+        push bc                 ; hitting something ... Great lap - and showing the time"). Its one or two lines
+        push ix                 ; are written, small, into the bubble's picture - kept on the screen under the
+        ld (ms_id+1),a          ; window in ink the paper's colour (see fl_8, plateco.asm) - and msg_final
+        add a,a                 ; puts the bubble up for 3 seconds.
+        ld l,a
+        ld h,0
+        ld de,MSG_INDEX
+        add hl,de
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a                  ; HL = its words: a line, then | and another, then 0
+        push hl
+        ld bc,0x1612            ; the last message's words off
+        ld de,0x0208
+        call clear_cells
+        pop hl
+        ld bc,178*256+176
+        call sm_ctr
+        ld a,(hl)
+        or a
+        jr z,ms_1
+        inc hl
+        ld bc,185*256+176
+        call sm_ctr
+ms_1:
+ms_id:  ld a,0
+        cp M_BEST               ; GREAT LAP! has the lap's time under it
+        jr nz,ms_2
+        ld hl,(best_lap)
+        call time_fmt
+        ld hl,time_txt+2
+        ld b,185
+        ld c,21
+        ld a,1
+        call st_text_x
+ms_2:
+        ld a,48                 ; (~3 s before a nag may follow)
+        ld (COOL),a
+        call msg_final
+        pop ix
+        pop bc
+        ret
         else
         add a,a
         ld l,a
@@ -466,9 +508,6 @@ strip_triggers:
         ret z
         call nos_take           ; over a canister?
         call oil_tick           ; the oil can, and the damage's cool-down
-        if OPT_PIT = 0
-        ret                     ; (no pit talk for now: Grant, 14 Nov 2026)
-        else                    ; (what the chief says, and when: left out with him)
         ld hl,COOL
         ld a,(hl)
         or a
@@ -500,12 +539,13 @@ trg_2:
         jr z,trg_3
         ld b,(hl)
         ld (hl),a
+        ld a,(COOL)             ; (not over a message just put up: FINAL LAP! was lost to P1! when both came at
+        or a                    ; the line - 15 Nov 2026)
+        ret nz
+        ld a,(hl)
         cp 1
         ld a,M_P1
-        jp z,msg_say            ; the lead: always
-        ld a,(COOL)
-        or a
-        ret nz
+        jp z,msg_say            ; the lead
         ld a,(hl)
         cp b
         ld a,M_PASS
@@ -536,7 +576,6 @@ trg_3:
         ret nc
         ld a,M_PUSH
         jp msg_say
-        endif
 
 ; RACE_BOX: the race is over - the chequered flag in the middle of the
 ; window, over the last picture, which stays (Grant: everything stops)

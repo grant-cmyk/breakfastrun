@@ -2040,3 +2040,31 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the window went unseen: "the player is focused on the game area"). tools/make_finallap_mock.py
   -> docs/design/finallap_options.png: A white bubble, B small letters, C blue band, D yellow
   bubble, E corner, F red. Nothing built (FINAL LAP! is still the small plate top right).
+
+## 2026-11-15 11:48 SAST - the crew chief talks again: a bubble inside the play area
+
+- Grant: "B small letters" (docs/design/finallap_options.png); then "messages for things like
+  passing somewhere, being first, hitting something, can make a message display. Great lap - and
+  showing the time for example"; "the pitstop messages were not visible as the player is focused
+  on the game area - but maybe inside the game area at the bottom will be more visible".
+- THE BUBBLE: the chief's face and a white bubble, rows 17-18, columns 7-16 of the screen (the
+  foot of the window), two lines of the small letters, up for 3 s. Its picture is kept ON THE
+  SCREEN under the window (rows 22-23, columns 16-25) in yellow ink on yellow paper, where it
+  cannot be seen: his face is put there once (screen_once), msg_say (src/strip.asm) writes a
+  message's lines there with glyph when it is said, and fl_draw (src/plateco.asm) copies the 10 x
+  2 cells into the window's buffer each picture while msg_timer runs; msg_final sets those
+  window cells white, hud_update puts them back. No memory of its own, and one slow picture a
+  message (the writing), then ~3,400 T a picture while it is up.
+- THE MESSAGES (tools/make_strip.py MSGS, 15 letters a line at most): PICK 2 UPGRADES / KEYS 1 2
+  3 on the grid (so the set-up keys are announced at last); GOOD LUCK! at green; GREAT MOVE! on
+  a pass; P1! taking the lead; STAY CALM losing a place; PUSH! PUSH! second and close; GREAT LAP!
+  with the lap's time under it; OUCH! on a cereal O; FINAL LAP! / BRING IT HOME; GET IN THERE! /
+  WELL DRIVEN! at the flag; NOS READY!, NOS!. The triggers are the old strip's (strip_triggers),
+  switched back on. A message is not pushed aside for ~3 s (COOL) - P1! had overridden FINAL LAP!.
+- The old FINAL LAP! plate (pl_message, plate_td.asm) is gone.
+- MEMORY: the winner's faces moved to the table block at TD, into the room the unused tune's
+  notes left (so an AY=1 build no longer has room for both: not the default). code_end 0xBFEF:
+  17 bytes free in the main area. FULL.
+- tests/crew_test.py (new) PASS; all thirteen suites PASS. drive_test: 11.9 pictures a second
+  asked off the start, not 12.5 (GOOD LUCK is up then). Speed alone 34 / 227 / 8 / 1 at 6.
+- docs/design/crew_messages.png: four messages as they show.

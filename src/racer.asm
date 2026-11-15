@@ -3696,7 +3696,6 @@ gd_2:
         include "faces.asm"     ; the drivers' faces for the race order
         include "plateco.asm"   ; the place plate in the window (pl_draw)
         include "jingle.asm"    ; the start jingle's notes (tools/make_music_ay.py)
-        include "faces_win.asm" ; each driver happy (tools/make_faces.py, from Grant's drawings)
         if OPT_TALL
         include "hudtext_gfx.asm"
         include "tdtab.asm"
@@ -4097,6 +4096,28 @@ win_attr:
         ld hl,0x0601            ; and the noise at its brightest (register 6)
         call ay_set
         endif
+        ld bc,0x1610            ; the FINAL LAP bubble, made here and kept under the window (rows 22-23, columns
+        ld de,0x020A            ; 16-25) in yellow on yellow, where it does not show: plateco.asm copies it into
+        ld a,0x36               ; the window when it is wanted
+        call set_attrs
+        ld hl,strip_img+21      ; the crew chief's face (from the old strip's picture: 24 bytes a row)
+        ld b,176
+so_cf:
+        ld c,16*8
+        push hl
+        call scr_addr
+        ex de,hl
+        pop hl
+        ldi
+        ldi
+        inc bc                  ; (LDI counted BC down twice: B is the line)
+        inc bc
+        ld de,22
+        add hl,de
+        inc b
+        ld a,b
+        cp 192
+        jr nz,so_cf
         call draw_frame
         ld b,LOGO_ROW           ; the logo, 7 x 2 cells, centred under the window (Grant, 14 Nov 2026)
         ld c,LOGO_COL
@@ -4446,16 +4467,23 @@ im2_on:
         ei
         ret
         include "title3.asm"    ; the title's tables, copied to TD (0x5B4C) by start_once
-        if 1 - OPT_MUSIC        ; (the AY tune's notes, kept in every build but the old beeper-tune one: AY=1 plays them)
+        if OPT_AY               ; (a race tune's notes, only in a build that plays one: AY=1, or MUSIC=1)
         include "music_ay.asm"  ; the race tune for the AY chip (tools/make_music_ay.py)
-        else
+        endif
+        if OPT_MUSIC
         include "music.asm"     ; ... and the ditty's (14 Nov 2026: 129 bytes the program needed back)
         endif
-        include "plate_td.asm"  ; ... and the place plate's message
-td_end2:
+        if OPT_AY + OPT_MUSIC
 mu_tune equ TD + mu_tune_src - td_src
-pl_msg  equ TD + pl_msg_src - td_src
 mu_ptab equ TD + mu_ptab_src - td_src
+        else
+mu_tune equ 0
+mu_ptab equ 0
+        include "faces_win.asm" ; each driver happy, for the podium (tools/make_faces.py, from Grant's drawings):
+                                ; here, in the room the tune's notes left, since 15 Nov 2026
+        endif
+td_end2:
+faces_win equ TD + faces_win_src - td_src
         if td_end2 - td_src > 0x5E00 - TD
         .error the title's tables run past 0x5E00 (the stack is below 0x5F00: 50 bytes deep at most)
         endif

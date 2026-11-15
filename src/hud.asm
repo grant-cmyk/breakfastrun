@@ -348,10 +348,14 @@ msg_go:                         ; green: the lights stay 1.5 s more
         ld a,75
         ld (lt_t),a
         ret
-msg_final:                      ; FINAL LAP on the strip for 3 s (bar_tick shows it)
-        ld a,150
+msg_final:                      ; FINAL LAP: the crew chief's bubble in the window for 3 s (plateco.asm copies it
+        ld a,150                ; in each picture): its cells white
         ld (msg_timer),a
-        ret
+        ld a,0x78
+msg_cells:
+        ld bc,0x1107
+        ld de,0x020A
+        jp set_attrs
 msg_finished:                   ; at the flag: your place, whole, and FINISHED! on the
         xor a                   ; strip - drawn here and now, as the pictures stop
         ld (msg_timer),a
@@ -457,12 +461,12 @@ cph_done:
         pop bc
         ret
 hu_go:                          ; GO: the race order redraws without the faces
-        ld a,M_LUCK             ; the crew chief: good luck
-        call msg_say
         ld a,1
         ld (pace_skip),a        ; (a busy picture: it does not set the pace)
         ld hl,25*256+4          ; the border green for half a second
         call flash
+        ld a,M_LUCK             ; the crew chief: good luck (after the flash: writing his words takes a while)
+        call msg_say
         ld hl,shown_order
         ld b,NCARS
 hg_1:
@@ -642,6 +646,9 @@ hu_msg:
         xor a
 hu_mt:
         ld (msg_timer),a
+        or a                    ; its time up: the bubble's cells the window's colours again
+        ld a,0x29               ; (blue on cyan)
+        call z,msg_cells
 hu_final:
         ld a,(lt_t)             ; the lights' last 1.5 s
         or a
@@ -663,8 +670,7 @@ hu_f1:
         ld hl,shown_final
         cp (hl)
         jr z,hu_lap
-        ld (hl),a
-        call msg_final
+        ld (hl),a               ; (the crew chief says so: strip_triggers, M_LAST)
 hu_lap:
 hu_best:
         ld a,(best_seq)         ; a new best lap (by anyone)
