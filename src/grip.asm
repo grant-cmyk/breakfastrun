@@ -257,11 +257,14 @@ yg_g4:
         ld hl,snd_skid          ; the sound is an EVENT, not a noise that runs on (Grant, 14
         ld b,(hl)               ; Nov 2026: "reduce the amount of noise to focus on events"): a
         ld (hl),a               ; short screech as a real slide STARTS, then quiet until the
-        or a                    ; car has gripped and slides again
-        jr z,yg_g5
+        or a                    ; car has gripped and slides again - but a BIG slide screeches for as
+        jr z,yg_g5              ; long as it lasts (15 Nov 2026: "up the skidding sound")
+        cp 2
+        jr z,yg_g4b
         ld a,b
         or a
         jr nz,yg_g5
+yg_g4b:
         ld a,SKID_FR
         ld (snd_skt),a
 yg_g5:

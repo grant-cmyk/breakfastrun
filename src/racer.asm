@@ -3472,7 +3472,7 @@ AY_VN     equ 9
 dmg:      db 0                  ; your car's damage, 0..DMG_MAX
 dmg_cool: db 0                  ; ... pictures until a hit counts again (the byte after dmg)
 oil_t:    db 0                  ; the oil can: pictures until it is put out (0: it is out)
-SKID_FR  equ 5
+SKID_FR  equ 10                 ; (twice as long, 15 Nov 2026: it was 5) ;
 snd_skt:  db 0                  ; the skid's screech: frames left
 snd_skid: db 0                  ; you: 0 gripping, 1-3 sliding (the skid's step)
 snd_fxt:  db 0                  ; a sound effect: frames left (0 none)
@@ -3971,8 +3971,8 @@ isr_sk:
         jr z,isr_x              ; SKID_FR frames (you_grip sets it)
         dec a
         ld (snd_skt),a
-        ld h,4
-        ld l,0                  ; (gap 0: a random one each flip)
+        ld h,8                  ; (8 flips a frame since 15 Nov 2026 - it was 4: Grant, "the game is a bit quiet
+        ld l,0                  ; now - can you up the skidding sound"). Gap 0: a random one each flip
 isr_burst:                      ; H flips, L counts apart (16 T a count)
         ld a,(snd_port)
         xor 24

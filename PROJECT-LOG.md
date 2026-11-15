@@ -1975,3 +1975,17 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Pasted from the Faces page, with "Move them one pixel up too": YOU's three faces redrawn and
   moved up a row (tools/import_faces.py after the shift), CYAN's everyday and sad faces changed.
   5 of 15 changed. In the game; the page (version 4) starts from them. title, drive, finish PASS.
+
+## 2026-11-15 10:42 SAST - a louder skid; the tune needs the AY switched on (racer.ini does it)
+
+- Grant: "the game is a bit quiet now - can you up the skidding sound, and maybe play a
+  background ditty of some kind".
+- THE DITTY IS THERE (Kettle's On on the AY chip, since this morning) - he is not hearing it, so
+  his player is a plain 48K without the chip. build/racer.ini (new, `ay48=1`): the player reads
+  it when it sits beside racer.tap and fits the chip (checked in zxdev: config game= ->
+  ay48 True). Or: Hardware menu, "AY sound chip on 16K/48K"; or a 128K model.
+- SKID: the screech is twice as long (SKID_FR 10), twice as full (8 flips a frame), and a BIG
+  slide (level 2) screeches for as long as it lasts, not only as it starts (src/grip.asm).
+  COST: alone 52 pictures at 3 frames / 216 / 6 (it was 74 / 202 / 4) - the autopilot slides a lot.
+- docs/sound/race_now.mp3: 26 s from the game - the start ditty, the lights, the tune, skids.
+  NOT heard by me. drift, drive, finish, nos tests PASS.
