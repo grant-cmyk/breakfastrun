@@ -3103,21 +3103,38 @@ rp_wp:
         pop bc
         djnz rp_wp
         jr rp_pos
-rp_try_next:                    ; went wide of it? the one after it counts too
+rp_try_next:                    ; went wide of it - or right off the track and back on further round? One of
+        pop bc                  ; the next four waypoints after it, a different one each time, within 64: it
+        ld hl,rp_k              ; and all those missed are counted, so a lap is still a lap. (It was only the
+        ld a,(hl)               ; very next one, within 40: Grant, 15 Nov 2026 - "sometimes I get off track,
+        inc a                   ; when I get back on and go over the finish line, it does not see that as a
+        cp 5                    ; lap and I need to do an extra lap".)
+        jr c,rp_k1
+        ld a,1
+rp_k1:
+        ld (hl),a
+        ld b,a                  ; B = how many on: 1..4
         ld a,(ix+C_WP)
         push af
+        push bc
+rp_k2:
         call wp_inc
+        djnz rp_k2
         call wp_delta
         call manhattan
+        pop bc
         pop af
         ld (ix+C_WP),a
-        pop bc
-        ld de,40
+        ld de,64
         or a
         sbc hl,de
         jr nc,rp_pos
-        call lap_and_inc        ; the missed one, then the one reached
+        inc b                   ; the ones missed, then the one reached
+rp_k3:
+        push bc
         call lap_and_inc
+        pop bc
+        djnz rp_k3
 rp_pos:
 rp_all:
         ld a,(race_over)
@@ -3541,6 +3558,7 @@ tr_row:      db 0
 pb_attr:     db 0
 blink:       db 0
 best_car:    db 0
+rp_k:        db 0               ; which waypoint ahead race_progress looks at next (1..4)
 you_laps:    defs 2*LAPS        ; your own lap times this race, in frames (0: not done)
 best_lapno:  db 0
 best_seq:    db 0

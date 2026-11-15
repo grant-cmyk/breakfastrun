@@ -1955,3 +1955,17 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   cars' rows are stored as they are (ink only), still never wiped first. (A slip on the way: the
   card test in a_bg was the wrong way round and the cars left trails down the sides - caught by
   the screenshot and by title_test's "leave nothing behind".) title test PASS.
+
+## 2026-11-15 10:23 SAST - laps counted when you leave the track and rejoin
+
+- Grant: "sometimes I get off track, when I get back on and go over the finish line, it does not
+  see that as a lap and I need to do an extra lap, we need better logic to allow more tolerance".
+- CAUSE: your car had to pass each waypoint (46 a lap) within 40 (|dx|+|dy|), or the very next
+  one; miss two in a row and your count stood still, so the line's waypoint never came up.
+- FIX (race_progress, src/racer.asm): when the next waypoint is not reached, one of the four
+  after it is looked at - a different one each time (rp_k) - within 64; reached, it and all
+  those missed are counted (lap_and_inc each: a lap, a checkpoint, if one is). Same cost a
+  picture as before (two distances). A short cut of ten waypoints is still not a lap.
+- tests/lapcount_test.py (new) PASS; all twelve suites PASS. Speed alone 74/202/4, pack 10/243/7.
+- NOTE: the window is 4 waypoints (about a tenth of the lap). Miss more than that in one go and
+  the count still stands until you go back - say if it should be wider.
