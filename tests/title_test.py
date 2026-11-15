@@ -55,8 +55,8 @@ with Racer(headless=True) as sp:
        'the tablecloth: red and white checks, a cell each, 3 cells deep all round the card (black ink in every one, so the car cannot clash)')
     ok((sb[24:56, 88:200] == BIG).all() and attr(sp, 5, 11) == 0x72 and attr(sp, 6, 20) == 0x72 and attr(sp, 3, 3) == 0x70 and attr(sp, 6, 28) == 0x70,
        'BREAKFAST RUN twice its size on the card\'s head, all of it bright yellow; RUN red')
-    ok(sb[24:56, 40:72].sum() > 500 and [attr(sp, r, c) for r in (4, 5) for c in (6, 7)] == [0x7E] * 4 and attr(sp, 3, 5) == 0x77 and attr(sp, 6, 8) == 0x77 and sb[32:48, 48:64].sum() >= 240,
-       'the big egg left of the words: white on the yellow, its yolk bright yellow filling the middle four cells')
+    ok(sb[24:56, 40:72].sum() > 500 and [attr(sp, r, c) for r in (4, 5) for c in (6, 7)] == [0x7E] * 4 and attr(sp, 3, 5) == 0x77 and attr(sp, 6, 8) == 0x77 and 80 <= sb[32:48, 48:64].sum() <= 110 and not sb[32:34, 48:64].any(),
+       'the big egg left of the words: white on the yellow, its yolk small and round - 12 pixels across, white all round it')
     ok(screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and all(attr(sp, 8, c) == 0x7A for c in range(10, 22))
        and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 12, 6, 14) == '2  TWO PLAYERS' and screen_text(sp, 14, 6, 14) == 'K  CHOOSE KEYS'
        and all(attr(sp, r, c) == 0x78 for r in range(9, 16) for c in range(3, 29)),

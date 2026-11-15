@@ -1819,3 +1819,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   3: the egg's cells white on blue, a plate (0x4F), the yolk bright. A cell has one brightness,
   so "bright white ring on a dull band" (the mock-up C) cannot be had. Awaiting his pick.
 - title, drive, finish tests PASS.
+
+## 2026-11-15 SAST (morning) - the title egg's yolk small and round
+
+- Grant: "the yolk in the egg should be smaller and round". t_egg (src/title.asm): the yolk is a
+  6 x 6 disc in the art (12 pixels across on the screen), white all round it inside its four
+  cells. With the band all bright it now reads as a fried egg, not a ring: version 1 of
+  docs/design/logo_bright.png is superseded by docs/design/title_built.png. title test PASS.

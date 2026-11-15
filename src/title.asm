@@ -567,20 +567,21 @@ t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "
 t_press: db "                    ",0
 t_soon: db "  2UP COMING SOON   ",0
 ; the title's egg (logo C of docs/design/logo_options.png), 16 x 16, drawn twice the size: the white, and in its
-; middle 8 x 8 (the four cells with colours of their own) the yolk
+; middle 8 x 8 (the four cells with colours of their own) the yolk - small and round (Grant, 15 Nov 2026):
+; 12 pixels across on the screen, white all round it
 t_egg:
         defb %00000000,%00000000
         defb %00000000,%00110000
         defb %00001111,%11111100
         defb %00011111,%11111110
-        defb %00110111,%11101110
-        defb %01111111,%11111111
-        defb %01111111,%11111111
-        defb %11111111,%11111111
-        defb %11111111,%11111111
-        defb %11111111,%11111110
-        defb %11111111,%11111110
-        defb %01110111,%11101100
+        defb %00110000,%00001110
+        defb %01110001,%10001111
+        defb %01110011,%11001111
+        defb %11110111,%11101111
+        defb %11110111,%11101111
+        defb %11110011,%11001110
+        defb %11110001,%10001110
+        defb %01110000,%00001100
         defb %01111111,%11111000
         defb %00111111,%11110000
         defb %00011111,%00000000
