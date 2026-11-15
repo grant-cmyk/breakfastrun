@@ -325,7 +325,8 @@ pd_nb:
         ld a,(order)            ; ... the winner smiling - the same size as the others (Grant, 15 Nov
         ld bc,0x070C            ; 2026: "the faces can all be the same size")
         ld hl,faces_win
-        jr pd_f2
+        call pd_f2
+        jp jin_start            ; and the jingle again (Grant, 15 Nov 2026: "Also play it when the chequered flag is shown")
 pd_bar:
         ld de,0x0110
         ld a,0x4F

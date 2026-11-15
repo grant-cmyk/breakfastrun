@@ -2083,3 +2083,13 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Room: the new code is under 0x8000 (95 bytes were free there); the table block at TD has 154
   free; the main area 11. tests/crew_test.py covers both new messages. All thirteen suites PASS.
 - docs/design/crew_other.png; docs/sound/race_now.mp3 (the longer jingle, then the start).
+
+## 2026-11-15 12:53 SAST - the jingle longer still, and again at the chequered flag
+
+- Grant: "please make the trancey jingle longer still. Also play it when the chequered flag is shown".
+- 48 steps, 5.8 s (it was 32, 3.8 s): half of Kettle's On. Green 8.6 s after 1.
+- `podium` ends with `jp jin_start`: the same jingle plays as soon as the podium is drawn. A key
+  pressed while it plays is not seen (nothing else runs); after it, any key goes to the title.
+  Tests that hold the jingle off (jin_on 0xFF) hold this one off too.
+- The jingle's notes are in the table block at TD now (jb_per, jb_tune): the main area has 51
+  bytes free, TD about 95. All thirteen suites PASS. docs/sound/race_now.mp3: the 5.8 s of it.

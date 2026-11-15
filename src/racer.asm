@@ -3695,7 +3695,6 @@ gd_2:
         include "omap.asm"      ; the cereal O's: one bit a tile
         include "faces.asm"     ; the drivers' faces for the race order
         include "plateco.asm"   ; the place plate in the window (pl_draw)
-        include "jingle.asm"    ; the start jingle's notes (tools/make_music_ay.py)
         if OPT_TALL
         include "hudtext_gfx.asm"
         include "tdtab.asm"
@@ -4482,8 +4481,11 @@ mu_ptab equ 0
         include "faces_win.asm" ; each driver happy, for the podium (tools/make_faces.py, from Grant's drawings):
                                 ; here, in the room the tune's notes left, since 15 Nov 2026
         endif
+        include "jingle.asm"    ; the jingle's notes (tools/make_music_ay.py)
 td_end2:
 faces_win equ TD + faces_win_src - td_src
+jb_per  equ TD + jb_per_src - td_src
+jb_tune equ TD + jb_tune_src - td_src
         if td_end2 - td_src > 0x5E00 - TD
         .error the title's tables run past 0x5E00 (the stack is below 0x5F00: 50 bytes deep at most)
         endif

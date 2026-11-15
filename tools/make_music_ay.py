@@ -32,7 +32,7 @@ with open(os.path.join(ROOT, 'src', 'music_ay.asm'), 'w') as f:
     f.write('        db 255\n; a word a pitch: the AY tone period\nmu_ptab_src:\n')
     for k in kinds:
         f.write('        dw %d    ; note %d, %.0f Hz\n' % (period(k - LOW), k - LOW, AY_HZ / 16 / period(k - LOW)))
-JN = int(os.environ.get('JINGLE', 32))            # the start jingle: the tune's first steps on the ordinary speaker,
+JN = int(os.environ.get('JINGLE', 48))            # the start jingle: the tune's first steps on the ordinary speaker,
 LOOP_T = 91                                       # by jin_start's two-voice engine (src/plateco.asm): 89 T a turn of its loop,
 bper = lambda hz: round(3500000 / (LOOP_T * 2 * hz))   # a voice flips every `period` turns - so Hz = 3,500,000 / 91 / 2 / period
 STEP_T = 0.12 * 3500000; KICK_T = 6 * 7 / 2 * 2500     # a step is 0.12 s; the kick's six flips take 52,500 T of it
@@ -41,8 +41,8 @@ with open(os.path.join(ROOT, 'src', 'jingle.asm'), 'w') as f:
     f.write('; Two voices on the one speaker: the tune, and under it a bass on the key note - low, high, low, high, four steps to\n; a beat - with a kick on each beat and a tick of noise half way: 125 beats a minute.\n')
     f.write('JB_LEN  equ %d                ; turns of the loop in a step ...\nJB_KICK equ %d                 ; ... less these on a beat: the kick takes their time\n' % (round(STEP_T / LOOP_T), round(KICK_T / LOOP_T)))
     f.write('JB_B_LO equ %d                 ; the bass: %.0f Hz\nJB_B_HI equ %d                  ; and %.0f Hz\n' % (bper(md.freq_of(BASS)), (3500000 / LOOP_T / 2) / bper(md.freq_of(BASS)), bper(md.freq_of(BASS + 12)), (3500000 / LOOP_T / 2) / bper(md.freq_of(BASS + 12))))
-    f.write('jb_per:                         ; each pitch\'s period\n')
+    f.write('jb_per_src:                     ; each pitch\'s period (kept in the table block at TD: racer.asm gives jb_per, jb_tune)\n')
     for k in kinds:
         hz = md.freq_of(k - LOW); f.write('        db %d    ; %.0f Hz (wanted %.0f)\n' % (bper(hz), (3500000 / LOOP_T / 2) / bper(hz), hz))
-    f.write('jb_tune:                        ; a pitch a step; 255 ends\n        db ' + ','.join('%d' % kinds.index(m) for m in steps[:JN]) + ',255\n')
+    f.write('jb_tune_src:                    ; a pitch a step; 255 ends\n        db ' + ','.join('%d' % kinds.index(m) for m in steps[:JN]) + ',255\n')
 print('music_ay.asm: %s, %d steps, %d pitches, %d bytes' % (d['name'], len(steps), len(kinds), len(steps) + 1 + 2 * len(kinds)))

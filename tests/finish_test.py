@@ -27,14 +27,18 @@ with Racer(headless=True) as sp:
     while sp.read8(SYM['race_on']) == 0 and t < 12:
         sp.run(duration=0.02, fast_forward=True); t += 0.02
         if lit is None and sp.read8(SYM['start_go']): lit = t
-    ok(sp.read8(SYM['race_on']) == 1 and lit is not None and 3.4 < lit < 4.6 and 6.0 < t < 7.6,
-       'no key pressed after 1: the jingle plays (32 steps, 3.8 s, two voices and a beat on the speaker), the lights come on by themselves %.1f s in, green at %.1f s' % (lit or 0, t))
+    ok(sp.read8(SYM['race_on']) == 1 and lit is not None and 5.3 < lit < 6.5 and 7.9 < t < 9.5,
+       'no key pressed after 1: the jingle plays (48 steps, 5.8 s, two voices and a beat on the speaker), the lights come on by themselves %.1f s in, green at %.1f s' % (lit or 0, t))
     ok(sp.read16(SYM['mu_ptr']) - SYM['mu_tune'] < 4 and sp.read8(0x5C48) == sp.read8(SYM['td'] + 0x5C48 - SYM['td']), 'at green the race tune starts from its first note')
     hold(sp, ['Q'], 1.0)
     order = [4, 1, 0, 3, 2]                               # JANE (white) wins, FRANK (cyan) second, YOU third
     sp.write(SYM['order'], bytes(order)); sp.write(SYM['best_lap'], bytes([1070 & 255, 1070 >> 8])); sp.write(SYM['best_car'], bytes([4]))
     sp.write(SYM['you_laps'], bytes([0x56, 4, 0x2E, 4, 0x6A, 4])); sp.write(SYM['best_lapno'], bytes([2]))    # your laps: 22.2, 21.4, 22.6 s
     sp.write(SYM['race_over'], bytes([1])); sp.run(duration=0.6, fast_forward=True)
+    press(sp, 'M', True); sp.run(duration=0.2, fast_forward=True); press(sp, 'M', False); sp.run(duration=1.5, fast_forward=True)
+    early = attr(sp, 8, 10) != 0x7A                     # (the jingle again, over the podium: 5.8 s, and a key waits for it)
+    sp.run(duration=5.0, fast_forward=True)
+    ok(early and attr(sp, 6, 5) == 0x70, 'the jingle plays again as the chequered flag goes up: a key pressed during it does not leave the podium')
     sb = screen_bits(sp).astype(bool)
     A = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)])
     want = np.full((14, 16), 0x70); want[0] = 0x4F; want[13] = 0x4F
