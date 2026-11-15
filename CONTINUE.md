@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-15 08:30 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-15 08:19 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Latest (14 Nov 2026, 22:16 SAST) - read this before the older status below:** the window is 192 x 152
@@ -14,7 +14,7 @@ LEAD_X / LEAD_Y / LEAD_STEP to tune). In-race music is on the AY SOUND CHIP (OPT
 the 48K with the AY option on - a plain 48K is silent); coloured objects OFF (OBJECTS=1; too slow). Speed alone: 40 pictures at 3 TV
 frames / 225 at 4 / 5 at 5. Speed test 15 Nov 06:07: alone now 91 pictures at 3 frames / 193 / 3; the pack is ~30,000 T a picture over the faster rate (see the log's last entry for what was tried and what is left). Detail: PROJECT-LOG.md, end.
 
-**Race start and end (15 Nov 08:30):** after 1 at the title a ditty plays (AY) and the lights come on by themselves; at the end the podium (yellow card, steps in the drivers' colours, Grant's own faces, names YOU / FRANK / SPIKE / BRUNO / JANE) and any key returns to the title. Tests hold the automatic start off with jin_on = 0xFF. Open: where the set-up keys go; the sad face and a best-lap happy face in the HUD are ideas only; frame and race-screen layout mock-ups await a pick.
+**Race start and end (15 Nov 08:19):** after 1 at the title a ditty plays (AY) and the lights come on by themselves; at the end the podium (yellow card, steps in the drivers' colours, Grant's own faces, names YOU / FRANK / SPIKE / BRUNO / JANE) and any key returns to the title. Tests hold the automatic start off with jin_on = 0xFF. Open: where the set-up keys go; the sad face and a best-lap happy face in the HUD are ideas only; frame and race-screen layout mock-ups await a pick.
 
 **Title screen (15 Nov 07:14):** layout B, the menu card on a red-and-white check cloth, your car lapping the border (src/title.asm, title3.asm a_runs). Race-screen layout options A-E are mock-ups only (docs/design/layout_game.png): Grant has not picked one.
 

@@ -1760,7 +1760,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tools/make_podium_mock.py reads both files, so the mock-ups and the page show his drawings;
   the page's "put back" button now restores these. title and drive tests PASS.
 
-## 2026-11-15 08:30 SAST - the race's start and end: ditty, automatic lights, the podium, back to the title
+## 2026-11-15 08:19 SAST - the race's start and end: ditty, automatic lights, the podium, back to the title
 
 - Grant: names agreed (YOU, FRANK cyan, SPIKE green, BRUNO pink, JANE white). "once you click 1
   or 2, then a ditty plays and the countdown after the ditty automatically begins"; "on game
