@@ -199,7 +199,8 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)
     check((sb[168:184, 72:128] == np.array(logo)).all() and not sb[184:192].any() and not sb[168:192, 0:72].any() and not sb[168:192, 128:256].any(),
           'the BREAKFAST RUN logo is under the window, centred on it (columns 9-15, rows 21-22); nothing else down there')
-    check(sb[3:35, 208:256].any() and not sb[0:3, 208:256].any() and not sb[40:72, 208:256].any(), 'the mini-map is at the top right, in the panel\'s six columns')
+    check(sb[3:35, 208:256].any() and not sb[0:3, 208:256].any() and not sb[35:40, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F and sp.read8(0x5800 + 17 * 32 + 26) == 0x4F and sb[137:142, 208:256].any(),
+          'the mini-map is at the top right; RACE and the five cars straight under it (rows 5-15); YOUR RACE under them (row 17)')
     msg = screen_text(sp, 22, 1, 8) + '/' + screen_text(sp, 23, 1, 8)
     check(MR != 1 or screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)

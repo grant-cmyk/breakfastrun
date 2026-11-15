@@ -1900,3 +1900,16 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tools/make_panel_mock.py -> docs/design/panel_options.png: NOW + A (red bar YOU 4TH, laps),
   B (your face - unhappy off the podium - a large place, laps), C (YOUR RACE block, best lap
   picked out), D (the block during the race). RACE moves to row 5, the cars rows 6-15. Nothing built.
+
+## 2026-11-15 09:20 SAST - the panel rearranged: cars under the map, YOUR RACE under the cars
+
+- Grant: "I like C, so fill it in as the game commences, showing lap times".
+- BUILT: TOWER_Y 6 (RACE row 5, the cars rows 6-15, the lap record row 16); hud_init draws YOUR
+  RACE (row 17, white on blue) and clears rows 18-21; yl_note shows each of your laps as you
+  finish it (rows 19-21: the lap, its time); at the race's end the podium adds FINISHED and your
+  place (row 18) and yl_best turns your best lap's row bright yellow.
+- NOT SEEN in a live race by eye: the laps appearing mid-race (the path runs in drive_test's
+  race without fault; finish_test checks the end state from poked lap times).
+- MEMORY: code_end 0xBFD8 - 40 bytes free in the main area; the room under 0x8000 about 40; the
+  gap before sq4 about 20. The game is full: the next feature needs something taken out.
+- All eleven test suites PASS. Speed alone 74 / 202 / 4. docs/design/podium_built.png.

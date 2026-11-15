@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-15 09:06 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-15 09:20 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Latest (14 Nov 2026, 22:16 SAST) - read this before the older status below:** the window is 192 x 152
@@ -13,6 +13,8 @@ The VIEW LEADS THE CAR: up to 20 px ahead across, 16 up/down, 2 px a picture (ha
 LEAD_X / LEAD_Y / LEAD_STEP to tune). In-race music is on the AY SOUND CHIP (OPT_AY, tools/make_music_ay.py; needs a 128K or
 the 48K with the AY option on - a plain 48K is silent); coloured objects OFF (OBJECTS=1; too slow). Speed alone: 40 pictures at 3 TV
 frames / 225 at 4 / 5 at 5. Speed test 15 Nov 06:07: alone now 91 pictures at 3 frames / 193 / 3; the pack is ~30,000 T a picture over the faster rate (see the log's last entry for what was tried and what is left). Detail: PROJECT-LOG.md, end.
+
+**Race panel (15 Nov 09:20):** map, then RACE and the five cars (rows 5-15), the lap record (16), YOUR RACE (17) with your place at the end (18) and your lap times as you do them (19-21), the best in yellow. **MEMORY IS FULL: about 40 bytes free in each of the two main areas.**
 
 **Title (15 Nov 09:06):** green logo band, the egg, RUN cut in yellow and red with speed lines (t_run), five cars lapping the check border (tc_step). **Podium:** card rows 5-17, fastest lap with clock and lap number, your own lap times under the panel. **Memory is nearly full everywhere** (see the log's last entry) - anything new needs room found first. Open mock-ups: sad face when off the podium (sadface_options.png), frame options, race-screen layouts.
 

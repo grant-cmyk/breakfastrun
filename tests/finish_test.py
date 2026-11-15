@@ -48,8 +48,10 @@ with Racer(headless=True) as sp:
     clock8 = np.array([[sp.read8(SYM['clock8'] + r) >> (7 - c) & 1 for c in range(8)] for r in range(8)], dtype=bool)
     ok((sb[128:136, 64:72] == clock8).all() and sb[130:135, 74:92].any() and sb[130:135, 98:120].any() and sb[130:135, 130:150].any() and not sb[128:136, 152:168].any(),
        'under FASTEST LAP: the clock icon, the time, whose it was, and LAP with its number')
-    ok(all(sb[169 + 8 * i:174 + 8 * i, 211:216].any() and sb[169 + 8 * i:174 + 8 * i, 224:244].any() for i in range(3)) and not sb[168:192, 0:72].any(),
-       'your own three lap times are listed under the panel: the lap, its time')
+    ok(all(sb[153 + 8 * i:158 + 8 * i, 211:216].any() and sb[153 + 8 * i:158 + 8 * i, 224:244].any() for i in range(3)) and not sb[168:192, 0:72].any(),
+       'YOUR RACE, under the cars: your three lap times, the lap and its time (rows 19-21)')
+    ok(sb[146:151, 208:256].sum() > 60 and [A[r, 26] for r in (19, 20, 21)] == [0x30, 0x70, 0x30] and (A[20, 26:32] == 0x70).all() and A[17, 26] == 0x4F,
+       'FINISHED and your place above them; your best lap (the second, 21.4 s) picked out in bright yellow')
     shot(sp, 'podium.png')
     r0 = g(sp, 'renders'); sp.run(duration=1.0, fast_forward=True)
     ok(g(sp, 'renders') == r0 and attr(sp, 8, 10) != 0x7A, 'the race stays stopped under it, until a key')

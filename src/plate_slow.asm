@@ -254,7 +254,23 @@ podium:
         call pd_bar
         ld bc,0x1105
         call pd_bar
-        call yl_show            ; your own lap times, under the panel (clothmini.asm)
+        ld a,208                ; under YOUR RACE: FINISHED and your place ...
+        ld (MSG_X),a
+        ld a,146
+        ld (MSG_Y),a
+        ld hl,pd_t6
+        call sm_text
+        ld a,(position)
+        dec a
+        add a,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,txt_places
+        add hl,de
+        call sm_text
+        call yl_all             ; your laps (each was shown as it was done: again, to be sure)
+        call yl_best            ; ... and your best lap picked out in yellow
         ld a,(order)            ; the steps, each its driver's colour: 1st in the middle, the tallest
         ld bc,0x070B
         ld de,0x0704
@@ -413,3 +429,6 @@ tc_tab:                         ; x, y + 18, heading, steps left, the next part 
         db 32,30,64,96,2,  186,30,64,19,2,  244,134,128,22,6,  148,198,192,58,10,  12,172,0,61,14
 t_blk   equ BUF+0x1700          ; (in the back buffer, past what the title keeps of the race screen there: free while no race runs)
 
+
+pd_t6:  db "FINISHED ",0
+pd_t7:  db "YOUR RACE",0

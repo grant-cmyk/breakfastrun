@@ -136,7 +136,7 @@ t_rlin:                         ; the speed lines: a line, its 3 bytes (x 88-111
 
 ; YOUR LAP TIMES (Grant, 15 Nov 2026: "at the end of the race in the HUD, can you show the laptimes
 ; for your racer - so all laps"). yl_note keeps each as you finish it; yl_show, at the race's
-; end, lists them under the panel (rows 21-23): the lap, its time.
+; end, lists them under YOUR RACE (rows 19-21): the lap, its time.
 yl_note:                        ; HL = a lap's time, IX = whose (kept: HL)
         ld a,(ix+C_KIND)
         or a
@@ -156,8 +156,15 @@ yl_note:                        ; HL = a lap's time, IX = whose (kept: HL)
         inc hl
         ld (hl),d
         ex de,hl
+        jr yl_show              ; and shown at once
+yl_show:                        ; (called as each lap is done: HL and IX kept for lap_timed)
+        push hl
+        push ix
+        call yl_all
+        pop ix
+        pop hl
         ret
-yl_show:
+yl_all:
         xor a
 yl_1:
         ld (yl_n),a
@@ -190,12 +197,12 @@ yl_1:
         cp LAPS
         jr nz,yl_1
         ret
-yl_y:                           ; B = lap yl_n's line: 169, 177, 185
+yl_y:                           ; B = lap yl_n's line: 153, 161, 169 (rows 19-21)
         ld a,(yl_n)
         add a,a
         add a,a
         add a,a
-        add a,169
+        add a,153
         ld b,a
         ret
 yl_n:   db 0

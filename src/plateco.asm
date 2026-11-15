@@ -332,3 +332,37 @@ tcs_1:
         jr nz,tcs_1
         ret
 
+
+; YL_BEST: the best of your laps this race: its row (19-21) bright yellow
+yl_best:
+        ld ix,you_laps
+        ld bc,0xFFFF            ; BC = the best so far, E = which lap, D = the lap looked at
+        ld de,0
+yb_1:
+        ld l,(ix+0)
+        ld h,(ix+1)
+        ld a,h
+        or l
+        jr z,yb_2
+        push hl
+        or a
+        sbc hl,bc
+        pop hl
+        jr nc,yb_2
+        ld b,h
+        ld c,l
+        ld e,d
+yb_2:
+        inc ix
+        inc ix
+        inc d
+        ld a,d
+        cp LAPS
+        jr nz,yb_1
+        ld a,e
+        add a,19
+        ld b,a
+        ld c,26
+        ld de,0x0106
+        ld a,0x70
+        jp set_attrs

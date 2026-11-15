@@ -23,16 +23,27 @@ A_LGRN  equ 0x44                ; bright green on black: all three - go
 A_LAP   equ 0x4F                ; bright white on blue
 LOGO_ROW equ 21                 ; the logo: under the window, centred on it (columns 9-15)
 LOGO_COL equ 9
-TOWER_Y equ 10                  ; first row of the race order (RACE above it)
+TOWER_Y equ 6                   ; (just under the map since 15 Nov 2026: it was 10) ;                 ; first row of the race order (RACE above it)
 A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 
 ; ---------------------------------------------------------------------
 ; HUD_INIT: the whole surround, once at the start of a race
 ; ---------------------------------------------------------------------
 hud_init:                       ; a new race: what changes (the rest: screen_once)
-        ld bc,0x151A            ; your lap times from the last race, under the panel: off
-        ld de,0x0306
+        ld bc,0x121A            ; YOUR RACE, under the cars (Grant, 15 Nov 2026: panel C, "fill it in as the game
+        ld de,0x0406            ; commences, showing lap times"): the last race's result and laps off,
         call clear_cells
+        ld bc,0x121A
+        ld de,0x0406
+        ld a,A_YEL
+        call set_attrs
+        ld bc,0x111A            ; its heading, white on blue
+        ld de,0x0106
+        ld a,A_LAP
+        call set_attrs
+        ld hl,pd_t7
+        ld bc,137*256+232
+        call sm_ctr
         ld b,TOWER_Y+2*NCARS    ; the lap record under the order: cleared,
         ld c,26                 ; then shown if there is one from an earlier race
         ld d,1
