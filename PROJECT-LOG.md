@@ -1934,3 +1934,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - YOUR RACE: each row reads LAP n and the time (the P was first overwritten by the number).
 - Room made: the old message bar's words and clock, the keys screen's PRESS-key patches.
   code_end 0xBFD6 (42 bytes free in the main area). All eleven test suites PASS; speed 74/202/4.
+
+## 2026-11-15 SAST (morning) - mock-up: the title's cars in black
+
+- Grant: "the cars are red now. Is it possible to make them black against the red and white?"
+  Not with a tight white mask as well: red, white and black in one cell cannot be had.
+  tools/make_titlecar_mock.py -> docs/design/titlecar_options.png, the game's own five cars over
+  the checks: NOW (red line, white mask), A black see-through, B black on a white cell-patch,
+  C solid black shape, D black shape with cloth-coloured lines. Nothing built.
