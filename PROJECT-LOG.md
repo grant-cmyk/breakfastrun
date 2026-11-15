@@ -1892,3 +1892,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - MOCK-UP, not built: docs/design/sadface_options.png - where your unhappy face goes when you
   miss the podium (A on the card ... F at the card's corner).
 - All eleven test suites PASS (drive, finish, title rerun after the faces). Speed alone 74/203/3.
+
+## 2026-11-15 SAST (morning) - mock-up: the panel - cars under the map, your result and laps under the cars
+
+- Grant: "Put the cars 1-5 further up the screen, so just under the map. Then my result and
+  laptimes goes under the cars. Can you mock that up please".
+- tools/make_panel_mock.py -> docs/design/panel_options.png: NOW + A (red bar YOU 4TH, laps),
+  B (your face - unhappy off the podium - a large place, laps), C (YOUR RACE block, best lap
+  picked out), D (the block during the race). RACE moves to row 5, the cars rows 6-15. Nothing built.
