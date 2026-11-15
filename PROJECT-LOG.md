@@ -2185,3 +2185,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - The track agent's branch is merged. `bash build.sh` -> build/racer.tap (track 1); `TRACK=2 bash build.sh` -> build/racer_track2.tap (THE BREAKFAST CLUB); `TRACK=3 bash build.sh` -> build/racer_track3.tap (BREAKFAST OF CHAMPIONS, 72 x 84 map). Notes and pictures: docs/design/tracks/built/BUILT.md. Test: `TRACK=2 python3 tests/track2_test.py` (QUICK=1 for the short run).
 - TOPMEM is LOWTAB-0x26A (was 0x24D for an hour): tracks 2 and 3 keep 28 and 24 bytes more at the top than track 1. About 8 bytes are free under it.
 - Track 4 does not fit (about 160 bytes short even bare); track 5's bridge not started.
+
+## 15 Nov 2026 18:20 SAST - RAM sweep (read-only agent): about 11.8 KB can be found
+- Full report: docs/design/RAM-SWEEP.md. Nothing applied yet; Grant to choose a package.
+- Safe now (~850 bytes, no speed cost): row lists into back buffer rows 168-191 (672), top pocket at 0xFFC3 (57), unused a_sav (54), LOWTAB tails (49), unused variables (22).
+- Worth doing (~4,400): cars flipped top-bottom when drawn (~2,100), gen_tiles as one routine (~990), O map out of the race (540-780), surface as spans, tower_cars duplicates, stack 256 -> 160, 2-byte waypoints.
+- Big moves (~6,600): the screen copy as a loop (5,697 bytes; built and measured: about 2.6% of a picture, 4.5% slower racing alone), cars flipped left-right too.
+- Tracks share nearly all art (101 tile pictures in all); a track's own data packs to about 0.7-0.8 KB. Two tracks in one 48K load is reachable with safe + worth doing.
