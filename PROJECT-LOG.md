@@ -1942,3 +1942,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   tools/make_titlecar_mock.py -> docs/design/titlecar_options.png, the game's own five cars over
   the checks: NOW (red line, white mask), A black see-through, B black on a white cell-patch,
   C solid black shape, D black shape with cloth-coloured lines. Nothing built.
+
+## 2026-11-15 10:11 SAST - the podium: a yellow row above PRESS ANY KEY
+
+- Grant: "have the press any key a row lower in the finish race view - so an extra yellow line
+  below the fast time details". The card is rows 5-18; its foot and PRESS ANY KEY on row 18.
+  finish, drive, title tests PASS. docs/design/podium_built.png.

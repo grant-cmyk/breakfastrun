@@ -243,16 +243,16 @@ mu_jing:                        ; the start ditty: the tune's pitches (mu_ptab),
         db 0,2,4,6, 6,4,6,254, 8,4,2,4, 6,254,6,254, 6,254,254,254, 253
 
 podium:
-        ld bc,0x0505            ; the card: rows 5-17, columns 5-20, black on bright yellow -
-        ld de,0x0D10            ; a colour no driver has, so nobody blends into it
+        ld bc,0x0505            ; the card: rows 5-18, columns 5-20, black on bright yellow -
+        ld de,0x0E10            ; a colour no driver has, so nobody blends into it
         call clear_cells
         ld bc,0x0505
-        ld de,0x0D10
+        ld de,0x0E10
         ld a,0x70
         call set_attrs
         ld bc,0x0505            ; its head and foot: white on blue
         call pd_bar
-        ld bc,0x1105
+        ld bc,0x1205            ; (a row of yellow between the fastest lap and this: Grant, 15 Nov 2026)
         call pd_bar
         ld a,208                ; under YOUR RACE: FINISHED and your place ...
         ld (MSG_X),a
@@ -293,7 +293,7 @@ podium:
         ld bc,121*256+104       ; (a row of card between the podium and this: Grant, 15 Nov 2026)
         call sm_ctr
         ld hl,pd_t4
-        ld bc,137*256+104
+        ld bc,145*256+104
         call sm_ctr
         ld a,(order)            ; their names
         ld bc,91*256+104

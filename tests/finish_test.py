@@ -35,16 +35,16 @@ with Racer(headless=True) as sp:
     sp.write(SYM['race_over'], bytes([1])); sp.run(duration=0.6, fast_forward=True)
     sb = screen_bits(sp).astype(bool)
     A = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)])
-    want = np.full((13, 16), 0x70); want[0] = 0x4F; want[12] = 0x4F
+    want = np.full((14, 16), 0x70); want[0] = 0x4F; want[13] = 0x4F
     want[2:9, 6:10] = COLOUR[4]; want[3:9, 2:6] = COLOUR[1]; want[4:9, 10:14] = COLOUR[0]
-    ok((A[5:18, 5:21] == want).all(), 'the podium: a yellow card (rows 5-17, columns 5-20), blue head and foot, three steps in the drivers\' own colours - white, cyan, red - with yellow all round them')
-    ok((A[5:17, 1:5] == 0x29).all() and (A[5:17, 21:25] == 0x29).all() and (A[18:20, 1:25] != 0x70).all() and (A[1:5, 5:21] != 0x70).all(), 'the cloth round the card keeps its own colours')
+    ok((A[5:19, 5:21] == want).all(), 'the podium: a yellow card (rows 5-18, columns 5-20), blue head and foot, three steps in the drivers\' own colours - white, cyan, red - with yellow all round them')
+    ok((A[5:17, 1:5] == 0x29).all() and (A[5:17, 21:25] == 0x29).all() and (A[19:20, 1:25] != 0x70).all() and (A[1:5, 5:21] != 0x70).all(), 'the cloth round the card keeps its own colours')
     ok((sb[56:72, 96:112] == HAPPY['WHITE']).all(), 'the winner\'s face is the HAPPY one, the same size as the others, on the top step')
     ok((sb[64:80, 64:80] == EVERY['CYAN']).all() and (sb[72:88, 128:144] == EVERY['GREEN' if False else 'YOU']).all(), 'second and third have their everyday faces')
     ok(sb[72:88, 96:112].any() and sb[80:96, 64:80].any() and sb[88:104, 128:144].any() and sb[91:96, 96:112].any() and sb[99:104, 60:84].any() and sb[106:111, 128:144].any(),
        'each step has its place, large, and its driver\'s name in the small letters')
-    ok(sb[41:46, 76:132].any() and sb[50:55, 92:116].any() and sb[121:126, 82:126].any() and sb[137:142, 78:130].any() and not sb[112:120, 40:168].any(),
-       'CHEQUERED FLAG, WINNER, a clear row under the podium, FASTEST LAP, PRESS ANY KEY')
+    ok(sb[41:46, 76:132].any() and sb[50:55, 92:116].any() and sb[121:126, 82:126].any() and sb[145:150, 78:130].any() and not sb[112:120, 40:168].any() and not sb[136:144, 40:168].any(),
+       'CHEQUERED FLAG, WINNER, a clear row under the podium, FASTEST LAP, a clear row, PRESS ANY KEY')
     clock8 = np.array([[sp.read8(SYM['clock8'] + r) >> (7 - c) & 1 for c in range(8)] for r in range(8)], dtype=bool)
     ok((sb[128:136, 64:72] == clock8).all() and sb[130:135, 74:92].any() and sb[130:135, 98:120].any() and sb[130:135, 130:150].any() and not sb[128:136, 152:168].any(),
        'under FASTEST LAP: the clock icon, the time, whose it was, and LAP with its number')
