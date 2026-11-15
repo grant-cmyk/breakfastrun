@@ -1785,3 +1785,16 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   happy face in the HUD for the best lap - "keeping it as a potential nice feature".
 - tests/finish_test.py (new) PASS; all eleven suites PASS. Speed alone 74 / 203 / 3 (unchanged).
   code_end 0xBF89 (119 bytes free in the main area). docs/design/podium_built.png.
+
+## 2026-11-15 SAST (morning) - the title's car no longer vanishes on the right; logo mock-ups
+
+- Grant: "in the title screen on the right side of the screen the racing car disappears for
+  periods". CAUSE: a_x was the screen's x + 16; down the right-hand side it is 252, and the
+  column sum (x + 7) / 8 ran past 255, so the car was drawn nowhere. FIX: a_x is the screen's
+  x + 8 (src/title2.asm `sub 2`; the run's start in title3.asm). tests/title_test.py now counts
+  the looks in which the car is not on the screen (0 of 450); it only checked the car's ink
+  when there was some, which is how this got through.
+- Grant: "the egg yellow on white is not really visible ... more mockups for a title logo, or
+  find a way to make the egg visible". tools/make_logo_options.py -> docs/design/logo_options.png:
+  NOW + A bigger yolk, B line egg, C big egg, D big egg on a plate, E big line egg, F egg in the
+  pan. Nothing built. docs/design/title_lap.gif is a whole lap now (14 s).

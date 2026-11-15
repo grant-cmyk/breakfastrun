@@ -81,7 +81,9 @@ ad_draw:
         rrca
         rrca
         and 31
-        sub 3                   ; (x is the screen's + 16 since the car laps the title's edge: 15 Nov 2026)
+        sub 2                   ; (x is the screen's + 8 since the car laps the title's edge. It was + 16:
+                                ; on the right-hand side x + 7 then ran past 255 and the car was drawn nowhere -
+                                ; Grant, 15 Nov 2026: "on the right side of the screen the racing car disappears")
         ld (a_k0+1),a
         ld a,(a_on)
         ld b,a

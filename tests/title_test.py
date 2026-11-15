@@ -66,20 +66,22 @@ with Racer(headless=True) as sp:
     # the car's laps of the edge: 45 s, sampled 10 times a second
     card = np.zeros((192, 256), dtype=bool); card[24:168, 24:232] = True
     inner = np.zeros((192, 256), dtype=bool); inner[32:160, 32:224] = True      # (the car's corners cut 8 pixels into the card's)
-    base = sb.copy(); spots = set(); leaks = 0; clash = 0; sides = set(); cw = 0; last = None
+    base = sb.copy(); spots = set(); leaks = 0; clash = 0; sides = set(); gone = 0
     for i in range(450):
         sp.run(duration=0.1, fast_forward=True)
         sb = screen_bits(sp)
-        x, y = sp.read8(SYM['a_x'] + 1) - 8, sp.read8(SYM['a_y'] + 1) - 18      # its middle on the screen
+        x, y = sp.read8(SYM['a_x'] + 1), sp.read8(SYM['a_y'] + 1) - 18          # its middle on the screen
         spots.add((x, y))
         sides.add('top' if y < 24 else 'bottom' if y > 168 else 'left' if x < 24 else 'right' if x > 232 else '?')
         leaks += int(((sb != base) & inner).sum())
         ink = sb & ~card
+        gone += int(ink.sum() < 40)                                            # (a car is 60-110 pixels of ink)
         if ink.any():
             ys, xs = np.nonzero(ink)
             if xs.max() - xs.min() > 20 or ys.max() - ys.min() > 20: leaks += 1000        # more than one car's worth of ink out there
         A2 = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); clash += int((A2 != A).sum())
     ok(len(spots) > 100 and sides >= {'top', 'bottom', 'left', 'right'}, 'your car laps the edge: seen on all four sides (%d different places in 45 s: the lap is the same each time, about 14 s)' % len(spots))
+    ok(gone == 0, 'it is in sight all the way round, the right-hand side too (%d of 450 looks without it)' % gone)
     ok(leaks == 0, 'it leaves nothing behind and never touches the menu (%d stray pixels)' % leaks)
     ok(clash == 0, 'not one colour cell changes while it runs: no colour clash')
     ok(g(sp, 'renders') == 0 and sp.read8(SYM['race_on']) == 0, 'no race runs behind the title')
