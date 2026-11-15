@@ -2180,3 +2180,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Track 3: the game's code is MAPH-driven already (surface, O map, camera, row index are 16-bit); the only change is map_c3 (hud.asm), `if MAPH > 64`: mini-map at 14/256. Track 2's mini-map has MMY0 -24 (one row lower: the game draws rows 5 down).
 - tests/track2_test.py (TRACK=2 or 3): grid, window against the map all round the lap, mini-map, four computer cars 3 laps, your laps by placement and driven by script with the keys, short cuts, dropped cars. tests/track_shots.py -> docs/design/tracks/built/ (pictures and BUILT.md, with the figures and why track 4 does not fit).
 - Not done: track 4 (about 160 bytes short with a bare table - BUILT.md), track 5 (bridge), a track's name on screen, choosing a track in the game. Nobody has played tracks 2 and 3.
+
+## 15 Nov 2026 17:48 SAST - tracks 2 and 3 merged in: one track a tape
+- The track agent's branch is merged. `bash build.sh` -> build/racer.tap (track 1); `TRACK=2 bash build.sh` -> build/racer_track2.tap (THE BREAKFAST CLUB); `TRACK=3 bash build.sh` -> build/racer_track3.tap (BREAKFAST OF CHAMPIONS, 72 x 84 map). Notes and pictures: docs/design/tracks/built/BUILT.md. Test: `TRACK=2 python3 tests/track2_test.py` (QUICK=1 for the short run).
+- TOPMEM is LOWTAB-0x26A (was 0x24D for an hour): tracks 2 and 3 keep 28 and 24 bytes more at the top than track 1. About 8 bytes are free under it.
+- Track 4 does not fit (about 160 bytes short even bare); track 5's bridge not started.

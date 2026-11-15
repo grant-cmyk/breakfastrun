@@ -90,7 +90,7 @@ PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a 
 PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
-        if $ > LOWTAB-0x24D
+        if $ > LOWTAB-0x26A
         .error the room under 0x8000 runs into the data kept at its top (TOPMEM, LOWTAB)
         endif
         org 32768
@@ -4569,7 +4569,7 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ LOWTAB-0x24D      ; (under 0x8000 since the window grew a column: the copy routine, 152
+TOPMEM      equ LOWTAB-0x26A      ; (under 0x8000 since the window grew a column: the copy routine, 152
                                   ; lines of 40 bytes from COPIER, now runs to 0xFFC3 - there is no top of memory left)
 BUFA      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 BUFB      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
