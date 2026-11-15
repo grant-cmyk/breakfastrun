@@ -243,17 +243,18 @@ mu_jing:                        ; the start ditty: the tune's pitches (mu_ptab),
         db 0,2,4,6, 6,4,6,254, 8,4,2,4, 6,254,6,254, 6,254,254,254, 253
 
 podium:
-        ld bc,0x0505            ; the card: rows 5-15, columns 5-20, black on bright yellow -
-        ld de,0x0B10            ; a colour no driver has, so nobody blends into it
+        ld bc,0x0505            ; the card: rows 5-17, columns 5-20, black on bright yellow -
+        ld de,0x0D10            ; a colour no driver has, so nobody blends into it
         call clear_cells
         ld bc,0x0505
-        ld de,0x0B10
+        ld de,0x0D10
         ld a,0x70
         call set_attrs
         ld bc,0x0505            ; its head and foot: white on blue
         call pd_bar
-        ld bc,0x0F05
+        ld bc,0x1105
         call pd_bar
+        call yl_show            ; your own lap times, under the panel (clothmini.asm)
         ld a,(order)            ; the steps, each its driver's colour: 1st in the middle, the tallest
         ld bc,0x070B
         ld de,0x0704
@@ -273,10 +274,10 @@ podium:
         ld bc,50*256+104
         call sm_ctr
         ld hl,pd_t3
-        ld bc,114*256+68
+        ld bc,121*256+104       ; (a row of card between the podium and this: Grant, 15 Nov 2026)
         call sm_ctr
         ld hl,pd_t4
-        ld bc,121*256+104
+        ld bc,137*256+104
         call sm_ctr
         ld a,(order)            ; their names
         ld bc,91*256+104
@@ -292,15 +293,25 @@ podium:
         and l
         inc a
         jr z,pd_nb
-        ld a,(best_car)
-        ld bc,114*256+106
-        call pd_name
+        ld bc,0x1008            ; under FASTEST LAP (Grant, 15 Nov 2026: "B but also show which lap they did
+        ld de,CLOCK8            ; it in"): the clock, the time, whose, and the lap
+        call tr_glyph
         ld hl,(best_lap)
         call time_fmt
         ld hl,time_txt+2
-        ld b,114
-        ld c,15
-        call st_text
+        ld b,130
+        ld c,9
+        ld a,2
+        call st_text_x
+        ld a,(best_car)
+        ld bc,130*256+108
+        call pd_name
+        ld hl,pd_t5
+        ld bc,130*256+138
+        call sm_ctr
+        ld a,(best_lapno)
+        add a,'0'
+        call glyph
 pd_nb:
         ld hl,pd_d1             ; the places, large
         ld bc,0x090C
@@ -396,24 +407,3 @@ sm_text:
         pop hl
         inc hl
         jr sm_text
-pd_t1:  db "CHEQUERED FLAG",0
-pd_t2:  db "WINNER",0
-pd_t3:  db "FASTEST LAP",0
-pd_t4:  db "PRESS ANY KEY",0
-pd_d1:  db "1",0
-pd_d2:  db "2",0
-pd_d3:  db "3",0
-pd_names:                       ; by car: you, cyan, green, pink, white (Grant, 15 Nov 2026: "each player needs a name")
-        db "YOU",0,"FRANK",0,"SPIKE",0,"BRUNO",0,"JANE",0
-sm_dig:                         ; the small figures 0-9 and the colon, as the letters: 15 bits, top row first
-        db 0xF6,0xDE   ; 0
-        db 0x59,0x2E   ; 1
-        db 0xE7,0xCE   ; 2
-        db 0xE7,0x9E   ; 3
-        db 0xB7,0x92   ; 4
-        db 0xF3,0x9E   ; 5
-        db 0xF3,0xDE   ; 6
-        db 0xE5,0x24   ; 7
-        db 0xF7,0xDE   ; 8
-        db 0xF7,0x9E   ; 9
-        db 0x08,0x20   ; :

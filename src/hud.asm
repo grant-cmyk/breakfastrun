@@ -30,6 +30,9 @@ A_YOU   equ 0x72                ; bright red on yellow: your marker's cell
 ; HUD_INIT: the whole surround, once at the start of a race
 ; ---------------------------------------------------------------------
 hud_init:                       ; a new race: what changes (the rest: screen_once)
+        ld bc,0x151A            ; your lap times from the last race, under the panel: off
+        ld de,0x0306
+        call clear_cells
         ld b,TOWER_Y+2*NCARS    ; the lap record under the order: cleared,
         ld c,26                 ; then shown if there is one from an earlier race
         ld d,1

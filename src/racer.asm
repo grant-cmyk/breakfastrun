@@ -3052,6 +3052,7 @@ lap_timed:
         ret c
         or a
         sbc hl,de               ; HL = that lap's time
+        call yl_note            ; (yours: kept for the end of the race - clothmini.asm)
         ld de,(best_lap)
         push hl
         or a
@@ -3540,6 +3541,7 @@ tr_row:      db 0
 pb_attr:     db 0
 blink:       db 0
 best_car:    db 0
+you_laps:    defs 2*LAPS        ; your own lap times this race, in frames (0: not done)
 best_lapno:  db 0
 best_seq:    db 0
 shown_best_seq: db 0

@@ -134,6 +134,97 @@ t_rlin:                         ; the speed lines: a line, its 3 bytes (x 88-111
         db 42,0xFF,0xFF,0xF8, 43,0xFF,0xFF,0xF8, 46,0x03,0xFF,0xFE
         db 49,0x03,0xFF,0xFE, 52,0xFF,0xFF,0xF8, 53,0xFF,0xFF,0xF8
 
+; YOUR LAP TIMES (Grant, 15 Nov 2026: "at the end of the race in the HUD, can you show the laptimes
+; for your racer - so all laps"). yl_note keeps each as you finish it; yl_show, at the race's
+; end, lists them under the panel (rows 21-23): the lap, its time.
+yl_note:                        ; HL = a lap's time, IX = whose (kept: HL)
+        ld a,(ix+C_KIND)
+        or a
+        ret nz
+        ld a,(ix+C_LAPS)
+        sub 2
+        cp LAPS
+        ret nc
+        add a,a
+        add a,you_laps AND 255
+        ld e,a
+        ld a,0
+        adc a,you_laps/256
+        ld d,a
+        ex de,hl
+        ld (hl),e
+        inc hl
+        ld (hl),d
+        ex de,hl
+        ret
+yl_show:
+        xor a
+yl_1:
+        ld (yl_n),a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,you_laps
+        add hl,de
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a
+        or h
+        ret z                   ; (a lap not done: you did not finish)
+        call time_fmt
+        call yl_y
+        ld c,28
+        ld hl,time_txt+2
+        call st_text
+        ld a,(yl_n)
+        add a,'1'
+        ld (yl_t),a
+        call yl_y
+        ld c,26
+        ld a,3
+        ld hl,yl_t
+        call st_text_x
+        ld a,(yl_n)
+        inc a
+        cp LAPS
+        jr nz,yl_1
+        ret
+yl_y:                           ; B = lap yl_n's line: 169, 177, 185
+        ld a,(yl_n)
+        add a,a
+        add a,a
+        add a,a
+        add a,169
+        ld b,a
+        ret
+yl_n:   db 0
+yl_t:   db "1",0
+
+; the podium's words and figures (plate_slow.asm has its code: the room under 0x8000 is full)
+pd_t1:  db "CHEQUERED FLAG",0
+pd_t2:  db "WINNER",0
+pd_t3:  db "FASTEST LAP",0
+pd_t4:  db "PRESS ANY KEY",0
+pd_t5:  db "LAP ",0
+pd_d1:  db "1",0
+pd_d2:  db "2",0
+pd_d3:  db "3",0
+pd_names:                       ; by car: you, cyan, green, pink, white (Grant, 15 Nov 2026: "each player needs a name")
+        db "YOU",0,"FRANK",0,"SPIKE",0,"BRUNO",0,"JANE",0
+sm_dig:                         ; the small figures 0-9 and the colon, as the letters: 15 bits, top row first
+        db 0xF6,0xDE   ; 0
+        db 0x59,0x2E   ; 1
+        db 0xE7,0xCE   ; 2
+        db 0xE7,0x9E   ; 3
+        db 0xB7,0x92   ; 4
+        db 0xF3,0x9E   ; 5
+        db 0xF3,0xDE   ; 6
+        db 0xE5,0x24   ; 7
+        db 0xF7,0xDE   ; 8
+        db 0xF7,0x9E   ; 9
+        db 0x08,0x20   ; :
+
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both
         db G_GRIP, G_Q, G_SLIDE, G_QSLIDE       ; 1 (0.085 px a frame of sideways speed)
