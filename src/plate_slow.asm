@@ -213,18 +213,43 @@ pl_tl:   dw 0xFFFF               ; the lap time (frames) the plate's figures wer
 ; over, it should go back to the title screen" (hud_over: any key). Layout A4 of
 ; docs/design/podium_inside.png: a yellow card, each driver on a step of their own colour.
 ; ---------------------------------------------------------------------
-jin_start:                      ; a new race: the ditty from its first note (unless held off)
-        ld a,(jin_on)
-        inc a
+jin_start:                      ; a new race: the start jingle (unless held off), on the ordinary speaker so
+        ld a,(jin_on)           ; every machine plays it - the ROM's own BEEPER, a note at a time. Nothing
+        inc a                   ; else runs while it plays; then auto_go starts the lights.
         ret z
-        if OPT_AY
-        ld hl,mu_jing
-        ld (mu_ptr),hl
-        ld a,1
-        ld (mu_wait),a
-        else
+        push ix
+        ld hl,0x5C48            ; (BEEPER takes the border's colour from here - the title's tables now:
+        ld a,(hl)               ; yellow while it plays, then the byte back)
+        push af
+        ld (hl),0x30
+        ld hl,jb_tune
+jb_1:
+        ld a,(hl)
+        inc hl
+        cp 255
+        jr z,jb_end
+        push hl
+        ld e,a
+        ld d,0
+        ld hl,jb_tab
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a
+        call 0x03B5
+        halt                    ; (a breath between notes: two the same would run together)
+        pop hl
+        jr jb_1
+jb_end:
+        pop af
+        ld (0x5C48),a
+        pop ix
         xor a
-        endif
         ld (jin_on),a
         ret
 auto_go:                        ; each TV frame: the ditty over and no lights yet? they come on
@@ -239,8 +264,6 @@ auto_go:                        ; each TV frame: the ditty over and no lights ye
         ld a,(FRAMES)
         ld (start_f0),a
         ret
-mu_jing:                        ; the start ditty: the tune's pitches (mu_ptab), a step each; 253 ends it
-        db 0,2,4,6, 6,4,6,254, 8,4,2,4, 6,254,6,254, 6,254,254,254, 253
 
 podium:
         ld bc,0x0505            ; the card: rows 5-18, columns 5-20, black on bright yellow -

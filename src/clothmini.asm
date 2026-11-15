@@ -156,6 +156,10 @@ yl_note:                        ; HL = a lap's time, IX = whose (kept: HL)
         inc hl
         ld (hl),d
         ex de,hl
+        push hl                 ; a lap done: a high beep, a quarter of a second (Grant, 15 Nov 2026:
+        ld hl,14*256+14         ; "As you go past a lap, make a sound")
+        ld (snd_fxt),hl
+        pop hl
         jr yl_show              ; and shown at once
 yl_show:                        ; (called as each lap is done: HL and IX kept for lap_timed)
         push hl

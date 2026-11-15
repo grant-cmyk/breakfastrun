@@ -620,7 +620,8 @@ st_put:
 ; HUD_UPDATE: once per picture, after race_progress
 ; ---------------------------------------------------------------------
 hud_update:
-        ld a,(start_go)         ; before Q: keys 1, 2, 3 set your car up
+        ld a,(race_on)          ; until green: keys 1, 2, 3 set your car up (the lights' 2.6 s, now that the
+                                ; jingle and the countdown come by themselves)
         or a
         call z,su_keys
         call start_lights       ; Q pressed: the lights, red, red, red, green

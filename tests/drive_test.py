@@ -137,10 +137,10 @@ class Racer(Spectrum):
         while self.read8(0x5800 + 8 * 32 + 10) != 0x7A and t < 60:   # (TODAY'S MENU, red on the card)
             self.run(duration=0.1, fast_forward=True); t += 0.1
         self.run(duration=0.5, fast_forward=True)                    # (the rest of the title is drawn after its prompt)
+        self.write(SYM['jin_on'], bytes([0xFF]))                     # (the start jingle and its automatic countdown held off: Q starts
+                                                                     # the lights, as these tests expect - tests/finish_test.py has the jingle)
         press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)
         self.run(duration=0.26, fast_forward=True)                   # (the race screen is drawn; from here the computer cars'
-        self.write(SYM['jin_on'], bytes([0xFF]))                     # (the start ditty and its automatic countdown held off: Q starts
-                                                                     # the lights, as these tests expect - tests/finish_test.py has the ditty)
                                                                      # 90 s below run just as they did before there was a title:
                                                                      # the same laps. One check there turns on when the race starts)
 

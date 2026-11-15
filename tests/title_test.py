@@ -115,8 +115,8 @@ with Racer(headless=True) as sp:
     ok(sp.read8(SYM['k_i']) == 2, 'SPACE to accelerate: refused (the race screen has to name the key)')
     tap(sp, 'L'); tap(sp, 'M'); tap(sp, 'N', 0.2, 1.0)
     ok(title_up(sp, 5.0) < 5.0 and bytes(sp.read(TDV('key_ch'), 5)) == b'ZXLMN', 'after the fifth key: back to the title (keys %r)' % bytes(sp.read(TDV('key_ch'), 5)))
+    sp.write(SYM['jin_on'], bytes([0xFF]))          # (the start jingle and its automatic countdown held off from here on: the keys are what is tested - tests/finish_test.py has the jingle)
     tap(sp, '1', 0.2, 2.0)
-    sp.write(SYM['jin_on'], bytes([0xFF]))          # (the start ditty's automatic countdown held off from here on: the keys are what is tested - tests/finish_test.py has the ditty)
     ok(g(sp, 'renders') > 0 and frame_ok(sp), '1: the race screen, whole')
     hold(sp, ['Q'], 1.0); hold(sp, ['O', 'P', 'A'], 0.5)
     ok(sp.read8(SYM['start_go']) == 0 and sp.read8(SYM['cars'] + 11) == 0, 'the old keys (Q O P A) do nothing now')
@@ -138,6 +138,7 @@ with Racer(headless=True) as sp:
 # ---------------------------------------------------------------- 3: 1 = the race as before; after it, the title again
 with Racer(headless=True) as sp:
     load(sp)
+    sp.write(SYM['jin_on'], bytes([0xFF]))          # (the start jingle held off: tests/finish_test.py has it)
     tap(sp, '1', 0.3, 2.0)
     ok(g(sp, 'renders') > 0 and frame_ok(sp) and car(sp, 0)['vx'] == 0,
        '1 at the title: the race screen, your car on the grid')

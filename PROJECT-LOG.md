@@ -1989,3 +1989,25 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   COST: alone 52 pictures at 3 frames / 216 / 6 (it was 74 / 202 / 4) - the autopilot slides a lot.
 - docs/sound/race_now.mp3: 26 s from the game - the start ditty, the lights, the tune, skids.
   NOT heard by me. drift, drive, finish, nos tests PASS.
+
+## 2026-11-15 11:01 SAST - more sound: a lap beep, the engine whenever you accelerate, Kettle's On before the lights
+
+- Grant: "As you go past a lap, make a sound. If you accelerate make a sound. At the start of the
+  game before the lights - play the kettle's on jingle, play one of the jingles during the game".
+- LAP: a high beep, a quarter of a second, as you finish each lap (yl_note; the effect channel).
+- ACCELERATE: the engine's putter is heard whenever Q is held, at any speed (snd_picture). It
+  was only while picking up speed, quiet once up to it (his 14 Nov "events only" rule).
+- START JINGLE: the first 24 steps of Kettle's On (2.9 s) on the ORDINARY SPEAKER, by the ROM's
+  BEEPER routine (0x03B5), a note of 0.10 s and a HALT each - so every machine plays it, chip or
+  not (src/jingle.asm from tools/make_music_ay.py; jin_start, src/plate_slow.asm). Nothing else
+  runs while it plays. BEEPER reads the border colour from 0x5C48 (a title table now): yellow
+  for the jingle, then the byte back. The AY ditty of this morning is gone. Lights 3.0 s after 1,
+  green at 5.7 s. Recorded and checked: the notes are the tune's (495, 622, 740, 988 ... Hz).
+- IN THE RACE: Kettle's On (driving) on the AY chip, as before - needs the chip (racer.ini).
+- SET-UP KEYS (1, 2, 3): work until GREEN now (the lights' 2.6 s), not until the lights start -
+  the jingle is not a time for keys. Still not decided by Grant.
+- TESTS hold the jingle off by setting jin_on to 0xFF at the TITLE (before 1), since the jingle
+  now plays before the race screen's first picture. All twelve suites PASS.
+- SPEED: alone 36 pictures at 3 frames / 227 / 10 (52 / 216 / 6 before the engine change); in the
+  pack 5 / 253 / 7. The engine's flips, every frame while Q is held, take the last of the margin.
+- code_end 0xBFED: 19 bytes free in the main area. docs/sound/race_now.mp3: the new start.

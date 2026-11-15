@@ -32,4 +32,11 @@ with open(os.path.join(ROOT, 'src', 'music_ay.asm'), 'w') as f:
     f.write('        db 255\n; a word a pitch: the AY tone period\nmu_ptab_src:\n')
     for k in kinds:
         f.write('        dw %d    ; note %d, %.0f Hz\n' % (period(k - LOW), k - LOW, AY_HZ / 16 / period(k - LOW)))
+JN = int(os.environ.get('JINGLE', 24))            # the start jingle: the tune's first steps on the ordinary speaker
+with open(os.path.join(ROOT, 'src', 'jingle.asm'), 'w') as f:    # (the ROM's BEEPER at 0x03B5: DE = cycles, HL = 437,500 / Hz - 30)
+    f.write('; made by tools/make_music_ay.py: the first %d steps of "%s" for the ROM\'s beeper routine - the start jingle\n' % (JN, d['name']))
+    f.write('; (Grant, 15 Nov 2026: "At the start of the game before the lights - play the kettle\'s on jingle"). A step is\n; a note of 0.10 s and a HALT. jb_tab: a pitch\'s cycles (DE) and its period (HL); jb_tune: a pitch\'s place in it, 255 ends\njb_tab:\n')
+    for k in kinds:
+        hz = md.freq_of(k - LOW); f.write('        dw %d,%d    ; %.0f Hz\n' % (round(hz * 0.10), round(437500 / hz - 30.125), hz))
+    f.write('jb_tune:\n        db ' + ','.join('%d' % (kinds.index(m) * 4) for m in steps[:JN]) + ',255\n')
 print('music_ay.asm: %s, %d steps, %d pitches, %d bytes' % (d['name'], len(steps), len(kinds), len(steps) + 1 + 2 * len(kinds)))

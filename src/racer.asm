@@ -2535,9 +2535,10 @@ sp_2:
         ld a,l
         cp 8
         ret c                   ; all but stopped: quiet
-        cp SND_CRUISE           ; up to speed: quiet too - the engine is heard only while
-        ret nc                  ; the car is PICKING UP speed (off the line, out of a corner,
-        ld b,a                  ; after a bump): an event, not a drone (Grant, 14 Nov 2026).
+        cp 110                  ; heard whenever you accelerate, at any speed (Grant, 15 Nov 2026: "If you
+        jr c,sp_3               ; accelerate make a sound" - it was only while picking up speed, quiet once
+        ld a,110                ; up to it: "the game is a bit quiet now")
+sp_3:
         add a,a                 ; The interrupt's rate: 2 x speed + 30 flips per 256 frames
         add a,30
         ld (snd_rate),a
@@ -3694,6 +3695,7 @@ gd_2:
         include "omap.asm"      ; the cereal O's: one bit a tile
         include "faces.asm"     ; the drivers' faces for the race order
         include "plateco.asm"   ; the place plate in the window (pl_draw)
+        include "jingle.asm"    ; the start jingle's notes (tools/make_music_ay.py)
         include "faces_win.asm" ; each driver happy (tools/make_faces.py, from Grant's drawings)
         if OPT_TALL
         include "hudtext_gfx.asm"
@@ -3824,9 +3826,9 @@ AYW     macro reg, val          ; AY register reg <- the register val (H or L)
         out (c),val
         endm
         ld (isr_bc),bc
-        ld a,(race_on)          ; from the green light until you finish - and before it, the
-        or a                    ; start ditty (jin_on 1)
-        jp z,ay_pre
+        ld a,(race_on)          ; from the green light until you finish
+        or a
+        jp z,ay_quiet
         ld a,(you_done)
         or a
         jp nz,ay_quiet
@@ -3837,8 +3839,6 @@ ay_go:
         ld (hl),MU_STEP         ; ---- a new step: the tune's note on channel A
         ld hl,(mu_ptr)
         ld a,(hl)
-        cp 253                  ; the ditty's end: quiet, and auto_go starts the lights
-        jp z,ay_jend
         cp 255                  ; the end: round again
         jr nz,ay_1
         ld hl,mu_tune
@@ -3898,14 +3898,6 @@ ay_d2:
 ay_d3:
         ld (hl),a
         jr ay_vols
-ay_pre:
-        ld a,(jin_on)
-        dec a
-        jp z,ay_go
-        jr ay_quiet
-ay_jend:
-        xor a
-        ld (jin_on),a
 ay_quiet:                       ; no race: the three voices off (once)
         ld hl,(mu_va)
         ld a,h

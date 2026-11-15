@@ -18,16 +18,18 @@ def art(path, kind):
 CAR = ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE']; COLOUR = [0x57, 0x68, 0x60, 0x58, 0x78]
 EVERY, HAPPY = art('face_art.txt', 'face'), art('face_moods.txt', 'happy')
 with Racer(headless=True) as sp:
-    sp.load_tape(TAP)
-    sp.write(SYM['jin_on'], bytes([1]))                 # (the header holds the ditty off for the other tests: on again, as after 1)
-    t = 0.0; notes = set(); lit = None
+    Spectrum.load_tape(sp, TAP)                         # (the plain loader: the header's holds the jingle off)
+    t = 0.0
+    while attr(sp, 8, 10) != 0x7A and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
+    sp.run(duration=0.5, fast_forward=True)
+    press(sp, '1', True); sp.run(duration=0.2, fast_forward=True); press(sp, '1', False)
+    t = 0.0; lit = None; flips = 0; last = None
     while sp.read8(SYM['race_on']) == 0 and t < 12:
         sp.run(duration=0.02, fast_forward=True); t += 0.02
-        if sp.read8(SYM['jin_on']) == 1: notes.add(sp.read16(SYM['mu_ptr']))
         if lit is None and sp.read8(SYM['start_go']): lit = t
-    ok(sp.read8(SYM['race_on']) == 1 and lit is not None and 2.0 < lit < 3.2 and 4.6 < t < 6.2 and len(notes) >= 15,
-       'no key pressed: the ditty plays (%d of its steps seen), the lights come on by themselves %.1f s in, green at %.1f s' % (len(notes), lit or 0, t))
-    ok(sp.read16(SYM['mu_ptr']) - SYM['mu_tune'] < 4, 'at green the race tune starts from its first note')
+    ok(sp.read8(SYM['race_on']) == 1 and lit is not None and 2.4 < lit < 3.6 and 5.0 < t < 6.6,
+       'no key pressed after 1: the jingle plays (24 notes, 2.9 s, on the speaker), the lights come on by themselves %.1f s in, green at %.1f s' % (lit or 0, t))
+    ok(sp.read16(SYM['mu_ptr']) - SYM['mu_tune'] < 4 and sp.read8(0x5C48) == sp.read8(SYM['td'] + 0x5C48 - SYM['td']), 'at green the race tune starts from its first note')
     hold(sp, ['Q'], 1.0)
     order = [4, 1, 0, 3, 2]                               # JANE (white) wins, FRANK (cyan) second, YOU third
     sp.write(SYM['order'], bytes(order)); sp.write(SYM['best_lap'], bytes([1070 & 255, 1070 >> 8])); sp.write(SYM['best_car'], bytes([4]))
