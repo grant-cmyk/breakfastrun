@@ -1969,3 +1969,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tests/lapcount_test.py (new) PASS; all twelve suites PASS. Speed alone 74/202/4, pack 10/243/7.
 - NOTE: the window is 4 waypoints (about a tenth of the lap). Miss more than that in one go and
   the count still stands until you go back - say if it should be wider.
+
+## 2026-11-15 10:40 SAST - Grant's faces again: the red driver redrawn, a pixel up
+
+- Pasted from the Faces page, with "Move them one pixel up too": YOU's three faces redrawn and
+  moved up a row (tools/import_faces.py after the shift), CYAN's everyday and sad faces changed.
+  5 of 15 changed. In the game; the page (version 4) starts from them. title, drive, finish PASS.
