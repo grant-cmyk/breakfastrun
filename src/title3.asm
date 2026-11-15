@@ -119,11 +119,12 @@ t_name_src:                     ; the title: the driver's name under the face, i
         jp pd_name
 JIN_PART defl 1
         include "jingle.asm"    ; the flag jingle's notes
-        defs 0x5C78 - TD - ($ - td_src)   ; (up to FRAMES ...
-        defs 3                  ; ... which the copy sets to 0, once, at start-up)
+; (the keys' two small tables sit here, before FRAMES, since 15 Nov 2026: the block's end needed their 15 bytes)
 key_ch_src: db "OPQA "              ; 1UP's keys: left, right, accelerate, brake, NOS
 k_patch_src:                        ; ... and where read_keys reads each one
         dw k_left+1, k_right+1, k_go+1, k_brake+1, k_nos+1
+        defs 0x5C78 - TD - ($ - td_src)   ; (up to FRAMES ...
+        defs 3                  ; ... which the copy sets to 0, once, at start-up)
 k_sp_src:   db "SP",0
 k_script_src:
         db 0x41,9,T_KEY,"K",0

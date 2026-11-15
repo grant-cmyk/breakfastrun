@@ -2,11 +2,15 @@
 ; frames as the rows that differ from the everyday face (row, 2 bytes), each list ended by 0xFF
 faces_mood_src:
 ; YOU eyes
+        defb 7,%00000010,%10110100
+        defb 9,%00001001,%10011000
+        defb 12,%00001001,%10010000
         defb 0xFF
 ; YOU happy
         defb 7,%00000010,%10110100
         defb 10,%00001000,%01001000
-        defb 11,%00001000,%01010000
+        defb 11,%00001011,%11010000
+        defb 12,%00001001,%10010000
         defb 0xFF
 ; YOU sad
         defb 7,%00000010,%10110100
@@ -25,6 +29,7 @@ faces_mood_src:
         defb 7,%00100010,%01000100
         defb 9,%00010001,%10001000
         defb 10,%00010100,%00101000
+        defb 11,%00011011,%11011000
         defb 0xFF
 ; CYAN sad
         defb 4,%00110100,%00101100
@@ -74,7 +79,7 @@ faces_mood_src:
 ; PINK sad
         defb 3,%00011101,%11011100
         defb 6,%00111110,%00111110
-        defb 7,%00111110,%00111110
+        defb 7,%00111111,%11111110
         defb 10,%00010001,%11000100
         defb 12,%00010001,%11000100
         defb 13,%00001010,%00101000
@@ -102,5 +107,5 @@ faces_mood_src:
         defb 7,%00001000,%10001000
         defb 8,%00011000,%00001100
         defb 9,%00111100,%10011110
-        defb 10,%01110010,%10100111
+        defb 10,%01110100,%10010111
         defb 0xFF
