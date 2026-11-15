@@ -9,8 +9,21 @@ which cannot follow a smooth pixel scroll), so everything here is ink on paper."
 import math, os, sys
 from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, '..', 'src', 'world.asm')
-W, H = 72, 64                     # tiles (64 rows: the bigger track, 10 Nov 2026) (a border wide enough that the
+# WHICH TRACK (15 Nov 2026: one track a build - there is no room in memory for two).
+#   TRACK=1 (or unset): track 1, exactly as before, into src/ (the files in the repository).
+#   TRACK=2: THE BREAKFAST CLUB, its centre line from tools/make_track_designs.py. Give
+#   WORLD_OUT=<folder> as well, so that track 1's files in src/ are left alone (build.sh does:
+#   it builds a track other than 1 in a copy of src/ under build/).
+TRACK = int(os.environ.get('TRACK') or 1)
+SRC = os.environ.get('WORLD_OUT') or os.path.join(HERE, '..', 'src')       # where the .asm files go
+BLD = os.environ.get('WORLD_OUT') or os.path.join(HERE, '..', 'build')     # ... and the previews
+assert TRACK == 1 or os.environ.get('WORLD_OUT'), 'TRACK=%d needs WORLD_OUT=<folder>: src/ holds track 1' % TRACK
+OUT = os.path.join(SRC, 'world.asm')
+if TRACK != 1:                    # a later track's design (tools/make_track_designs.py): its centre line, its map's height
+    sys.path.insert(0, HERE)
+    import make_track_designs as _td
+    _t = _td.TRACKS[TRACK - 1]
+W, H = 72, (64 if TRACK == 1 else _t['H'])                     # tiles (64 rows: the bigger track, 10 Nov 2026) (a border wide enough that the
                                   # camera never has to stop at the world's edge)
 PW, PH = W * 8, H * 8             # pixels
 ROAD = 72                         # road width in pixels (48, 52, 56, 64, then 72 for the big cars - Grant, 10 Nov 2026)
@@ -44,6 +57,11 @@ DY = 64
 def tf(x, y): return 288 + (x - 288) * SCALE, 352 + (y - 352) * SCALE + DY
 PATH = [tf(x, y) for x, y in PATH]
 SY = 352 + DY                     # the bottom straight's middle: the start line and the grid
+if TRACK != 1:                    # a later track: the centre line of its design (the start line is at x = 288 and
+                                  # the grid behind it on a bottom straight, as on track 1)
+    assert _t['W'] == W, 'the game\'s road-surface and O maps are 72 tiles wide'
+    assert _t['lx'] == 256 + OFF and not _t.get('bridge')
+    PATH = list(_t['path']); SY = _t['sy']
 
 def road_mask(width):
     im = Image.new('1', (PW, PH), 0)
@@ -141,6 +159,23 @@ all_old = [('plate', 32, 24), ('knife', 39, 24), ('fork', 30, 24), ('spoon', 41,
           ('bacon', 14, 2), ('egg', 24, 49)]
 KEEP_OLD = int(os.environ.get('KEEP_OLD', 0 if os.environ.get('OBJECTS') else 99))
 wanted = all_old[:KEEP_OLD]
+# TRACK 2's things, in TILES as they stand (not spread by tf). The rows of road are 3 to 5 tiles apart,
+# so nothing fits between them: the plate is inside the top right-hand loop, an egg in the pocket left
+# of the dip and one in the dip's mouth, the fork and knife down the strip inside the left-hand
+# straight, eggs and toast in the corners and on the right-hand edge.
+# MEMORY decides how many: this track has 48 more cereal O's (96 bytes of row lists) and 15 more
+# waypoints (60 bytes) than track 1, and the program has 5 bytes free. So ten things of four kinds - a
+# second or third egg costs 18 bytes where a new kind costs 50 to 90: the juice, the bacon and the spoon
+# of track 1 are left out. (All twelve: 198 bytes over in the program and 34 at TOPMEM.)
+T2_THINGS = [('plate', 48, 15), ('egg', 16, 16), ('egg', 34, 1), ('egg', 2, 58), ('egg', 66, 2), ('toast', 67, 32),
+             ('toast', 2, 2), ('toast', 65, 59), ('fork', 15, 22), ('knife', 15, 42)]
+if os.environ.get('T2_THINGS'): T2_THINGS = [(n, int(x), int(y)) for n, x, y in (w.split(':') for w in os.environ['T2_THINGS'].split(','))]   # (to try a layout: name:x:y,...)
+# TRACK 3, BREAKFAST OF CHAMPIONS (72 x 84): the 20 more rows of map cost 400 bytes (the road, the O's and the
+# index, 20 bytes a row), its 79 more O's 158 and its waypoints 60 - so there is room for five small things only.
+T3_THINGS = [('egg', 3, 25), ('egg', 67, 2), ('egg', 11, 80), ('toast', 21, 38), ('toast', 54, 62)]
+if TRACK == 2: wanted = T2_THINGS[:KEEP_OLD]
+if TRACK == 3: wanted = (T2_THINGS if os.environ.get('T2_THINGS') else T3_THINGS)[:KEEP_OLD]
+assert TRACK in (1, 2, 3), 'tracks 1, 2 and 3 only (4 does not fit in memory; 5 needs a bridge)'
 # Each thing is masked so it sits on the tablecloth, but a tile only needs its
 # mask (slower to draw) where the mask covers a dark, dithered check. So try
 # positions near the one wanted and take the one with fewest such tiles.
@@ -219,17 +254,17 @@ def runs8(spans):
         got = [sp for sp in spans[max(0, j):j + 8] if sp[0] != 255]
         out.append((min(a for a, b in got), max(b for a, b in got)) if got else (255, 0))
     return out
-with open(os.path.join(HERE, '..', 'src', 'objects.asm'), 'w') as g:
+with open(os.path.join(SRC, 'objects.asm'), 'w') as g:
     g.write('; GENERATED by tools/make_world.py - the coloured objects\' colours. A block (8 bytes): the\n; world x, y of its first row, the attribute, its height - 1, its first and last pixel from\n; x. The list ends with 0xFFFF. (Rectangles only: an object with a shaped inside - the mug,\n; an egg - needs a span for each row, which obj_paint had once: see the git history.)\nobj_tab:\n')
     for name, x, y, attr, spans in regions:
         assert len(set(spans)) == 1 and len(spans) <= 256, name + ': its coloured inside is not a rectangle'
         g.write('        dw %d,%d                ; %s\n        db 0x%02X,%d,%d,%d\n' % (x, y, name, attr, len(spans) - 1, spans[0][0], spans[0][1]))
     g.write('        dw 0xFFFF\n')
-import json; json.dump([dict(name=n, x=x, y=y, attr=a_, rows=sp, box=bx) for (n, x, y, a_, sp), bx in zip(regions, boxes)], open(os.path.join(HERE, '..', 'build', 'objects_rows.json'), 'w'))   # (each row's own span: for tests/objects_test.py)
+import json; json.dump([dict(name=n, x=x, y=y, attr=a_, rows=sp, box=bx) for (n, x, y, a_, sp), bx in zip(regions, boxes)], open(os.path.join(BLD, 'objects_rows.json'), 'w'))   # (each row's own span: for tests/objects_test.py)
 placed = []
 for name, tx, ty in wanted:
     shape = I[name]
-    tx, ty = (int(round(v / 8)) for v in tf(tx * 8, ty * 8))   # (spread with the track)
+    if TRACK == 1: tx, ty = (int(round(v / 8)) for v in tf(tx * 8, ty * 8))   # (spread with the track)
     w, h = len(shape[0]) // 8, len(shape) // 8
     best = None
     for dy in range(-3, 4):
@@ -239,6 +274,8 @@ for name, tx, ty in wanted:
                 if best is None or k < best[0]: best = (k, tx + dx, ty + dy)
     if best:
         place(shape, best[1], best[2]); placed.append(name)
+        if TRACK != 1: print('  %s at tile %d, %d (asked %d, %d)' % (name, best[1], best[2], tx, ty))
+    else: assert TRACK == 1, 'no room for the %s near tile %d, %d' % (name, tx, ty)
 print('placed:', ' '.join(placed)); print('cereal Os:', len(OS))
 
 # the NOS canisters (Grant, 10 Nov 2026): A just behind the grid, B in the middle of
@@ -265,6 +302,14 @@ CANS = {'A': _can(156, SY), 'B': _can(_bx, _by)}      # A just behind the grid
 OIL_ART = ['........', '..XXX...', '.X...XX.', 'XXXXXXXX', 'X......X', 'X.XXXX.X', 'X.X..X.X', 'X.XXXX.X', 'X......X', 'X......X', 'XXXXXXXX', '........']
 _left = min(PATH, key=lambda p: (abs(p[1] - (SY - 170)), p[0]))
 CANS['C'] = _can(min(p[0] for p in PATH if abs(p[1] - _left[1]) < 20), _left[1])
+if TRACK == 2:
+    # THE BREAKFAST CLUB: A just behind the grid as on track 1; B half a lap on, in the middle of the
+    # third row (the cars come along it flat out); C, the oil can, half-way up the left-hand straight
+    CANS = {'A': _can(156, SY), 'B': _can(330, 220), 'C': _can(68, 254)}
+if TRACK == 3:
+    # BREAKFAST OF CHAMPIONS: A behind the grid; B at the foot of the fold in the middle (half a lap on);
+    # C, the oil can, on the long straight down the left-hand side
+    CANS = {'A': _can(156, SY), 'B': _can(288, 490), 'C': _can(116, 190)}
 for k, (tx, ty, dy) in CANS.items():
     for y, row in enumerate(OIL_ART if k == 'C' else NOS_ART):
         for x, c in enumerate(row):
@@ -317,7 +362,7 @@ for ty in range(H):
         on = sum(road[tx * 8 + i, ty * 8 + j] for i in range(8) for j in range(8))
         surf.append(0 if on >= 32 else 1)
 print('masked tiles:', len(masked), ' different masks:', len(umasks))
-TOPDATA = os.path.join(HERE, '..', 'src', 'topdata.asm')
+TOPDATA = os.path.join(SRC, 'topdata.asm')
 with open(TOPDATA, 'w') as f:
     f.write('; GENERATED by tools/make_world.py - do not edit by hand\n')
     f.write('; data kept at the top of memory (see TOPMEM): the masks, the mini-map\n')
@@ -347,8 +392,9 @@ with open(OUT, 'w') as f:
     # rows up to TOP_ROWS bytes go to the top of memory (topdata.asm; Grant's sweep: the
     # mini-map's 336 bytes freed there), the rest stay here; the index points at both
     TOP_ROWS = 320
+    if TRACK == 3: TOP_ROWS = 388        # (its things have fewer masks up there: 68 bytes more of the rows fit, and the program needs them)
     top_used, where = 0, {}
-    toprows = open(os.path.join(HERE, '..', 'src', 'toprows.asm'), 'w')
+    toprows = open(os.path.join(SRC, 'toprows.asm'), 'w')
     toprows.write('; GENERATED by tools/make_world.py - map rows kept at the top of memory\n')
     for ty in range(H):
         ent = [(tx, mapb[ty * W + tx]) for tx in range(W) if mapb[ty * W + tx]]
@@ -366,7 +412,7 @@ with open(OUT, 'w') as f:
                                 % (k, j, ty, where[ty], 2 + 2 * i, k, j, ent[i][1]))
     toprows.close()
     # (the index of the row lists is kept in the buffer's bottom rows: src/rowidx.asm)
-    with open(os.path.join(HERE, '..', 'src', 'rowidx.asm'), 'w') as g:
+    with open(os.path.join(SRC, 'rowidx.asm'), 'w') as g:
         g.write('; GENERATED by tools/make_world.py - do not edit by hand\n')
         g.write('; the map: for each of the %d tile rows, a pointer to its list\nrow_index_src:\n' % H)
         for ty in range(H):
@@ -386,6 +432,11 @@ loop = PATH + [PATH[0]]
 seglen = [math.dist(loop[i], loop[i + 1]) for i in range(len(PATH))]
 total = sum(seglen)
 NWP = round(total / 32)
+# The game keeps a car's progress, laps * NWP + waypoints passed, in ONE BYTE, with 246 to 249 kept for
+# the cars that have finished (progress, racer.asm), and a waypoint's place in the table as number * 4 in
+# a byte (wp_delta). So over 3 laps at most 61 waypoints: a longer track has them a little further apart
+# (track 2: 61, one every 34.8 px, for 66 at 32 px). Track 1 has 46.
+NWP = min(NWP, 61)
 wps = []
 for k in range(NWP):
     d = k * total / NWP
@@ -400,7 +451,7 @@ cpu = [GRID[1], GRID[4], GRID[3], GRID[2]]       # CYAN P2, GREEN P5, PINK P4, W
 def first_wp(cx, cy):
     ahead = [k for k, (x, y) in enumerate(wps) if abs(y - cy) < 30 and x > cx + 16]
     return min(ahead, key=lambda k: wps[k][0] - cx)
-WPOUT = os.path.join(HERE, '..', 'src', 'waypoints.asm')
+WPOUT = os.path.join(SRC, 'waypoints.asm')
 with open(OUT, 'a') as f:
     f.write('\n; (the waypoints are in waypoints.asm, placed where they fill an alignment gap)\n')
 with open(WPOUT, 'w') as f:
@@ -425,33 +476,41 @@ print('waypoints:', NWP)
 MW = 48
 MMX0, MMY0 = -4, -12             # 21/256 scale: the map is 48 wide (the panel 6 columns since 14 Nov 2026)
 MH = (PH - MMY0) * 21 // 256 + 2
+MSC = 21                         # the scale, in 256ths
+if TRACK == 2:                   # the game shows the map's rows from 5 down, and track 2's road starts higher up the table than
+    MMY0 = -24                   # track 1's (its top edge would be row 4: cut off). So its map sits one row lower - the same
+                                 # 44 rows, and the cars' dots follow, since the game works them out from MMY0
 #               # (centred in the panel)
+if H > 64:                       # a taller map (track 3): at 14/256, so that it fits the same 44 rows above the RACE heading (the
+    MSC = 14                     # game: map_c3 in hud.asm, for MAPH over 64), in the middle of the 48 columns, its road from row 5 down
+    MMX0 = -int(round((MW - PW * MSC / 256) / 2 * 256 / MSC)); MMY0 = int(min(p[1] for p in PATH) - ROAD / 2 - 5.2 * 256 / MSC); MH = 44
 def on_road(mx, my):
-    x, y = MMX0 + int((mx * 256 + 128) / 21), MMY0 + int((my * 256 + 128) / 21)
+    x, y = MMX0 + int((mx * 256 + 128) / MSC), MMY0 + int((my * 256 + 128) / MSC)
     return 0 <= x < PW and 0 <= y < PH and road[x, y]
 mm = [[0] * MW for _ in range(MH)]
 for my in range(MH):
     for mx in range(MW):
         if on_road(mx, my) and any(not on_road(mx + dx, my + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
             mm[my][mx] = 1
-smx = (256 + OFF + 4 - MMX0) * 21 // 256           # the start line: a tick across the road -
+smx = (256 + OFF + 4 - MMX0) * MSC // 256           # the start line: a tick across the road -
 for my in range(MH):                              # on the bottom straight only (the same column
-    if on_road(smx, my) and MMY0 + my * 256 // 21 > PH // 2: mm[my][smx] = 1   # crosses the top dip too)
+    if on_road(smx, my) and (MMY0 + my * 256 // 21 > PH // 2 if TRACK == 1 else abs(MMY0 + (my * 256 + 128) / MSC - SY) < ROAD / 2 + 8): mm[my][smx] = 1   # crosses the top dip too)
+assert MH == 44 and not any(mm[my][mx] for my in list(range(5)) + list(range(MH - 2, MH)) for mx in range(MW)), 'the mini-map\'s road is outside the rows the game shows (5 to %d, above the RACE heading)' % (MH - 3)
 obits = [[0] * W for _ in range(H)]                # where the cereal O's are: cars bounce off them
 for ox, oy in OS: obits[oy // 8][ox // 8] = 1
-with open(os.path.join(HERE, '..', 'src', 'omap.asm'), 'w') as f:   # (in the program: see racer.asm)
+with open(os.path.join(SRC, 'omap.asm'), 'w') as f:   # (in the program: see racer.asm)
     f.write('\n; the cereal O\'s: one BIT per tile (1 = an O: solid - cars bounce off it),\n')
     f.write('; %d bytes a row, leftmost tile in the top bit\nomap_src:\n' % (W // 8))
     for r in obits:
         f.write('        defb ' + ','.join('%%%s' % ''.join(str(b) for b in r[i:i + 8]) for i in range(0, W, 8)) + '\n')
-with open(os.path.join(HERE, '..', 'src', 'minimap.asm'), 'w') as f:   # (start-up area: drawn once)
+with open(os.path.join(SRC, 'minimap.asm'), 'w') as f:   # (start-up area: drawn once)
     f.write('; GENERATED by tools/make_world.py - drawn once at the start (screen_once)\n')
-    f.write('MMX0    equ %d\nMMY0    equ %d   ; the mini-map: world (x, y) -> ((x - MMX0) * 21 / 256, ...)\nMAP_H   equ %d\n' % (MMX0, MMY0, MH))
-    f.write('; the mini-map: road edges at 21/256 scale, 6 bytes a row\nminimap_src:\n')
+    f.write('MMX0    equ %d\nMMY0    equ %d   ; the mini-map: world (x, y) -> ((x - MMX0) * %d / 256, ...)\nMAP_H   equ %d\n' % (MMX0, MMY0, MSC, MH))
+    f.write('; the mini-map: road edges at %d/256 scale, 6 bytes a row\nminimap_src:\n' % MSC)
     for row in mm:
         f.write('        defb ' + ','.join('%%%s' % ''.join(str(v) for v in row[i:i + 8]) for i in range(0, MW, 8)) + '\n')
-open(os.path.join(HERE, '..', 'build', 'minimap.txt'), 'w').write('\n'.join(''.join('#' if v else '.' for v in r) for r in mm) + '\n')
+open(os.path.join(BLD, 'minimap.txt'), 'w').write('\n'.join(''.join('#' if v else '.' for v in r) for r in mm) + '\n')
 
 big = img.convert('L').point(lambda v: 0 if v else 255).resize((PW * 2, PH * 2), Image.NEAREST)
-big.save(os.path.join(HERE, '..', 'build', 'world_preview.png'))
+big.save(os.path.join(BLD, 'world_preview.png'))
 print('tiles:', len(order), ' road tiles:', surf.count(0))

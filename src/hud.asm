@@ -1209,12 +1209,21 @@ mo_3:
 map_c3:                         ; HL (0..~700) * 3 / 32 -> A
         ld d,h                  ; (21/256 since the panel lost a column: the map is 48 wide)
         ld e,l
+        if MAPH > 64            ; a map taller than 64 rows (track 3: 84) is drawn smaller, 14/256, to fit above
+        add hl,hl               ; the RACE heading (tools/make_world.py, MSC)
+        add hl,hl
+        add hl,hl
+        or a
+        sbc hl,de               ; * 7
+        add hl,hl               ; * 14: H = HL * 14 / 256
+        else
         add hl,hl
         add hl,hl
         add hl,de               ; * 5
         add hl,hl
         add hl,hl
         add hl,de               ; * 21: H = HL * 21 / 256
+        endif
         ld a,h
         ret
 

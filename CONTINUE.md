@@ -14,6 +14,8 @@ LEAD_X / LEAD_Y / LEAD_STEP to tune). In-race music is on the AY SOUND CHIP (OPT
 the 48K with the AY option on - a plain 48K is silent); coloured objects OFF (OBJECTS=1; too slow). Speed alone: 40 pictures at 3 TV
 frames / 225 at 4 / 5 at 5. Speed test 15 Nov 06:07: alone now 91 pictures at 3 frames / 193 / 3; the pack is ~30,000 T a picture over the faster rate (see the log's last entry for what was tried and what is left). Detail: PROJECT-LOG.md, end.
 
+**Tracks 2 and 3 (15 Nov evening, background agent - not yet playtested):** one track a build: `TRACK=2 bash build.sh` -> build/racer_track2.tap, `TRACK=3 bash build.sh` -> build/racer_track3.tap; racer.tap is track 1, unchanged. Test: `TRACK=2 python3 tests/track2_test.py`. Detail and figures: docs/design/tracks/built/BUILT.md.
+
 **Crew messages (15 Nov 11:48):** the chief's face and a white bubble at the foot of the play window (msg_say in src/strip.asm writes the lines; fl_draw in src/plateco.asm copies them in; the picture is kept invisibly on the screen under the window). Messages: tools/make_strip.py MSGS. **Main area: 17 bytes free.**
 
 **Sound (15 Nov 11:16):** the speaker only - NO AY (OPT_AY 0; AY=1 builds the race tune on the chip). Kettle's On jingle before the lights (ROM BEEPER, jin_start), engine while accelerating, skid, lap beep, effects. No tune in the race. Tests hold the jingle off with jin_on = 0xFF set at the TITLE. Main area: 253 bytes free again.

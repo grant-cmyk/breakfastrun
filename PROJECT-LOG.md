@@ -2171,3 +2171,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Crew chief's bubble: he blinks (cf_blink, clothmini.asm), a small radio wave moves under his chin (cf_wave, plate_slow.asm: 7 bars, 1-3 pixels, inside the face's own 16 x 16 so the bubble is no larger), and a blip sounds as a message comes up (msg_snd).
 - Room: seven HUD texts nothing showed went from hudtext.asm, and TOPMEM rose from LOWTAB-0x2A0 to LOWTAB-0x24D (83 bytes more under 0x8000). Two small key tables moved before FRAMES in the table block.
 - Faces: Grant's seventh round. A background agent is building track 2 as its own tape (one track a build).
+
+## 15 Nov 2026 (evening) - tracks 2 and 3 as their own builds (background agent, branch worktree-agent-a861f48a4f7d5e3b0)
+- ONE TRACK A BUILD. `TRACK=2 bash build.sh` -> build/racer_track2.tap (THE BREAKFAST CLUB); `TRACK=3 bash build.sh` -> build/racer_track3.tap (BREAKFAST OF CHAMPIONS, 72 x 84). `bash build.sh` is track 1 and build/racer.tap is byte for byte what it was (cmp).
+- tools/make_world.py takes TRACK and WORLD_OUT; the centre line comes from tools/make_track_designs.py. build.sh builds a track other than 1 in a copy of src/ (build/trackN/src): src/ stays track 1's.
+- Waypoints capped at 61: progress is one byte (laps * NWP + passed, 246-249 kept for finished cars) and wp_delta's index is a byte. 35 px apart on track 2, 41 on track 3.
+- Memory decided the breakfast things: track 2 has ten (plate, 4 eggs, 3 toast, fork, knife), track 3 five (3 eggs, 2 toast; TOP_ROWS 388). Program free: track 2 35 bytes, track 3 23.
+- Track 3: the game's code is MAPH-driven already (surface, O map, camera, row index are 16-bit); the only change is map_c3 (hud.asm), `if MAPH > 64`: mini-map at 14/256. Track 2's mini-map has MMY0 -24 (one row lower: the game draws rows 5 down).
+- tests/track2_test.py (TRACK=2 or 3): grid, window against the map all round the lap, mini-map, four computer cars 3 laps, your laps by placement and driven by script with the keys, short cuts, dropped cars. tests/track_shots.py -> docs/design/tracks/built/ (pictures and BUILT.md, with the figures and why track 4 does not fit).
+- Not done: track 4 (about 160 bytes short with a bare table - BUILT.md), track 5 (bridge), a track's name on screen, choosing a track in the game. Nobody has played tracks 2 and 3.
