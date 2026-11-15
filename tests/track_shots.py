@@ -15,7 +15,7 @@ DEST = os.path.join(ROOT_, 'docs', 'design', 'tracks', 'built'); os.makedirs(DES
 OUT = DEST                                              # (shot() saves there)
 T = 'track%s_' % TRACK
 sp = boot(); sp.run(duration=1.0, fast_forward=True); shot(sp, T + 'grid.png')
-sb = screen_bits(sp)[0:42, 208:256]
+sb = screen_bits(sp)[118:160, 8:56]                  # (the map is in the window's bottom left corner since 15 Nov 2026)
 Image.fromarray(((1 - sb) * 255).astype(np.uint8)).resize((48 * 8, 42 * 8), Image.NEAREST).save(os.path.join(DEST, T + 'minimap.png'))
 go_green(sp); press(sp, 'Q', False)
 # drive with the keys; a picture when your next waypoint reaches each of four places on the first lap

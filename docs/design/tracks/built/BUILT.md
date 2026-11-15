@@ -22,7 +22,7 @@ Test: `TRACK=2 python3 tests/track2_test.py` and `TRACK=3 python3 tests/track2_t
 - `build.sh` builds a track other than 1 in a copy of `src/` under `build/trackN/src`, so the
   files in `src/` stay track 1's.
 - The game's code is the same for tracks 1 and 2. Track 3 changes one routine, only in its own
-  build: the mini-map's scale (14/256 instead of 21/256), so an 84-row map fits above RACE.
+  build: the mini-map's scale (14/256 instead of 21/256), so an 84-row map fits above RACE. (Since 15 Nov 2026 night the map is in the window's bottom left corner, 48 x 39 pixels: the same scales.)
 
 ## What differs from the designs
 
