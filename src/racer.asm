@@ -126,6 +126,9 @@ st_so:
         ld hl,0xFFFF
         ld (best_lap),hl
         call gaps_reset
+        if OPT_BRIDGE
+        call lv_reset           ; BRIDGE: everyone starts on the table (bridge.asm)
+        endif
         call win_cells          ; (plate_slow.asm)
         call hud_init
         ld hl,cars_init         ; copy the starting records into place
@@ -189,6 +192,9 @@ cpu_move:
         add ix,de
         pop bc
         djnz cpu_move
+        if OPT_BRIDGE
+        call lv_all             ; BRIDGE: each car's level, the bridge's walls, the ramps' pull (bridge.asm)
+        endif
         call bumps_o            ; cars that touch, and the cereal O's
 
         call race_progress      ; your waypoints and laps, everyone's progress
@@ -200,7 +206,11 @@ cpu_move:
         ld b,NCARS
 draw_all:
         push bc
+        if OPT_BRIDGE
+        call draw_car_b         ; BRIDGE: a car under the deck is hidden (bridge.asm)
+        else
         call draw_car
+        endif
         ld de,0x10000-C_SIZE
         add ix,de
         pop bc
@@ -1411,6 +1421,8 @@ o_check:
 ; oc_try's - Grant's speed pass, 10 Nov 2026). The car stays inside the world, so
 ; the tiles are inside the map (a mask over a row's end reads the next row's
 ; first byte: at worst a needless full check).
+        if OPT_BRIDGE           ; BRIDGE: no O map on this track - oc_quick and o_at (bridge.asm) read the row lists
+        else
 oc_quick:
         ld l,b                  ; HL = omap + row * 9 + column / 8
         ld h,0
@@ -1469,9 +1481,13 @@ oq_maybe:
         ret
 oq_mask:                        ; column C AND 7 -> left byte, right byte
         db 0xC0,0x00, 0x60,0x00, 0x30,0x00, 0x18,0x00, 0x0C,0x00, 0x06,0x00, 0x03,0x00, 0x01,0x80
+        endif                   ; (BRIDGE)
 
 oc_try:                         ; tile (C, B): an O, close enough? CY = bounced
         push bc
+        if OPT_BRIDGE           ; BRIDGE: is tile (C, B) an O? from its row's list
+        call o_at
+        else
         ld a,b                  ; byte = omap + row * 9 + column / 8
         cp MAPH
         jr nc,oc_no
@@ -1503,6 +1519,7 @@ oc_bit:
         rla
         dec e
         jr nz,oc_bit
+        endif                   ; (BRIDGE)
         jr nc,oc_no             ; no O there
         ld l,c                  ; dx = (centre x - 4) - 8 * column
         ld h,0
@@ -1626,6 +1643,10 @@ KICK    equ 0x00C0          ; bounce speed: 0.75 pixels a frame
 TOUCH   equ 15              ; cars touch closer than this in x and y (12 for the 16 x 16
                             ; cars; 15 for the 20 x 20 ones, Grant 10 Nov 2026)
 bump:
+        if OPT_BRIDGE
+        call lv_same            ; BRIDGE: a car on the deck and one under it do not touch
+        ret nz
+        endif
         ld (bump_b),hl
         inc hl                  ; quick look: are they within TOUCH-1 pixels in x?
         ld a,(ix+C_X)
@@ -3711,8 +3732,13 @@ gd_2:
         include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
         include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
         include "rowidx.asm"    ; the map: each tile row's list
+        if 1-OPT_BRIDGE         ; (BRIDGE: no O map)
         include "omap.asm"      ; the cereal O's: one bit a tile
+        endif
         include "faces.asm"     ; the drivers' faces for the race order
+        if OPT_BRIDGE
+        include "bridge.asm"    ; BRIDGE: track 5's crossover - levels, walls, ramps, the hidden car
+        endif
         include "plateco.asm"   ; the place plate in the window (pl_draw)
         if OPT_TALL
         include "hudtext_gfx.asm"
@@ -4668,7 +4694,9 @@ tdraw_table equ tdraw_table_src
         endif
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src
+        if 1-OPT_BRIDGE
 omap      equ omap_src
+        endif
 cars_init equ TOPMEM + cars_init_src - high_src
 faces     equ faces_src
 

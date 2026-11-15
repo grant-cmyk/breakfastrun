@@ -943,6 +943,9 @@ trp_2:
         ld c,26
         ld de,PNUM
         call tr_glyph16
+        if OPT_BRIDGE           ; BRIDGE: (memory) the car's picture comes from its frame, not from a second copy (tower_cars)
+        call tower_b
+        else
         ld a,(tr_car)           ; the car's own picture, facing right, at
         rrca                    ; 16 x 16: tower_cars + car * 64
         rrca
@@ -963,6 +966,7 @@ trp_2:
         ld b,a
         ld c,27
         call tr_pic
+        endif                   ; (BRIDGE)
         ld a,(race_on)          ; racing: the gap to the leader, not the face
         or a
         jp nz,tr_race
@@ -1045,6 +1049,78 @@ tg_row:
         inc h
         djnz tg_row
         ret
+        if OPT_BRIDGE
+; TOWER_B: the race order's car picture, 16 x 16 at cell row tr_row, column 27, from the car's own frame
+; facing right (heading 4: big_tab's address, first row, rows; a frame's row 6 is the car's top line) -
+; the lines above and below the frame's rows are cleared. Uses the other BC (the count of each).
+tower_b:
+        ld a,(tr_car)
+        rrca
+        rrca
+        ld l,a
+        and 0x3F
+        ld h,a
+        xor l
+        ld l,a
+        ld de,big_tab+16
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)               ; DE = the frame
+        inc hl
+        ld a,(hl)
+        sub 6
+        inc hl
+        ld h,(hl)
+        ld l,a
+        push hl
+        exx
+        pop bc                  ; C' = clear lines first, B' = the frame's rows
+        exx
+        ld a,(tr_row)
+        ld b,a
+        call tw_8
+        ld a,(tr_row)
+        inc a
+        ld b,a
+tw_8:
+        ld c,27
+        call cell_addr
+        ld b,8
+tw_1:
+        exx
+        ld a,c
+        or a
+        jr z,tw_2
+        dec c
+tw_clr:
+        exx
+        xor a
+        ld (hl),a
+        inc l
+        ld (hl),a
+        jr tw_4
+tw_2:
+        ld a,b
+        or a
+        jr z,tw_clr
+        dec b
+        exx
+        inc de                  ; skip the mask; ink left
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc de                  ; skip the mask; ink right
+        inc l
+        ld a,(de)
+        ld (hl),a
+        inc de
+tw_4:
+        dec l
+        inc h
+        djnz tw_1
+        ret
+        else
 tr_pic:                         ; 8 rows of the picture (ink only) into cell B, C
         call cell_addr
         ld b,8
@@ -1062,6 +1138,7 @@ tp_row:
         inc h
         djnz tp_row
         ret
+        endif                   ; (BRIDGE)
 tr_clear:                       ; 8 pixel rows x 7 bytes at cell B, C
         call cell_addr
         ld b,8

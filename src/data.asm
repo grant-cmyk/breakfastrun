@@ -3,6 +3,7 @@
 
 ; the race order's car pictures: each car facing right (its heading 4) at 16 x 16,
 ; 16 rows of mask left, ink left, mask right, ink right (64 bytes a car)
+        if 1-OPT_BRIDGE         ; (BRIDGE, track 5: drawn from the frames instead - tower_b, hud.asm)
 tower_cars:
         defb %00000000,%00000000,%00000000,%00000000
         defb %00000000,%00000000,%00000000,%00000000
@@ -84,6 +85,7 @@ tower_cars:
         defb %00000000,%00000000,%00000000,%00000000
         defb %00000000,%00000000,%00000000,%00000000
         defb %00000000,%00000000,%00000000,%00000000
+        endif
 
 ; BIG_TAB: each car's 16 headings: the frame's address, its first row, its rows
 ; (frames are 24 wide - 3 (mask, ink) byte pairs a row - and only the rows in use are kept)

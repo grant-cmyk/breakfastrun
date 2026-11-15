@@ -60,8 +60,10 @@ SY = 352 + DY                     # the bottom straight's middle: the start line
 if TRACK != 1:                    # a later track: the centre line of its design (the start line is at x = 288 and
                                   # the grid behind it on a bottom straight, as on track 1)
     assert _t['W'] == W, 'the game\'s road-surface and O maps are 72 tiles wide'
-    assert _t['lx'] == 256 + OFF and not _t.get('bridge')
+    assert _t['lx'] == 256 + OFF or TRACK == 5
     PATH = list(_t['path']); SY = _t['sy']
+LX = 256 + OFF if TRACK == 1 else _t['lx']      # the start line's x (track 5: 384 - its start straight begins further right)
+BRIDGE = _t.get('bridge') if TRACK != 1 else None   # TRACK 5 only: the crossover (see the BRIDGE blocks below; nothing else changes for tracks 1-3)
 
 def road_mask(width):
     im = Image.new('1', (PW, PH), 0)
@@ -99,15 +101,24 @@ def place_os():
                     got.append(p); last = p
     return got
 OS = place_os()
+if BRIDGE:                        # BRIDGE: no O stands on either road at the crossing, nor beside the bridge, its ramps or its concrete (as designed)
+    _inner = road_mask(ROAD - 8).load()
+    OS = [(ox, oy) for ox, oy in OS if not _inner[ox + 4, oy + 4]]
+    _l, _r = _td.CON_BOX
+    OS = [(ox, oy) for ox, oy in OS if not (-_l <= ox + 4 - BRIDGE['cross'][0] <= _r and BRIDGE['ramp_up'][0] - 4 <= oy + 4 <= BRIDGE['ramp_down'][1] + 4)]
 for ox, oy in OS:
     for j, r in enumerate(O_RING):
         for i, c in enumerate(r):
             if c == '#': px[ox + i, oy + j] = 1
+if BRIDGE:                        # BRIDGE: its ink - look P4 (concrete wings, walls along the ramps, kerb walls in cyan only) with the
+    # tunnel mouth dithered (D1). Plain tiles OR'd onto the cloth like the O's (no masks: the cloth's dots show through).
+    _gw, _gi, _tw, _ti, _cells, _mb = _td.plan_parts(BRIDGE, os.environ.get('BRIDGE_LOOK', 'P4D1'))
+    for (x, y) in _gi | _ti: px[x, y] = 1
 # the starting grid (Grant, 10 Nov 2026): the classic stagger, two lanes - P1
 # on the inside (the upper lane: the first bend is a left-hander), P2 beside it
 # and 16 px back, P3 behind P1, and so on. Top-left of each car, facing right.
 LANE_A, LANE_B = SY - 14 - 8, SY + 14 - 8        # lane centres 14 px either side of the middle (11 for 16 x 16 cars)
-GRID = [(248, LANE_A), (232, LANE_B), (216, LANE_A), (200, LANE_B), (184, LANE_A)]   # x on the 8-px tile grid: the boxes share tiles
+GRID = [(LX - 40, LANE_A), (LX - 56, LANE_B), (LX - 72, LANE_A), (LX - 88, LANE_B), (LX - 104, LANE_A)]   # x on the 8-px tile grid: the boxes share tiles
 GRID_ORDER = [0, 1, 4, 3, 2]                     # car in each place: YOU, CYAN, WHITE, PINK, GREEN
 for gx, gy in GRID:                              # a grid box behind each: [ shape, 1 px lines
     for y in range(gy - 1, gy + 17):
@@ -117,7 +128,8 @@ for gx, gy in GRID:                              # a grid box behind each: [ sha
             if road[x, y]: px[x, y] = 1
 # start line: checker band 8px tall across the bottom straight at x=256..263
 for y in range(SY - 60, SY + 60):
-    for x in range(256 + OFF, 264 + OFF):
+    for x in range(LX, LX + 8):
+        if BRIDGE and (x // 8 * 8, y // 8 * 8) in OS: continue      # (BRIDGE: an O's tile holds the O alone - the game knows an O by its tile)
         if road[x, y] and not px[x, y] and ((x // 4) + (y // 4)) % 2 == 0:
             px[x, y] = 1
 
@@ -175,7 +187,8 @@ if os.environ.get('T2_THINGS'): T2_THINGS = [(n, int(x), int(y)) for n, x, y in 
 T3_THINGS = [('egg', 3, 25), ('egg', 67, 2), ('egg', 11, 80), ('toast', 21, 38), ('toast', 54, 62)]
 if TRACK == 2: wanted = T2_THINGS[:KEEP_OLD]
 if TRACK == 3: wanted = (T2_THINGS if os.environ.get('T2_THINGS') else T3_THINGS)[:KEEP_OLD]
-assert TRACK in (1, 2, 3), 'tracks 1, 2 and 3 only (4 does not fit in memory; 5 needs a bridge)'
+if TRACK == 5: wanted = []        # BRIDGE: no breakfast things on this track - their memory is the bridge's
+assert TRACK in (1, 2, 3, 5), 'tracks 1, 2, 3 and 5 only (4 does not fit in memory)'
 # Each thing is masked so it sits on the tablecloth, but a tile only needs its
 # mask (slower to draw) where the mask covers a dark, dithered check. So try
 # positions near the one wanted and take the one with fewest such tiles.
@@ -310,6 +323,9 @@ if TRACK == 3:
     # BREAKFAST OF CHAMPIONS: A behind the grid; B at the foot of the fold in the middle (half a lap on);
     # C, the oil can, on the long straight down the left-hand side
     CANS = {'A': _can(156, SY), 'B': _can(288, 490), 'C': _can(116, 190)}
+if TRACK == 5:
+    # A FRIDGE TOO FAR: A behind the grid; B on the top lane (half a lap on); C, the oil can, on the left-hand straight
+    CANS = {'A': _can(LX - 132, SY), 'B': _can(300, 68), 'C': _can(68, 200)}
 for k, (tx, ty, dy) in CANS.items():
     for y, row in enumerate(OIL_ART if k == 'C' else NOS_ART):
         for x, c in enumerate(row):
@@ -383,6 +399,15 @@ with open(OUT, 'w') as f:
     f.write('MAPW    equ %d\nMAPH    equ %d\nSTARTX  equ %d\nSTARTY  equ %d\nSTARTA  equ 16\n' % (W, H, start_x, start_y))
     f.write('TRACK_SY equ %d     ; the bottom straight\'s middle (the tests drive there)\n' % SY)
     f.write('TM_FIRST equ %d      ; tiles from here on are masked (the breakfast things)\n\n' % TM_FIRST)
+    if BRIDGE:                    # BRIDGE: this track keeps no O map - the game finds the O's in the row lists (o_at, bridge.asm), by their tile number
+        _o = bytes(sum((c == '#') << (7 - i) for i, c in enumerate(r)) for r in O_RING)
+        assert all(cells[(ox // 8, oy // 8)] == (_o, bytes(8)) for ox, oy in OS), 'an O shares its tile with something else: %r' % [(ox, oy) for ox, oy in OS if cells[(ox // 8, oy // 8)] != (_o, bytes(8))]
+        assert sum(1 for v in cells.values() if v == (_o, bytes(8))) == len(OS)
+        f.write('O_TILE  equ %d      ; the cereal O\'s tile\n' % num[(_o, bytes(8))])
+        (u0, u1), (d0, d1), (r0, r1) = BRIDGE['ramp_up'], BRIDGE['deck'], BRIDGE['ramp_down']; _xc, _yc = BRIDGE['cross']
+        f.write('; the bridge (bridge.asm): the upper road x BR_X0..BR_X1, from the foot of one ramp BR_Y0 to the other\'s BR_Y3 (the level deck\n; BR_Y1..BR_Y2); the lower road goes under at y BR_M0..BR_M1 and is covered from x BR_H0 to BR_H1\n')
+        f.write('BR_X0   equ %d\nBR_X1   equ %d\nBR_Y0   equ %d\nBR_Y1   equ %d\nBR_Y2   equ %d\nBR_Y3   equ %d\nBR_M0   equ %d\nBR_M1   equ %d\nBR_H0   equ %d\nBR_H1   equ %d\n'
+                % (_xc - ROAD // 2, _xc + ROAD // 2, u0, d0, d1, r1, _yc - ROAD // 2, _yc + ROAD // 2, BRIDGE['hidden'][1], BRIDGE['hidden'][0]))
     f.write('; tile pictures, 8 bytes each (tile 0 = blank). Page aligned so a\n; tile never crosses a 256-byte page.\n        defs (256 - ($ & 255)) & 255\ntiles:\n')
     for i, t in enumerate(order):
         f.write('        defb ' + ','.join('0x%02X' % b for b in t) + '   ; %d\n' % i)
@@ -469,7 +494,7 @@ with open(WPOUT, 'w') as f:
     f.write('\n; waypoints for the computer cars: centre line, racing order (x, y)\n')
     f.write('NWP     equ %d\n' % NWP)
     # the first waypoint past the start line (lap counting) and your first target
-    ws = min((k for k, (x, y) in enumerate(wps) if abs(y - SY) < 30 and x > 264 + OFF), key=lambda k: wps[k][0])
+    ws = min((k for k, (x, y) in enumerate(wps) if abs(y - SY) < 30 and x > LX + 8), key=lambda k: wps[k][0])
     f.write('WS      equ %d          ; first waypoint after the start line\n' % ws)
     f.write('PLAYERWP equ %d\n' % first_wp(start_x + 8, start_y + 8))
     for n, (x, y) in enumerate(cpu):
@@ -590,7 +615,7 @@ for my in range(MH):
     for mx in range(MW):
         if on_road(mx, my) and any(not on_road(mx + dx, my + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
             mm[my][mx] = 1
-smx = (256 + OFF + 4 - MMX0) * MSC // 256           # the start line: a tick across the road -
+smx = (LX + 4 - MMX0) * MSC // 256           # the start line: a tick across the road -
 for my in range(MH):                              # on the bottom straight only (the same column
     if on_road(smx, my) and (MMY0 + my * 256 // 21 > PH // 2 if TRACK == 1 else abs(MMY0 + (my * 256 + 128) / MSC - SY) < ROAD / 2 + 8): mm[my][smx] = 1   # crosses the top dip too)
 assert MH == 44 and not any(mm[my][mx] for my in list(range(5)) + list(range(MH - 2, MH)) for mx in range(MW)), 'the mini-map\'s road is outside the rows the game shows (5 to %d, above the RACE heading)' % (MH - 3)
