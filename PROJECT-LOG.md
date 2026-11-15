@@ -1798,3 +1798,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   find a way to make the egg visible". tools/make_logo_options.py -> docs/design/logo_options.png:
   NOW + A bigger yolk, B line egg, C big egg, D big egg on a plate, E big line egg, F egg in the
   pan. Nothing built. docs/design/title_lap.gif is a whole lap now (14 s).
+
+## 2026-11-15 SAST (morning) - mock-up: the podium's fastest lap
+
+- Grant: "fastest lap - put the name underneath that - show the fastest lap icon and the time -
+  can you mock that up". tools/make_fastlap_mock.py -> docs/design/fastlap_options.png: NOW +
+  A (FASTEST LAP, clock, time / name), B (FASTEST LAP / clock, time, name), C (clock, time /
+  name). The card grows a row (5-16) for the second line. Nothing built.
