@@ -6,7 +6,8 @@ longer tracks. This script only makes design material - it does NOT touch the ga
     docs/design/tracks/crossover_closeup.png                how the bridge could be drawn, three ways
     docs/design/tracks/crossover_walls.png                  the bridge with side walls and no O's, three walls
     docs/design/tracks/crossover_shadow.png                 the bridge with a tapering shadow; shadow and wall options
-    docs/design/tracks/crossover_concrete.png               the concrete bridge: side face, wing walls, tunnel mouth
+    docs/design/tracks/crossover_concrete.png               the concrete bridge: walls jutting out each side of the tunnel
+    docs/design/tracks/crossover_p4.png                     Grant's choice (P4) with the tunnel mouth dithered, four ways
     docs/design/tracks/tracks_overview.png                  all five at the same scale
     docs/design/tracks/TRACKS.md                            the note, with the figures
     docs/design/tracks/tracks_data.json                     vertices, waypoints, figures
@@ -389,7 +390,11 @@ def plan_parts(b, opt='P4'):
       P2 splayed wings, angling away from the road: a funnel into the tunnel
       P3 wedge wings, thick at the bridge and thin at the tip: the height falling away
       P4 P3, and the concrete also runs along the ramps both sides: thin at the ramp's foot, SIDE px thick by the deck
+    A suffix says how the tunnel mouth's band is filled (Grant chose P4, "but the solid blue should rather be dithered"):
+      none solid   D1 50% dither   D2 50% dither with a thin solid line along the deck's edge
+      D3 graded, 50% by the deck and 25% further out   D4 D2, and the kerbs' blue blocks dithered as well
     Returns the same six things as concrete_parts (the last: how far out the mouth's dark band reaches)."""
+    opt, fill = opt[:2], opt[2:]
     xc, yc = b['cross']; x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1
     (u0, u1), (d0, d1), (r0, r1) = b['ramp_up'], b['deck'], b['ramp_down']
     xr, xl = x1 + WALL8 + 1, x0 - WALL8 - 1                     # the first pixel outside each kerb wall
@@ -397,6 +402,8 @@ def plan_parts(b, opt='P4'):
     gw, gi, tw, ti = set(), set(), set(), set()
     kerb, cells = shadow_ink(b, 'S1', 'V3')
     ti |= {(x, y) for (x, y) in kerb if x0 - WALL8 <= x <= x1 + WALL8}
+    if fill == 'D4':                                            # the kerbs' blue blocks dithered too: their two edge lines stay
+        ti -= {(x, y) for (x, y) in cells if x not in (x0 - WALL8, x0 - 1, x1 + 1, x1 + WALL8) and (x + y) % 2 and y not in (u0, r1 - 1)}
     m0, m1 = yc - ROAD // 2, yc + ROAD // 2
     both = lambda i, y: ((xr + i, y), (xl - i, y))              # the same thing on both sides of the bridge
     if G:                                                       # P4: the wall along the ramps and deck
@@ -408,7 +415,13 @@ def plan_parts(b, opt='P4'):
                or (x, y - 1) not in strip or (x, y + 1) not in strip}
     for y in range(m0, m1):                                     # the mouths: a dark band under each edge of the deck
         for i in range(MB):
-            for q in both(i, y): tw.add(q); ti.add(q)
+            for q in both(i, y):
+                tw.add(q); ti.discard(q); x = q[0]
+                if not fill: on = True
+                elif fill == 'D1': on = (x + y) % 2 == 0
+                elif fill in ('D2', 'D4'): on = i == 0 or (x + y) % 2 == 0
+                else: on = (x + y) % 2 == 0 if i < MB // 2 else (y % 2 == 0 and (x + y) % 4 == 0)
+                if on: ti.add(q)
     wing = set()
     for i in range(JUT):                                        # the four walls that jut out
         if opt == 'P1': ya, yb = m0 - 7, m0
@@ -475,7 +488,7 @@ def concrete_parts(b, opt='C2'):
     return gw, gi, tw, ti, cells, F
 
 def build_world(t, walls=True):
-    if walls is True: walls = 'P4'                              # the look in track5.png
+    if walls is True: walls = 'P4D2'                            # the look in track5.png
     W, H, PATH, SY, LX = t['W'], t['H'], t['path'], t['sy'], t['lx']
     PW, PH = W * 8, H * 8
     def road_mask(width):
@@ -938,7 +951,7 @@ def shadow_picture(t, s=4):
 def concrete_picture(t, s=4):
     """The concrete bridge seen from above: concrete jutting out each side of the tunnel, four ways, the best
     in cyan only, and the earlier one-sided oblique face as an alternative."""
-    b = t['bridge']; w = t['w']; xc, yc = b['cross']
+    b = t['bridge']; w = t['w_concrete']; xc, yc = b['cross']
     cw, ch = 184, 216; cx0, cy0 = xc - 84, yc - ch // 2
     x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1; xf = x1 + WALL8 + 1
     ink_c, sol_c = car_art('YOU')
@@ -997,6 +1010,77 @@ def concrete_picture(t, s=4):
         d.text((pad, y + i * 22), line, fill=(70, 70, 0) if i == 5 else BLACK, font=font(16))
     im.save(os.path.join(OUTDIR, 'crossover_concrete.png'))
 
+def p4_picture(t, s=4):
+    """Grant's choice, P4, with the tunnel mouth's solid blue band dithered instead: four ways, and one in cyan only."""
+    b = t['bridge']; w = t['w']; xc, yc = b['cross']
+    cw, ch = 184, 216; cx0, cy0 = xc - 92, yc - ch // 2
+    x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1; xf = x1 + WALL8 + 1
+    ink_c, sol_c = car_art('YOU')
+    mine = concrete_parts(b, 'P4D2'); mine = mine[1] | mine[3]
+    def halo(sol, n=2):
+        P = np.pad(sol, n); out = P.copy()
+        for dy in range(-n, n + 1):
+            for dx in range(-n, n + 1): out |= np.roll(np.roll(P, dy, 0), dx, 1)
+        return out
+    def panel(opt, white):
+        gw, gi, tw, ti, cells, F = concrete_parts(b, opt)
+        base = w['ink'].copy()
+        for (x, y) in mine: base[y, x] = False                  # (the world was built with P4 D2: take it off)
+        bit = base | w['cloth_on']
+        for (x, y) in gw: bit[y, x] = False
+        for (x, y) in gi: bit[y, x] = True
+        ci, cs = np.rot90(ink_c), np.rot90(sol_c)               # the car below, driving left, half into the mouth
+        cx, cy = xf + F - 9, yc - 10
+        hl = halo(cs); bit[cy - 2:cy + 22, cx - 2:cx + 22][hl] = False
+        bit[cy:cy + 20, cx:cx + 20][ci] = True
+        bit[b['ramp_up'][0]:b['ramp_down'][1], x0 - WALL8:x1 + WALL8 + 1] = False
+        for (x, y) in tw: bit[y, x] = False
+        for (x, y) in ti: bit[y, x] = True
+        ci, cs = np.rot90(ink_c, 2), np.rot90(sol_c, 2)         # the car on the deck, whole
+        sl = bit[yc - 34:yc - 14, xc - 22:xc - 2]; sl[cs] = False; sl[ci] = True
+        a = np.empty(bit.shape + (3,), dtype=np.uint8); a[:] = CYAN
+        if white:
+            for (x, y) in cells: a[y, x] = WHITE
+        a[bit] = BLUE
+        return Image.fromarray(a[cy0:cy0 + ch, cx0:cx0 + cw]).resize((cw * s, ch * s), Image.NEAREST)
+    opts = [('P4D1', True, 'D1  50% DITHER', ['the mouth band as a plain', 'checker dither']),
+            ('P4D2', True, 'D2  DITHER + EDGE LINE', ['the same, with a thin solid line', 'along the deck\'s edge (in track5.png)']),
+            ('P4D3', True, 'D3  GRADED', ['50% by the deck, 25% further out:', 'a shadow falling away']),
+            ('P4D2', False, 'D2 IN CYAN ONLY', ['no white paper: what the game', 'can colour today']),
+            ('P4D4', True, 'D4  IF YOU MEANT THE KERBS AS WELL', ['D2, and the kerbs\' blue blocks', 'dithered too'])]
+    pad, head, cap, foot = 24, 56, 108, 128
+    per = 3; nrow = (len(opts) + per - 1) // per
+    im = Image.new('RGB', (pad + (cw * s + pad) * per, head + (ch * s + cap) * nrow + foot), YELLOW); d = ImageDraw.Draw(im)
+    d.text((pad, 12), 'TRACK 5 BRIDGE P4 - the tunnel mouth dithered instead of solid blue (mock-up, 4x, the game\'s blue ink)', fill=BLACK, font=font(28))
+    for k, (opt, white, name, sub) in enumerate(opts):
+        x = pad + (k % per) * (cw * s + pad); y = head + (k // per) * (ch * s + cap)
+        im.paste(panel(opt, white), (x, y))
+        d.rectangle([x - 2, y - 2, x + cw * s + 1, y + ch * s + 1], outline=BLUE, width=2)
+        d.text((x, y + ch * s + 6), name, fill=BLACK, font=font(24))
+        for i, line in enumerate(sub + ['track 5 would need %d tiles' % (t['w']['tiles'] if opt == 'P4D2' else build_world(t, walls=opt)['tiles'])]):
+            d.text((x, y + ch * s + 36 + i * 20), line, fill=BLACK, font=font(17))
+    nx = pad + 2 * (cw * s + pad); ny = head + (ch * s + cap) + 8
+    for i, line in enumerate(['WHAT CHANGED', '',
+                              'P4 as chosen: concrete walls jutting out each side of',
+                              'the tunnel, concrete along the ramps, blue-and-white',
+                              'kerbs, open deck, arrows on the ramps.', '',
+                              'The "solid blue" read here is the dark band of the',
+                              'tunnel mouth, between each pair of walls, either side',
+                              'of the deck. In D1 to D3 it is dithered three ways.', '',
+                              'D4 is there only in case the kerbs\' own blue blocks',
+                              'were meant as well.', '',
+                              'The car going in still disappears under the band; the',
+                              'cloth stops 2 px short of its outline so it stays clear.']):
+        d.text((nx, ny + i * 24), line, fill=BLACK, font=font(20 if i else 24))
+    y = head + (ch * s + cap) * nrow + 4
+    for i, line in enumerate([
+            'WHITE HAS A PRICE: the window is blue ink on cyan paper and a Spectrum cell (8 x 8 px) holds two colours. The kerb walls are one cell wide on the cell grid so their paper can be white, but the game',
+            'does not change cell colours inside the scrolling window today: it would cost speed whenever the bridge is in view, and the white would move in 8 px steps (an estimate - not measured). The cyan-only panel needs none of that.',
+            'The concrete (walls and deck) is shown as clean paper with the cloth\'s dots wiped off. In the game that needs masks, as the breakfast things have; the tile counts here are the ink pictures only.',
+            'A mock-up drawn by tools/make_track_designs.py - not from the game, which has no bridges yet. Classification: Internal.']):
+        d.text((pad, y + i * 22), line, fill=(70, 70, 0) if i == 3 else BLACK, font=font(16))
+    im.save(os.path.join(OUTDIR, 'crossover_p4.png'))
+
 # ------------------------------------------------------------------ measure, check, write
 def main():
     os.makedirs(OUTDIR, exist_ok=True)
@@ -1008,6 +1092,7 @@ def main():
             t['w_open'] = build_world(t, walls=False)     # (as first drawn: O's by the bridge, no walls)
             t['w_walls'] = build_world(t, walls='W3')     # (as crossover_walls.png was drawn)
             t['w_shadow'] = build_world(t, walls=('S1', 'V1'))     # (as crossover_shadow.png was drawn)
+            t['w_concrete'] = build_world(t, walls='P4')           # (as crossover_concrete.png was drawn)
         xs, ys = [q[0] for q in p], [q[1] for q in p]
         t['margin'] = min(min(xs), t['W'] * 8 - max(xs), min(ys), t['H'] * 8 - max(ys))
         t['crossings'] = self_crossings(p)
@@ -1081,7 +1166,7 @@ def main():
             print('   %s  %-90s %s' % ('PASS' if ok else 'FAIL', what, ('%.1f' % val) if isinstance(val, float) else val))
     for t in TRACKS[1:]: track_picture(t)
     for t in TRACKS:
-        if t.get('bridge'): closeup_picture(t); walls_picture(t); shadow_picture(t); concrete_picture(t)
+        if t.get('bridge'): closeup_picture(t); walls_picture(t); shadow_picture(t); concrete_picture(t); p4_picture(t)
     overview_picture(TRACKS)
     json.dump([dict(track=t['n'], name=t['name'], map_tiles=[t['W'], t['H']], lap_px=round(t['lap'], 1), multiple=round(t['mult'], 3),
                     waypoints=t['w']['wps'], distinct_tiles=t['w']['tiles'], cereal_os=len(t['w']['OS']),
@@ -1107,7 +1192,7 @@ HARD = {
         "The start straight is short (222 pixels): the grid fits, but the first bend comes sooner after the line than on track 1."],
     5: ["**The game cannot do this today: it has no bridges.** Everything under 'What the crossover needs in the game' below is new work.",
         "Needs a taller map: 74 rows instead of 64 (the same 72 wide), with the same changes as track 3.",
-        "The bridge's pictures add tiles (counted here as the concrete bridge P4 with white kerb walls), and its deck needs a mask so it can be redrawn over a car underneath.",
+        "The bridge's pictures add tiles (counted here as the concrete bridge P4 with the dithered mouth D2 and white kerb walls), and its deck needs a mask so it can be redrawn over a car underneath.",
         "The start straight is the shortest of all five: the grid fits, with as much room behind the line as it needs but less after it than track 1."],
 }
 NEEDS = [
@@ -1142,8 +1227,10 @@ def crossover_note(t):
           '- `crossover_shadow.png` is the next step Grant asked for: the bridge\'s height shown by a **shadow of dither beside it** - nothing at the foot of each ramp, widening up the ramp, widest (%d pixels) beside the level deck where it also lies across the lower road, then tapering away down the other ramp. Shadow options S1 flat, S2 graded, S3 both sides; wall options V1 dithered, V2 two-tone bar, V3 kerb blocks.' % SHADOW_MAX,
           '- With shadow S1 and wall V1 track 5 needs %d distinct tiles, against %d with the shaded ramps of `crossover_walls.png` and %d for the first plain idea. Grant liked the blue-and-white walls but not the shadow, which led to:' % (t['w_shadow']['tiles'], t['w_walls']['tiles'], t['w_open']['tiles']),
           '- `crossover_concrete.png`, **the concrete bridge**, seen from straight above: at the tunnel the concrete juts out %d pixels from BOTH sides of the bridge - two walls each side, flanking the lower road where it goes under (four in all) - with the tunnel mouth between each pair as a dark band under the deck\'s edge. Options: P1 straight stubs; P2 splayed wings (a funnel into the tunnel); P3 wedge wings, thick at the bridge and thin at the tip; P4 = P3 with the concrete also running along the ramps on both sides, thin at the ramp\'s foot and %d pixels thick beside the deck; P4 again in cyan only; and one earlier idea kept as an alternative (a one-sided oblique side face).' % (JUT, SIDE),
-          '- **In `track5.png` and the figures: P4 with white kerb walls** - the wedge wings and the thickening ramp walls both say "this road is rising" without any shading. Distinct tiles: %s (the cyan-only P4 uses the same tiles; the oblique alternative %d). These count the ink pictures only: wiping the cloth\'s dots off the concrete needs masks as well, not counted.'
+          '- **Best of these: P4 with white kerb walls** - the wedge wings and the thickening ramp walls both say "this road is rising" without any shading. Distinct tiles: %s (the cyan-only P4 uses the same tiles; the oblique alternative %d). These count the ink pictures only: wiping the cloth\'s dots off the concrete needs masks as well, not counted.'
           % (', '.join('%s %d' % (o, build_world(t, walls=o)['tiles']) for o in ('P1', 'P2', 'P3', 'P4')), build_world(t, walls='C2')['tiles']),
+          '- **Grant chose P4, "but the solid blue should rather be dithered"**: `crossover_p4.png` shows P4 with the tunnel mouth\'s dark band dithered instead of solid - D1 a 50%% dither; D2 the same with a thin solid line along the deck\'s edge; D3 graded, 50%% by the deck and 25%% further out; D2 again in cyan only; and D4, in case the kerbs\' blue blocks were meant as well. **In `track5.png` and the figures: P4 with D2** (the line keeps the deck\'s edge crisp). Distinct tiles: %s, against %d for the solid band. Ink pictures only, as above.'
+          % (', '.join('%s %d' % (o[2:], build_world(t, walls=o)['tiles']) for o in ('P4D1', 'P4D2', 'P4D3', 'P4D4')), t['w_concrete']['tiles']),
           '- **The concrete hides a little more of the lower road.** The mouth\'s dark band and (in P4) the side wall cover ground on both sides of the bridge, so a car on the lower road is under cover from x %d to x %d: %d pixels in P4, 96 in P1 to P3, against 88 for the bare deck and kerb walls. The hidden stretch in the data is the P4 one.'
           % (b['hidden'][0], b['hidden'][1], b['hidden'][0] - b['hidden'][1]),
           '- **White in the walls (V2, V3) has a price.** The window is blue ink on cyan paper and a Spectrum cell holds two colours, so white needs the walls\' cells switched to white paper. The walls are drawn one cell wide on the cell grid so that it is possible, but the game does not change cell colours inside the scrolling window today; it would cost speed and the white would move in 8-pixel steps. An estimate, not tried. The sheet shows both in cyan only as well.', '',
@@ -1163,7 +1250,7 @@ def write_note(tracks):
           'Classification: Internal', '',
           'These are **designs only**. Nothing here is in the game yet, and the game was not changed.',
           'Made by `tools/make_track_designs.py` (run it again to redraw the pictures and this note).',
-          'Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png` (first ideas), `crossover_walls.png` (with side walls), `crossover_shadow.png` (tapering shadow, softer walls) and `crossover_concrete.png` (the concrete bridge - the latest).', '',
+          'Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png` (first ideas), `crossover_walls.png` (with side walls), `crossover_shadow.png` (tapering shadow, softer walls) `crossover_concrete.png` (the concrete bridge) and `crossover_p4.png` (Grant\'s choice, P4, with the tunnel mouth dithered - the latest).', '',
           '## The figures', '',
           '| | Name | Map (tiles) | Lap (pixels) | Times track 1 | Waypoints | Distinct tiles | Cereal O\'s | Map data (bytes, estimate) |',
           '|---|---|---|---|---|---|---|---|---|']

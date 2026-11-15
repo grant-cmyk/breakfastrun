@@ -4,7 +4,7 @@ Classification: Internal
 
 These are **designs only**. Nothing here is in the game yet, and the game was not changed.
 Made by `tools/make_track_designs.py` (run it again to redraw the pictures and this note).
-Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png` (first ideas), `crossover_walls.png` (with side walls), `crossover_shadow.png` (tapering shadow, softer walls) and `crossover_concrete.png` (the concrete bridge - the latest).
+Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png` (first ideas), `crossover_walls.png` (with side walls), `crossover_shadow.png` (tapering shadow, softer walls) `crossover_concrete.png` (the concrete bridge) and `crossover_p4.png` (Grant's choice, P4, with the tunnel mouth dithered - the latest).
 
 ## The figures
 
@@ -14,7 +14,7 @@ Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overvie
 | 2 | THE BREAKFAST CLUB | 72 x 64 | 2125 | 1.44 | 66 | 104 | 176 | 3110 |
 | 3 | BREAKFAST OF CHAMPIONS | 72 x 84 | 2510 | 1.70 | 78 | 107 | 207 | 3670 |
 | 4 | THE DANISH GIRL | 72 x 91 | 2958 | 2.01 | 92 | 104 | 246 | 3937 |
-| 5 | A FRIDGE TOO FAR | 72 x 74 | 2236 | 1.52 | 70 | 165 | 150 | 4094 |
+| 5 | A FRIDGE TOO FAR | 72 x 74 | 2236 | 1.52 | 70 | 167 | 150 | 4110 |
 
 - **Lap** is the length of the middle of the road, once round.
 - **Waypoints** are the points the computer cars steer by, one every 32 pixels as on track 1.
@@ -82,8 +82,8 @@ The crossover: a figure of eight - under the bridge first, then round, up a ramp
 - Map: 72 x 74 tiles (576 x 592 pixels). Track 1 is 72 x 64.
 - Lap: 2236 pixels, **1.52 times** track 1 (1473).
 - Waypoints: 70 (track 1: 46). Cereal O's: 150 (track 1: 128).
-- Distinct tiles: 165 (track 1: 99).
-- Map data: about 4094 bytes (track 1: about 2902) - +1192.
+- Distinct tiles: 167 (track 1: 99).
+- Map data: about 4110 bytes (track 1: about 2902) - +1208.
 - Tightest corner: 54 pixel radius (track 1's arcs: 54; its dip is sharper). Start straight: 211 pixels (track 1: 326).
 - Least cloth between two stretches of road: 4.5 tiles.
 
@@ -91,7 +91,7 @@ What would make it hard to put in the game:
 
 - **The game cannot do this today: it has no bridges.** Everything under 'What the crossover needs in the game' below is new work.
 - Needs a taller map: 74 rows instead of 64 (the same 72 wide), with the same changes as track 3.
-- The bridge's pictures add tiles (counted here as the concrete bridge P4 with white kerb walls), and its deck needs a mask so it can be redrawn over a car underneath.
+- The bridge's pictures add tiles (counted here as the concrete bridge P4 with the dithered mouth D2 and white kerb walls), and its deck needs a mask so it can be redrawn over a car underneath.
 - The start straight is the shortest of all five: the grid fits, with as much room behind the line as it needs but less after it than track 1.
 
 #### The crossover, as designed
@@ -110,7 +110,8 @@ What would make it hard to put in the game:
 - `crossover_shadow.png` is the next step Grant asked for: the bridge's height shown by a **shadow of dither beside it** - nothing at the foot of each ramp, widening up the ramp, widest (24 pixels) beside the level deck where it also lies across the lower road, then tapering away down the other ramp. Shadow options S1 flat, S2 graded, S3 both sides; wall options V1 dithered, V2 two-tone bar, V3 kerb blocks.
 - With shadow S1 and wall V1 track 5 needs 122 distinct tiles, against 150 with the shaded ramps of `crossover_walls.png` and 118 for the first plain idea. Grant liked the blue-and-white walls but not the shadow, which led to:
 - `crossover_concrete.png`, **the concrete bridge**, seen from straight above: at the tunnel the concrete juts out 24 pixels from BOTH sides of the bridge - two walls each side, flanking the lower road where it goes under (four in all) - with the tunnel mouth between each pair as a dark band under the deck's edge. Options: P1 straight stubs; P2 splayed wings (a funnel into the tunnel); P3 wedge wings, thick at the bridge and thin at the tip; P4 = P3 with the concrete also running along the ramps on both sides, thin at the ramp's foot and 8 pixels thick beside the deck; P4 again in cyan only; and one earlier idea kept as an alternative (a one-sided oblique side face).
-- **In `track5.png` and the figures: P4 with white kerb walls** - the wedge wings and the thickening ramp walls both say "this road is rising" without any shading. Distinct tiles: P1 141, P2 145, P3 139, P4 165 (the cyan-only P4 uses the same tiles; the oblique alternative 150). These count the ink pictures only: wiping the cloth's dots off the concrete needs masks as well, not counted.
+- **Best of these: P4 with white kerb walls** - the wedge wings and the thickening ramp walls both say "this road is rising" without any shading. Distinct tiles: P1 141, P2 145, P3 139, P4 165 (the cyan-only P4 uses the same tiles; the oblique alternative 150). These count the ink pictures only: wiping the cloth's dots off the concrete needs masks as well, not counted.
+- **Grant chose P4, "but the solid blue should rather be dithered"**: `crossover_p4.png` shows P4 with the tunnel mouth's dark band dithered instead of solid - D1 a 50% dither; D2 the same with a thin solid line along the deck's edge; D3 graded, 50% by the deck and 25% further out; D2 again in cyan only; and D4, in case the kerbs' blue blocks were meant as well. **In `track5.png` and the figures: P4 with D2** (the line keeps the deck's edge crisp). Distinct tiles: D1 166, D2 167, D3 167, D4 168, against 165 for the solid band. Ink pictures only, as above.
 - **The concrete hides a little more of the lower road.** The mouth's dark band and (in P4) the side wall cover ground on both sides of the bridge, so a car on the lower road is under cover from x 240 to x 136: 104 pixels in P4, 96 in P1 to P3, against 88 for the bare deck and kerb walls. The hidden stretch in the data is the P4 one.
 - **White in the walls (V2, V3) has a price.** The window is blue ink on cyan paper and a Spectrum cell holds two colours, so white needs the walls' cells switched to white paper. The walls are drawn one cell wide on the cell grid so that it is possible, but the game does not change cell colours inside the scrolling window today; it would cost speed and the white would move in 8-pixel steps. An estimate, not tried. The sheet shows both in cyan only as well.
 
@@ -169,6 +170,6 @@ For each new track: the middle line is closed and smooth; it never crosses itsel
 | start straight | 326.0 (yardstick) | 331.0 - pass | 271.0 - pass | 222.0 - pass | 211.0 - pass |
 | five grid boxes all on the road | 1 (yardstick) | 1 - pass | 1 - pass | 1 - pass | 1 - pass |
 | lap at least 1.4 x track 1 | 1.0 (yardstick) | 1.4 - pass | 1.7 - pass | 2.0 - pass | 1.5 - pass |
-| distinct tiles within the game's 256 | 99 (yardstick) | 104 - pass | 107 - pass | 104 - pass | 165 - pass |
+| distinct tiles within the game's 256 | 99 (yardstick) | 104 - pass | 107 - pass | 104 - pass | 167 - pass |
 
 Not checked: the tracks have not been driven - not built into the game, so nothing here says how they play, how fast a lap is, or whether the computer cars cope.

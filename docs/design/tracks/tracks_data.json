@@ -1779,7 +1779,7 @@
     433
    ]
   ],
-  "distinct_tiles": 165,
+  "distinct_tiles": 167,
   "cereal_os": 150,
   "start_line_x": 384,
   "start_straight_y": 520,
@@ -1853,7 +1853,7 @@
    "surface": 666,
    "omap": 666,
    "waypoints": 280,
-   "tiles": 1320
+   "tiles": 1336
   },
   "crossover": {
    "crossing_x_y": [
