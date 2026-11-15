@@ -102,7 +102,7 @@ ok(bad == 0, 'on the grid the window matches the world map pixel for pixel, cars
 md, dots, ink = minimap_diff(sp)
 sb = screen_bits(sp)
 ok(md == 0 and ink > 120 and all(sp.read8(0x5800 + r * 32 + c) == 0x30 for r in range(15, 20) for c in range(1, 7)), 'the mini-map in the window\'s bottom left corner is this track\'s road, line for line, black on yellow (%d ink pixels, %d wrong outside the cars\' dots)' % (ink, md))
-ok(all(0 <= dy <= 36 and 0 <= dx <= 45 for dx, dy in dots) and not sb[0:40, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F,
+ok(all(d is None or (0 <= d[1] <= 36 and 0 <= d[0] <= 45) for d in dots) and sum(d is not None for d in dots) >= N - 1 and not sb[0:40, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F,
    'the cars\' dots are inside the map\'s box; the panel\'s top right, where the map was, is plain above the RACE heading (dots at %s)' % dots)
 shot(sp, 'track%s_grid.png' % TRACK)
 x0 = [c['x'] for c in cs]

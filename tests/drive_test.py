@@ -176,13 +176,18 @@ def map_dots(sp):
         out.append((min((c['x'] + 8 - MM_X0) * MM_SC // 256, 45), min(max((c['y'] + 8 - MM_Y0) * MM_SC // 256, 5), MM_ROWS.shape[0] - 3) - 5))
     return out
 def minimap_diff(sp):
-    """The map in the window's bottom left corner against the generated one (its lines 5-43 at screen lines
-    120-158, 48 wide from x = 8): (pixels that differ and are not at a car's dot, the dots' places, the map's ink)"""
+    """The map in the window's bottom left corner (screen lines 120-159, 48 wide from x = 8) against the generated
+    one (its lines 5-43) with the dots the game says are on it (shown_dot: 3 x 3 yours, 2 x 2 the others, drawn
+    with XOR; a dot is up to four pictures behind its car): (pixels that differ, the dots' places in the box -
+    None for one not shown - and the map's ink)"""
     sb = screen_bits(sp); want = np.zeros((40, 48), dtype=np.uint8); want[:39] = MM_ROWS[5:44]
-    diff = sb[120:160, 8:56] != want
-    dots = map_dots(sp)
-    for dx, dy in dots: diff[max(dy - 1, 0):dy + 4, max(dx - 1, 0):dx + 4] = False
-    return int(diff.sum()), dots, int(want.sum())
+    dots = []
+    for n in range(N):
+        x, y = sp.read8(SYM['shown_dot'] + 2 * n), sp.read8(SYM['shown_dot'] + 2 * n + 1)
+        if x == 0xFF: dots.append(None); continue
+        k = 3 if n == 0 else 2
+        want[y - 5:y - 5 + k, x:x + k] ^= 1; dots.append((x, y - 5))
+    return int((sb[120:160, 8:56] != want).sum()), dots, int(MM_ROWS[5:44].sum())
 ARROW_KINDS = ['none', 'straight', 'gentle left', 'gentle right', 'sharp left', 'sharp right']
 def arrow_state(sp):
     """The corner arrow in the picture now on the screen (call at copy_done): None if it is not drawn, else
@@ -193,8 +198,8 @@ def arrow_state(sp):
     t = SYM['thrust_tab'] + (c['ang'] & 0x3C)
     s8 = lambda v: v - 256 if v > 127 else v
     return code, c['x'] - g(sp, 'camx') + (s8(sp.read8(t)) >> 1), c['y'] - g(sp, 'camy') + (s8(sp.read8(t + 2)) >> 1) + 3
-def window_bad(sp):
-    at_copy_done(sp)
+def window_bad(sp, stop=True):
+    if stop: at_copy_done(sp)               # (stop=False: the picture already stopped at, when the caller has looked at its state)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
     bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]     # the window
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])

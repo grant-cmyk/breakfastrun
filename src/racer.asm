@@ -4708,6 +4708,9 @@ faces     equ faces_src
         if (MAP_H - 5 - 39) + (WIN_H - 152) + (WIN_COL - 1) + (WIN_Y - 8) + (WIN_W - 24)
         .error the mini-map's box is written for 39 lines of map (5 to 43) in a 152-line, 24-column window at line 8, column 1
         endif
+        if init_end > MAPPIC
+        .error the start-up area runs into the strips start_once fills (MAPPIC, 0xD0A0)
+        endif
         if init_end > TAB_HI*256
         .error the start-up routines run into the shift tables they build
         endif
