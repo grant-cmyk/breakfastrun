@@ -4,6 +4,7 @@ longer tracks. This script only makes design material - it does NOT touch the ga
     docs/design/tracks/track2.png, track3.png, track4.png   each new track, drawn large
     docs/design/tracks/track5.png                           the crossover track (a design: the game has no bridges)
     docs/design/tracks/crossover_closeup.png                how the bridge could be drawn, three ways
+    docs/design/tracks/crossover_walls.png                  the bridge with side walls and no O's, three walls
     docs/design/tracks/tracks_overview.png                  all five at the same scale
     docs/design/tracks/TRACKS.md                            the note, with the figures
     docs/design/tracks/tracks_data.json                     vertices, waypoints, figures
@@ -289,7 +290,43 @@ def bridge_ink(b, style):
                 y += sgn * gap; gap += 1
     return out
 
-def build_world(t):
+WALL = 7          # px: how thick a bridge wall is drawn, outside the road's edge
+WALL_BOX = 56     # px either side of the upper road's middle: no cereal O's in this band from ramp foot to ramp foot
+def walls_ink(b, variant):
+    """The bridge Grant asked for after the first close-up: A's open deck and ramp arrows, B's
+    shadow on the lower road and shaded ramps, and solid side WALLS from the foot of one ramp to
+    the foot of the other (no cereal O's there). variant: W1 brick parapet, W2 thick rail with
+    posts, W3 double rail."""
+    xc, yc = b['cross']; x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1; out = set()
+    (u0, u1), (d0, d1), (r0, r1) = b['ramp_up'], b['deck'], b['ramp_down']
+    chev = set()
+    for a, z in ((u0, u1), (r0, r1)):                           # A's arrows down the ramps
+        for y in range(a + 4, z - 8, 12):
+            for k in range(0, 13):
+                for m in (-1, 1): chev.add((xc + m * k, y + 12 - k)); chev.add((xc + m * k, y + 11 - k))
+    halo = {(x + i, y + j) for (x, y) in chev for i in (-2, -1, 0, 1, 2) for j in (-2, -1, 0, 1, 2)}
+    for a, z, top in ((u0, u1, u1), (r0, r1, r0)):              # B's shading: dots thinning out towards the deck
+        for y in range(a, z):
+            far = abs(y - top) / RAMP
+            for x in range(x0 + 2, x1 - 1):
+                if y % 2 == 0 and (x + y) % 4 == 0 and ((x * 7 + y * 3) % 8) < far * 8 and (x, y) not in halo: out.add((x, y))
+    out |= chev
+    for y in range(yc - ROAD // 2 + 2, yc + ROAD // 2 - 2):     # B's shadow on the lower road, beyond the right-hand wall
+        for x in range(x1 + WALL + 1, x1 + WALL + 9):
+            if (x + y) % 2 == 0: out.add((x, y))
+    for y in range(u0, r1):                                     # the two walls, k = 1 .. WALL px out from the road's edge
+        for k in range(1, WALL + 1):
+            end = y in (u0, r1 - 1)
+            if variant == 'W1':      # brick parapet: two faces, courses every 4 px, the joints staggered
+                on = k in (1, WALL) or y % 4 == 0 or (k == (3 if (y // 4) % 2 else 5))
+            elif variant == 'W2':    # thick rail with posts: a 3 px rail, a post every 16 px
+                on = k in (3, 4, 5) or (y - u0) % 16 < 4
+            else:                    # W3 double rail: two 2 px rails, a tie every 8 px
+                on = k in (1, 2, WALL - 1, WALL) or (y - u0) % 8 == 0
+            if on or end: out.add((x0 - k, y)); out.add((x1 + k, y))
+    return out
+
+def build_world(t, walls=True):
     W, H, PATH, SY, LX = t['W'], t['H'], t['path'], t['sy'], t['lx']
     PW, PH = W * 8, H * 8
     def road_mask(width):
@@ -323,12 +360,16 @@ def build_world(t):
     if t.get('bridge'):      # at a crossover the O's of one road must not stand on the other
         inner = road_mask(ROAD - 8).load()
         OS = [(ox, oy) for ox, oy in OS if not inner[ox + 4, oy + 4]]
+        if walls:            # the bridge and its ramps have walls: no O's beside them, on either road
+            b_ = t['bridge']
+            OS = [(ox, oy) for ox, oy in OS if not (abs(ox + 4 - b_['cross'][0]) <= WALL_BOX and b_['ramp_up'][0] - 4 <= oy + 4 <= b_['ramp_down'][1] + 4)]
     for ox, oy in OS:
         for j, r in enumerate(O_RING):
             for i, c in enumerate(r):
                 if c == '#': px[ox + i, oy + j] = 1
-    if t.get('bridge'):      # the bridge, drawn the plain way (style A of crossover_closeup.png), so its tiles are counted
-        for (x, y) in bridge_ink(t['bridge'], 'A'): px[x, y] = 1
+    if t.get('bridge'):      # the bridge's own ink, so its tiles are counted: with walls (the double rail, W3 of
+                             # crossover_walls.png), or the first idea (style A of crossover_closeup.png)
+        for (x, y) in (walls_ink(t['bridge'], 'W3') if walls else bridge_ink(t['bridge'], 'A')): px[x, y] = 1
     # the grid and the start line (track 1: the line at x = 288, the cars 40 .. 104 px behind it)
     LANE_A, LANE_B = SY - 14 - 8, SY + 14 - 8
     GRID = [(LX - 40, LANE_A), (LX - 56, LANE_B), (LX - 72, LANE_A), (LX - 88, LANE_B), (LX - 104, LANE_A)]
@@ -573,7 +614,7 @@ def closeup_picture(t, s=4):
     """The crossing as the game might draw it: 1 bit, blue ink on cyan paper (every 8 x 8 cell has
     just those two colours). Three ways of drawing the bridge, side by side, each with one car on
     the deck and one on the lower road, half under it."""
-    b = t['bridge']; w = t['w']; xc, yc = b['cross']
+    b = t['bridge']; w = t['w_open']; xc, yc = b['cross']
     cw, ch = 200, 216                                           # the piece of the world shown (the play window is 192 x 152)
     cx0, cy0 = xc - cw // 2 + 4, yc - ch // 2
     ink_c, sol_c = car_art('YOU')
@@ -613,6 +654,52 @@ def closeup_picture(t, s=4):
         d.text((pad, y + i * 22), line, fill=(70, 70, 0) if i == 2 else BLACK, font=font(16))
     im.save(os.path.join(OUTDIR, 'crossover_closeup.png'))
 
+def walls_picture(t, s=4):
+    """The bridge with side walls (Grant, after the first close-up): a mix of A and B, walls from
+    ramp foot to ramp foot and no cereal O's beside them. One idea, three ways to draw the wall."""
+    b = t['bridge']; w = t['w']; xc, yc = b['cross']
+    cw, ch = 200, 216
+    cx0, cy0 = xc - cw // 2 + 4, yc - ch // 2
+    ink_c, sol_c = car_art('YOU')
+    variants = [('W1', 'W1  BRICK PARAPET', 'two faces with brick courses between'),
+                ('W2', 'W2  THICK RAIL WITH POSTS', 'a solid 3 px rail, a post every 16 px'),
+                ('W3', 'W3  DOUBLE RAIL', 'two thin rails with ties (the one in track5.png)')]
+    pad, head, cap = 24, 60, 172
+    im = Image.new('RGB', (pad + (cw * s + pad) * len(variants), head + ch * s + cap), YELLOW); d = ImageDraw.Draw(im)
+    d.text((pad, 12), 'TRACK 5 BRIDGE WITH SIDE WALLS - A and B combined, walls instead of O\'s (mock-up, 4x; blue ink on cyan)', fill=BLACK, font=font(26))
+    mine = walls_ink(b, 'W3')
+    def stamp(bit, ink, sol, x, y):
+        hh, ww = ink.shape
+        sl = bit[y:y + hh, x:x + ww]; sl[sol] = False; sl[ink] = True
+    for k, (v, title, sub) in enumerate(variants):
+        base = w['ink'].copy()
+        for (x, y) in mine: base[y, x] = False                  # (the world was built with W3: take it off)
+        bit = base | w['cloth_on']
+        x0, x1 = xc - ROAD // 2, xc + ROAD // 2
+        ink = walls_ink(b, v)
+        for (x, y) in ink:                                      # the shadow lies on the lower road: under the car there
+            if x > x1 + WALL: bit[y, x] = True
+        stamp(bit, np.rot90(ink_c), np.rot90(sol_c), x1 + WALL - 10, yc - 16)      # the car below, driving left, half under
+        bit[b['ramp_up'][0]:b['ramp_down'][1], x0 - WALL - 1:x1 + WALL + 1] = False   # the bridge, ramps and walls go over it
+        for (x, y) in ink:
+            if x <= x1 + WALL: bit[y, x] = True
+        stamp(bit, np.rot90(ink_c, 2), np.rot90(sol_c, 2), xc - 22, yc - 34)       # the car on the deck, whole
+        crop = bit[cy0:cy0 + ch, cx0:cx0 + cw]
+        a = np.empty((ch, cw, 3), dtype=np.uint8); a[:] = CYAN; a[crop] = BLUE
+        x = pad + k * (cw * s + pad)
+        im.paste(Image.fromarray(a).resize((cw * s, ch * s), Image.NEAREST), (x, head))
+        d.rectangle([x - 2, head - 2, x + cw * s + 1, head + ch * s + 1], outline=BLUE, width=2)
+        d.text((x, head + ch * s + 8), title, fill=BLACK, font=font(24))
+        d.text((x, head + ch * s + 38), sub, fill=BLACK, font=font(18))
+    y = head + ch * s + 70
+    for i, line in enumerate(['The same bridge three times - only the wall is drawn differently. Open deck and ramp arrows (from A); shadow on the lower road and shaded ramps (from B).',
+                              'The walls (%d px thick) run the whole way from the foot of the ramp up to the foot of the ramp down, both sides, and stop a car leaving the bridge.' % WALL,
+                              'No cereal O\'s beside the bridge or its ramps: the upper road\'s O\'s stop where the walls start, the lower road\'s stop short of the bridge and it passes through under the deck.',
+                              'One car is on the deck; another on the lower road, driving left, is half hidden going under. Each picture shows %d x %d px (the play window is %d x %d).' % (cw, ch, WIN_W, WIN_H),
+                              'A mock-up drawn by tools/make_track_designs.py - not from the game, which has no bridges yet. Classification: Internal.']):
+        d.text((pad, y + i * 20), line, fill=(70, 70, 0) if i == 4 else BLACK, font=font(15))
+    im.save(os.path.join(OUTDIR, 'crossover_walls.png'))
+
 # ------------------------------------------------------------------ measure, check, write
 def main():
     os.makedirs(OUTDIR, exist_ok=True)
@@ -620,6 +707,7 @@ def main():
     for t in TRACKS:
         p = t['path']; t['lap'] = lap_length(p); t['mult'] = t['lap'] / base
         t['w'] = build_world(t)
+        if t.get('bridge'): t['w_open'] = build_world(t, walls=False)     # (as first drawn: O's by the bridge, no walls)
         xs, ys = [q[0] for q in p], [q[1] for q in p]
         t['margin'] = min(min(xs), t['W'] * 8 - max(xs), min(ys), t['H'] * 8 - max(ys))
         t['crossings'] = self_crossings(p)
@@ -671,6 +759,7 @@ def main():
         gridd = min(math.hypot(gx + 10 - xc, gy + 10 - yc) for gx, gy in t['w']['GRID'])
         os_on = sum(1 for ox, oy in t['w']['OS'] if abs(ox + 4 - xc) < 60 and abs(oy + 4 - yc) < 60
                     and (abs(ox + 4 - xc) < ROAD // 2 - 4 or abs(oy + 4 - yc) < ROAD // 2 - 4))
+        os_wall = sum(1 for ox, oy in t['w']['OS'] if abs(ox + 4 - xc) <= WALL_BOX and b['ramp_up'][0] - 4 <= oy + 4 <= b['ramp_down'][1] + 4)
         wl = [1 if abs(x - xc) < 2 and b['ramp_up'][0] <= y <= b['ramp_down'][1] else 0 for x, y in t['w']['wps']]
         t['wp_levels'] = wl
         xp = t['xpts']
@@ -682,6 +771,7 @@ def main():
             ('crossing to the start straight (px between the middles of the roads; want >= 150)', float(t['sy'] - yc), t['sy'] - yc >= 150),
             ('crossing to the nearest grid box (px; want >= 150)', gridd, gridd >= 150),
             ('cereal O\'s standing on either road at the crossing (count)', os_on, os_on == 0),
+            ('cereal O\'s beside the bridge or its ramps, where the walls are (count)', os_wall, os_wall == 0),
             ('waypoints on the upper level (ramps and deck)', sum(wl), sum(wl) >= 3),
         ]
         t['bridge_checks'] = bc
@@ -691,7 +781,7 @@ def main():
             print('   %s  %-90s %s' % ('PASS' if ok else 'FAIL', what, ('%.1f' % val) if isinstance(val, float) else val))
     for t in TRACKS[1:]: track_picture(t)
     for t in TRACKS:
-        if t.get('bridge'): closeup_picture(t)
+        if t.get('bridge'): closeup_picture(t); walls_picture(t)
     overview_picture(TRACKS)
     json.dump([dict(track=t['n'], name=t['name'], map_tiles=[t['W'], t['H']], lap_px=round(t['lap'], 1), multiple=round(t['mult'], 3),
                     waypoints=t['w']['wps'], distinct_tiles=t['w']['tiles'], cereal_os=len(t['w']['OS']),
@@ -717,14 +807,14 @@ HARD = {
         "The start straight is short (222 pixels): the grid fits, but the first bend comes sooner after the line than on track 1."],
     5: ["**The game cannot do this today: it has no bridges.** Everything under 'What the crossover needs in the game' below is new work.",
         "Needs a taller map: 74 rows instead of 64 (the same 72 wide), with the same changes as track 3.",
-        "The bridge's pictures add tiles (counted here in the plain style A), and its deck needs a mask so it can be redrawn over a car underneath.",
+        "The bridge's pictures add tiles (counted here with the double-rail walls, W3), and its deck needs a mask so it can be redrawn over a car underneath.",
         "The start straight is the shortest of all five: the grid fits, with as much room behind the line as it needs but less after it than track 1."],
 }
 NEEDS = [
     ('A level for each car', 'Every car has to know whether it is on the upper or the lower road. It changes only at the foot of a ramp, so one bit per car is enough.', 'Small'),
     ('Waypoints that carry a level', 'The computer cars steer by waypoints; the ones on the ramps and deck are marked "upper" (the data file lists them). A computer car\'s level can simply follow its next waypoint. Your own car needs its own rule: upper from the foot of the ramp up to the foot of the ramp down, if it came in along the upper road.', 'Small to medium'),
     ('Collisions only on the same level', 'Two cars at the crossing, one above and one below, must pass through each other. One extra comparison in the car-to-car test.', 'Small'),
-    ('The O walls at the crossing', 'The O\'s of one road must not block the other. In this design no O stands on either road at the crossing (the script checks it), so the O map needs no change there. But the bridge needs sides of its own, so a car on the deck cannot drive off it sideways and a car underneath cannot turn up onto it: a new "wall by level" test.', 'Medium'),
+    ('The O walls at the crossing', 'The O\'s of one road must not block the other. In this design no O stands on either road at the crossing or beside the bridge and ramps (the script checks it). Instead the bridge has side walls: a car on the upper level cannot pass them sideways, and a car on the lower level passes under them. A straight-line test by level - simpler than the O collisions.', 'Small to medium'),
     ('Drawing order: the bridge over the car below', 'The hard one. After the cars are drawn, the deck\'s tiles must be drawn again over any car on the lower level (a mask, like the breakfast things have), while a car on the upper level is drawn over the deck. The picture is built to a tight time budget, and the redraw costs time whenever a car is under the bridge.', 'Large'),
     ('Ramp speed', 'A little slower going up, a little faster going down: a small change to the speed while a car is on a ramp stretch - for the computer cars too.', 'Small'),
     ('Mini-map', 'The mini-map draws the road\'s two edges; at the crossing the lower road\'s edges should stop at the bridge so it reads as "over". It also has to be taller for a 74-row map.', 'Small to medium'),
@@ -743,7 +833,12 @@ def crossover_note(t):
           '- %d of the %d waypoints are on the upper level (listed in `tracks_data.json`).' % (sum(t['wp_levels']), len(t['wp_levels'])),
           '- The crossing is %d pixels above the start straight and %d pixels from the nearest grid box. A lap goes: start line, round the bottom loop, UNDER the bridge, round the top loop, then OVER the bridge and back to the start straight.'
           % (t['sy'] - yc, round(min(math.hypot(gx + 10 - xc, gy + 10 - yc) for gx, gy in t['w']['GRID']))),
-          '- `crossover_closeup.png` shows three ways the bridge could be drawn, in the game\'s two colours: A plain rails, B rails with posts and a shadow, C a planked deck.', '',
+          '- `crossover_closeup.png` shows the first three ways the bridge could be drawn, in the game\'s two colours: A plain rails, B rails with posts and a shadow, C a planked deck.',
+          '- `crossover_walls.png` is the follow-up Grant asked for: A and B combined, with solid side walls and no cereal O\'s on the bridge. Three ways to draw the wall: W1 brick parapet, W2 thick rail with posts, W3 double rail.',
+          '- **Walls stop a car leaving the bridge.** They run down both sides from the foot of the ramp up to the foot of the ramp down (y %d to %d, at x = %d and x = %d). In the game that is a collision with a straight line - "on the upper level, between these two y values, x may not pass this value" - which should be simpler than the O collisions, as an estimate (not tried).'
+          % (b['ramp_up'][0], b['ramp_down'][1], xc - ROAD // 2, xc + ROAD // 2),
+          '- **Fewer cereal O\'s.** With walls there instead, the O\'s beside the bridge and its ramps are gone: track 5 has %d O\'s (it had %d before the walls). The upper road\'s O\'s stop where the ramp walls start; the lower road\'s stop %d pixels either side of the bridge\'s middle.'
+          % (len(t['w']['OS']), len(t['w_open']['OS']), WALL_BOX), '',
           'Crossover checks the script ran:', '', '| Check | Result |', '|---|---|']
     for what, val, ok in t['bridge_checks']:
         L.append('| %s | %s - %s |' % (what, ('%.1f' % val) if isinstance(val, float) else val, 'pass' if ok else 'FAIL'))
@@ -760,7 +855,7 @@ def write_note(tracks):
           'Classification: Internal', '',
           'These are **designs only**. Nothing here is in the game yet, and the game was not changed.',
           'Made by `tools/make_track_designs.py` (run it again to redraw the pictures and this note).',
-          'Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png`.', '',
+          'Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png` (first ideas) and `crossover_walls.png` (with side walls).', '',
           '## The figures', '',
           '| | Name | Map (tiles) | Lap (pixels) | Times track 1 | Waypoints | Distinct tiles | Cereal O\'s | Map data (bytes, estimate) |',
           '|---|---|---|---|---|---|---|---|---|']
