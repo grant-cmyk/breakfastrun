@@ -138,6 +138,9 @@ yg_forces:
         jr z,yg_p1
         add hl,hl
 yg_p1:
+        if OPT_BRIDGE
+        call ramp_adj           ; BRIDGE: less push up a ramp, more down it (bridge.asm; A and DE are free here)
+        endif
         ex de,hl
         ld hl,(yg_vf)
         ld a,(ix+C_CTRL)

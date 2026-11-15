@@ -9,6 +9,7 @@
 ;   LEVELS   each car has a level (LVL + its number): 0 on the table, 1 on the bridge. A car on the
 ;            table that comes onto the first 16 px of either ramp goes up to 1; a car on the bridge
 ;            that leaves by either ramp's foot comes back to 0. Cars only bump others on their own level.
+;            (A computer car beside the bridge whose next waypoint is on it is put on: it missed the ramp.)
 ;   WALLS    level 1: x is kept between the kerb walls. Level 0: under the deck y is kept between the
 ;            tunnel's walls, and beside the ramps the car is put back outside the bridge.
 ;   RAMPS    level 1 on a ramp: the slope pulls the car downhill, RAMP_G a TV frame - slower up, faster down.
@@ -170,11 +171,21 @@ lv_l3:
         sub 7
         cp (BR_X1-BR_X0)/4+4
         ret nc
+        ld e,a
+        ld a,(ix+C_KIND)        ; a COMPUTER car that missed the foot of the ramp and is heading for a waypoint on the
+        or a                    ; bridge would push at its side for ever: it is lifted on (and the walls take it in)
+        jr z,lv_l4
+        ld a,(ix+C_WP)
+        sub WP_UP0
+        cp WP_UPN
+        jr c,lv_on
+lv_l4:
+        ld a,e
         cp (BR_X1-BR_X0)/8+2
         ld a,BR_X0-17
-        jr c,lv_kl
+        jp c,lv_kl
         ld a,BR_X1
-        jr lv_kr
+        jp lv_kr
 
 ; RAMP_ADJ (IX = car, HL = a push or a top speed): on the ramp up HL less 1 / 2^RAMP_SHIFT of itself, on the
 ; ramp down more by as much; anywhere else as it is. Uses A, DE.

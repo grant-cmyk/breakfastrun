@@ -211,6 +211,7 @@ def over(sp, n, v0):
         if t0 is None and cy >= BR['Y0']: t0 = t
         for k in ('Y1', 'Y2', 'Y3'):
             if k not in at and cy >= BR[k] - 2: at[k] = (math.hypot(c['vx'], c['vy']), t - (t0 or 0))
+        if BR['Y2'] + 8 <= cy < BR['Y3']: at['down'] = max(at.get('down', 0), math.hypot(c['vx'], c['vy']))     # (the fastest it went on the ramp down:
     press(sp, 'Q', False)
     return at
 def flat_top(sp, n):                                   # its top speed along the start straight
@@ -231,10 +232,10 @@ for n, name in ((0, 'you'), (1, 'a computer car (FRANK)')):
             sp.write(a + code.index(0xC8), bytes([0xC9]))
         v0 = flat_top(sp, n); res[pull] = (v0, over(sp, n, v0)); sp.__exit__(None, None, None)
     (v0, a), (_, b) = res[True], res[False]
-    upr, dnr = a['Y1'][0] / b['Y1'][0], a['Y3'][0] / b['Y3'][0]
+    upr, dnr = a['Y1'][0] / b['Y1'][0], a['down'] / b['down']
     rows.append((name, v0, a, b, upr, dnr))
-    print('  %s: top speed on the flat %.2f px a frame. At the top of the ramp up %.2f (no ramp: %.2f) = %.0f%%; at the end of the deck %.2f (%.2f); at the foot of the ramp down %.2f (%.2f) = %.0f%%; ramp foot to ramp foot in %.2f s (%.2f s)'
-          % (name, v0, a['Y1'][0], b['Y1'][0], 100 * upr, a['Y2'][0], b['Y2'][0], a['Y3'][0], b['Y3'][0], 100 * dnr, a['Y3'][1], b['Y3'][1]))
+    print('  %s: top speed on the flat %.2f px a frame. At the top of the ramp up %.2f (no ramp: %.2f) = %.0f%%; at the end of the deck %.2f (%.2f); fastest on the ramp down %.2f (%.2f) = %.0f%%; ramp foot to ramp foot in %.2f s (%.2f s)'
+          % (name, v0, a['Y1'][0], b['Y1'][0], 100 * upr, a['Y2'][0], b['Y2'][0], a['down'], b['down'], 100 * dnr, a['Y3'][1], b['Y3'][1]))
 ok(all(0.80 <= r[4] <= 0.95 for r in rows), 'up the ramp a car is a little slower than on the flat: %s of the speed it would have had' % ' and '.join('%s %.0f%%' % (r[0], 100 * r[4]) for r in rows))
 ok(all(1.03 <= r[5] <= 1.20 for r in rows), 'down the ramp a little faster: %s' % ' and '.join('%s %.0f%%' % (r[0], 100 * r[5]) for r in rows))
 
@@ -424,6 +425,8 @@ if not os.environ.get('QUICK'):
     import random
     STEP = int(os.environ.get('STEP', 24)); SECS = 12
     pts = [(x, y) for y in range(8, MAPH * 8 - 23, STEP) for x in range(8, MAPW * 8 - 23, STEP)]
+    # (not UNDER the deck heading for a waypoint ON it: a car cannot come to be there - see below, where the drop sets the level)
+    under_cover = lambda x, y: BR['H0'] - 16 <= x < BR['H1'] and BR['M0'] - 12 <= y + 8 < BR['M1'] + 12
     random.seed(5); random.shuffle(pts)
     sp = boot(); go_green(sp); press(sp, 'Q', False)
     you = car(sp, 0); pts = [p for p in pts if math.hypot(p[0] - you['x'], p[1] - you['y']) > 30]
@@ -433,6 +436,8 @@ if not os.environ.get('QUICK'):
         for i, (x, y) in zip(CPUS, batch):
             near = min(range(NWP), key=lambda n: math.hypot(WPS[n][0] - x - 8, WPS[n][1] - y - 8))
             wp = (near + random.choice((-1, 0, 1, 2))) % NWP
+            if under_cover(x, y) and not (BR['X0'] <= x + 8 < BR['X1']): wp = min((n for n in range(NWP) if n not in UP_WPS and (n - 1) % NWP not in UP_WPS), key=lambda n: math.hypot(WPS[n][0] - x - 8, WPS[n][1] - y - 8))
+            setl(sp, i, int(wp in UP_WPS and BR['X0'] <= x + 8 < BR['X1'] and BR['Y0'] <= y + 8 < BR['Y3']))     # (its level: on the bridge if it is dropped on the upper road heading for one of its waypoints)
             put(sp, i, x, y, random.randrange(64)); sp.write(CARS + i * CS + C_WP, bytes([wp])); sp.write(CARS + i * CS + C_LAPS, bytes([1])); start[i] = (x, y, wp)
         sp.write(SYM['race_over'], bytes([0]))
         sp.run(duration=SECS, fast_forward=True)
