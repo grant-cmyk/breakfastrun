@@ -43,6 +43,10 @@ pd_1:
         jr nz,pd_2
         inc a
 pd_2:
+        cp LAPS+1               ; (over the line at the end: still the last lap, not "4/3" -
+        jr c,pd_2b              ; Grant, 15 Nov 2026)
+        dec a
+pd_2b:
         ld c,a
         ld hl,(pl_key)          ; changed? the plate afresh
         or a
