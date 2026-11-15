@@ -192,10 +192,10 @@ cpu_move:
         add ix,de
         pop bc
         djnz cpu_move
+        call bumps_o
         if OPT_BRIDGE
-        call lv_all             ; BRIDGE: each car's level, the bridge's walls, the ramps' pull (bridge.asm)
-        endif
-        call bumps_o            ; cars that touch, and the cereal O's
+        call lv_all             ; BRIDGE: each car's level, the bridge's walls, which ramp it is on (bridge.asm) - last, so
+        endif                   ; that no car is ever drawn beyond a wall            ; cars that touch, and the cereal O's
 
         call race_progress      ; your waypoints and laps, everyone's progress
         call hud_update         ; the panel, message bar and lap strip
@@ -533,6 +533,9 @@ ph_surf_kept:
         jr ph_nb
 ph_cpu:
         call skid               ; fast and turning: it slides (DE, BC, fshift)
+        if OPT_BRIDGE
+        call ramp_push          ; BRIDGE: less push up a ramp, more down it
+        endif
         ld a,(ix+C_KIND)        ; NOS: you, twice the push (so twice the top
         or a                    ; speed while it burns)
         jr nz,ph_nb

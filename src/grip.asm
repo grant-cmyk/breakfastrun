@@ -184,6 +184,9 @@ yg_d2:
         jr z,yg_d3
         add hl,hl
 yg_d3:
+        if OPT_BRIDGE
+        call ramp_top           ; BRIDGE: a lower top speed up a ramp, a higher one down it (bridge.asm)
+        endif
         ld (yg_topn),hl
         bit 7,d                 ; (backwards: no limit)
         jr nz,yg_d4

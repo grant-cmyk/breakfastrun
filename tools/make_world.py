@@ -618,6 +618,13 @@ for my in range(MH):
 smx = (LX + 4 - MMX0) * MSC // 256           # the start line: a tick across the road -
 for my in range(MH):                              # on the bottom straight only (the same column
     if on_road(smx, my) and (MMY0 + my * 256 // 21 > PH // 2 if TRACK == 1 else abs(MMY0 + (my * 256 + 128) / MSC - SY) < ROAD / 2 + 8): mm[my][smx] = 1   # crosses the top dip too)
+if BRIDGE:                        # BRIDGE: on the mini-map the upper road's two edges run on over the crossing and the lower road's stop at it
+    _xc, _yc = BRIDGE['cross']; _u = lambda x: _xc - ROAD // 2 <= x < _xc + ROAD // 2
+    for my in range(MH):
+        y = MMY0 + int((my * 256 + 128) / MSC)
+        if not (_yc - ROAD // 2 - 12 <= y < _yc + ROAD // 2 + 12): continue
+        xs = [mx for mx in range(MW) if _u(MMX0 + int((mx * 256 + 128) / MSC))]
+        for mx in range(xs[0] - 1, xs[-1] + 2): mm[my][mx] = 1 if mx in (xs[0], xs[-1]) else 0
 assert MH == 44 and not any(mm[my][mx] for my in list(range(5)) + list(range(MH - 2, MH)) for mx in range(MW)), 'the mini-map\'s road is outside the rows the game shows (5 to %d, above the RACE heading)' % (MH - 3)
 obits = [[0] * W for _ in range(H)]                # where the cereal O's are: cars bounce off them
 for ox, oy in OS: obits[oy // 8][ox // 8] = 1

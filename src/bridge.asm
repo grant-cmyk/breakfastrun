@@ -17,15 +17,19 @@
 ;   O'S      this track keeps no O map (its memory went to the bridge): o_at finds an O in the row lists.
 ; =====================================================================
 LVL     equ 0x5E00              ; the cars' levels, 5 bytes; and
-BR_SAVE equ 0x5E08              ; 72 bytes: the buffer under a half-hidden car (the bottom of the stack's
+RMP     equ LVL+8               ; and whether each is on a ramp: 1 the ramp up, 0xFF the ramp down, 0 neither; and
+BR_SAVE equ 0x5E10              ; 72 bytes: the buffer under a half-hidden car (the bottom of the stack's
                                 ; page: the stack, from 0x5F00 down, has been seen 56 bytes deep)
-RAMP_G  equ 10                  ; the slope's pull on a ramp, in 1/256 px a frame, each TV frame (tests/track5_test.py measures what it does)
+RAMP_SHIFT equ 3                ; THE RAMPS: on the ramp up a car's push and top speed are less by 1 / 2^RAMP_SHIFT (3: an eighth,
+                                ; 12.5%), on the ramp down more by as much - you and the computer cars alike (ramp_adj)
 
 lv_reset:                       ; a new race: everyone on the table
-        ld hl,0
-        ld (LVL),hl
-        ld (LVL+2),hl
-        ld (LVL+3),hl
+        ld hl,LVL
+        ld b,13
+lv_r0:
+        ld (hl),0
+        inc hl
+        djnz lv_r0
         ret
 
 lv_all:                         ; once a picture, after the cars have moved, before they bump
@@ -74,24 +78,21 @@ lv_car:
         cp (BR_Y3-BR_Y0)/4
         jr c,lv_up
         ld (hl),0               ; off the foot of a ramp: on the table again
-        ret
+        ld c,0
+        jr lv_r
 lv_up:
-        ld bc,0x10000-RAMP_G    ; the ramp up rises down the screen: it pulls up the screen
+        ld c,1                  ; on the ramp up,
         cp (BR_Y1-BR_Y0)/4
-        jr c,lv_g
+        jr c,lv_r
+        dec c                   ; the level deck,
         cp (BR_Y2-BR_Y0)/4
-        jr c,lv_wall            ; (the level deck: no pull)
-        ld bc,RAMP_G            ; the ramp down: it pulls down the screen
-lv_g:
-        ld l,(ix+C_VY)
-        ld h,(ix+C_VY+1)
-        ld a,(dt)
-lv_g1:
-        add hl,bc
-        dec a
-        jr nz,lv_g1
-        ld (ix+C_VY),l
-        ld (ix+C_VY+1),h
+        jr c,lv_r
+        dec c                   ; or the ramp down
+lv_r:
+        ld a,l
+        add a,RMP-LVL
+        ld l,a
+        ld (hl),c
 lv_wall:                        ; the kerb walls: x from BR_X0 - 2 to BR_X1 - 14 (the car is 16 wide)
         ld a,(ix+C_X+1)
         or a
@@ -149,13 +150,15 @@ lv_l2:
         ld de,BR_M0-4
         or a
         sbc hl,de
-        ld hl,KICK
-        jr c,lv_tset
+        jr c,lv_tlo
         ld a,l
         cp BR_M1-BR_M0-7
         ret c
         ld de,BR_M1-12
         ld hl,0x10000-KICK
+        jr lv_tset
+lv_tlo:
+        ld hl,KICK
 lv_tset:
         ld (ix+C_Y),e
         ld (ix+C_Y+1),d
@@ -172,6 +175,46 @@ lv_l3:
         jr c,lv_kl
         ld a,BR_X1
         jr lv_kr
+
+; RAMP_ADJ (IX = car, HL = a push or a top speed): on the ramp up HL less 1 / 2^RAMP_SHIFT of itself, on the
+; ramp down more by as much; anywhere else as it is. Uses A, DE.
+ramp_adj:
+        ld a,(ix+C_KIND)
+        add a,RMP AND 255
+        ld e,a
+        ld d,RMP/256
+        ld a,(de)
+        or a
+        ret z
+        ld d,h
+        ld e,l
+        rept RAMP_SHIFT
+        sra d
+        rr e
+        endm
+        dec a
+        jr z,ra_up
+        add hl,de
+        ret
+ra_up:
+        or a
+        sbc hl,de
+        ret
+ramp_push:                      ; a computer car's push (DE, BC), from physics
+        push bc
+        ex de,hl
+        call ramp_adj
+        ex (sp),hl
+        call ramp_adj
+        ld b,h
+        ld c,l
+        pop de
+        ret
+ramp_top:                       ; your top speed (HL), from you_grip (DE kept)
+        push de
+        call ramp_adj
+        pop de
+        ret
 
 lv_same:                        ; bump (IX = car a, HL = car b): Z if they are on the same level
         push hl
