@@ -134,7 +134,7 @@ main:
         ld (race_over),a
         call podium             ; (plate_slow.asm)
 main_wait:
-        call hud_over           ; Q: a new race
+        call pod_anim           ; the podium's faces move (title3.asm, in the table block); then hud_over - Q: a new race
         halt
         jr main
 main_go:
@@ -4480,8 +4480,8 @@ mu_ptab equ TD + mu_ptab_src - td_src
         else
 mu_tune equ 0
 mu_ptab equ 0
-        include "faces_win.asm" ; each driver happy, for the podium (tools/make_faces.py, from Grant's drawings):
-                                ; here, in the room the tune's notes left, since 15 Nov 2026
+        include "faces_mood.asm" ; each driver's eyes, happy and sad frames for the podium, as differences from the
+                                ; everyday face (tools/make_faces.py, from Grant's drawings)
         endif
         include "jingle.asm"    ; the jingle's notes (tools/make_music_ay.py)
 t_name_src:                     ; the title: the driver's name under the face, in the small letters, centred
@@ -4496,7 +4496,10 @@ t_name_src:                     ; the title: the driver's name under the face, i
         jp pd_name
 td_end2:
 t_name  equ TD + t_name_src - td_src
-faces_win equ TD + faces_win_src - td_src
+faces_mood equ TD + faces_mood_src - td_src
+pod_anim equ TD + pod_anim_src - td_src
+pa_one  equ TD + pa_one_src - td_src
+pa_face equ TD + pa_face_src - td_src
 jc_a    equ TD + jc_a_src - td_src
 jc_b    equ TD + jc_b_src - td_src
         if td_end2 - td_src > 0x5E00 - TD

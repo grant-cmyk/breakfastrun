@@ -2155,3 +2155,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - The plate's lap stays at 3/3 after the finish line (was 4/3).
 - Sugar spoon icons for the NOS: a mock-up sheet, docs/design/sugar_icons.png (tools/make_sugar_mock.py). Not in the game.
 - Track 5's bridge (background design, not in the game): Grant chose the concrete bridge P4 with the tunnel mouth as D1, a plain 50% dither, and blue/white kerb walls. track5.png still shows D2 (one line different); switch it to D1 when the design is next touched.
+
+## 15 Nov 2026 16:46 SAST - the podium's faces move; a spoon of sugar for the NOS; memory found
+- Podium: every 32 frames a step - everyday face, eyes, everyday, then happy (winner) or sad (2nd, 3rd). pod_anim (src/title3.asm, runs in the table block) is called from main_wait and ends in hud_over. The frames are kept as rows that differ from the everyday face: src/faces_mood.asm (150 bytes; tools/make_faces.py from tools/face_moods.txt, which now has an eyes frame a driver). src/faces_win.asm is gone.
+- The NOS you hold is Grant's "Level spoon" (tools/sugar_spoons.txt -> tools/make_lights.py -> nos_can).
+- Memory audit (15 Nov, read-only agent): the table block had 208 unused zero bytes before FRAMES (0x5BA8-0x5C77) - pod_anim's code is there now. Still to take, measured but not applied: dead plate routines pl_cols/pl_cut/pl_fill/pf_1 (63 bytes, low area); unused texts in hudtext.asm (51) and hudtext_flag.asm (29, the gap); unused music and other variables in racer.asm (about 22, the gap).

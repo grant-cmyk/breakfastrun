@@ -339,8 +339,7 @@ pd_nb:
         call pd_face
         ld a,(order)            ; ... the winner smiling - the same size as the others (Grant, 15 Nov
         ld bc,0x070C            ; 2026: "the faces can all be the same size")
-        ld hl,faces_win
-        call pd_f2
+        call pd_face            ; (pod_anim has it smile, once the jingle is over)
         jp jin_flag             ; and its jingle (Grant, 15 Nov 2026: "Also play it when the chequered flag is shown")
 pd_bar:
         ld de,0x0110

@@ -15,6 +15,103 @@ k_names_src:
 ; from the screen's edge: the middle of the 3-cell border of checks.
 a_runs_src:
         db 32,30,64,  96,0, 16,4, 64,0, 16,4, 96,0, 16,4, 64,0, 16,4, 0
+; POD_ANIM: the podium's faces move (Grant, 15 Nov 2026). Called each TV frame while the podium is up
+; (main_wait), it ends in hud_over. Every 32 frames a step: the everyday face, the eyes, the everyday
+; face, then happy for the winner and sad for second and third. Each face is drawn afresh as every day
+; and the step's rows laid over it (faces_mood). It runs here in the table block (in the room before
+; FRAMES that the title's old tables left): its own calls go through the equs in racer.asm.
+pod_anim_src:
+        ld a,(FRAMES)
+        ld d,a
+        and 31
+        jr nz,pa_out
+        ld a,d
+        rlca
+        rlca
+        rlca
+        and 3
+        ld e,a                  ; E = the step, 0-3
+        ld d,1                  ; D = the mood's frame: 1 happy (the winner), then 2 sad
+        ld hl,order
+        ld bc,0x070C
+        call pa_one
+        ld bc,0x0808
+        call pa_one
+        ld bc,0x0910
+        call pa_one
+pa_out:
+        jp hud_over
+pa_one_src:                     ; the car at (HL)'s face in cells B, C for step E
+        ld a,(hl)
+        inc hl
+        push hl
+        push de
+        push bc
+        push af
+        call pd_face
+        pop af
+        pop bc
+        pop de
+        bit 0,e
+        jr z,po_1               ; (steps 0 and 2: as every day)
+        ld l,a
+        add a,a
+        add a,l                 ; the car's three lists: eyes, happy, sad
+        bit 1,e
+        jr z,po_0
+        add a,d
+po_0:
+        push de
+        call pa_face
+        pop de
+po_1:
+        pop hl
+        ld d,2
+        ret
+pa_face_src:                    ; list A of faces_mood laid over the face in cells B, C
+        ld hl,faces_mood
+pf_s0:
+        or a
+        jr z,pf_a
+pf_s1:
+        ld e,(hl)
+        inc hl
+        inc e
+        jr z,pf_s2
+        inc hl
+        inc hl
+        jr pf_s1
+pf_s2:
+        dec a
+        jr pf_s0
+pf_a:
+        ld a,(hl)               ; a row (0-15), or 0xFF: the end
+        inc hl
+        cp 16
+        ret nc
+        push hl
+        push bc
+        cp 8
+        jr c,pf_a1
+        inc b
+pf_a1:
+        and 7
+        ld e,a
+        call cell_addr
+        ld a,h
+        add a,e
+        ld h,a
+        ex de,hl
+        pop bc
+        pop hl
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        jr pf_a
         defs 0x5C78 - TD - ($ - td_src)   ; (up to FRAMES ...
         defs 3                  ; ... which the copy sets to 0, once, at start-up)
 key_ch_src: db "OPQA "              ; 1UP's keys: left, right, accelerate, brake, NOS

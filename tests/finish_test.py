@@ -16,7 +16,7 @@ def art(path, kind):
     t = open(os.path.join(ROOT, 'tools', path)).read()
     return {m.group(1): np.array([[ch == 'X' for ch in r] for r in m.group(2).split()]) for m in re.finditer(r'== (\w+) %s ==\n((?:[X.]{16}\n){16})' % kind, t)}
 CAR = ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE']; COLOUR = [0x57, 0x68, 0x60, 0x58, 0x78]
-EVERY, HAPPY = art('face_art.txt', 'face'), art('face_moods.txt', 'happy')
+EVERY, HAPPY = art('face_art.txt', 'face'), art('face_moods.txt', 'happy'); SAD, EYES = art('face_moods.txt', 'sad'), art('face_moods.txt', 'eyes')
 with Racer(headless=True) as sp:
     Spectrum.load_tape(sp, TAP)                         # (the plain loader: the header's holds the jingle off)
     t = 0.0
@@ -49,8 +49,18 @@ with Racer(headless=True) as sp:
     want[2:9, 6:10] = COLOUR[4]; want[3:9, 2:6] = COLOUR[1]; want[4:9, 10:14] = COLOUR[0]
     ok((A[5:19, 5:21] == want).all(), 'the podium: a yellow card (rows 5-18, columns 5-20), blue head and foot, three steps in the drivers\' own colours - white, cyan, red - with yellow all round them')
     ok((A[5:17, 1:5] == 0x29).all() and (A[5:17, 21:25] == 0x29).all() and (A[19:20, 1:25] != 0x70).all() and (A[1:5, 5:21] != 0x70).all(), 'the cloth round the card keeps its own colours')
-    ok((sb[56:72, 96:112] == HAPPY['WHITE']).all(), 'the winner\'s face is the HAPPY one, the same size as the others, on the top step')
-    ok((sb[64:80, 64:80] == EVERY['CYAN']).all() and (sb[72:88, 128:144] == EVERY['GREEN' if False else 'YOU']).all(), 'second and third have their everyday faces')
+    def which(q, name):
+        for k, d in (('every', EVERY), ('happy', HAPPY), ('sad', SAD), ('eyes', EYES)):
+            if (q == d[name]).all(): return k
+        return '?'
+    seen = [set(), set(), set()]
+    for k in range(30):                                 # the faces move: a step every 32 frames
+        f = screen_bits(sp).astype(bool)
+        seen[0].add(which(f[56:72, 96:112], 'WHITE')); seen[1].add(which(f[64:80, 64:80], 'CYAN')); seen[2].add(which(f[72:88, 128:144], 'YOU'))
+        sp.run(duration=0.16, fast_forward=True)
+    ok(seen[0] == {'every', 'happy'}, 'the winner\'s face moves between the everyday one and the HAPPY one (%s)' % ' '.join(sorted(seen[0])))
+    ok(seen[1] == {'every', 'sad'} and seen[2] == {'every', 'sad'}, 'second and third move between everyday and SAD (%s; %s) - their eyes frames, where drawn, show as their own' % (' '.join(sorted(seen[1])), ' '.join(sorted(seen[2]))))
+    sb = screen_bits(sp).astype(bool)
     ok(sb[72:88, 96:112].any() and sb[80:96, 64:80].any() and sb[88:104, 128:144].any() and sb[91:96, 96:112].any() and sb[99:104, 60:84].any() and sb[106:111, 128:144].any(),
        'each step has its place, large, and its driver\'s name in the small letters')
     ok(sb[41:46, 76:132].any() and sb[50:55, 92:116].any() and sb[121:126, 82:126].any() and sb[145:150, 78:130].any() and not sb[112:120, 40:168].any() and not sb[136:144, 40:168].any(),
