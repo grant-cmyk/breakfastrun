@@ -1646,3 +1646,28 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - src/plateco.asm: LEAD_X 20, LEAD_Y 16 (were 40, 32); the aim is speed x 12/256 (21 px at top
   speed, was 42); LEAD_STEP 2 px a picture (was 3), so the slide feels the same.
 - All ten tests PASS; speed alone 41 / 224 / 5 (unchanged).
+
+## 2026-11-15 06:07 SAST - the speed test: where a picture's time goes, and one safe win
+
+- Grant: "please run an optimization test on the game - see if there are ways to make this run
+  smoother - i.e. improvement the frame rate".
+- tests/zxlap.py's grouping was wrong (the copy routine was counted as tiles, the generated tile
+  code as time_fmt, the plate as you_grip, the gauge as draw_car): more routine names in GROUPS.
+- WHERE IT GOES, alone, 231,659 T a picture (3 TV frames = 209,664): copy to screen 51,600 (22%);
+  cloth 37,800 (16%); tiles ~36,000 (16%); cars' physics, grip and friction ~37,000 (16%);
+  computer cars' thinking ~16,000 (7%); drawing cars 11,800 (24,200 in the pack); the plate 6,600;
+  the gauge 3,700. The copy, the cloth and draw_car's loop are already near what the Z80 can do.
+- THE GAME IS BISTABLE: a picture that fits in 3 frames also runs one frame's less logic, so a
+  small saving near the edge tips many pictures. What-ifs (not kept): no plate and gauge at all:
+  alone 213 of 321 pictures at 3 frames, pack 27 / 247 / 12 - the pack is ~30,000 T over, not ~10,000.
+  Computer cars deciding every 8th frame (not 4th): alone 150 / 149, pack no better, and the
+  fastest computer car fell to 20.7 s a lap (drive_test FAIL) - NOT kept.
+- KEPT: the gauge is composed only when the damage changes (dmg_make, src/plate_slow.asm, 48 bytes
+  at dmg_bmp) and copied in each picture (3,660 -> ~1,700 T); the plate's time is cut afresh only
+  when it has moved on 5 frames (pl_tl), about every other picture (~2,000 T). The gauge's art
+  and code moved under 0x8000: code_end 0xBEF3 (269 bytes free in the main area).
+- RESULT: alone 91 pictures at 3 frames / 193 at 4 / 3 at 5 (was 41 / 224 / 5); the pack 3 / 253 /
+  6 (was 23 / 250 / 11: fewer slow ones, no more fast ones). All ten tests PASS.
+- NOT TRIED (each changes what Grant sees or feels): the window 2 columns and 2 rows smaller
+  (est. -22,000 T); plain cloth without dots (est. -4,700); your car's physics at 25 a second
+  (est. -12,000, changes the handling); a steady 4-frame lock (even pacing, 12.5 a second).

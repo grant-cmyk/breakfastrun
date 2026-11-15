@@ -84,7 +84,8 @@ GROUPS = ['main', 'tick', 'read_keys', 'physics', 'ai_drive', 'bump_all', 'bump'
           'tower_update', 'map_update', 'strip_tick', 'strip_triggers', 'bar_tick', 'print_big', 'print_at', 'gap_draw', 'st_text',
           'surface', 'rnd', 'abs_hl', 'scr_addr', 'buf_addr', 'cf_init', 'mul8s', 'sq_mul', 'lap_and_inc', 'tower_row', 'bubble',
           'glyph', 'wave_tick', 'nos_take', 'time_fmt', 'set_attrs', 'clear_cells', 'fin_key', 'map_dot', 'map_off', 'cp_hook',
-          'flash', 'start_lights', 'inv_draw'] + [n for n in SYM if re.match(r'(tile_|td_|cf_l|cf_s|cf_m|cfw_|bp_pair|gt_|dt_)', n)]
+          'flash', 'start_lights', 'inv_draw', 'dmg_draw', 'dmg_hit', 'nos_draw', 'hud_pre', 'pl_draw', 'pl_static', 'pl_message', 'cam_lead', 'lights_draw',
+          'oil_tick', 'near_you', 'nos_fire', 'bumps_o', 'cpu_move', 'wp_delta', 'friction', 'tdraw_0', 'make_copier', 'obj_paint', 'grip_init', 'sq_mul', 'title', 'buf_addr'] + [n for n in SYM if re.match(r'(tile_|td_|cf_l|cf_s|cf_m|cfw_|bp_pair|gt_|dt_)', n)]
 gstarts = sorted((SYM[n], n) for n in set(GROUPS) if n in SYM)
 gaddr = [a for a, _ in gstarts]
 def group(a):

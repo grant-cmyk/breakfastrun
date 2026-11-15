@@ -44,7 +44,24 @@ pd_2:
         ld hl,(pl_key)          ; changed? the plate afresh
         or a
         sbc hl,bc
-        call nz,pl_static
+        jr z,pd_same
+        call pl_static
+        jr pd_time
+pd_same:                        ; the figures are cut afresh only once the time has moved on a tenth
+        ld hl,(race_time)       ; of a second (5 frames) since they last were - about every other
+        ld de,(cars+C_LST)      ; picture (the speed test of 15 Nov 2026: 2,000 T a picture saved)
+        or a
+        sbc hl,de
+        ld de,(pl_tl)
+        or a
+        sbc hl,de
+        ld a,h
+        or a
+        jr nz,pd_time           ; (a new lap: the time went back)
+        ld a,l
+        cp 5
+        jr c,pd_blit
+pd_time:
         ld hl,pl_bmp+10*PL_W+1  ; your lap's time so far, small: m:ss.t - its 5 rows solid again,
         ld b,5
 pd_3:
@@ -61,6 +78,7 @@ pd_3:
         ld de,(cars+C_LST)
         or a
         sbc hl,de
+        ld (pl_tl),hl
         call time_fmt
         ld a,(time_txt)
         call pd_d
@@ -80,6 +98,7 @@ pd_3:
         ld a,11                 ; . and t
         ld hl,pl_bmp+10*PL_W+3
         call pl_pair
+pd_blit:
         ld hl,pl_bmp            ; and the plate into the buffer
         ld de,PL_B
         ld b,PL_H

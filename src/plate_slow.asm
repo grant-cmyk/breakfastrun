@@ -162,3 +162,45 @@ WIN_ATTR2 equ 0x29              ; the window's own colours: blue on cyan
 pl_key:  dw 0                   ; the place and lap pl_bmp was composed for
 pl_lin:  db 0                   ; pl_down's rows: 1 in pl_bmp, 0 in the buffer
 pl_bmp:  defs PL_W*PL_H          ; the plate, composed
+
+; DMG_MAKE: the health gauge composed for damage A (HL = dmg_sh) into dmg_bmp: DMG_ROWS rows of 3
+; bytes - the outline, and the fill in every row but the first C (dmg_emp: it empties from the top).
+dmg_make:
+        ld (hl),a
+        add a,dmg_emp AND 255
+        ld l,a
+        ld a,0
+        adc a,dmg_emp/256
+        ld h,a
+        ld c,(hl)
+        ld hl,dmg_heart         ; for each byte: the outline, the fill
+        ld de,dmg_bmp
+        ld b,DMG_ROWS
+dk_1:
+        push bc
+        ld b,3
+dk_2:
+        ld a,(hl)
+        inc hl
+        inc c
+        dec c
+        jr nz,dk_3
+        or (hl)
+dk_3:
+        inc hl
+        ld (de),a
+        inc de
+        djnz dk_2
+        pop bc
+        ld a,c
+        or a
+        jr z,dk_4
+        dec c
+dk_4:
+        djnz dk_1
+        ret
+dmg_sh:  db 0xFF                 ; the damage dmg_bmp shows (0xFF: none yet)
+dmg_bmp: defs 3*DMG_ROWS
+dmg_emp: db 2,3,4,5,6,7,9,11,16         ; rows without fill (the first is clear) for damage 0 to 8
+        include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
+pl_tl:   dw 0xFFFF               ; the lap time (frames) the plate's figures were last cut for

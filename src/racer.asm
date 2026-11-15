@@ -85,6 +85,7 @@ CT_BRK  equ 8
         org 0x5F00              ; big-car frames, below the program (8.25 KB, loaded
         include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
         include "title.asm"     ; the title / attract screen, in the room the small cars leave
+DMG_ROWS equ 16                 ; the gauge: 2 colour cells high - a clear row, the icon's 13, two clear (dmgicon.asm)
 PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a row,
 PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
@@ -2430,7 +2431,6 @@ nd_col:
 ;   NOS canisters.
 ; ---------------------------------------------------------------------
 DMG_MAX  equ 8
-DMG_ROWS equ 16                 ; the gauge: 2 colour cells high - a clear row, the icon's 13, two clear (dmgicon.asm)
 DMG_COOL equ 12
 DMG_SLOW equ 8                  ; (8 points: 64 of the 448 - a seventh off the top speed)
 DMG_B    equ BUF + 0x800*2 + 0*0x100 + 2*32 + 2      ; buffer row 144 (third 2, char row 2, line 0), byte 2: the window's last two cell rows, its left edge
@@ -2446,56 +2446,22 @@ dmg_hit:
         ret nc
         inc (hl)
         ret
-dmg_draw:
-        ld a,(dmg)              ; how many of the gauge's rows, from the top, have no fill
-        add a,dmg_emp AND 255
-        ld l,a
-        ld a,0
-        adc a,dmg_emp/256
-        ld h,a
-        ld c,(hl)
-        ld hl,dmg_heart         ; for each byte: the outline, the fill
+dmg_draw:                       ; the gauge is composed only when the damage changes (dmg_make,
+        ld a,(dmg)              ; plate_slow.asm: 48 bytes at dmg_bmp); each picture it is just copied
+        ld hl,dmg_sh            ; in - every byte of its 3 x 2 cells, which are the icon's alone, so
+        cp (hl)                 ; they can have its colour (magenta: hud_pre) with nothing else in
+        call nz,dmg_make        ; them to take it. (The speed test of 15 Nov 2026: 3,660 T -> 1,700.)
+        ld hl,dmg_bmp
         ld de,DMG_B
         ld b,DMG_ROWS
-dd_1:                           ; every byte of its 3 x 2 cells is written: they are the icon's alone,
-                                ; so they can have its colour (magenta: hud_pre) with nothing else in
-                                ; them to take it - "a decent mask to prevent colour clash"
-        ld a,(hl)               ; the outline,
-        inc hl
-        inc c                   ; and the fill, unless this row is an empty one (C not 0)
-        dec c
-        jr nz,dd_a
-        or (hl)
-dd_a:
-        inc hl
-        ld (de),a
-        inc e
-        ld a,(hl)               ; the outline,
-        inc hl
-        inc c                   ; and the fill, unless this row is an empty one (C not 0)
-        dec c
-        jr nz,dd_b
-        or (hl)
-dd_b:
-        inc hl
-        ld (de),a
-        inc e
-        ld a,(hl)               ; the outline,
-        inc hl
-        inc c                   ; and the fill, unless this row is an empty one (C not 0)
-        dec c
-        jr nz,dd_c
-        or (hl)
-dd_c:
-        inc hl
-        ld (de),a
+dd_1:
+        ld c,255                ; (so the LDIs leave B alone)
+        ldi
+        ldi
+        ldi
         dec e
         dec e
-        ld a,c
-        or a
-        jr z,dd_2
-        dec c
-dd_2:
+        dec e
         inc d                   ; the next line down (the buffer is laid out like the screen)
         ld a,d
         and 7
@@ -2509,8 +2475,6 @@ dd_2:
 dd_3:
         djnz dd_1
         ret
-dmg_emp: db 2,3,4,5,6,7,9,11,16         ; rows without fill (the first is clear) for damage 0 to 8
-        include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
 
 ; ---------------------------------------------------------------------
 ; SOUND (the beeper): played in the time the loop would otherwise spend
