@@ -12,7 +12,7 @@ place of its own drawing for any driver named here.
 ...XXXXXXXXXXX..
 ..........XXXX..
 ...XXXXXXXXX.X..
-....XX.XX..X.X..
+.....X..X..X.X..
 ...........XXX..
 ....X.XX...XX...
 ....X.......X...
