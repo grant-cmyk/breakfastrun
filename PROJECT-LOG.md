@@ -2011,3 +2011,15 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - SPEED: alone 36 pictures at 3 frames / 227 / 10 (52 / 216 / 6 before the engine change); in the
   pack 5 / 253 / 7. The engine's flips, every frame while Q is held, take the last of the margin.
 - code_end 0xBFED: 19 bytes free in the main area. docs/sound/race_now.mp3: the new start.
+
+## 2026-11-15 11:16 SAST - no AY chip: the Spectrum's own speaker only
+
+- Grant: "Lets not use the AY chip for now please - old spectrum sounds".
+- OPT_AY is 0 by default (build.sh: AY=1 puts the race tune on the chip back); build/racer.ini
+  is gone. The game writes to no AY port (zxdev io_report: keyboard, border and beeper only).
+- WHAT SOUNDS NOW, all on the speaker: the Kettle's On jingle before the lights; the lights'
+  beeps; the engine while you accelerate; the skid; a beep each lap; bumps, the bonk on a
+  cereal O; the NOS pick-up and its whoosh. NO TUNE DURING THE RACE: on the speaker it was
+  "background beeping" three times over (14 Nov). MUSIC=1 still builds that old version.
+- 234 bytes back in the main area (code_end 0xBF03: 253 free). All twelve test suites PASS.
+  Speed alone 57 / 213 / 5; pack 5 / 253 / 7. docs/sound/race_now.mp3: 16 s of it.

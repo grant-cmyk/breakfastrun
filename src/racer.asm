@@ -4446,7 +4446,7 @@ im2_on:
         ei
         ret
         include "title3.asm"    ; the title's tables, copied to TD (0x5B4C) by start_once
-        if OPT_AY
+        if 1 - OPT_MUSIC        ; (the AY tune's notes, kept in every build but the old beeper-tune one: AY=1 plays them)
         include "music_ay.asm"  ; the race tune for the AY chip (tools/make_music_ay.py)
         else
         include "music.asm"     ; ... and the ditty's (14 Nov 2026: 129 bytes the program needed back)
