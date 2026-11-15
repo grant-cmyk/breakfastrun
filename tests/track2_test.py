@@ -1,4 +1,5 @@
-"""Track 2, THE BREAKFAST CLUB, in its own build (TRACK=2 bash build.sh -> build/racer_track2.tap).
+"""Track 2, THE BREAKFAST CLUB, in its own build (TRACK=2 bash build.sh -> build/racer_track2.tap) - and
+track 3, BREAKFAST OF CHAMPIONS, with TRACK=3 (TRACK=3 bash build.sh first).
 On the REAL 48K ROM (zx package), with tests/drive_test.py's own helpers:
   - the five cars start on the grid, on the road, behind the line; nobody moves before green
   - the window matches the world map pixel for pixel, on the grid and at places all round the lap
@@ -33,7 +34,7 @@ WPS = [tuple(int(v) for v in l.split('dw')[1].split(',')) for l in rd('waypoints
 WS, LAPS, C_LAPS, C_WP = SYM['ws'], SYM['laps'], 25, 13
 OMAP = [[int(c) for b in l.split('defb')[1].split(',') for c in b.strip().lstrip('%')] for l in rd('omap.asm').splitlines() if 'defb' in l]
 MM = [l for l in rd('minimap.txt').split()]                             # the mini-map as generated: '#' = ink
-mm_ = rd('minimap.asm'); MMX0 = int(re.search(r'MMX0\s+equ\s+(-?\d+)', mm_).group(1)); MMY0 = int(re.search(r'MMY0\s+equ\s+(-?\d+)', mm_).group(1))
+mm_ = rd('minimap.asm'); MSC = int(re.search(r'\* (\d+) / 256', mm_).group(1)); MMX0 = int(re.search(r'MMX0\s+equ\s+(-?\d+)', mm_).group(1)); MMY0 = int(re.search(r'MMY0\s+equ\s+(-?\d+)', mm_).group(1))
 CANS = [(int(re.search(r'NOS_%s_X equ (\d+)' % k, src_w).group(1)), int(re.search(r'NOS_%s_Y equ (\d+)' % k, src_w).group(1))) for src_w in [rd('world.asm')] for k in 'ABC']
 for cx_, cy_ in CANS:                                                   # the NOS and oil cans come and go (the game takes their tiles out of the
     world[cy_ - 8:cy_ + 8, cx_ - 4:cx_ + 4] = 0                         # row lists and puts them back): they are checked apart, below
@@ -73,17 +74,17 @@ def minimap_diff(sp):
     diff = sb[2:2 + want.shape[0], 208:256] != want
     dots = []
     for n in range(N):
-        c = car(sp, n); dx = (c['x'] + 8 - MMX0) * 21 // 256; dy = (c['y'] + 8 - MMY0) * 21 // 256 - 3
+        c = car(sp, n); dx = (c['x'] + 8 - MMX0) * MSC // 256; dy = (c['y'] + 8 - MMY0) * MSC // 256 - 3
         dots.append((dx, dy)); diff[max(dy - 2 - 2, 0):dy + 3 - 2, max(dx - 2, 0):dx + 3] = False
     return int(diff.sum()), dots, int(want.sum())
 
 # ---------------------------------------------------------------- the data the tape was built from
-ok(MAPW == 72 and MAPH == 64, 'the map is the size the game is built for: %d x %d tiles' % (MAPW, MAPH))
+ok(MAPW == 72 and MAPH == {'2': 64, '3': 84}.get(TRACK), 'the map is the size of this track\'s design: %d x %d tiles (mini-map at %d/256)' % (MAPW, MAPH, MSC))
 ok(46 < NWP <= 61 and (LAPS + 1) * NWP - 1 < 246, 'its %d waypoints fit the game\'s one-byte progress over %d laps (%d at most, under the 246 kept for finished cars)' % (NWP, LAPS, (LAPS + 1) * NWP - 1))
 gaps = [math.dist(WPS[i], WPS[(i + 1) % NWP]) for i in range(NWP)]
 lap_px = sum(gaps)
-ok(max(gaps) < 40 and all(road_px(x, y) for x, y in WPS) and not any(OMAP[y // 8][x // 8] for x, y in WPS),
-   'the waypoints are on the road, clear of the cereal O\'s, %.1f to %.1f px apart (your car passes one within 40); once round is %d px' % (min(gaps), max(gaps), lap_px))
+ok(max(gaps) <= 42.5 and all(road_px(x, y) for x, y in WPS) and not any(OMAP[y // 8][x // 8] for x, y in WPS),
+   'the waypoints are on the road, clear of the cereal O\'s, %.1f to %.1f px apart (your car passes one when within 40 of it); once round is %d px' % (min(gaps), max(gaps), lap_px))
 ok(sum(map(sum, OMAP)) > 128 and not any(OMAP[ty][tx] and surf[ty * MAPW + tx] == 0 and all(road_px(tx * 8 + i, ty * 8 + j) for i in (-16, 23) for j in (-16, 23)) for ty in range(MAPH) for tx in range(MAPW)),
    'the cereal O\'s (%d) stand along the road\'s edges, none out in the road' % sum(map(sum, OMAP)))
 
@@ -107,7 +108,7 @@ bad, _ = window_bad_t(sp)
 ok(bad == 0, 'on the grid the window matches the world map pixel for pixel, cars excluded (%d wrong)' % bad)
 md, dots, ink = minimap_diff(sp)
 sb = screen_bits(sp)
-ok(md == 0 and ink > 150, 'the panel\'s mini-map is this track\'s road, line for line (%d ink pixels, %d wrong outside the cars\' dots)' % (ink, md))
+ok(md == 0 and ink > 120, 'the panel\'s mini-map is this track\'s road, line for line (%d ink pixels, %d wrong outside the cars\' dots)' % (ink, md))
 ok(all(2 <= dy <= 39 and 0 <= dx < 48 for dx, dy in dots) and not sb[0:2, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F,
    'the cars\' dots are inside the map, and the map stops above the RACE heading (dots at %s)' % dots)
 shot(sp, 'track%s_grid.png' % TRACK)
@@ -186,11 +187,11 @@ def cut(sp, next_wp, on_wp, secs=2.5):
     sp.write(CARS + C_WP, bytes([next_wp % NWP])); sp.write(CARS + C_LAPS, bytes([1]))
     x, y = WPS[on_wp % NWP]; put(sp, 0, x - 8, y - 8, 16); sp.run(duration=secs, fast_forward=True)
     return laps_of(sp, 0), sp.read8(CARS + C_WP)
-above = min(range(NWP), key=lambda n: math.dist(WPS[n], (WPS[WS][0], SY - 110)))    # the waypoint straight above the line, on the next row
+above = min((n for n in range(NWP) if 8 <= (n - WS) % NWP <= NWP - 8), key=lambda n: math.dist(WPS[n], WPS[WS]))    # the nearest waypoint of another stretch of road: on track 2, straight above the line on the next row
 l, w = cut(sp, WS + 2, above)
-ok((above - WS) % NWP > 6 and l == 1 and w == (WS + 2) % NWP, 'across the cloth to the next row of road (waypoint %d, %d on): your waypoint stays %d, no lap' % (above, (above - WS) % NWP, w))
+ok((above - WS) % NWP > 6 and l == 1 and w == (WS + 2) % NWP, 'across the cloth to the nearest other stretch of road (waypoint %d, %d on, %d px away): your waypoint stays %d, no lap' % (above, (above - WS) % NWP, math.dist(WPS[above], WPS[WS]), w))
 l, w = cut(sp, above - 3, WS, 4.0)
-ok(l == 1 and w == (above - 3) % NWP, 'and back down from that row to the line, missing %d waypoints: no lap (lap count %d)' % ((WS - above + 3) % NWP, l))
+ok(l == 1 and w == (above - 3) % NWP, 'and back from there to the line, missing %d waypoints: no lap (lap count %d)' % ((WS - above + 3) % NWP, l))
 l, w = cut(sp, WS - 3, WS)
 ok(l == 2, 'off the track and back on over the line having missed 3: still a lap, as on track 1 (lap count %d)' % l)
 sp.__exit__(None, None, None)

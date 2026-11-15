@@ -2165,3 +2165,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Title: the row of faces steps everyday, eyes, everyday, happy (t_anim, src/plate_slow.asm, called from t_loop). Podium unchanged in order: everyday, eyes, everyday, happy or sad. pa_step gives the step from FRAMES and remembers the last one, so a slow loop cannot miss it.
 - Grant's sixth round of faces: faces_mood.asm is now 234 bytes. To fit, the table block was rearranged: the flag's jingle and t_name sit in the room before FRAMES with pod_anim (src/jingle.asm is in two parts, JIN_PART); the block ends 4 bytes short of 0x5E00.
 - Dead plate routines pl_cols, pl_cut, pl_fill removed (63 bytes of the low area; pa_step and t_anim took about 45).
+
+## 15 Nov 2026 (evening) - tracks 2 and 3 as their own builds (background agent, branch worktree-agent-a861f48a4f7d5e3b0)
+- ONE TRACK A BUILD. `TRACK=2 bash build.sh` -> build/racer_track2.tap (THE BREAKFAST CLUB); `TRACK=3 bash build.sh` -> build/racer_track3.tap (BREAKFAST OF CHAMPIONS, 72 x 84). `bash build.sh` is track 1 and build/racer.tap is byte for byte what it was (cmp).
+- tools/make_world.py takes TRACK and WORLD_OUT; the centre line comes from tools/make_track_designs.py. build.sh builds a track other than 1 in a copy of src/ (build/trackN/src): src/ stays track 1's.
+- Waypoints capped at 61: progress is one byte (laps * NWP + passed, 246-249 kept for finished cars) and wp_delta's index is a byte. 35 px apart on track 2, 41 on track 3.
+- Memory decided the breakfast things: track 2 has ten (plate, 4 eggs, 3 toast, fork, knife), track 3 five (3 eggs, 2 toast; TOP_ROWS 388). Program free: track 2 35 bytes, track 3 23.
+- Track 3: the game's code is MAPH-driven already (surface, O map, camera, row index are 16-bit); the only change is map_c3 (hud.asm), `if MAPH > 64`: mini-map at 14/256. Track 2's mini-map has MMY0 -24 (one row lower: the game draws rows 5 down).
+- tests/track2_test.py (TRACK=2 or 3): grid, window against the map all round the lap, mini-map, four computer cars 3 laps, your laps by placement and driven by script with the keys, short cuts, dropped cars. tests/track_shots.py -> docs/design/tracks/built/ (pictures and BUILT.md, with the figures and why track 4 does not fit).
+- Not done: track 4 (about 160 bytes short with a bare table - BUILT.md), track 5 (bridge), a track's name on screen, choosing a track in the game. Nobody has played tracks 2 and 3.
