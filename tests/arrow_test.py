@@ -62,8 +62,12 @@ KNOWN = {
  '2': [(12, 'sharp left', 'up'), (18, 'straight', 'left'), (24, 'sharp right', 'up'), (29, 'straight', 'right'), (40, 'gentle left', None),
        (46, 'sharp right', 'up-left'), (52, 'sharp left', 'down'), (55, 'straight', 'down'), (1, 'sharp left', 'right'), (4, 'straight', 'right')],
  '3': [(10, 'gentle left', 'up-right'), (22, 'gentle left', 'up-left'), (26, 'sharp left', 'down'), (36, 'sharp right', 'left'),
-       (41, 'straight', 'up'), (48, 'sharp left', 'left'), (4, 'straight', 'right'), (14, 'straight', 'up')]}[TRACK]
-PLAIN = {'1': [7, 30, 41, 42, 43], '2': [8, 9, 21, 32, 58], '3': [7, 17, 18, 31, 44, 55, 58]}[TRACK]   # mid-straight (track 3's 55: the fast kink)
+       (41, 'straight', 'up'), (48, 'sharp left', 'left'), (4, 'straight', 'right'), (14, 'straight', 'up')],
+ # track 5, the bridge: east past the line, north, WEST along the lower road and under the bridge, north up the left side, east
+ # along the top, down and back west on the second lane, then SOUTH over the bridge and left onto the start straight
+ '5': [(9, 'sharp left', 'up'), (13, 'sharp left', 'left'), (16, 'straight', 'left'), (24, 'sharp right', 'up'), (31, 'sharp right', 'right'),
+       (34, 'straight', 'right'), (42, 'sharp right', 'down'), (53, 'sharp left', 'down'), (56, 'straight', 'down'), (1, 'sharp left', 'right')]}[TRACK]
+PLAIN = {'1': [7, 30, 41, 42, 43], '2': [8, 9, 21, 32, 58], '3': [7, 17, 18, 31, 44, 55, 58], '5': [6, 20, 21, 38, 39, 51]}[TRACK]   # mid-straight (track 3's 55: the fast kink)
 
 # ---------------------------------------------------------------- the table
 ok(len(ATAB) == NWP and all(v == 0 or (1 <= v >> 3 <= 5) for v in ATAB), 'the arrows\' table has a byte for each of the %d waypoints: none, or a kind and a direction' % NWP)
