@@ -83,7 +83,7 @@ ms_id:  ld a,0
 ms_2:
         ld a,48                 ; (~3 s before a nag may follow)
         ld (COOL),a
-        call msg_final
+        call msg_snd            ; a blip, then msg_final (plate_slow.asm)
         pop ix
         pop bc
         ret

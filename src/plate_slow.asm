@@ -45,6 +45,34 @@ pa_step:
         ld (hl),a
         ret
 pa_last: db 0
+; CF_WAVE: the radio wave, small, under the crew chief's chin in his bubble (Grant, 15 Nov 2026: "have the
+; little wave graphic show in the pitstop view somewhere - but it must not make the size of the bubble
+; larger"): 7 bars a pixel wide, 1 to 3 high, a new shape each picture. It is drawn in the face's last
+; three rows as kept on the screen (the foot row once, by screen_once). Then fl_draw.
+cf_wave:
+        ld hl,CF_EYES + 0x120   ; the face's row 14 (row 5 is CF_EYES: clothmini.asm)
+        ld a,r
+        ld c,a
+        and 0x55
+        ld (hl),a
+        dec h                   ; row 13: some of those go a pixel higher
+        and 0x11
+        ld (hl),a
+        inc l
+        ld a,c
+        rrca
+        and 0x54
+        ld c,a
+        and 0x44
+        ld (hl),a
+        inc h
+        ld (hl),c
+        jp fl_draw
+; MSG_SND: a blip as the crew chief starts to talk ("If a message comes up make a sound of sorts"); then msg_final.
+msg_snd:
+        ld hl,9*256+5
+        ld (snd_fxt),hl
+        jp msg_final
 ; T_ANIM: the title's row of faces moves: everyday, eyes, in turn (at first with happy as well) (Grant, 15 Nov 2026: "in the
 ; title screen you can run the rotation of eyes and the happy face").
 t_anim:

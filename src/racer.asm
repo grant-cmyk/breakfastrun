@@ -90,7 +90,7 @@ PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a 
 PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
-        if $ > LOWTAB-0x2A0
+        if $ > LOWTAB-0x24D
         .error the room under 0x8000 runs into the data kept at its top (TOPMEM, LOWTAB)
         endif
         org 32768
@@ -4119,6 +4119,8 @@ so_cf:
         ld a,b
         cp 192
         jr nz,so_cf
+        ld hl,0x5455            ; the radio wave's foot, under the crew chief's chin: 7 dots (cf_wave, plate_slow.asm)
+        ld (CF_EYES + 0x220),hl
         call draw_frame
         ld b,LOGO_ROW           ; the logo, 7 x 2 cells, centred under the window (Grant, 14 Nov 2026)
         ld c,LOGO_COL
@@ -4567,7 +4569,7 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
-TOPMEM      equ LOWTAB-0x2A0      ; (under 0x8000 since the window grew a column: the copy routine, 152
+TOPMEM      equ LOWTAB-0x24D      ; (under 0x8000 since the window grew a column: the copy routine, 152
                                   ; lines of 40 bytes from COPIER, now runs to 0xFFC3 - there is no top of memory left)
 BUFA      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 BUFB      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
@@ -4587,13 +4589,6 @@ ai_styles equ BUFD + ai_styles_src - bufd_src
 rev4      equ BUFD + rev4_src - bufd_src
 logo_bits equ logo_bits_src
 logo_attr equ logo_attr_src
-txt_race  equ TOPMEM + txt_race_src - high_src
-txt_ready equ TOPMEM + txt_ready_src - high_src
-txt_pressq equ TOPMEM + txt_pressq_src - high_src
-txt_lamp  equ TOPMEM + txt_lamp_src - high_src
-txt_go    equ TOPMEM + txt_go_src - high_src
-txt_final equ TOPMEM + txt_final_src - high_src
-txt_finished equ TOPMEM + txt_finished_src - high_src
 txt_places equ TOPMEM + txt_places_src - high_src
         if 1-OPT_TALL
 txt_flag  equ TOPMEM + txt_flag_src - high_src

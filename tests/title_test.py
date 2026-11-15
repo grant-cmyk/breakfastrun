@@ -63,15 +63,16 @@ with Racer(headless=True) as sp:
     ok(sb[24:56, 40:72].sum() > 500 and [attr(sp, r, c) for r in (4, 5) for c in (6, 7)] == [0x7E] * 4 and attr(sp, 3, 5) == 0x67 and attr(sp, 6, 8) == 0x67 and 80 <= sb[32:48, 48:64].sum() <= 110 and not sb[32:34, 48:64].any(),
        'the big egg left of the words: white on the green, its yolk small and round - yellow on white in four cells of its own')
     ok(screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and all(attr(sp, 8, c) == 0x7A for c in range(10, 22))
-       and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 12, 6, 14) == '2  TWO PLAYERS' and screen_text(sp, 14, 6, 14) == 'K  CHOOSE KEYS'
+       and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 11, 6, 14) == '2  TWO PLAYERS' and screen_text(sp, 12, 6, 21) == '3  CHOOSE YOUR PLAYER' and screen_text(sp, 13, 6, 14) == 'K  CHOOSE KEYS'
        and all(attr(sp, r, c) == 0x78 for r in range(9, 16) for c in range(3, 29)),
-       "TODAY'S MENU in red; the choices black on the white card: 1 ONE PLAYER, 2 TWO PLAYERS, K CHOOSE KEYS")
+       "TODAY'S MENU in red; the choices black on the white card, on four rows: 1 ONE PLAYER, 2 TWO PLAYERS, 3 CHOOSE YOUR PLAYER, K CHOOSE KEYS")
     ok([attr(sp, 16, 7 + 4 * i) for i in range(5)] == [0x57, 0x68, 0x60, 0x58, 0x38] and all(sb[128:144, 56 + 32 * i:72 + 32 * i].any() for i in range(5))
        and all(sb[146:151, 48 + 32 * i:80 + 32 * i].sum() >= 12 for i in range(5)) and not sb[152:, 24:232].any() + 0 > 99,
        'the five drivers\' faces in a row, each on its car\'s colour (the white driver\'s on plain white, so it shows on the card), each with the name under it in the small letters')
-    ok(screen_text(sp, 19, 6, 10) == 'LAP RECORD' and screen_text(sp, 19, 19, 6) == '-:--.-' and attr(sp, 19, 6) == 0x79,
-       'LAP RECORD in blue at the card\'s foot (no record yet: -:--.-)')
-    ok(screen_text(sp, 23, 5, 5) != 'PRESS' and screen_text(sp, 20, 6, 20).strip() == '' and all(attr(sp, 23, c) in (0x50, 0x78) for c in range(32)), 'no PRESS 1 OR 2 TO START line (Grant, 15 Nov 2026: "you can remove" it)')
+    NOREC = sb[160:168, 128:176].copy()
+    ok(sb[162:167, 80:120].sum() > 60 and NOREC.any() and not sb[152:160, 48:208].any() and not sb[160:162, 48:208].any() and attr(sp, 20, 6) == 0x79,
+       'LAP RECORD in blue in the small letters, a row lower: row 20, nothing in row 19 (no record yet: -:--.-)')
+    ok(screen_text(sp, 23, 5, 5) != 'PRESS' and all(attr(sp, 23, c) in (0x50, 0x78) for c in range(32)), 'no PRESS 1 OR 2 TO START line (Grant, 15 Nov 2026: "you can remove" it)')
     # the car's laps of the edge: 45 s, sampled 10 times a second
     card = np.zeros((192, 256), dtype=bool); card[24:168, 24:232] = True
     inner = np.zeros((192, 256), dtype=bool); inner[32:160, 32:224] = True      # (the car's corners cut 8 pixels into the card's)
@@ -97,10 +98,10 @@ with Racer(headless=True) as sp:
     # 2: not built yet
     title_up(sp)
     tap(sp, '2', 0.2, 0.3)
-    soon = screen_text(sp, 20, 6, 20)
+    soon = screen_text(sp, 14, 6, 20)
     sp.run(duration=2.5, fast_forward=True)
-    ok(soon.strip() == '2UP COMING SOON' and screen_text(sp, 20, 6, 20).strip() == '' and g(sp, 'renders') == 0,
-       '2 says 2UP COMING SOON at the card\'s foot, then it goes (%r)' % soon.strip())
+    ok(soon.strip() == '2UP COMING SOON' and screen_text(sp, 14, 6, 20).strip() == '' and g(sp, 'renders') == 0,
+       '2 says 2UP COMING SOON under the choices, then it goes (%r)' % soon.strip())
 
     # ---------------------------------------------------------------- 2: K - the keys
     tap(sp, 'K', 0.2, 0.5)
@@ -162,7 +163,7 @@ with Racer(headless=True) as sp:
     tap(sp, 'Q', 0.2, 1.5)
     ok(sp.read8(PROMPT) == 0x7A and screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and sp.read8(SYM['snd_rate']) == 0,
        'Q after the race: the title screen again, the engine quiet')
-    ok(screen_text(sp, 19, 19, 6).strip() not in ('', '-:--.-') and (screen_bits(sp)[24:40, 88:200] == BIG[:16]).all() and screen_bits(sp)[40:47, 112:192].sum() > 250,
+    ok(screen_bits(sp)[160:168, 128:176].any() and (screen_bits(sp)[160:168, 128:176] != NOREC).any() and (screen_bits(sp)[24:40, 88:200] == BIG[:16]).all() and screen_bits(sp)[40:47, 112:192].sum() > 250,
        'it shows the lap record, and its logo is whole (read back from the race screen)')
     r0 = g(sp, 'renders'); sp.run(duration=3.0, fast_forward=True)
     ok(g(sp, 'renders') == r0 and len({(sp.read8(SYM['a_x'] + 1), sp.read8(SYM['a_y'] + 1)) for _ in range(20) if sp.run(duration=0.1, fast_forward=True) is None}) > 10,

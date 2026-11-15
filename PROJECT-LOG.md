@@ -2165,3 +2165,9 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Title: the row of faces steps everyday, eyes, everyday, happy (t_anim, src/plate_slow.asm, called from t_loop). Podium unchanged in order: everyday, eyes, everyday, happy or sad. pa_step gives the step from FRAMES and remembers the last one, so a slow loop cannot miss it.
 - Grant's sixth round of faces: faces_mood.asm is now 234 bytes. To fit, the table block was rearranged: the flag's jingle and t_name sit in the room before FRAMES with pod_anim (src/jingle.asm is in two parts, JIN_PART); the block ends 4 bytes short of 0x5E00.
 - Dead plate routines pl_cols, pl_cut, pl_fill removed (63 bytes of the low area; pa_step and t_anim took about 45).
+
+## 15 Nov 2026 17:21 SAST - title menu on four rows, small lap record; the crew chief's wave, blink and blip
+- Title: 1 ONE PLAYER, 2 TWO PLAYERS, 3 CHOOSE YOUR PLAYER (shown only: 3 does nothing yet), K CHOOSE KEYS on rows 10-13; the 2UP message on row 14; LAP RECORD and its time in the small letters on row 20. The faces show two looks only (everyday, eyes).
+- Crew chief's bubble: he blinks (cf_blink, clothmini.asm), a small radio wave moves under his chin (cf_wave, plate_slow.asm: 7 bars, 1-3 pixels, inside the face's own 16 x 16 so the bubble is no larger), and a blip sounds as a message comes up (msg_snd).
+- Room: seven HUD texts nothing showed went from hudtext.asm, and TOPMEM rose from LOWTAB-0x2A0 to LOWTAB-0x24D (83 bytes more under 0x8000). Two small key tables moved before FRAMES in the table block.
+- Faces: Grant's seventh round. A background agent is building track 2 as its own tape (one track a build).

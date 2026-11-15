@@ -269,4 +269,4 @@ cf_blink:
         ld de,0x0E70            ; (... and shut)
 cb_1:
         ld (CF_EYES),de
-        jp fl_draw
+        jp cf_wave              ; (plate_slow.asm; it ends in fl_draw)

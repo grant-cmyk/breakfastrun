@@ -145,8 +145,11 @@ t_lsk:  ld a,0
         call time_fmt
         ld hl,time_txt
 t_rec:
-        ld bc,0x1313
-        call print_at
+        ld bc,162*256+148       ; small, and a row lower (Grant, 15 Nov 2026: "the lap record should be the
+        call sm_ctr             ; smaller text and one row down")
+        ld hl,t_lrec
+        ld bc,162*256+100
+        call sm_ctr
         xor a                   ; the five drivers' faces in a row, each on its car's colour
 t_face:
         ld (t_tmp),a
@@ -223,7 +226,7 @@ t_k:
         call keys_screen
         jp t_redraw
 t_prompt:
-        ld bc,0x1406
+        ld bc,0x0E06            ; (row 14, under the choices: the lap record has row 20 now)
         jp print_at
 
 t_cls:                          ; the whole screen: the bare table
@@ -563,13 +566,14 @@ t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "
         db 0x88,10,1,12,0x7A
         db 8,10,"TODAY'S MENU",0
         db 9,6,"--------------------",0
-        db 10,6,"1  ONE PLAYER",0
-        db 12,6,"2  TWO PLAYERS",0
-        db 14,6,"K  CHOOSE KEYS",0
+        db 10,6,"1  ONE PLAYER",0   ; the four choices on four rows (Grant, 15 Nov 2026: "condense the menu, add a menu
+        db 11,6,"2  TWO PLAYERS",0  ; option 'choose your player' ... we will build that later but you can show the
+        db 12,6,"3  CHOOSE YOUR PLAYER",0   ; menu option for now": 3 does nothing yet)
+        db 13,6,"K  CHOOSE KEYS",0
         db 15,6,"--------------------",0
-        db 0x93,6,1,20,0x79
-        db 19,6,"LAP RECORD",0
+        db 0x94,6,1,20,0x79
         db 0xFF
+t_lrec: db "LAP RECORD",0
 t_press: db "                    ",0
 t_soon: db "  2UP COMING SOON   ",0
 ; the title's egg (logo C of docs/design/logo_options.png), 16 x 16, drawn twice the size: the white, and in its
