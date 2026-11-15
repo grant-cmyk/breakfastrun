@@ -1805,3 +1805,17 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   can you mock that up". tools/make_fastlap_mock.py -> docs/design/fastlap_options.png: NOW +
   A (FASTEST LAP, clock, time / name), B (FASTEST LAP / clock, time, name), C (clock, time /
   name). The card grows a row (5-16) for the second line. Nothing built.
+
+## 2026-11-15 SAST (morning) - the title's logo: the big egg, the band all bright
+
+- Grant: "okay lets work with C, but the RUN should not be in bright"; then "is it possible to
+  make the yolk in the egg bright"; then "can we try make the logo area all bright".
+- BUILT (src/title.asm): logo C - a 16 x 16 egg (t_egg) drawn twice the size at rows 3-6,
+  columns 5-8, the words from column 11, the logo's own small egg wiped. The yolk fills the
+  middle four cells, which have colours of their own (0x7E). Now ALL BRIGHT: band 0x70, RUN
+  0x72, egg 0x77.
+- SIDE-EFFECT, shown to Grant in docs/design/logo_bright.png: all bright, the yolk is the band's
+  own yellow and the egg reads as a white ring (1, as built). 2: the yolk's cells dull (0x3E).
+  3: the egg's cells white on blue, a plate (0x4F), the yolk bright. A cell has one brightness,
+  so "bright white ring on a dull band" (the mock-up C) cannot be had. Awaiting his pick.
+- title, drive, finish tests PASS.

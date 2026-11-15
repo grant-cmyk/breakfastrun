@@ -121,8 +121,17 @@ t_redraw:
 t_logo: ld de,0                 ; the logo twice the size: 14 x 4 cells, centred on the card
 t_lsk:  ld a,0
         ld (db_skip+1),a
-        ld bc,0x1848
+        ld bc,0x1858            ; (from column 11: the big egg is on their left)
         ld a,7
+        call dbl
+        ld bc,0x0515            ; the logo's own small egg, at the end of RUN, off: the big one is the title's
+        ld de,0x0204
+        call clear_cells
+        xor a
+        ld (db_skip+1),a
+        ld de,t_egg             ; the egg, twice the size: 4 x 4 cells from row 3, column 5
+        ld bc,0x1828
+        ld a,2
         call dbl
         ld hl,(rec_lap)         ; the lap record: the best lap since loading
         ld a,h
@@ -540,9 +549,11 @@ kc_1:
 ; the title's own layout and messages (here, under 0x8000: the tables at TD are full)
 t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "I like title screen B")
         db 0x83,3,18,26,T_CARD  ; the card: rows 3-20, columns 3-28, on the cloth of checks
-        db 0x83,3,4,26,T_TABLE  ; its head the table's yellow, so the logo's white egg shows (it was lost on the white card)
-        db 0x85,9,2,10,0x72     ; the logo's colours: RUN red, the egg white
-        db 0x85,19,2,4,0x77
+        db 0x83,3,4,26,0x70     ; its head yellow, and all of it BRIGHT (Grant, 15 Nov 2026: "can we try make the logo
+                                ; area all bright" - with only RUN's band bright it stood out as a box; all dull, the egg was grey)
+        db 0x85,11,2,10,0x72    ; RUN red
+        db 0x83,5,4,4,0x77      ; the egg: white on the yellow ...
+        db 0x84,6,2,2,0x7E      ; ... its yolk yellow on white, in the middle four cells, in the middle four cells (so it is 15 pixels of yellow, not a 6-pixel hole)
         db 0x88,10,1,12,0x7A
         db 8,10,"TODAY'S MENU",0
         db 9,6,"--------------------",0
@@ -555,3 +566,22 @@ t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "
         db 0xFF
 t_press: db "                    ",0
 t_soon: db "  2UP COMING SOON   ",0
+; the title's egg (logo C of docs/design/logo_options.png), 16 x 16, drawn twice the size: the white, and in its
+; middle 8 x 8 (the four cells with colours of their own) the yolk
+t_egg:
+        defb %00000000,%00000000
+        defb %00000000,%00110000
+        defb %00001111,%11111100
+        defb %00011111,%11111110
+        defb %00110111,%11101110
+        defb %01111111,%11111111
+        defb %01111111,%11111111
+        defb %11111111,%11111111
+        defb %11111111,%11111111
+        defb %11111111,%11111110
+        defb %11111111,%11111110
+        defb %01110111,%11101100
+        defb %01111111,%11111000
+        defb %00111111,%11110000
+        defb %00011111,%00000000
+        defb %00000000,%00000000
