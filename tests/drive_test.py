@@ -161,6 +161,38 @@ def cloth(camx, camy):
     y, x = np.mgrid[camy:camy + WH, camx:camx + WW]
     return ((((x >> 5) + (y >> 5)) & 1) == 1) & ((y & 1) == 0) & ((x & 3) == (y & 2))   # dark checks: 1 in 8, staggered
 
+# ---- the layout of 15 Nov 2026 (Grant: "have the track map on the bottom left inside of play. Move the damage
+# to the right"): the mini-map's box is the window's bottom left 6 x 5 cells (screen x 8-55, lines 120-159),
+# the spoons are screen columns 19-21 and the mug 22-24 of rows 18-19; and the corner arrow flashes ahead of your car.
+MBOX = (WH - 40, WH, 0, 48)                              # the map's box in the window: y0, y1, x0, x1
+_mm = open(os.path.join(ROOT, 'src', 'minimap.asm')).read()
+MM_SC = int(re.search(r'\* (\d+) / 256', _mm).group(1)); MM_X0 = int(re.search(r'MMX0\s+equ\s+(-?\d+)', _mm).group(1)); MM_Y0 = int(re.search(r'MMY0\s+equ\s+(-?\d+)', _mm).group(1))
+MM_ROWS = np.array([[int(c) for b in l.split('defb')[1].split(',') for c in b.strip().lstrip('%')] for l in _mm.splitlines() if 'defb' in l], dtype=np.uint8)
+def map_dots(sp):
+    """where the game puts each car's dot on the map: (x, y) in the box (the map's own line 5 is the box's line 0)"""
+    out = []
+    for n in range(N):
+        c = car(sp, n)
+        out.append((min((c['x'] + 8 - MM_X0) * MM_SC // 256, 45), min(max((c['y'] + 8 - MM_Y0) * MM_SC // 256, 5), MM_ROWS.shape[0] - 3) - 5))
+    return out
+def minimap_diff(sp):
+    """The map in the window's bottom left corner against the generated one (its lines 5-43 at screen lines
+    120-158, 48 wide from x = 8): (pixels that differ and are not at a car's dot, the dots' places, the map's ink)"""
+    sb = screen_bits(sp); want = np.zeros((40, 48), dtype=np.uint8); want[:39] = MM_ROWS[5:44]
+    diff = sb[120:160, 8:56] != want
+    dots = map_dots(sp)
+    for dx, dy in dots: diff[max(dy - 1, 0):dy + 4, max(dx - 1, 0):dx + 4] = False
+    return int(diff.sum()), dots, int(want.sum())
+ARROW_KINDS = ['none', 'straight', 'gentle left', 'gentle right', 'sharp left', 'sharp right']
+def arrow_state(sp):
+    """The corner arrow in the picture now on the screen (call at copy_done): None if it is not drawn, else
+    (code, x, y): its table byte and its 16 x 11 frame's top-left in the window."""
+    if not (g(sp, 'renders') & 2) or sp.read8(SYM['race_on']) == 0 or sp.read8(SYM['you_done']): return None
+    c = car(sp, 0); code = sp.read8(SYM['arrow_tab'] + c['wp'])
+    if not code: return None
+    t = SYM['thrust_tab'] + (c['ang'] & 0x3C)
+    s8 = lambda v: v - 256 if v > 127 else v
+    return code, c['x'] - g(sp, 'camx') + (s8(sp.read8(t)) >> 1), c['y'] - g(sp, 'camy') + (s8(sp.read8(t + 2)) >> 1) + 3
 def window_bad(sp):
     at_copy_done(sp)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
@@ -168,8 +200,10 @@ def window_bad(sp):
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
-    mask[WH - 16:WH, WW - 24:WW] = False     # the NOS canisters in the corner
-    mask[WH - 16:WH, 0:24] = False                    # the health gauge in the other corner
+    mask[WH - 16:WH, WW - 48:WW] = False     # the spoons and the mug gauge, bottom right
+    mask[MBOX[0]:MBOX[1], MBOX[2]:MBOX[3]] = False    # the mini-map's box, bottom left
+    ar = arrow_state(sp)
+    if ar: mask[max(ar[2], 0):max(ar[2] + 11, 0), max(ar[1], 0):max(ar[1] + 16, 0)] = False   # the corner arrow, while it is on
     mask[2:20, WW - 40:WW] = False                       # your place on its plate, in the top right corner
     mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False       # the crew chief and his bubble, at the foot of the window (rows 17-18, columns 7-16)
     for n in range(N):
@@ -200,8 +234,10 @@ with Racer(headless=True) as sp:
     hid = [sp.read8(0x5800 + r * 32 + c) for r in (22, 23) for c in range(16, 26)]
     check((sb[168:184, 72:128] == np.array(logo)).all() and not sb[184:192, 0:128].any() and not sb[168:192, 0:72].any() and not sb[168:176, 128:256].any() and hid == [0x36] * 20,
           'the BREAKFAST RUN logo is under the window, centred on it (columns 9-15, rows 21-22); nothing else to SEE down there (the crew\'s bubble is kept beside it in yellow on yellow)')
-    check(sb[3:35, 208:256].any() and not sb[0:3, 208:256].any() and not sb[35:40, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F and sp.read8(0x5800 + 17 * 32 + 26) == 0x4F and sb[137:142, 208:256].any(),
-          'the mini-map is at the top right; RACE and the five cars straight under it (rows 5-15); YOUR RACE under them (row 17)')
+    md, dots, mink = minimap_diff(sp)
+    check(md == 0 and mink > 120 and all(sp.read8(0x5800 + r * 32 + c) == 0x30 for r in range(15, 20) for c in range(1, 7)) and not sb[0:40, 208:256].any() and all(sp.read8(0x5800 + r * 32 + c) == 0x30 for r in range(0, 5) for c in range(26, 32))
+          and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F and sp.read8(0x5800 + 17 * 32 + 26) == 0x4F and sb[137:142, 208:256].any(),
+          'the mini-map is INSIDE the window, bottom left (6 x 5 cells, black on yellow, the track line for line: %d pixels, %d wrong); the panel\'s top right is plain; RACE and the five cars (rows 5-15); YOUR RACE under them (row 17)' % (mink, md))
     msg = screen_text(sp, 22, 1, 8) + '/' + screen_text(sp, 23, 1, 8)
     check(MR != 1 or screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
@@ -210,7 +246,8 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)                            # the driver strip under the window
     check(all(attr(r, c) in (0x30, 0x36) for r in (21, 22, 23) for c in list(range(0, 9)) + list(range(16, 26))),
           'under the window: plain table either side of the logo - no crew chief (Grant, 14 Nov 2026: "do away with the pitstop talk for now")')
-    check(sb[WY + WH - 12:WY + WH - 2, 8:16].any() and attr(19, 1) == 0x2A and attr(18, 1) == 0x2A and attr(19, WW // 8) == 0x2B, 'your NOS canister is shown in the window\'s left corner in red, the health mug in its right corner in magenta (their colour cells their own)')
+    check(sb[WY + WH - 12:WY + WH - 2, 168:176].any() and attr(19, 21) == 0x2A and attr(18, 21) == 0x2A and attr(19, 20) == 0x29 and attr(19, WW // 8) == 0x2B and attr(18, 22) == 0x2B,
+          'your NOS spoon is shown in red beside the health mug (screen column 21), the mug in the window\'s right corner in magenta (columns 22-24; their colour cells their own)')
     check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(TOWER_Y + 2 * i, 26) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')

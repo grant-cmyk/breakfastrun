@@ -22,7 +22,7 @@ if not (os.path.exists(os.environ['ZTAP']) and os.path.exists(os.environ['ZSYM']
     print('FAIL no track %s build: run  TRACK=%s bash build.sh  first' % (TRACK, TRACK)); print('RESULT: 1 FAIL'); sys.exit(1)
 src = open(os.path.join(HERE, 'drive_test.py')).read()
 src = src[:src.index('with Racer(headless=True)')].replace("os.path.dirname(os.path.abspath(__file__))", repr(HERE))
-assert src.count("os.path.join(ROOT, 'src',") == 4
+assert src.count("os.path.join(ROOT, 'src',") == 6
 src = src.replace("os.path.join(ROOT, 'src',", "os.path.join(%r," % TSRC)    # the map, waypoints and masks the tape was built from
 exec(src)
 fails = 0
@@ -45,8 +45,10 @@ def window_bad_t(sp):
     bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
     mask = np.ones_like(want, dtype=bool)
-    mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False; mask[WH - 16:WH, WW - 24:WW] = False; mask[WH - 16:WH, 0:24] = False
-    mask[2:20, WW - 40:WW] = False; mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False     # (the lights, NOS, gauge, plate, bubble: as window_bad)
+    mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False; mask[WH - 16:WH, WW - 48:WW] = False; mask[MBOX[0]:MBOX[1], MBOX[2]:MBOX[3]] = False
+    mask[2:20, WW - 40:WW] = False; mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False     # (the lights, spoons and mug, map, plate, bubble: as window_bad)
+    ar = arrow_state(sp)
+    if ar: mask[max(ar[2], 0):max(ar[2] + 11, 0), max(ar[1], 0):max(ar[1] + 16, 0)] = False   # (and the corner arrow, while it is on)
     for n in range(N):
         c = car(sp, n); cx, cy = c['x'] - camx, c['y'] - camy
         mask[max(cy - 6, 0):max(cy + 23, 0), max(cx - 3, 0):max(cx + 21, 0)] = False
@@ -67,16 +69,7 @@ def boot():
 def park_cpus(sp):                                                      # out of the way, engines off (pace 0)
     for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58); sp.write(CARS + i * CS + 19, bytes([0]))
 def heading(x0, y0, x1, y1): return round(math.atan2(x1 - x0, -(y1 - y0)) / (2 * math.pi) * 64) % 64   # 0 up, 16 right, 32 down
-def minimap_diff(sp):
-    """The panel's map: the generated map's rows 5.. at screen line 2.., 48 wide from x = 208. Returns
-    (pixels that differ and are not at a car's dot, the dots' places)."""
-    sb = screen_bits(sp); want = np.array([[c == '#' for c in r] for r in MM[5:44]], dtype=np.uint8)
-    diff = sb[2:2 + want.shape[0], 208:256] != want
-    dots = []
-    for n in range(N):
-        c = car(sp, n); dx = (c['x'] + 8 - MMX0) * MSC // 256; dy = (c['y'] + 8 - MMY0) * MSC // 256 - 3
-        dots.append((dx, dy)); diff[max(dy - 2 - 2, 0):dy + 3 - 2, max(dx - 2, 0):dx + 3] = False
-    return int(diff.sum()), dots, int(want.sum())
+assert (np.array([[c == '#' for c in r] for r in MM], dtype=np.uint8) == MM_ROWS).all()     # (minimap_diff is drive_test's now: the map in the window's bottom left corner)
 
 # ---------------------------------------------------------------- the data the tape was built from
 ok(MAPW == 72 and MAPH == {'2': 64, '3': 84}.get(TRACK), 'the map is the size of this track\'s design: %d x %d tiles (mini-map at %d/256)' % (MAPW, MAPH, MSC))
@@ -108,9 +101,9 @@ bad, _ = window_bad_t(sp)
 ok(bad == 0, 'on the grid the window matches the world map pixel for pixel, cars excluded (%d wrong)' % bad)
 md, dots, ink = minimap_diff(sp)
 sb = screen_bits(sp)
-ok(md == 0 and ink > 120, 'the panel\'s mini-map is this track\'s road, line for line (%d ink pixels, %d wrong outside the cars\' dots)' % (ink, md))
-ok(all(2 <= dy <= 39 and 0 <= dx < 48 for dx, dy in dots) and not sb[0:2, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F,
-   'the cars\' dots are inside the map, and the map stops above the RACE heading (dots at %s)' % dots)
+ok(md == 0 and ink > 120 and all(sp.read8(0x5800 + r * 32 + c) == 0x30 for r in range(15, 20) for c in range(1, 7)), 'the mini-map in the window\'s bottom left corner is this track\'s road, line for line, black on yellow (%d ink pixels, %d wrong outside the cars\' dots)' % (ink, md))
+ok(all(0 <= dy <= 36 and 0 <= dx <= 45 for dx, dy in dots) and not sb[0:40, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F,
+   'the cars\' dots are inside the map\'s box; the panel\'s top right, where the map was, is plain above the RACE heading (dots at %s)' % dots)
 shot(sp, 'track%s_grid.png' % TRACK)
 x0 = [c['x'] for c in cs]
 press(sp, 'Q', True); sp.run(duration=1.5, fast_forward=True)
