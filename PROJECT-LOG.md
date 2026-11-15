@@ -1853,3 +1853,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tools/make_run_speed_options.py -> docs/design/run_speed_options.png: 3a Spectrum letters,
   3b the same heavy, 3c block leaning, 3d block upright, 3e thin and round, 3f outline, 3g the
   logo's own RUN, 3h lines through. Nothing built.
+
+## 2026-11-15 SAST (morning) - mock-up: RUN cut through the middle, two colours
+
+- Grant: "make some more options. I liked the line through the middle. Possible to make it two
+  colours - top and bottom?" Yes: RUN is two character rows high, so each row has its own ink
+  and the cut sits on the join. tools/make_run_split_options.py ->
+  docs/design/run_split_options.png: S1-S10 (block, upright, wide, Spectrum heavy, the logo's
+  own RUN; yellow/white, white/yellow, white/black, yellow/red, white/blue, yellow/magenta).
+  Nothing built.
