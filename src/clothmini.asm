@@ -237,6 +237,8 @@ sm_dig:                         ; the small figures 0-9 and the colon, as the le
         db 0xF7,0x9E   ; 9
         db 0x08,0x20   ; :
 
+pd_t6:  db "FINISHED ",0
+pd_t7:  db "YOUR RACE",0
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both
         db G_GRIP, G_Q, G_SLIDE, G_QSLIDE       ; 1 (0.085 px a frame of sideways speed)

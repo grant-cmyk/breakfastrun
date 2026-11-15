@@ -419,8 +419,6 @@ tc_tab:                         ; x, y + 18, heading, steps left, the next part 
 t_blk   equ BUF+0x1700          ; (in the back buffer, past what the title keeps of the race screen there: free while no race runs)
 
 
-pd_t6:  db "FINISHED ",0
-pd_t7:  db "YOUR RACE",0
 
 ; THE CREW CHIEF ON THE OTHER DRIVERS (Grant, 15 Nov 2026: "Include some random events for other
 ; riders too, Great driving Butch or something like that").
@@ -450,3 +448,24 @@ trg_rand:                       ; when he has nothing else to say: one picture i
         xor a
         ret
 ms_car: db 0                    ; the driver a message with @ names
+
+; The start jingle plays AFTER the race's first picture is shown (it was before: nothing runs while
+; it plays, so the window stood empty - Grant, 15 Nov 2026: "at the start of the game while the
+; jingle plays, the game does not show properly"). jin_on 2: due.
+win_cells:                      ; a new race, before anything is put up: the window's cells its own colours again
+        ld bc,0x0101            ; (the title keeps the screen's colours from when the last race ended - the
+        ld de,0x1318            ; podium's, which then came back over the next race: Grant's screenshots,
+        ld a,0x29               ; 15 Nov 2026)
+        jp set_attrs
+jin_arm:                        ; a new race (unless the jingle is held off: 0xFF)
+        ld a,(jin_on)
+        inc a
+        ret z
+        ld a,2
+        ld (jin_on),a
+        ret
+jin_due:                        ; after each picture
+        ld a,(jin_on)
+        cp 2
+        ret nz
+        jp jin_start

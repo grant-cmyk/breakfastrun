@@ -2121,3 +2121,23 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Helpings: 36 steps of 0.16 s, 5.8 s, bass on B. Green 8.4 s after 1.
 - Recorded (docs/sound/race_now.mp3): the start's jingle, a few seconds of race, the podium's.
   NOT heard by me. All thirteen suites PASS. Main area: 10 bytes free; TD ~30.
+
+## 2026-11-15 15:17 SAST - the start shows the grid during the jingle; the second race clean; four cars end it; SPIKE faster
+
+- Grant (screenshots): "at the start of the game while the jingle plays, the game does not show
+  properly" - an empty window; and on the SECOND race the title's picture and then the podium's
+  colours left in the window.
+  1. The jingle played before the race's first picture (nothing runs while it plays). Now
+     jin_arm marks it due (jin_on 2) and jin_due plays it after the first picture is copied.
+  2. The title keeps the screen's colour cells from when the last race ended - the podium was
+     up - and put them back for the next race. win_cells (new_race, before hud_init) makes the
+     window's cells blue on cyan again. (My first try put it after hud_init and wiped the
+     lights' and the bubble's colours: three tests caught it.)
+- "the joker racer is just too slow you can speed him up": taken as the green driver, SPIKE -
+  his pace 14/16 (it was 12/16; still the slowest: the others are 15, 15, 16).
+- "do not wait for the last car to come in. If four cars are finished then the race is over":
+  rp_wait asks for NCARS-1 in (you among them).
+- tests/finish_test.py: the grid is on the screen a second into the jingle; a second race from
+  the title has clean cells and the grid. All thirteen suites PASS.
+- Grant: "bring up alternative graphics for the damage": docs/design/damage_icons_3.png (Q
+  battery ... Y star; tools/make_damage_icons.py THIRD). He likes the mug: an editor follows.

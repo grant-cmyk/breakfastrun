@@ -254,6 +254,136 @@ for k in MORE:
     MORE[k] = MORE[k].strip().split('\n'); assert len(MORE[k]) == 13 and all(len(r) == 16 for r in MORE[k]), k
 for k in ICONS:
     ICONS[k] = ICONS[k].strip().split('\n'); assert len(ICONS[k]) == 13 and all(len(r) == 16 for r in ICONS[k]), k
+THIRD = {    # a third round (Grant, 15 Nov 2026: "bring up alternative graphics for the damage. I would like to try something else")
+ 'Q  Battery': """
+..OOO......OOO..
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO""",
+ 'R  Shield': """
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+.OFFFFFFFFFFFFO.
+.OFFFFFFFFFFFFO.
+..OFFFFFFFFFFO..
+...OFFFFFFFFO...
+....OFFFFFFO....
+.....OOFFOO.....
+.......OO.......""",
+ 'S  Car': """
+....OOOOOOOO....
+..OOFFFFFFFFOO..
+.OFFFFFFFFFFFFO.
+OOFFOOOOOOOOFFOO
+OOFFOFFFFFFOFFOO
+.OFFOFFFFFFOFFO.
+.OFFOOOOOOOOFFO.
+.OFFFFFFFFFFFFO.
+OOFFFFFFFFFFFFOO
+OOFFOOOOOOOOFFOO
+.OFFFFFFFFFFFFO.
+..OOFFFFFFFFOO..
+....OOOOOOOO....""",
+ 'T  Mug of coffee': """
+................
+OOOOOOOOOOOO....
+OFFFFFFFFFFOOOO.
+OFFFFFFFFFFO..OO
+OFFFFFFFFFFO...O
+OFFFFFFFFFFO...O
+OFFFFFFFFFFO..OO
+OFFFFFFFFFFOOOO.
+OFFFFFFFFFFO....
+OFFFFFFFFFFO....
+OFFFFFFFFFFO....
+.OFFFFFFFFO.....
+..OOOOOOOO......""",
+ 'U  Slice of toast': """
+..OOOOOOOOOOOO..
+.OFFFFFFFFFFFFO.
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+.OFFFFFFFFFFFFO.
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OFFFFFFFFFFO..
+..OOOOOOOOOOOO..""",
+ 'V  Petrol can': """
+.....OOOO.......
+.....O..O..OOO..
+OOOOOOOOOOOOFO..
+OFFFFFFFFFFFFO..
+OFFFFFFFFFFFFO..
+OFFFOFFFFOFFFO..
+OFFFFOFFOFFFFO..
+OFFFFFOOFFFFFO..
+OFFFFOFFOFFFFO..
+OFFFOFFFFOFFFO..
+OFFFFFFFFFFFFO..
+OFFFFFFFFFFFFO..
+OOOOOOOOOOOOOO..""",
+ 'W  Bars': """
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO
+OFFFFFFFFFFFFFFO
+OOOOOOOOOOOOOOOO""",
+ 'X  Cross': """
+.....OOOOOO.....
+.....OFFFFO.....
+.....OFFFFO.....
+.....OFFFFO.....
+OOOOOOFFFFOOOOOO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OFFFFFFFFFFFFFFO
+OOOOOOFFFFOOOOOO
+.....OFFFFO.....
+.....OFFFFO.....
+.....OFFFFO.....
+.....OOOOOO.....""",
+ 'Y  Star': """
+.......OO.......
+......OFFO......
+......OFFO......
+OOOOOOFFFFOOOOOO
+.OFFFFFFFFFFFFO.
+..OFFFFFFFFFFO..
+...OFFFFFFFFO...
+...OFFFFFFFFO...
+..OFFFFOOFFFFO..
+..OFFFO..OFFFO..
+.OFFOO....OOFFO.
+.OOO........OOO.
+................""",
+}
+for k in list(THIRD):
+    THIRD[k] = THIRD[k].strip().split('\n'); assert len(THIRD[k]) == 13 and all(len(r) == 16 for r in THIRD[k]), k
 def draw(art, dmg, s):
     im = Image.new('RGB', (20, 17), (0, 215, 215)); px = im.load()
     for y in range(17):                          # a bit of the cloth round the clear patch
@@ -302,4 +432,5 @@ def write_game():
 if __name__ == '__main__':
     sheet(ICONS, 'Health gauge icons, 16 x 13: the outline stays, the fill empties from the top (mock-up)', 'damage_icons.png')
     sheet(MORE, 'More health gauge icons, 16 x 13 (mock-up)', 'damage_icons_2.png')
+    sheet(THIRD, 'A third set of health gauge icons, 16 x 13 (mock-up)', 'damage_icons_3.png')
     write_game()

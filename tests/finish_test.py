@@ -23,7 +23,11 @@ with Racer(headless=True) as sp:
     while attr(sp, 8, 10) != 0x7A and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
     sp.run(duration=0.5, fast_forward=True)
     press(sp, '1', True); sp.run(duration=0.2, fast_forward=True); press(sp, '1', False)
-    t = 0.0; lit = None; flips = 0; last = None
+    sp.run(duration=1.0, fast_forward=True)             # a second into the jingle
+    w = screen_bits(sp)[8:160, 8:200]
+    ok(g(sp, 'renders') >= 1 and w.sum() > 2000 and sp.read8(SYM['start_go']) == 0 and all(attr(sp, r, c) == 0x78 for r in (17, 18) for c in (7, 16)) and screen_bits(sp)[138:143, 72:136].any(),
+       'while the jingle plays the grid is on the screen - the cloth, the cars, the chief\'s PICK 2 UPGRADES - not an empty window (%d pixels of picture)' % w.sum())
+    t = 1.0; lit = None; flips = 0; last = None
     while sp.read8(SYM['race_on']) == 0 and t < 12:
         sp.run(duration=0.02, fast_forward=True); t += 0.02
         if lit is None and sp.read8(SYM['start_go']): lit = t
@@ -64,4 +68,14 @@ with Racer(headless=True) as sp:
     ok(g(sp, 'renders') == r0 and attr(sp, 8, 10) != 0x7A, 'the race stays stopped under it, until a key')
     press(sp, 'M', True); sp.run(duration=0.2, fast_forward=True); press(sp, 'M', False); sp.run(duration=4.0, fast_forward=True)
     ok(attr(sp, 8, 10) == 0x7A and screen_text(sp, 8, 10, 12) == "TODAY'S MENU", 'any key (M): back to the title screen')
+    # a second race, straight from that title (Grant's screenshots, 15 Nov 2026: the podium's colours and the
+    # title's own picture were left in the window)
+    sp.run(duration=1.0, fast_forward=True)
+    press(sp, '1', True); sp.run(duration=0.2, fast_forward=True); press(sp, '1', False); sp.run(duration=1.5, fast_forward=True)
+    A = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); w = screen_bits(sp).astype(bool)[8:160, 8:200]
+    cars_ink = w[60:110, 20:140].sum()
+    ok((A[4:17, 1:25] == 0x29).all() and (A[17:20, 4:7] == 0x29).all() and (A[17:20, 17:22] == 0x29).all(),
+       'the second race: every cell of the window is the cloth\'s blue on cyan again - nothing of the podium\'s colours')
+    ok(not w[36:44, 60:150].all(axis=1).any() and cars_ink > 150 and screen_text(sp, 8, 10, 12) != "TODAY'S MENU",
+       'and it shows the grid while the jingle plays - not what the title left there (%d pixels of cars)' % cars_ink)
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)

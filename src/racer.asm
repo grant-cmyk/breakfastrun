@@ -112,6 +112,7 @@ st_so:
         ld hl,0xFFFF
         ld (best_lap),hl
         call gaps_reset
+        call win_cells          ; (plate_slow.asm)
         call hud_init
         ld hl,cars_init         ; copy the starting records into place
         ld de,cars
@@ -119,7 +120,7 @@ st_so:
         ldir
         ld a,(FRAMES)
         ld (last_frame),a
-        call jin_start          ; the start ditty, then the lights by themselves (plate_slow.asm)
+        call jin_arm            ; the start jingle is due: after the race's first picture (plate_slow.asm)
 
 ; ---------------------------------------------------------------------
 ; MAIN LOOP
@@ -255,6 +256,7 @@ wait_show:
         ld hl,(renders)
         inc hl
         ld (renders),hl
+        call jin_due            ; (the start jingle, once this race's first picture is on the screen)
         jp main
 
 ; tick: one TV frame - read keys, let the computer drive, move, bump
@@ -3161,9 +3163,9 @@ rp_all:
         ld a,M_DONE
 rp_say:
         call msg_say
-rp_wait:                        ; the race is over when every car is in (or
-        ld a,(fin_count)        ; 30 s after you, in case one is stuck)
-        cp NCARS
+rp_wait:                        ; the race is over when FOUR cars are in - you among them (Grant, 15 Nov 2026: "do
+        ld a,(fin_count)        ; not wait for the last car to come in") - or 30 s after you, in case two are stuck
+        cp NCARS-1
         jr nc,rp_end
         ld hl,(race_time)
         ld de,(you_time)
@@ -4520,7 +4522,7 @@ cars_init_src:
         db 0
         dw CPU1Y
         dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 12,0,6, 2,0,0, 0, 0,0     ; GREEN: 12/16 - the slowest (a long 3-axle truck), few mistakes
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 14,0,6, 2,0,0, 0, 0,0     ; GREEN (SPIKE): 14/16 - still the slowest, few mistakes (it was 12/16: Grant, 15 Nov 2026, "just too slow you can speed him up")
         db 0
         dw CPU2X
         db 0
