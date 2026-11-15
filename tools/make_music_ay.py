@@ -39,7 +39,29 @@ from functools import reduce
 ARP = [95, 102, 98, 102, 95, 102, 98, 102, 95, 103, 98, 103, 95, 103, 98, 103,      # "Full English": a minor arpeggio
        93, 100, 97, 100, 93, 100, 97, 100, 93, 102, 98, 102, 93, 102, 98, 102,       # over the bass, the way trance
        95, 102, 98, 102, 95, 107, 102, 107, 98, 102, 107, 110, 107, 102, 98, 95]     # leads go (written 15 Nov 2026)
-JINGLES = {'arp': ('Full English', 6, ARP)}
+# More written for this sound (Grant, 15 Nov 2026: "could you make some other options - trancey but something a
+# little different"). Notes as ARP's (95 is the B the bass's 47 sits under); None a rest. For the Jingle Lab.
+N = None
+T_SUNRISE = [95, N, 95, 98, N, 98, 102, N, 102, N, 100, N, 98, N, 95, N,          # a rising anthem with gaps in it
+             93, N, 93, 97, N, 97, 100, N, 100, N, 98, N, 97, N, 93, N,
+             95, 98, 102, 107, N, 107, 105, N, 102, N, 105, 107, 107, 107, 107, N]
+T_OFFBEAT = [N, 98, N, 98, N, 103, N, 98, N, 98, N, 98, N, 102, N, 98,            # stabs on the off-beat only
+             N, 100, N, 100, N, 103, N, 100, N, 100, N, 100, N, 105, N, 100,
+             N, 98, N, 98, N, 103, N, 107, N, 110, N, 107, 103, 102, 98, N]
+T_DRIP = [107, 102, 98] * 5 + [107] + [105, 100, 97] * 5 + [105] + [103, 98, 95] * 5 + [107]   # threes against the beat's fours
+T_PULSE = [95, 107, 95, 107, 95, 105, 95, 105, 95, 103, 95, 103, 95, 102, 95, 102,     # an octave bounce, the top note walking down
+           93, 105, 93, 105, 93, 103, 93, 103, 93, 102, 93, 102, 93, 100, 93, 100,
+           95, 107, 95, 110, 95, 107, 95, 105, 95, 103, 95, 102, 95, 98, 95, 95]
+T_ANSWER = [100, N, N, 103, 105, N, 103, N, 100, N, N, 98, 100, N, N, N,               # a call, then its answer higher up
+            107, N, N, 105, 103, N, 105, N, 107, N, N, 110, 107, N, N, N,
+            100, 103, 105, 107, 105, 103, 100, N, 98, 100, 103, 105, 107, N, 107, N]
+T_HANDS = [102, 102, 102, N, 102, 103, 105, N, 105, 105, 105, N, 103, 102, 98, N,      # long notes with a pick-up: hands in the air
+           100, 100, 100, N, 100, 102, 103, N, 103, 103, 103, N, 102, 100, 97, N,
+           98, 98, N, 98, 100, 102, N, 102, 105, 105, N, 105, 107, 107, 107, N,
+           107, N, 107, N, 110, 110, 110, N]
+JINGLES = {'arp': ('Full English', 6, ARP), 't_sunrise': ('Sunrise Special', 6, T_SUNRISE), 't_offbeat': ('Off The Beat', 6, T_OFFBEAT),
+           't_drip': ('Coffee Drip', 6, T_DRIP), 't_pulse': ('Pulse Check', 6, T_PULSE), 't_answer': ('Order Up', 6, T_ANSWER),
+           't_hands': ('Hands Up', 5, T_HANDS)}
 # Two jingles (Grant, 15 Nov 2026, from the Jingle Lab: "Spilt Milk is a good start jingle, then second helpings
 # for chequered flag"): JKEYS = start,flag - each a key and its bass's note (MIDI: 43 G, 47 B). JKEY=one plays one at both.
 JSECS = float(os.environ.get('JSECS', 5.8))

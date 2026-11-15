@@ -4,7 +4,13 @@ tools/make_music_ay.py; bash build.sh) - so Grant can pick by ear. The recording
 docs/sound/jingles/*.mp3. Usage: python3 tools/make_jingle_lab.py out.html"""
 import os, sys, base64, json
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-TUNES = [('ditty13', "Kettle's On, driving", 'the first one tried', 'B'),
+TUNES = [('t_sunrise', 'Sunrise Special', 'NEW 15 Nov: a rising anthem with gaps in it', 'B'),
+         ('t_offbeat', 'Off The Beat', 'NEW 15 Nov: stabs on the off-beat only, the bass carries it', 'G'),
+         ('t_drip', 'Coffee Drip', 'NEW 15 Nov: three falling notes going round against the beat', 'B'),
+         ('t_pulse', 'Pulse Check', 'NEW 15 Nov: an octave bounce, the top note walking down', 'B'),
+         ('t_answer', 'Order Up', 'NEW 15 Nov: a call, then its answer higher up (bass on E)', 'E'),
+         ('t_hands', 'Hands Up', 'NEW 15 Nov: long notes with a pick-up, a little faster', 'B'),
+         ('ditty13', "Kettle's On, driving", 'the first one tried', 'B'),
          ('arp', 'Full English', 'NEW: a minor arpeggio written for this sound, the way trance leads go', 'B'),
          ('ditty5', "Kettle's On", 'the original skipping jig', 'B'),
          ('ditty11', 'Chequered Flag', 'a galloping fanfare', 'B'),
