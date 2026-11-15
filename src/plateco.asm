@@ -26,7 +26,7 @@ FL_SRC  equ 0x5000 + 6*32 + 16          ; the FINAL LAP bubble as kept: screen r
 FL_DST  equ BUF + 0x1000 + 1*32 + 8     ; ... and in the window: buffer rows 136-151, bytes 8-17 (screen columns 7-16)
 ; (PL_W and PL_H, pl_bmp's bytes a row and rows: in racer.asm, before the first use)
 pl_draw:
-        call fl_draw            ; the crew chief's bubble, if he is talking (even under the start lights)
+        call cf_blink           ; he blinks (clothmini.asm); then fl_draw: the crew chief's bubble, if he is talking (even under the start lights)
         ld a,(lt_on)
         or a
         ret nz

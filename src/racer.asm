@@ -4597,14 +4597,8 @@ txt_finished equ TOPMEM + txt_finished_src - high_src
 txt_places equ TOPMEM + txt_places_src - high_src
         if 1-OPT_TALL
 txt_flag  equ TOPMEM + txt_flag_src - high_src
-        else
-txt_flag equ txt_flag_src
-        endif
-        if 1-OPT_TALL
 txt_youfin equ TOPMEM + txt_youfin_src - high_src
-        else
-txt_youfin equ txt_youfin_src
-        endif
+        endif                   ; (with the tall window nothing shows these two any more: the podium has its own words)
         if 1-OPT_TALL
 txt_track equ TOPMEM + txt_track_src - high_src
         else

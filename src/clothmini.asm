@@ -254,6 +254,19 @@ yg_gtab: db G_GRIP, G_Q, G_SLIDE, G_QSLIDE   ; (your set-up's grip: su_apply wri
 yg_pushv: dw G_PUSH             ; ... its push
 yg_topv:  dw G_TOP              ; ... its top speed
 yg_topn:  dw G_TOP              ; this frame's top speed (twice it with NOS)
-        if OPT_TALL
-        include "hudtext_flag.asm"
-        endif
+; (hudtext_flag.asm's two texts were here: nothing showed them any more - 29 bytes, 15 Nov 2026)
+; CF_BLINK: the crew chief blinks (Grant, 15 Nov 2026: "His eyes will just become one dot for a brief
+; period and then two pixels each again"). His face is kept on the screen under the window (screen_once);
+; its eyes are 2 pixels high, in rows 5 and 6. For 2 pictures in every 32 the upper pixel of each is
+; taken away. Then fl_draw, which copies the face into the window while he is talking.
+CF_EYES equ 0x5000 + 6*32 + 5*256 + 16  ; the face's row 5: screen line 181, columns 16-17
+cf_blink:
+        ld a,(renders)
+        and 31
+        cp 2
+        ld de,0x4E74            ; (the row's two bytes, eyes open: .XXX.X.. .X..XXX.)
+        jr nc,cb_1
+        ld de,0x0E70            ; (... and shut)
+cb_1:
+        ld (CF_EYES),de
+        jp fl_draw
