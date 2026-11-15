@@ -83,7 +83,7 @@ if TRACK == '1':                                                    # the arrow'
         put(sp, 0, WPS[41][0] - 8, WPS[41][1] - 8, 16); sp.write(CARS + C_WP, bytes([42])); press(sp, 'Q', True); r = None
         for _ in range(150):                                        # flat out along the start straight until the corner's arrow is up
             sp.run(duration=0.04, fast_forward=True); at_copy_done(sp)
-            if car(sp, 0)['vx'] > 1.7 and sp.read8(SYM['arrow_tab'] + car(sp, 0)['wp']) and g(sp, 'renders') & 2: break
+            if car(sp, 0)['vx'] > 1.5 and sp.read8(SYM['arrow_tab'] + car(sp, 0)['wp']) and g(sp, 'renders') & 2: break
         press(sp, 'Q', False); im2 = frame(sp).crop((OX, OY, OX + 208, OY + 168))
         both = Image.new('RGB', (424, 168), (255, 255, 255)); both.paste(im1, (0, 0)); both.paste(im2, (216, 0))
         both.resize((848, 336), Image.NEAREST).save(os.path.join(DEST, 'v2_t1_%s.png' % ('arrow_above_centre' if spot == 'spot' else 'arrow_dead_centre')))
