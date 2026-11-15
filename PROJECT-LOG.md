@@ -2224,3 +2224,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - SPEED: 11.7 pictures a second near the crossing against 12.7 elsewhere (the bridge's tiles: a tile costs about 90 T a line with ink). With the design's kerbs and arrows it was 10.9; with no bridge pictures 15.9.
 - TESTS: tests/track5_test.py 60 PASS (track2_test's checks, then levels, walls, drawing order, ramps, speed; the dropped-car part 0 stuck of 546). arrow_test on track 5 PASS. The 14 suites on track 1 PASS. Pictures and a GIF: docs/design/tracks/built/track5_*.
 - Detail: docs/design/tracks/built/BUILT.md, the track 5 section.
+
+## 15 Nov 2026 22:20 SAST - the bridge track merged: track 5 is its own tape
+- `TRACK=5 bash build.sh` -> build/racer_track5.tap ("A FRIDGE TOO FAR", 72 x 74, one bridge), all behind OPT_BRIDGE. Tapes of tracks 1-3 are byte-identical to before the merge (cmp). Notes: docs/design/tracks/built/BUILT.md.
+- Merged on top of the small see-through map and the fixed arrow: the generator's old mini-map block (with a bridge tweak for the old outline map) was dropped in favour of the new ribbon; tests/track5_test.py re-pointed to the new map (QUICK=1 run: PASS; arrow_test on track 5: PASS). The agent's pictures in docs/design/tracks/built/track5_* show the earlier yellow map box.
