@@ -4484,8 +4484,8 @@ mu_ptab equ 0
         include "jingle.asm"    ; the jingle's notes (tools/make_music_ay.py)
 td_end2:
 faces_win equ TD + faces_win_src - td_src
-jb_per  equ TD + jb_per_src - td_src
-jb_tune equ TD + jb_tune_src - td_src
+jc_a    equ TD + jc_a_src - td_src
+jc_b    equ TD + jc_b_src - td_src
         if td_end2 - td_src > 0x5E00 - TD
         .error the title's tables run past 0x5E00 (the stack is below 0x5F00: 50 bytes deep at most)
         endif

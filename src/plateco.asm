@@ -411,13 +411,21 @@ yb_2:
 ; noise half way to the next. Nothing else runs while it plays; interrupts are off, for its timing.
 ; src/jingle.asm (tools/make_music_ay.py) has the notes and the loop's counts.
 ; ---------------------------------------------------------------------
-jin_start:
+jin_flag:                       ; the chequered flag's jingle (podium) ...
+        ld hl,jc_b
+        jr jin_go
+jin_start:                      ; ... and the start's: each its own tune, step and bass (src/jingle.asm)
+        ld hl,jc_a
+jin_go:
         ld a,(jin_on)
         inc a
         ret z
+        ld de,jc
+        ld bc,10
+        ldir
         di
         push ix
-        ld hl,jb_tune
+        ld hl,(jc)
         xor a
 jb_1:
         ld (jb_n+1),a           ; the step, counted from 0
@@ -435,18 +443,19 @@ jb_1:
 jb_r:
         ld (jb_x+1),a
         ld d,0
-        ld hl,jb_per
+        ld hl,(jc+2)
         add hl,de
         ld h,(hl)               ; H = the tune's period
 jb_n:   ld a,0
         and 3
-        ld ix,JB_LEN
-        ld l,JB_B_LO
+        ld ix,(jc+4)
+        ld bc,(jc+8)            ; C = the low bass's period, B = the high one's
+        ld l,c
         jr z,jb_kick            ; the beat: the kick, the low bass
-        ld l,JB_B_HI
+        ld l,b
         rra
         jr c,jb_tone            ; steps 1 and 3: the high bass
-        ld l,JB_B_LO            ; step 2: the low bass again, after a tick of noise
+        ld l,c                  ; step 2: the low bass again, after a tick of noise
         ld b,48
 jb_hat:
         ld a,r
@@ -456,7 +465,7 @@ jb_hat:
         djnz jb_hat
         jr jb_tone
 jb_kick:
-        ld ix,JB_LEN-JB_KICK
+        ld ix,(jc+6)
         ld b,6
 jb_k1:
         ld a,b                  ; a flip ...
@@ -511,6 +520,9 @@ jb_t2:
         jp jb_1
 jb_end:
         pop ix
+        jr jb_x2
+jc:     defs 10                 ; the jingle being played: its tune, periods, turns a step and a beat's, bass low and high
+jb_x2:
         xor a
         ld (jin_on),a
         ei

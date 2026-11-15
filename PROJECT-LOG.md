@@ -2109,3 +2109,15 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   https://claude.ai/artifact/VYcqxZKbxLYnPVFwwk23LD
 - The game still plays Kettle's On, driving (5.8 s) at the start and the chequered flag: nothing
   changed there until he picks. finish, crew, drive, title tests PASS. NOT heard by me.
+
+## 2026-11-15 13:06 SAST - Spilt Milk at the start, Second Helpings at the chequered flag
+
+- Grant, from the Jingle Lab: "Spilt Milk is a good start jingle, then second helpings for
+  chequered flag".
+- Two jingles: src/jingle.asm (tools/make_music_ay.py, JKEYS=ditty3:43,ditty12:47) has, for each,
+  a 10-byte set - its tune, its periods, a step's turns of the loop and a beat's, the bass low
+  and high - that jin_go copies to `jc` before playing. jin_start (new race) plays the first,
+  jin_flag (the podium) the second. Spilt Milk: 56 steps of 0.10 s, 5.6 s, bass on G. Second
+  Helpings: 36 steps of 0.16 s, 5.8 s, bass on B. Green 8.4 s after 1.
+- Recorded (docs/sound/race_now.mp3): the start's jingle, a few seconds of race, the podium's.
+  NOT heard by me. All thirteen suites PASS. Main area: 10 bytes free; TD ~30.
