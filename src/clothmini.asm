@@ -1,4 +1,5 @@
 ; (from strip.asm: here to fill the gap before sq4's page)
+        if OPT_PIT              ; (the pit talk's: left out with it)
 line_x:                         ; MSG_P at a line: MSG_X = its centred start
         ld hl,(MSG_P)
         ld b,0
@@ -23,119 +24,115 @@ lx_2:
         ld (MSG_X),a
         ret
 
-; the race box's lines (from strip.asm)
-rb_line:
-        ld c,3*8
-        call scr_addr
-        ld (hl),0x3F
-        ld b,16
-rbl_1:
-        inc l
-        ld (hl),0xFF
-        djnz rbl_1
-        inc l
-        ld (hl),0xFC
-        ret
-
-; (from hud.asm: the message bar's place, lap and time - here to fill the gap)
-bar_tick:
-        ld a,(race_on)          ; the clock runs from green to your finish
-        or a
-        jr z,bt_1
-        ld a,(you_done)
-        or a
-        jr nz,bt_1
-        ld hl,(race_time)       ; another second?
-        ld de,(bar_next)
-        or a
-        sbc hl,de
-        jr c,bt_1
-        ld hl,50
-        add hl,de
-        ld (bar_next),hl
-        ld hl,bar_time+3        ; m:ss, a digit at a time
-        inc (hl)
+        endif
+; THE TITLE'S RUN (Grant, 15 Nov 2026: speed lines, "the line through the middle", "two colours -
+; top and bottom": S4 of docs/design/run_split_options.png). Three drawn letters, 6 x 8, each
+; pixel 3 across and 2 down, leaning a pixel a row, from x 114 at lines 40-55; lines 47 and 48 -
+; either side of the join of the two character rows - left out: that is the cut, and each row
+; has an ink of its own (the title's list: yellow above, red below). Then the speed lines.
+; (Here, where the message bar's code was: the gap before sq4's page.)
+t_run:
+        ld hl,t_runl
+        ld d,114                ; D = the letter's x
+trn_let:
+        ld e,0                  ; E = its row, 0..7
+trn_row:
         ld a,(hl)
-        cp '9'+1
-        jr c,bt_dig
-        ld (hl),'0'
-        dec hl
-        inc (hl)
-        ld a,(hl)
-        cp '6'
-        jr c,bt_all
-        ld (hl),'0'
-        dec hl
-        dec hl
-        inc (hl)
-bt_all:
-        xor a                   ; more than one digit: the whole time, below
-        ld (bar_shown+6),a
-        jr bt_1
-bt_dig:
-        ld a,(bar_shown+6)      ; one digit: straight on, if the time is up to date
-        dec a
-        jr nz,bt_1
-        ld bc,23*256+9
-        jp print_at
-bt_1:
-        ld de,bar_shown+3       ; ONE thing a picture. (Your place is no longer here in big
-                                ; letters: it is on its plate in the window - "I only need my
-                                ; place in one place - that is in game": Grant, 14 Nov 2026)
-        ld a,(race_on)          ; the strip: PRESS Q before the start,
-        or a
-        ld a,1
-        jr z,bt_s
-        ld a,(you_done)         ; FINISHED! at the flag,
-        or a
-        ld a,3
-        jr nz,bt_s
-        ld a,(msg_timer)        ; FINAL LAP for its 3 s,
-        or a
-        ld a,2
-        jr nz,bt_s
-        ld a,(cars+C_LAPS)      ; else LAP n/3 (behind the line at the start: 1)
-        or a
-        jr nz,bt_2
-        inc a
-bt_2:
-        add a,'0'
-bt_s:
-        ex de,hl                ; (HL = bar_shown + 3: the strip as shown)
-        cp (hl)
-        jr z,bt_txt
-        ld (hl),a
+        inc hl
+        push hl
+        ld h,a                  ; H = the row's 6 pixels, from the top bit
+        ld a,d
+        add a,7
+        sub e
+        ld c,a                  ; x: the lean
+        ld a,e
+        add a,a
+        add a,40
+        ld b,a                  ; y: two lines a row
+        ld l,6
+trn_bit:
+        sla h
+        jr nc,trn_adv
+        ld a,e                  ; (row 4's first line is 48, row 3's second 47: the cut)
         cp 4
-        jr nc,bt_ln
-        ld e,a                  ; text 1..3: txt_strip + (n - 1) * 10
-        add a,a
-        add a,a
-        add a,e
-        add a,a
-        sub 10
-        ld e,a
-        ld d,0
-        ld hl,txt_strip
-        add hl,de
-        jr bt_sp
-bt_ln:
-        ld hl,bar_lap
-        ld (bar_lap+5),a
-bt_sp:
-        ld bc,22*256+1
-        jp print_at
-bt_txt:
-        ld hl,bar_shown+6       ; then TIME and the whole time
-        ld a,(hl)
-        or a
-        ret nz
-        inc (hl)
-        ld hl,txt_time
-        ld bc,23*256+1
-        call print_at
-        ld hl,bar_time
-        ld bc,23*256+6
-        jp print_at
+        call nz,trn_3
+        ld a,e
+        cp 3
+        jr z,trn_adv
+        inc b
+        call trn_3
+        dec b
+trn_adv:
+        inc c
+        inc c
+        inc c
+        dec l
+        jr nz,trn_bit
+        pop hl
+        inc e
+        bit 3,e
+        jr z,trn_row
+        ld a,d
+        add a,21
+        ld d,a
+        cp 114+63
+        jr nz,trn_let
+        ld e,6                  ; the speed lines: 6 lines of 3 bytes from column 11 (HL = t_rlin)
+trn_ln:
+        ld b,(hl)
+        inc hl
+        ld c,88
+        push de
+        push hl
+        call scr_addr
+        ex de,hl
+        pop hl
+        ldi
+        ldi
+        ldi
+        pop de
+        dec e
+        jr nz,trn_ln
+        ret
+trn_3:                           ; 3 pixels from (C, B)
+        push hl
+        push bc
+        call trn_p
+        inc c
+        call trn_p
+        inc c
+        call trn_p
+        pop bc
+        pop hl
+        ret
+trn_p:                           ; the pixel at (C, B)
+        call scr_addr
+        ld a,c
+        and 7
+        ld a,0x80
+        jr z,trn_p2
+        push bc
+        ld b,a                  ; (B = 0x80: the count comes from C again)
+        ld a,c
+        and 7
+        ld c,a
+        ld a,b
+trn_p1:
+        rrca
+        dec c
+        jr nz,trn_p1
+        pop bc
+trn_p2:
+        or (hl)
+        ld (hl),a
+        ret
+t_runl:
+        db %11111000,%11001100,%11001100,%11111000,%11011000,%11001100,%11001100,%11001100   ; R
+        db %11001100,%11001100,%11001100,%11001100,%11001100,%11001100,%11001100,%01111000   ; U
+        db %11001100,%11101100,%11111100,%11111100,%11011100,%11001100,%11001100,%11001100   ; N
+t_rlin:                         ; the speed lines: a line, its 3 bytes (x 88-111)
+        db 42,0xFF,0xFF,0xF8, 43,0xFF,0xFF,0xF8, 46,0x03,0xFF,0xFE
+        db 49,0x03,0xFF,0xFE, 52,0xFF,0xFF,0xF8, 53,0xFF,0xFF,0xF8
 
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both

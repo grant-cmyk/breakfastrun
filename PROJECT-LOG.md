@@ -1862,3 +1862,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   docs/design/run_split_options.png: S1-S10 (block, upright, wide, Spectrum heavy, the logo's
   own RUN; yellow/white, white/yellow, white/black, yellow/red, white/blue, yellow/magenta).
   Nothing built.
+
+## 2026-11-15 08:50 SAST - the title's logo built: green band, the egg, RUN cut in two colours
+
+- Grant: "s4 is perfect". BUILT: the card's head green (0x60), rows 3-7; BREAKFAST black; the egg
+  white on green with its yolk yellow on white; RUN drawn by t_run (src/clothmini.asm, where the
+  unused message-bar code was): three 6 x 8 letters, each pixel 3 x 2, leaning, lines 47-48 left
+  out as the cut, yellow above (0x66) and red below (0x62); six speed lines from a table.
+  bar_tick and rb_line (unused) removed; line_x only in PIT builds. code_end 0xBE89.
+- title, drive, finish, plate tests PASS; speed alone 74 / 203 / 3.

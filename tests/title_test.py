@@ -53,10 +53,14 @@ with Racer(headless=True) as sp:
     rr, cc = np.mgrid[0:24, 0:32]; edge = (rr < 3) | (rr > 20) | (cc < 3) | (cc > 28)
     ok((A[edge] == np.where((rr + cc) % 2 == 0, 0x50, 0x78)[edge]).all(),
        'the tablecloth: red and white checks, a cell each, 3 cells deep all round the card (black ink in every one, so the car cannot clash)')
-    ok((sb[24:56, 88:200] == BIG).all() and attr(sp, 5, 11) == 0x72 and attr(sp, 6, 20) == 0x72 and attr(sp, 3, 3) == 0x70 and attr(sp, 6, 28) == 0x70,
-       'BREAKFAST RUN twice its size on the card\'s head, all of it bright yellow; RUN red')
-    ok(sb[24:56, 40:72].sum() > 500 and [attr(sp, r, c) for r in (4, 5) for c in (6, 7)] == [0x7E] * 4 and attr(sp, 3, 5) == 0x77 and attr(sp, 6, 8) == 0x77 and 80 <= sb[32:48, 48:64].sum() <= 110 and not sb[32:34, 48:64].any(),
-       'the big egg left of the words: white on the yellow, its yolk small and round - 12 pixels across, white all round it')
+    ok((sb[24:40, 88:200] == BIG[:16]).all() and all(attr(sp, r, c) == 0x60 for r in range(3, 8) for c in (3, 4, 9, 10, 25, 28)) and attr(sp, 8, 3) == 0x78,
+       'BREAKFAST twice its size, black on the card\'s green head (rows 3-7, bright)')
+    ok(sb[40:47, 112:192].sum() > 250 and sb[49:56, 112:192].sum() > 250 and not sb[47:49, 112:200].any() and not sb[56:64, 24:232].any()
+       and all(attr(sp, 5, c) == 0x66 and attr(sp, 6, c) == 0x62 for c in range(11, 24))
+       and sb[42, 88:109].all() and sb[53, 88:109].all() and sb[46, 94:111].all() and sb[49, 94:111].all() and not sb[44, 88:112].any(),
+       'RUN: drawn letters cut through the middle - yellow above the cut, red below - its speed lines behind it, green under it')
+    ok(sb[24:56, 40:72].sum() > 500 and [attr(sp, r, c) for r in (4, 5) for c in (6, 7)] == [0x7E] * 4 and attr(sp, 3, 5) == 0x67 and attr(sp, 6, 8) == 0x67 and 80 <= sb[32:48, 48:64].sum() <= 110 and not sb[32:34, 48:64].any(),
+       'the big egg left of the words: white on the green, its yolk small and round - yellow on white in four cells of its own')
     ok(screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and all(attr(sp, 8, c) == 0x7A for c in range(10, 22))
        and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 12, 6, 14) == '2  TWO PLAYERS' and screen_text(sp, 14, 6, 14) == 'K  CHOOSE KEYS'
        and all(attr(sp, r, c) == 0x78 for r in range(9, 16) for c in range(3, 29)),
@@ -155,7 +159,7 @@ with Racer(headless=True) as sp:
     tap(sp, 'Q', 0.2, 1.5)
     ok(sp.read8(PROMPT) == 0x7A and screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and sp.read8(SYM['snd_rate']) == 0,
        'Q after the race: the title screen again, the engine quiet')
-    ok(screen_text(sp, 19, 19, 6).strip() not in ('', '-:--.-') and (screen_bits(sp)[24:56, 88:200] == BIG).all(),
+    ok(screen_text(sp, 19, 19, 6).strip() not in ('', '-:--.-') and (screen_bits(sp)[24:40, 88:200] == BIG[:16]).all() and screen_bits(sp)[40:47, 112:192].sum() > 250,
        'it shows the lap record, and its logo is whole (read back from the race screen)')
     r0 = g(sp, 'renders'); sp.run(duration=3.0, fast_forward=True)
     ok(g(sp, 'renders') == r0 and len({(sp.read8(SYM['a_x'] + 1), sp.read8(SYM['a_y'] + 1)) for _ in range(20) if sp.run(duration=0.1, fast_forward=True) is None}) > 10,
