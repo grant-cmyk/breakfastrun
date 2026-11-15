@@ -32,17 +32,32 @@ with open(os.path.join(ROOT, 'src', 'music_ay.asm'), 'w') as f:
     f.write('        db 255\n; a word a pitch: the AY tone period\nmu_ptab_src:\n')
     for k in kinds:
         f.write('        dw %d    ; note %d, %.0f Hz\n' % (period(k - LOW), k - LOW, AY_HZ / 16 / period(k - LOW)))
-JN = int(os.environ.get('JINGLE', 48))            # the start jingle: the tune's first steps on the ordinary speaker,
-LOOP_T = 91                                       # by jin_start's two-voice engine (src/plateco.asm): 89 T a turn of its loop,
-bper = lambda hz: round(3500000 / (LOOP_T * 2 * hz))   # a voice flips every `period` turns - so Hz = 3,500,000 / 91 / 2 / period
-STEP_T = 0.12 * 3500000; KICK_T = 6 * 7 / 2 * 2500     # a step is 0.12 s; the kick's six flips take 52,500 T of it
+# ---- the jingle (start, and chequered flag): any tune, on the ordinary speaker, by jin_start's two-voice engine
+# (src/plateco.asm). JKEY picks it: a ditty of make_ditties.py, or one written for this sound (JINGLES below).
+from math import gcd
+from functools import reduce
+ARP = [95, 102, 98, 102, 95, 102, 98, 102, 95, 103, 98, 103, 95, 103, 98, 103,      # "Full English": a minor arpeggio
+       93, 100, 97, 100, 93, 100, 97, 100, 93, 102, 98, 102, 93, 102, 98, 102,       # over the bass, the way trance
+       95, 102, 98, 102, 95, 107, 102, 107, 98, 102, 107, 110, 107, 102, 98, 95]     # leads go (written 15 Nov 2026)
+JINGLES = {'arp': ('Full English', 6, ARP)}
+JKEY = os.environ.get('JKEY', 'ditty13'); JSECS = float(os.environ.get('JSECS', 5.8))
+if JKEY in JINGLES: jname, jstep, jsteps = JINGLES[JKEY]
+else:
+    jd = next(x for x in md.DITTIES + md.RACERS if x['key'] == JKEY); jn = md.notes_of(jd); jname = jd['name']
+    jstep = reduce(gcd, [l for _, _, l in jn]); jsteps = []
+    for t, m, l in jn: jsteps += [m] * (l // jstep)          # (a long note is the same pitch on each of its steps; None a rest)
+JN = min(len(jsteps), round(JSECS / (jstep * 0.02))); JN -= JN % 4; jsteps = jsteps[:JN]
+jkinds = sorted(set(m for m in jsteps if m is not None))
+LOOP_T = 91                                       # T a turn of the engine's loop (measured from a recording)
+bper = lambda hz: round(3500000 / (LOOP_T * 2 * hz))   # a voice flips every `period` turns
+STEP_T = jstep * 0.02 * 3500000; KICK_T = 6 * 7 / 2 * 2500     # the kick's six flips take 52,500 T of a beat's first step
 with open(os.path.join(ROOT, 'src', 'jingle.asm'), 'w') as f:
-    f.write('; made by tools/make_music_ay.py: the first %d steps of "%s" for the start jingle (jin_start, plateco.asm)\n' % (JN, d['name']))
-    f.write('; Two voices on the one speaker: the tune, and under it a bass on the key note - low, high, low, high, four steps to\n; a beat - with a kick on each beat and a tick of noise half way: 125 beats a minute.\n')
+    f.write('; made by tools/make_music_ay.py (JKEY=%s): %d steps of "%s", %.1f s, for the jingle (jin_start, plateco.asm)\n' % (JKEY, JN, jname, JN * jstep * 0.02))
+    f.write('; Two voices on the one speaker: the tune, and under it a bass on the key note - low, high, low, high, four steps to\n; a beat - with a kick on each beat and a tick of noise half way.\n')
     f.write('JB_LEN  equ %d                ; turns of the loop in a step ...\nJB_KICK equ %d                 ; ... less these on a beat: the kick takes their time\n' % (round(STEP_T / LOOP_T), round(KICK_T / LOOP_T)))
-    f.write('JB_B_LO equ %d                 ; the bass: %.0f Hz\nJB_B_HI equ %d                  ; and %.0f Hz\n' % (bper(md.freq_of(BASS)), (3500000 / LOOP_T / 2) / bper(md.freq_of(BASS)), bper(md.freq_of(BASS + 12)), (3500000 / LOOP_T / 2) / bper(md.freq_of(BASS + 12))))
+    f.write('JB_B_LO equ %d                 ; the bass\nJB_B_HI equ %d\n' % (bper(md.freq_of(BASS)), bper(md.freq_of(BASS + 12))))
     f.write('jb_per_src:                     ; each pitch\'s period (kept in the table block at TD: racer.asm gives jb_per, jb_tune)\n')
-    for k in kinds:
+    for k in jkinds:
         hz = md.freq_of(k - LOW); f.write('        db %d    ; %.0f Hz (wanted %.0f)\n' % (bper(hz), (3500000 / LOOP_T / 2) / bper(hz), hz))
-    f.write('jb_tune_src:                    ; a pitch a step; 255 ends\n        db ' + ','.join('%d' % kinds.index(m) for m in steps[:JN]) + ',255\n')
+    f.write('jb_tune_src:                    ; a pitch a step; 254 a rest; 255 ends\n        db ' + ','.join('254' if m is None else '%d' % jkinds.index(m) for m in jsteps) + ',255\n')
 print('music_ay.asm: %s, %d steps, %d pitches, %d bytes' % (d['name'], len(steps), len(kinds), len(steps) + 1 + 2 * len(kinds)))

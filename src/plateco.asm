@@ -424,9 +424,16 @@ jb_1:
         ld a,(hl)
         inc hl
         cp 255
-        jr z,jb_end
+        jp z,jb_end
         push hl
+        cp 254                  ; a rest: the tune's voice does not flip this step (the XOR's 16 is 0)
         ld e,a
+        ld a,16
+        jr nz,jb_r
+        xor a
+        ld e,a
+jb_r:
+        ld (jb_x+1),a
         ld d,0
         ld hl,jb_per
         add hl,de
@@ -481,7 +488,7 @@ jb_t:
         jr nz,jb_t1
         ld b,h
         ld a,d
-        xor 16
+jb_x:   xor 16
         ld d,a
 jb_t1:
         dec c
@@ -501,7 +508,7 @@ jb_t2:
         pop hl
         ld a,(jb_n+1)
         inc a
-        jr jb_1
+        jp jb_1
 jb_end:
         pop ix
         xor a

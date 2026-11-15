@@ -2093,3 +2093,19 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   Tests that hold the jingle off (jin_on 0xFF) hold this one off too.
 - The jingle's notes are in the table block at TD now (jb_per, jb_tune): the main area has 51
   bytes free, TD about 95. All thirteen suites PASS. docs/sound/race_now.mp3: the 5.8 s of it.
+
+## 2026-11-15 SAST (afternoon) - the Jingle Lab: fourteen tunes through the two-voice jingle
+
+- Grant: "could you try a different jingle with that trance sound"; "can you give me options - I
+  love the trance sound and maybe if that is overlayed with existing jingles they will work now".
+- The jingle's engine takes any tune now: tools/make_music_ay.py JKEY=<a ditty of
+  make_ditties.py, or `arp`> writes src/jingle.asm - the tune on its own step grid (a long note
+  is its pitch on each of its steps), 254 a rest (jin_start: the tune's voice does not flip),
+  JB_LEN from the tune's step; BASS=<midi> sets the bass's note. `arp` is "Full English", a
+  minor arpeggio written for this sound (15 Nov 2026).
+- RECORDED from the built game in zxdev, one build a tune: docs/sound/jingles/*.mp3 (14: the
+  twelve ditties, Kettle's On driving, Full English). The five tunes in G have the bass on G,
+  the rest on B. Page: tools/make_jingle_lab.py + jingle_lab.template.html ->
+  https://claude.ai/artifact/VYcqxZKbxLYnPVFwwk23LD
+- The game still plays Kettle's On, driving (5.8 s) at the start and the chequered flag: nothing
+  changed there until he picks. finish, crew, drive, title tests PASS. NOT heard by me.
