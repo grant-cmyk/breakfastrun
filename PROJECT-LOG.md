@@ -1749,3 +1749,13 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   card a colour no driver has (A4 yellow, A5 black). Two sample results, one with cyan winning.
 - PROPOSED names (NAMES2, not in the game yet): YOU (red), FRANK (cyan), JANE (white),
   BRUNO (pink, the tank), SPIKE (green). The game still says CYAN, GREEN, PINK, SLIM JANE.
+
+## 2026-11-15 SAST (morning) - Grant's own faces: everyday in the game, happy and sad stored
+
+- Grant picked podium A4 (the yellow card) and redrew all fifteen faces on the Faces page
+  (https://claude.ai/artifact/Nfxfa54baoZdTsPSAgzU8c), pasting them back as text.
+- EVERYDAY faces -> tools/face_art.txt (YOU, CYAN, GREEN, PINK, WHITE) -> tools/make_faces.py ->
+  src/faces.asm: in the game now (race order before the start, the title's row of faces).
+- HAPPY and SAD -> tools/face_moods.txt (new). Not in the game yet: for the race-end display.
+- tools/make_podium_mock.py reads both files, so the mock-ups and the page show his drawings;
+  the page's "put back" button now restores these. title and drive tests PASS.
