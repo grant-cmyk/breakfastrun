@@ -41,6 +41,7 @@ ad_1:
         ld d,a
         ld a,ARROW_X-8+CAR_U    ; where: always the same spot (ARROW_X, ARROW_Y: its middle, in window pixels)
         ld (wxu),a
+ad_y:                           ; (a label for tests/arrow_shots.py, which shows the other spot by changing this number)
         ld a,ARROW_Y-5+BUF_TOP  ; the frame's first line in the buffer
         ld hl,dc_count
         ld (hl),ARROW_ROWS

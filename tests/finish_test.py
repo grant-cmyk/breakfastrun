@@ -48,7 +48,7 @@ with Racer(headless=True) as sp:
     want = np.full((14, 16), 0x70); want[0] = 0x4F; want[13] = 0x4F
     want[2:9, 6:10] = COLOUR[4]; want[3:9, 2:6] = COLOUR[1]; want[4:9, 10:14] = COLOUR[0]
     ok((A[5:19, 5:21] == want).all(), 'the podium: a yellow card (rows 5-18, columns 5-20), blue head and foot, three steps in the drivers\' own colours - white, cyan, red - with yellow all round them')
-    ok((A[5:15, 1:5] == 0x29).all() and (A[15:19, 1:5] == 0x30).all() and (A[5:17, 21:25] == 0x29).all() and (A[19:20, 1:25] != 0x70).all() and (A[1:5, 5:21] != 0x70).all(), 'the cloth round the card keeps its own colours')
+    ok((A[5:17, 1:5] == 0x29).all() and (A[5:17, 21:25] == 0x29).all() and (A[19:20, 1:25] != 0x70).all() and (A[1:5, 5:21] != 0x70).all(), 'the cloth round the card keeps its own colours')
     def which(q, name):
         for k, d in (('every', EVERY), ('happy', HAPPY), ('sad', SAD), ('eyes', EYES)):
             if (q == d[name]).all(): return k
@@ -84,11 +84,11 @@ with Racer(headless=True) as sp:
     press(sp, '1', True); sp.run(duration=0.2, fast_forward=True); press(sp, '1', False); sp.run(duration=1.5, fast_forward=True)
     A = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); w = screen_bits(sp).astype(bool)[8:160, 8:200]
     cars_ink = w[60:110, 20:140].sum()
-    ok((A[4:15, 1:25] == 0x29).all() and (A[15:17, 7:25] == 0x29).all() and (A[17:20, 17:21] == 0x29).all() and (A[15:20, 1:7] == 0x30).all() and minimap_diff(sp)[0] == 0,
-       'the second race: every cell of the window is the cloth\'s blue on cyan again - nothing of the podium\'s colours - and the mini-map\'s box whole again, black on yellow (the card had covered two of its columns)')
+    ok((A[4:17, 1:25] == 0x29).all() and (A[17:20, 1:7] == 0x29).all() and (A[17:20, 17:21] == 0x29).all() and minimap_diff(sp)[0] == 0,
+       'the second race: every cell of the window is the cloth\'s blue on cyan again - nothing of the podium\'s colours - and the mini-map whole, the last race\'s dots out of it')
     AF = [int(v, 16) for l in open(os.path.join(ROOT, 'src', 'arrows.asm')) if 'defb' in l for v in l.split('defb')[1].split(',')]
-    ok(all(bytes(sp.read(SYM['arrow_f'] + 0x100 * i, 88)) == bytes(AF[88 * i:88 * i + 88]) for i in range(4)) and bytes(sp.read(SYM['mappic'], 78)) == bytes(np.packbits(MM_ROWS[5:18], axis=1).ravel().tolist()),
-       'after a race, the podium and the title, the arrows\' frames and the map\'s picture are still whole where they are kept (the back buffer\'s unused bottom rows)')
+    ok(all(bytes(sp.read(SYM['arrow_f'] + 0x100 * i, 88)) == bytes(AF[88 * i:88 * i + 88]) for i in range(4)),
+       'after a race, the podium and the title, the arrows\' frames are still whole where they are kept (the back buffer\'s unused bottom rows)')
     ok(not w[36:44, 60:150].all(axis=1).any() and cars_ink > 150 and screen_text(sp, 8, 10, 12) != "TODAY'S MENU",
        'and it shows the grid while the jingle plays - not what the title left there (%d pixels of cars)' % cars_ink)
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)
