@@ -1846,3 +1846,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   green is under RUN; eight styles - 1 as now, 2 solid slant, 3 speed lines, 4 red plate,
   5 chequered, 6 cut lines, 7 wide, 8 small. The green band itself (egg white-on-green, yolk
   yellow-on-white) is agreed but NOT built yet: it goes in with the RUN he picks.
+
+## 2026-11-15 SAST (morning) - mock-up: letters for RUN with the speed lines
+
+- Grant: "I love the speed lines, can you make font variations for RUN with those speed lines of 3".
+- tools/make_run_speed_options.py -> docs/design/run_speed_options.png: 3a Spectrum letters,
+  3b the same heavy, 3c block leaning, 3d block upright, 3e thin and round, 3f outline, 3g the
+  logo's own RUN, 3h lines through. Nothing built.
