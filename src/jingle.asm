@@ -1,4 +1,4 @@
-; made by tools/make_music_ay.py: the first 24 steps of "Kettle's On, driving" for the start jingle (jin_start, plateco.asm)
+; made by tools/make_music_ay.py: the first 32 steps of "Kettle's On, driving" for the start jingle (jin_start, plateco.asm)
 ; Two voices on the one speaker: the tune, and under it a bass on the key note - low, high, low, high, four steps to
 ; a beat - with a kick on each beat and a tick of noise half way: 125 beats a minute.
 JB_LEN  equ 4615                ; turns of the loop in a step ...
@@ -15,4 +15,4 @@ jb_per:                         ; each pitch's period
         db 29    ; 663 Hz (wanted 659)
         db 17    ; 1131 Hz (wanted 1109)
 jb_tune:                        ; a pitch a step; 255 ends
-        db 0,1,2,3,0,2,4,0,2,1,0,0,5,1,6,2,2,1,5,2,2,2,2,2,255
+        db 0,1,2,3,0,2,4,0,2,1,0,0,5,1,6,2,2,1,5,2,2,2,2,2,0,1,2,3,0,7,3,0,255

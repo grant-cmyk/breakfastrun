@@ -39,4 +39,15 @@ with Racer(headless=True) as sp:
     ok(bubble(sp)[0] and words(sp) == SYM['m_last'], 'starting the last lap: FINAL LAP! / BRING IT HOME')
     sp.run(duration=1.0, fast_forward=True)
     ok(bubble(sp)[0] and words(sp) == SYM['m_last'], 'and it is not pushed aside by another message a second later')
+    # the other drivers
+    sp.run(duration=5.0, fast_forward=True)
+    sp.write(SYM['best_lap'], bytes([1000 & 255, 1000 >> 8])); sp.write(SYM['best_car'], bytes([1])); sp.write(SYM['best_seq'], bytes([sp.read8(SYM['best_seq']) + 1]))
+    sp.run(duration=0.5, fast_forward=True); at_copy_done(sp)
+    up, l1, l2, face = bubble(sp)
+    ok(up and words(sp) == SYM['m_fast'] and sp.read8(SYM['ms_car']) == 1 and l1 > 60 and l2 > 25, 'another driver sets the best lap: FASTEST LAP BY / FRANK (%d pixels of name)' % l2)
+    seen = set(); t = 0.0
+    while t < 150 and not seen:
+        sp.run(duration=0.5, fast_forward=True); t += 0.5
+        if SYM['m_oth0'] <= words(sp) <= SYM['m_oth0'] + 3 and bubble(sp)[0]: seen.add((words(sp) - SYM['m_oth0'], sp.read8(SYM['ms_car'])))
+    ok(bool(seen) and all(1 <= c <= 4 for _, c in seen), 'now and then, with nothing else to say, a remark about one of the other four by name (%.0f s in: remark %s)' % (t, sorted(seen)))
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)

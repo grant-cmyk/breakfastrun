@@ -2068,3 +2068,18 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - tests/crew_test.py (new) PASS; all thirteen suites PASS. drive_test: 11.9 pictures a second
   asked off the start, not 12.5 (GOOD LUCK is up then). Speed alone 34 / 227 / 8 / 1 at 6.
 - docs/design/crew_messages.png: four messages as they show.
+
+## 2026-11-15 12:32 SAST - the chief on the other drivers; the start jingle a little longer
+
+- Grant: "bubble speak is great. Include some random events for other riders too, Great driving
+  Butch or something like that".
+- @ in a message is a driver's name (sm_ctr, src/plate_slow.asm: ms_car into pd_names). New
+  messages (tools/make_strip.py): FASTEST LAP BY / @ when another driver sets the race's best lap
+  (trg_best); and, when the chief has nothing else to say, one picture in 256 (about every 20
+  s), one of GREAT DRIVING / WATCH OUT FOR / ON A CHARGE / LOOKING QUICK with one of the four
+  others' names, both picked at random (trg_rand). Names: FRANK, SPIKE, BRUNO, JANE.
+- Grant: "the jingle at the start with the trancey effect is great, you can make it play a
+  little longer": 32 steps, 3.8 s (it was 24, 2.9 s). Green 6.7 s after 1.
+- Room: the new code is under 0x8000 (95 bytes were free there); the table block at TD has 154
+  free; the main area 11. tests/crew_test.py covers both new messages. All thirteen suites PASS.
+- docs/design/crew_other.png; docs/sound/race_now.mp3 (the longer jingle, then the start).

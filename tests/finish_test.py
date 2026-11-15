@@ -27,8 +27,8 @@ with Racer(headless=True) as sp:
     while sp.read8(SYM['race_on']) == 0 and t < 12:
         sp.run(duration=0.02, fast_forward=True); t += 0.02
         if lit is None and sp.read8(SYM['start_go']): lit = t
-    ok(sp.read8(SYM['race_on']) == 1 and lit is not None and 2.4 < lit < 3.6 and 5.0 < t < 6.6,
-       'no key pressed after 1: the jingle plays (24 notes, 2.9 s, on the speaker), the lights come on by themselves %.1f s in, green at %.1f s' % (lit or 0, t))
+    ok(sp.read8(SYM['race_on']) == 1 and lit is not None and 3.4 < lit < 4.6 and 6.0 < t < 7.6,
+       'no key pressed after 1: the jingle plays (32 steps, 3.8 s, two voices and a beat on the speaker), the lights come on by themselves %.1f s in, green at %.1f s' % (lit or 0, t))
     ok(sp.read16(SYM['mu_ptr']) - SYM['mu_tune'] < 4 and sp.read8(0x5C48) == sp.read8(SYM['td'] + 0x5C48 - SYM['td']), 'at green the race tune starts from its first note')
     hold(sp, ['Q'], 1.0)
     order = [4, 1, 0, 3, 2]                               # JANE (white) wins, FRANK (cyan) second, YOU third

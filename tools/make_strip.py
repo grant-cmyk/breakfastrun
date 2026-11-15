@@ -65,7 +65,15 @@ MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light
         ('M_DONE', 'WELL DRIVEN!'),                    # you finished, not first
         ('M_NOS', 'NOS READY!|SPACE TO BOOST'),        # you picked up a canister
         ('M_BOOST', 'NOS!|GO GO GO'),                  # you fired it
-        ('M_SETUP', 'PICK 2 UPGRADES|KEYS 1 2 3')]     # the lights: set your car up (a line is 15 letters at most: the bubble's width)
+        ('M_SETUP', 'PICK 2 UPGRADES|KEYS 1 2 3'),     # the lights: set your car up (a line is 15 letters at most: the bubble's width)
+        # about the OTHER drivers (Grant, 15 Nov 2026: "Include some random events for other riders too, Great driving
+        # Butch or something like that"): @ is the driver's name (sm_ctr). M_OTH0-3 are picked from at random, about
+        # every 20 seconds when the chief has nothing else to say; M_FAST when one of them sets the race's best lap.
+        ('M_FAST', 'FASTEST LAP BY|@'),
+        ('M_OTH0', 'GREAT DRIVING|@'),
+        ('M_OTH1', 'WATCH OUT FOR|@'),
+        ('M_OTH2', 'ON A CHARGE|@'),
+        ('M_OTH3', 'LOOKING QUICK|@')]
 assert all(len(l) <= 15 for _, t in MSGS for l in t.split('|')), 'a bubble line is 15 letters at most'
 # the data goes in the free ends of the buffer's bottom-row strips: BUFF and BUFH
 # whole, the ends of BUFE (after the row index) and BUFG (after the waypoints)

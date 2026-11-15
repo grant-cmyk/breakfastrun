@@ -370,6 +370,15 @@ pd_name:                        ; car A's name, small, centred on x C at line B
         call str_skip
         pop bc
 sm_ctr:                         ; the text at HL in the small letters (4 pixels each), centred on x C at line B
+        ld a,(hl)               ; (@: the name of the driver the crew chief is talking about - ms_car)
+        cp '@'
+        jr nz,sc_0
+        push bc
+        ld a,(ms_car)
+        ld hl,pd_names
+        call str_skip
+        pop bc
+sc_0:
         push hl
 sc_1:
         ld a,(hl)
@@ -411,3 +420,32 @@ t_blk   equ BUF+0x1700          ; (in the back buffer, past what the title keeps
 
 pd_t6:  db "FINISHED ",0
 pd_t7:  db "YOUR RACE",0
+
+; THE CREW CHIEF ON THE OTHER DRIVERS (Grant, 15 Nov 2026: "Include some random events for other
+; riders too, Great driving Butch or something like that").
+trg_best:                       ; the race's best lap has just been set: by you, or by one of them
+        ld a,(best_car)
+        ld (ms_car),a
+        or a
+        ld a,M_BEST
+        jp z,msg_say
+        ld a,(COOL)             ; (theirs is not said over a message just put up)
+        or a
+        ret nz
+        ld a,M_FAST
+        jp msg_say
+trg_rand:                       ; when he has nothing else to say: one picture in 256 (about every 20 s), a
+        call rnd                ; remark about one of the four, picked at random. Z: he spoke
+        or a
+        ret nz
+        call rnd
+        and 3
+        inc a
+        ld (ms_car),a
+        call rnd
+        and 3
+        add a,M_OTH0
+        call msg_say
+        xor a
+        ret
+ms_car: db 0                    ; the driver a message with @ names

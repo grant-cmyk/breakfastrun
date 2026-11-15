@@ -519,10 +519,7 @@ trg_0:
         cp (hl)
         jr z,trg_1
         ld (hl),a
-        ld a,(best_car)
-        or a
-        ld a,M_BEST
-        jp z,msg_say
+        jp trg_best             ; (yours: GREAT LAP! Another driver's: FASTEST LAP BY - plate_slow.asm)
 trg_1:
         ld a,(cars+C_LAPS)      ; the last lap
         ld hl,TRG_LAP
@@ -562,6 +559,8 @@ trg_3:
         or b
         ld a,M_HIT
         jp nz,msg_say
+        call trg_rand           ; a word about one of the others, now and then (plate_slow.asm)
+        ret z
         ld a,(position)         ; second, and within 0.5 s of the leader
         cp 2
         ret nz

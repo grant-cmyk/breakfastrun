@@ -32,7 +32,7 @@ with open(os.path.join(ROOT, 'src', 'music_ay.asm'), 'w') as f:
     f.write('        db 255\n; a word a pitch: the AY tone period\nmu_ptab_src:\n')
     for k in kinds:
         f.write('        dw %d    ; note %d, %.0f Hz\n' % (period(k - LOW), k - LOW, AY_HZ / 16 / period(k - LOW)))
-JN = int(os.environ.get('JINGLE', 24))            # the start jingle: the tune's first steps on the ordinary speaker,
+JN = int(os.environ.get('JINGLE', 32))            # the start jingle: the tune's first steps on the ordinary speaker,
 LOOP_T = 91                                       # by jin_start's two-voice engine (src/plateco.asm): 89 T a turn of its loop,
 bper = lambda hz: round(3500000 / (LOOP_T * 2 * hz))   # a voice flips every `period` turns - so Hz = 3,500,000 / 91 / 2 / period
 STEP_T = 0.12 * 3500000; KICK_T = 6 * 7 / 2 * 2500     # a step is 0.12 s; the kick's six flips take 52,500 T of it
