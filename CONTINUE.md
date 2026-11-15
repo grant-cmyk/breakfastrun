@@ -10,8 +10,8 @@ the crew chief's pit talk is OFF (PIT=1 builds it, but the logo now sits where h
 lap and lap time are on a small plate INSIDE the window; the health gauge is a MAGENTA lightning bolt bottom
 left and the NOS bottles RED bottom right, each in colour cells of its own (hud_pre, src/plate_slow.asm).
 The VIEW LEADS THE CAR: up to 20 px ahead across, 16 up/down, 2 px a picture (halved 23:15) (cam_lead, src/plateco.asm;
-LEAD_X / LEAD_Y / LEAD_STEP to tune). In-race music is OFF (MUSIC=1; unsolved on the beeper, an AY-chip
-version waits on Grant); coloured objects OFF (OBJECTS=1; too slow). Speed alone: 40 pictures at 3 TV
+LEAD_X / LEAD_Y / LEAD_STEP to tune). In-race music is on the AY SOUND CHIP (OPT_AY, tools/make_music_ay.py; needs a 128K or
+the 48K with the AY option on - a plain 48K is silent); coloured objects OFF (OBJECTS=1; too slow). Speed alone: 40 pictures at 3 TV
 frames / 225 at 4 / 5 at 5. Speed test 15 Nov 06:07: alone now 91 pictures at 3 frames / 193 / 3; the pack is ~30,000 T a picture over the faster rate (see the log's last entry for what was tried and what is left). Detail: PROJECT-LOG.md, end.
 
 **Status:** Track 1, BREAKFAST AT TIFFANY'S. Small 16 x 16 cars; the window 176 x 152 (19 rows, since 14 Nov late) in a slim

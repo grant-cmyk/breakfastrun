@@ -3437,6 +3437,14 @@ op_max:   db 0
 mu_ph:    db 0                  ; ... frames this note still sounds for
 mu_off:   db 0                  ; ... where its burst is in mu_ptab
 mu_ptr:   dw mu_tune            ; ... the next note in the tune (music.asm is kept at TD: see td_end2)
+mu_va:    db 0                  ; the AY's volumes: the tune's (channel A),
+mu_vb:    db 0                  ; the bass's (B: the byte after mu_va),
+mu_vn:    db 0                  ; the hat's (C)
+mu_beat:  db 0                  ; steps played: odd ones have the high bass and the hat
+isr_bc:   dw 0                  ; BC, kept here while the interrupt writes to the AY
+AY_VA     equ 13                ; a note starts this loud (of 15) and falls 3
+AY_VB     equ 11
+AY_VN     equ 9
 dmg:      db 0                  ; your car's damage, 0..DMG_MAX
 dmg_cool: db 0                  ; ... pictures until a hit counts again (the byte after dmg)
 oil_t:    db 0                  ; the oil can: pictures until it is put out (0: it is out)
@@ -3776,6 +3784,110 @@ mu_off0:
         xor a
         ld (mu_ph),a
         endif
+        if OPT_AY
+        ; ---- THE RACE TUNE ON THE AY CHIP (Grant, 15 Nov 2026: "go ahead on ay-version"):
+        ;      music_ay.asm, made by tools/make_music_ay.py. The chip sounds by itself once its
+        ;      registers are set, so this only sets them: a note a step, three volumes a frame.
+        ;      No CALLs and no PUSHes (see below): BC is kept in memory, each write is in line.
+        ;      A 48K without the chip ignores the two ports (0xFFFD, 0xBFFD). ----
+AYW     macro reg, val          ; AY register reg <- the register val (H or L)
+        ld bc,0xFFFD
+        ld a,reg
+        out (c),a
+        ld b,0xBF
+        out (c),val
+        endm
+        ld (isr_bc),bc
+        ld a,(race_on)          ; only from the green light until you finish
+        or a
+        jp z,ay_quiet
+        ld a,(you_done)
+        or a
+        jp nz,ay_quiet
+        ld hl,mu_wait
+        dec (hl)
+        jp nz,ay_decay
+        ld (hl),MU_STEP         ; ---- a new step: the tune's note on channel A
+        ld hl,(mu_ptr)
+        ld a,(hl)
+        cp 255                  ; the end: round again
+        jr nz,ay_1
+        ld hl,mu_tune
+        ld a,(hl)
+ay_1:
+        inc hl
+        ld (mu_ptr),hl
+        cp 254                  ; 254: a rest
+        jr z,ay_bass
+        add a,mu_ptab AND 255
+        ld l,a
+        ld a,0
+        adc a,mu_ptab/256
+        ld h,a
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a                  ; HL = its tone period
+        AYW 0,l
+        AYW 1,h
+        ld a,AY_VA
+        ld (mu_va),a
+ay_bass:                        ; the bass on channel B: the key note, low and high in turn;
+        ld hl,mu_beat           ; with the high one, the hat (channel C: noise)
+        inc (hl)
+        ld a,(hl)
+        rra
+        ld hl,AY_BASS_LO
+        jr nc,ay_b1
+        ld hl,AY_BASS_HI
+        ld a,AY_VN
+        ld (mu_vn),a
+ay_b1:
+        AYW 2,l
+        AYW 3,h
+        ld a,AY_VB
+        ld (mu_vb),a
+        jr ay_vols
+ay_decay:                       ; ---- between steps: each voice dies away a little, like a plucked string
+        ld hl,mu_va
+        ld a,(hl)
+        cp AY_VA-3
+        jr c,ay_d1
+        dec (hl)
+ay_d1:
+        ld hl,mu_vb
+        ld a,(hl)
+        cp AY_VB-3
+        jr c,ay_d2
+        dec (hl)
+ay_d2:
+        ld hl,mu_vn
+        ld a,(hl)
+        sub 3
+        jr nc,ay_d3
+        xor a
+ay_d3:
+        ld (hl),a
+        jr ay_vols
+ay_quiet:                       ; no race: the three voices off (once)
+        ld hl,(mu_va)
+        ld a,h
+        or l
+        jr z,ay_end
+        ld hl,0
+        ld (mu_va),hl
+        xor a
+        ld (mu_vn),a
+ay_vols:
+        ld hl,(mu_va)           ; L = the tune's volume, H = the bass's
+        AYW 8,l
+        AYW 9,h
+        ld a,(mu_vn)
+        ld l,a
+        AYW 10,l
+ay_end:
+        ld bc,(isr_bc)
+        endif
 mu_out:
                                 ; (only A, H and L here: the interrupt may land
         ld a,(snd_fxt)          ; while the cloth fill has SP in the buffer, which
@@ -3950,6 +4062,12 @@ win_attr:
         pop bc
         djnz win_attr
 
+        if OPT_AY
+        ld hl,0x071C            ; the AY: tone on channels A and B, noise on C (register 7),
+        call ay_set
+        ld hl,0x0601            ; and the noise at its brightest (register 6)
+        call ay_set
+        endif
         call draw_frame
         ld b,LOGO_ROW           ; the logo, 7 x 2 cells, centred under the window (Grant, 14 Nov 2026)
         ld c,LOGO_COL
@@ -4018,6 +4136,14 @@ so_d:
         ret
 so_y:   db 2
 
+        if OPT_AY
+ay_set:                         ; AY register H <- L
+        ld bc,0xFFFD
+        out (c),h
+        ld b,0xBF
+        out (c),l
+        ret
+        endif
 ; DRAW_FRAME: the window's slim frame (layout G3 - Grant, 14 Nov 2026: "what i like in E is
 ; the border changes around the gameplay area"): a 2-pixel line with rounded corners, 3
 ; pixels of table between it and the picture. Lines 3-4 and 155-156, columns 3-4 and
@@ -4278,7 +4404,11 @@ im2_on:
         ei
         ret
         include "title3.asm"    ; the title's tables, copied to TD (0x5B4C) by start_once
+        if OPT_AY
+        include "music_ay.asm"  ; the race tune for the AY chip (tools/make_music_ay.py)
+        else
         include "music.asm"     ; ... and the ditty's (14 Nov 2026: 129 bytes the program needed back)
+        endif
         include "plate_td.asm"  ; ... and the place plate's message
 td_end2:
 mu_tune equ TD + mu_tune_src - td_src

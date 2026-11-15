@@ -43,6 +43,9 @@ srs_1:
         ret
 
 msg_say:                        ; A = message: the chief starts talking
+        if OPT_PIT = 0
+        ret                     ; (no pit talk for now: Grant, 14 Nov 2026 - its code is left out)
+        else
         add a,a
         ld l,a
         ld h,0
@@ -62,6 +65,8 @@ msg_say:                        ; A = message: the chief starts talking
         ld (COOL),a
         ret
 
+        endif
+        if OPT_PIT
 ; STRIP_TICK: renders AND 3 = 1: wipe, then type; = 3: the wave
 strip_tick:
         ld a,(renders)
@@ -438,6 +443,7 @@ wt_px:
         cp 13
         jr nz,wt_line
         ret
+        endif
 
 ; STRIP_TRIGGERS: what the chief says (each picture, racing)
 strip_triggers:

@@ -1671,3 +1671,23 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - NOT TRIED (each changes what Grant sees or feels): the window 2 columns and 2 rows smaller
   (est. -22,000 T); plain cloth without dots (est. -4,700); your car's physics at 25 a second
   (est. -12,000, changes the handling); a steady 4-frame lock (even pacing, 12.5 a second).
+
+## 2026-11-15 SAST (morning) - the race tune on the AY sound chip
+
+- Grant: "go ahead on ay-version" (the beeper tune was "just background beeping" in every form).
+- tools/make_music_ay.py -> src/music_ay.asm: Kettle's On (driving), 96 steps of 6 frames, melody
+  two octaves under the music box (495-1,108 Hz). The player is in the interrupt (src/racer.asm,
+  `if OPT_AY`): channel A the tune, B a bass pedal on B (low, then an octave up, a step each), C a
+  noise hat on the off-beat; each voice starts loud and falls 3 steps of volume, like a pluck.
+  No CALLs or PUSHes (the cloth fill's stack rule): BC is kept in isr_bc, each write is in line.
+- Plays from the green light until you finish, as the beeper tune did. The beeper still does the
+  engine and the event sounds.
+- A 48K WITHOUT the chip is silent and unharmed (ports 0xFFFD / 0xBFFD mean nothing to it). To
+  HEAR it: a 128K model, or the 48K with "AY sound chip on 16K/48K" switched on in the player.
+- CHECKED in zxdev on model 48 with ay48 and on model 128: the recorded sound's strongest pitch,
+  step by step, is the tune's (737, 495, 624, 990 ... Hz). NOT heard by anyone yet: whether the
+  bass and hat suit it is Grant's call. docs/sound/ay_race_tune.mp3 is 13 s of it from the race.
+- OPT_AY (build.sh: AY=0 leaves it out), on by default. The pit talk's code is now left out of
+  the build while OPT_PIT is 0 (it made the room): code_end 0xBE9E.
+- SPEED: alone 73 pictures at 3 frames / 200 / 5 (91 / 193 / 3 without the tune); pack 19 / 241 / 11.
+- All ten tests PASS.
