@@ -23,6 +23,11 @@ with open(os.path.join(ROOT, 'src', 'lights.asm'), 'w') as f:
     f.write('        defb 0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xC0   ; rows 0-1: the two hangers up to the frame\n')
     f.write('        defb 0x0F,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xF0   ; rows 2-4: the rail\n')
     f.write('        defb 0x00,0x01,0x80,0x00,0x01,0x80,0x00,0x01,0x80,0x00   ; rows 5-7: a hanger down to each lamp\n')
-    f.write('nos_can:                        ; a NOS canister, 7 x 10, in the top 7 bits of a byte\n')
-    f.write('        defb ' + ','.join('0x%02X' % (int(r.replace('X', '1').replace('.', '0'), 2) << 1) for r in CAN) + '\n')
+    # the NOS you hold: a spoon of sugar, side on (Grant, 15 Nov 2026: "this for NOS" - his "Level spoon",
+    # tools/sugar_spoons.txt); its rows 3-12 are the icon's 10. (Until then a canister: CAN, above.)
+    import re
+    sp = re.search(r'== Level spoon ==\n((?:[#.]{8}\n){16})', open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sugar_spoons.txt')).read()).group(1).split()
+    assert not any('#' in r for r in sp[:3] + sp[13:])
+    f.write('nos_can:                        ; the NOS you hold: a spoon of sugar, 8 x 10\n')
+    f.write('        defb ' + ','.join('0x%02X' % int(r.replace('#', '1').replace('.', '0'), 2) for r in sp[3:13]) + '\n')
 print('wrote src/lights.asm')
