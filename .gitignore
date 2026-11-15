@@ -4,3 +4,7 @@ __pycache__/
 
 # agents' working copies (Claude Code worktrees): never part of the project
 .claude/worktrees/
+
+# a track other than 1 is built in a copy of src/ here (build.sh); its test pictures
+build/track*/
+build/track*_*.png
