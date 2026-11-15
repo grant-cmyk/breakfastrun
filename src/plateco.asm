@@ -415,11 +415,11 @@ yb_2:
 ; noise half way to the next. Nothing else runs while it plays; interrupts are off, for its timing.
 ; src/jingle.asm (tools/make_music_ay.py) has the notes and the loop's counts.
 ; ---------------------------------------------------------------------
-jin_flag:                       ; the chequered flag's jingle (podium) ...
+jin_flag:                       ; the chequered flag's jingle (podium): "Spilt Milk" ...
+        ld hl,jc_a              ; (the two changed places on 15 Nov 2026 - Grant: "switch the chequered flag music
+        jr jin_go               ; with the start music"; jingle.asm's own comments still say which it was written for)
+jin_start:                      ; ... and the start's, "Second Helpings": each its own tune, step and bass (src/jingle.asm)
         ld hl,jc_b
-        jr jin_go
-jin_start:                      ; ... and the start's: each its own tune, step and bass (src/jingle.asm)
-        ld hl,jc_a
 jin_go:
         ld a,(jin_on)
         inc a

@@ -4,14 +4,14 @@ tools/make_music_ay.py; bash build.sh) - so Grant can pick by ear. The recording
 docs/sound/jingles/*.mp3. Usage: python3 tools/make_jingle_lab.py out.html"""
 import os, sys, base64, json
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-TUNES = [('ditty13', "Kettle's On, driving", 'in the game now', 'B'),
+TUNES = [('ditty13', "Kettle's On, driving", 'the first one tried', 'B'),
          ('arp', 'Full English', 'NEW: a minor arpeggio written for this sound, the way trance leads go', 'B'),
          ('ditty5', "Kettle's On", 'the original skipping jig', 'B'),
          ('ditty11', 'Chequered Flag', 'a galloping fanfare', 'B'),
          ('ditty9', 'Green Light', 'driving and bright', 'B'),
-         ('ditty12', 'Second Helpings', 'bouncy, off the beat', 'B'),
+         ('ditty12', 'Second Helpings', 'IN THE GAME: the start (since 15 Nov) - bouncy, off the beat', 'B'),
          ('ditty10', 'Flat Out', 'a rock and roll boogie riff', 'G'),
-         ('ditty3', 'Spilt Milk', 'cheeky, stop-start, tiptoe', 'G'),
+         ('ditty3', 'Spilt Milk', 'IN THE GAME: the chequered flag (since 15 Nov) - cheeky, stop-start, tiptoe', 'G'),
          ('ditty8', 'Butter Fingers', "clumsy slips and stumbles (Spilt Milk's cousin)", 'G'),
          ('ditty6', 'Crumbs!', 'a galloping chase, minor key', 'G'),
          ('ditty1', 'Toast Rack March', 'a jaunty little march', 'B'),
