@@ -1826,3 +1826,14 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   6 x 6 disc in the art (12 pixels across on the screen), white all round it inside its four
   cells. With the band all bright it now reads as a fried egg, not a ring: version 1 of
   docs/design/logo_bright.png is superseded by docs/design/title_built.png. title test PASS.
+
+## 2026-11-15 SAST (morning) - mock-up: the title's egg on a green band
+
+- Grant: "share a colour between character blocks, but switch a colour to create its outside. So
+  lets make the breakfast run area green ... The yolk will be yellow, and so the area just
+  around the yolk will be yellow and white. But then the surrounding white area will become
+  white and green. Please mockup up an egg this way."
+- docs/design/logo_green.png: six versions, made on the real title screen by changing its colour
+  cells only (the egg's art is as built): bright green with RUN red / yellow / white; darker
+  green; a dull band with a bright egg; BREAKFAST white too. Nothing built - the game still has
+  the bright yellow band.
