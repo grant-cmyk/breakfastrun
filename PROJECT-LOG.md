@@ -1871,3 +1871,24 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   out as the cut, yellow above (0x66) and red below (0x62); six speed lines from a table.
   bar_tick and rb_line (unused) removed; line_x only in PIT builds. code_end 0xBE89.
 - title, drive, finish, plate tests PASS; speed alone 74 / 203 / 3.
+
+## 2026-11-15 09:06 SAST - five title cars; podium fastest lap and your lap times; new red faces; sad-face mock-up
+
+- Grant: "fastest lap - B but also show which lap they did it in"; "Have the fastest lap test have
+  a row space below the podium". BUILT (src/plate_slow.asm): the card rows 5-17; a clear row under
+  the podium; FASTEST LAP; under it the clock (CLOCK8), the time, whose, LAP n (best_lapno).
+- Grant: "at the end of the race in the HUD, can you show the laptimes for your racer - so all
+  laps". BUILT: yl_note keeps each of your lap times (you_laps), yl_show lists them under the
+  panel at rows 21-23 when the podium goes up; hud_init clears them for the next race.
+- Grant: "are you able to have 5 cars racing around the title screen". BUILT: tc_init / tc_step
+  (src/plateco.asm), the same lap 77 steps apart, each car's 14 bytes at t_blk (in the back
+  buffer, free while no race runs); the old picture is cleared, not put back (a_wipe), so no
+  five copies of what is underneath. Each is its own car from the game.
+- MEMORY: to fit, the pit talk's trigger code and place_txt are left out (OPT_PIT 0); the
+  podium's words moved to the gap before sq4. code_end 0xBF83 (125 bytes free in the main area);
+  the room under 0x8000 has about 75; the gap about 20. It is close to full everywhere.
+- Grant's new faces for YOU (and a small change to CYAN): tools/import_faces.py (new) takes the
+  page's text into face_art.txt / face_moods.txt. In the game; the Faces page starts from them.
+- MOCK-UP, not built: docs/design/sadface_options.png - where your unhappy face goes when you
+  miss the podium (A on the card ... F at the card's corner).
+- All eleven test suites PASS (drive, finish, title rerun after the faces). Speed alone 74/203/3.

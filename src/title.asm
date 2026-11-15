@@ -26,7 +26,8 @@ a_scr   equ TS+8                ;   the next part of the run
 a_h     equ TS+10               ;   the heading pictured, 0..15
 a_oy    equ TS+11               ;   as drawn: its first row (+ 32) ...
 a_on    equ TS+12               ;   ... and its rows (0: not drawn)
-t_drv   equ TS+13               ; the driver on the stage, 0..4
+a_kc    equ TS+13               ;   ... and its first column (the 14 bytes from a_x are a car's: t_blk)
+t_drv   equ TS+21               ; the car being moved, 0..4
 t_tmp   equ TS+14               ; a one-letter text (2 bytes)
 k_i     equ TS+16               ; KEYS: the key being asked for, 0..4
 k_tmp   equ TS+17               ; KEYS: a key cap's text (3 bytes)
@@ -185,13 +186,10 @@ t_face:
         jr nz,t_face
         xor a
         ld (t_msg),a
-        ld (t_drv),a            ; your car, round the cloth's edge
-        ld (a_on),a
-        call a_start
+        call tc_init            ; the five cars, round the cloth's edge (plateco.asm)
 t_loop:
         halt
-        call a_show             ; the car, straight after the interrupt
-        call a_step
+        call tc_step            ; the cars, straight after the interrupt
         halt
         ld hl,t_msg             ; the 2UP message: the choice again after 1.5 s
         ld a,(hl)

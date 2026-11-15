@@ -468,7 +468,7 @@ strip_triggers:
         call oil_tick           ; the oil can, and the damage's cool-down
         if OPT_PIT = 0
         ret                     ; (no pit talk for now: Grant, 14 Nov 2026)
-        endif
+        else                    ; (what the chief says, and when: left out with him)
         ld hl,COOL
         ld a,(hl)
         or a
@@ -536,6 +536,7 @@ trg_3:
         ret nc
         ld a,M_PUSH
         jp msg_say
+        endif
 
 ; RACE_BOX: the race is over - the chequered flag in the middle of the
 ; window, over the last picture, which stays (Grant: everything stops)

@@ -349,19 +349,7 @@ msg_finished:                   ; at the flag: your place, whole, and FINISHED! 
         xor a                   ; strip - drawn here and now, as the pictures stop
         ld (msg_timer),a
         ret                     ; (FINISHED! went with the strip: the window says CHEQUERED FLAG!)
-place_txt:                      ; A = a place 1..5 (0 before the race: 1) -> HL = its text
-        or a
-        jr nz,pt_1
-        inc a
-pt_1:
-        dec a
-        add a,a
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,txt_places
-        add hl,de
-        ret
+; (place_txt went with the old banner: 15 Nov 2026)
 
 ; ---------------------------------------------------------------------
 ; THE GAPS TO THE LEADER (Grant, 10 Nov 2026). Every 4th waypoint of the first

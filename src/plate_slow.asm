@@ -407,3 +407,9 @@ sm_text:
         pop hl
         inc hl
         jr sm_text
+
+; the title's five cars: where each starts (tc_init, plateco.asm)
+tc_tab:                         ; x, y + 18, heading, steps left, the next part (2 bytes a part)
+        db 32,30,64,96,2,  186,30,64,19,2,  244,134,128,22,6,  148,198,192,58,10,  12,172,0,61,14
+t_blk   equ BUF+0x1700          ; (in the back buffer, past what the title keeps of the race screen there: free while no race runs)
+

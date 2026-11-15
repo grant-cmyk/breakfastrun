@@ -262,3 +262,73 @@ cl_set:
         ret
 lead_x:   db 0
 lead_y:   db 0
+
+; THE TITLE'S FIVE CARS (Grant, 15 Nov 2026: "are you able to have 5 cars racing around the title
+; screen"): the same lap of the edge (title3.asm, a_runs), 77 steps apart. Each has 14 bytes at
+; t_blk - the title's a_x .. a_kc - copied in, moved and drawn, and copied back.
+tc_init:
+        ld hl,t_blk             ; all 70 bytes 0 (nothing drawn yet, no drift)
+        ld de,t_blk+1
+        ld bc,69
+        ld (hl),b
+        ldir
+        ld ix,t_blk
+        ld hl,tc_tab
+        ld b,NCARS
+tci_1:
+        ld a,(hl)
+        ld (ix+1),a             ; x
+        inc hl
+        ld a,(hl)
+        ld (ix+3),a             ; y
+        inc hl
+        ld a,(hl)
+        ld (ix+4),a             ; the way it is going
+        inc hl
+        ld a,(hl)
+        ld (ix+6),a             ; steps left of this part of the lap
+        inc hl
+        ld a,(hl)               ; ... and the part after it
+        inc hl
+        add a,(TD + a_runs_src - td_src + 3) AND 255
+        ld (ix+8),a
+        ld a,0
+        adc a,(TD + a_runs_src - td_src + 3) / 256
+        ld (ix+9),a
+        ld de,14
+        add ix,de
+        djnz tci_1
+        ret
+tc_step:
+        xor a
+tcs_1:
+        ld (t_drv),a
+        ld l,a                  ; HL = t_blk + 14 x the car
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        sub l
+        sub l
+        add a,t_blk AND 255
+        ld l,a
+        ld a,0
+        adc a,t_blk/256
+        ld h,a
+        push hl
+        ld de,a_x
+        ld bc,14
+        ldir
+        call a_wipe
+        call a_step
+        call ad_draw
+        pop de
+        ld hl,a_x
+        ld bc,14
+        ldir
+        ld a,(t_drv)
+        inc a
+        cp NCARS
+        jr nz,tcs_1
+        ret
+

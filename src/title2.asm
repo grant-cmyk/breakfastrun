@@ -9,12 +9,15 @@
 ; race's shift tables (TAB_HI). Cut off at the cloth's edges, byte by byte.
 ; =====================================================================
 
-; A_SHOW: the old picture off (what was under it back), the new one on
-a_show:
-        ld ix,a_sav
+; A_WIPE: the car's old picture off. (It was put back from what was kept under it; the title's
+; edge has nothing drawn in it, so it is just cleared - and five cars need no five copies.)
+; AD_DRAW: its new picture on.
+a_wipe:
+        ld a,(a_kc)             ; (its first column, as it was drawn)
+        ld (a_k0+1),a
         ld a,(a_on)
         or a
-        jr z,ad_draw
+        ret z
         ld b,a
         ld a,(a_oy)
 ar_row:
@@ -27,9 +30,7 @@ ar_b:
         ld a,c
         cp 32
         jr nc,ar_s
-        ld a,(ix+0)
-        ld (hl),a
-        inc ix
+        ld (hl),0
 ar_s:
         inc l
         inc c
@@ -39,6 +40,7 @@ ar_next:
         inc a
         pop bc
         djnz ar_row
+        ret
 ad_draw:
         ld ix,a_sav
         ld a,(t_drv)            ; the frame: big_tab[car * 16 + heading]
@@ -85,6 +87,7 @@ ad_draw:
                                 ; on the right-hand side x + 7 then ran past 255 and the car was drawn nowhere -
                                 ; Grant, 15 Nov 2026: "on the right side of the screen the racing car disappears")
         ld (a_k0+1),a
+        ld (a_kc),a
         ld a,(a_on)
         ld b,a
         ld a,(a_oy)
