@@ -210,7 +210,7 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)                            # the driver strip under the window
     check(all(attr(r, c) in (0x30, 0x36) for r in (21, 22, 23) for c in list(range(0, 9)) + list(range(16, 26))),
           'under the window: plain table either side of the logo - no crew chief (Grant, 14 Nov 2026: "do away with the pitstop talk for now")')
-    check(sb[WY + WH - 12:WY + WH - 2, WW:WW + 8].any() and attr(19, WW // 8) == 0x2A and attr(18, WW // 8) == 0x2A and attr(19, 1) == 0x2B, 'your NOS canister is shown in the window\'s corner in red, the health bolt in magenta (their colour cells their own)')
+    check(sb[WY + WH - 12:WY + WH - 2, 8:16].any() and attr(19, 1) == 0x2A and attr(18, 1) == 0x2A and attr(19, WW // 8) == 0x2B, 'your NOS canister is shown in the window\'s left corner in red, the health mug in its right corner in magenta (their colour cells their own)')
     check(all(attr(TOWER_Y + 2 * i, 26) == [0x57, 0x68, 0x78, 0x58, 0x60][i] for i in range(5)), 'the whole race order is drawn at the start in grid order (YOU, CYAN, WHITE, PINK, GREEN), each car on its colour')
     place = lambda: next(i + 1 for i in range(5) if attr(TOWER_Y + 2 * i, 26) == 0x57)
     check(place() == 1 and sp.read8(SYM['position']) == 1, 'on the grid you are shown 1st (your row is red)')
