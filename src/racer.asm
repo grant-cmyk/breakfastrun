@@ -196,7 +196,7 @@ draw_all:
         call nz,lights_draw
         call hud_pre            ; (their colours, and the canisters' cells cleared)
         call nos_draw           ; the NOS canisters you hold, in the window's corner
-        call dmg_draw           ; and your car's damage, in the other corner
+        call dmg_anim           ; and your car's damage, in the other corner
         call pl_draw            ; and your place, on its plate, top right
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
@@ -4484,7 +4484,18 @@ mu_ptab equ 0
                                 ; here, in the room the tune's notes left, since 15 Nov 2026
         endif
         include "jingle.asm"    ; the jingle's notes (tools/make_music_ay.py)
+t_name_src:                     ; the title: the driver's name under the face, in the small letters, centred
+        ld a,(t_tmp+1)          ; on it (Grant, 15 Nov 2026: "have each persons name underneath"). It runs
+        inc a                   ; in the table block, at t_name: nothing in it is tied to where it is.
+        add a,a
+        add a,a
+        add a,a
+        ld c,a
+        ld b,146
+        ld a,(t_tmp)
+        jp pd_name
 td_end2:
+t_name  equ TD + t_name_src - td_src
 faces_win equ TD + faces_win_src - td_src
 jc_a    equ TD + jc_a_src - td_src
 jc_b    equ TD + jc_b_src - td_src

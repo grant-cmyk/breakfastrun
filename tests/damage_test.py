@@ -15,13 +15,15 @@ CX, CY = (int(re.search(r'NOS_C_%s equ (\d+)' % k, w).group(1)) for k in 'XY')
 import sys; sys.path.insert(0, os.path.join(ROOT, 'tools')); import make_damage_icons as mdi
 ROWS = mdi.game_rows(); bitsof = lambda v: np.array([(v >> (23 - x)) & 1 for x in range(24)], dtype=bool)
 O_ = np.array([bitsof(o) for k, o, f in ROWS]); F_ = np.array([bitsof(f) for k, o, f in ROWS]); CLEAR = ~np.array([bitsof(k) for k, o, f in ROWS]) & ~O_ & ~F_
+STEAM = np.zeros_like(O_); STEAM[1:4, [8, 9, 12, 13]] = True   # the two wisps of steam swap between these pixels (dmg_anim)
+SA = O_ & STEAM; SB = STEAM & ~O_; CLEAR &= ~STEAM
 OUTLINE, FILL = int(O_.sum()), int(F_.sum())            # the gauge's icon, and the clear margin round it
 fails = 0
 def ok(c, m):
     global fails
     print('PASS' if c else 'FAIL', m); fails += 0 if c else 1
 def patch(sp): return screen_bits(sp)[WY + WH - len(ROWS):WY + WH, 8:32].astype(bool)
-def gauge(sp): return int((patch(sp) & (O_ | F_)).sum())   # the icon's pixels lit
+def gauge(sp): return int((patch(sp) & (O_ | F_ | STEAM)).sum())   # the icon's pixels lit
 with Racer(headless=True) as sp:
     sp.load_tape(TAP); t = 0
     while g(sp, 'renders') == 0 and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
@@ -30,6 +32,11 @@ with Racer(headless=True) as sp:
     sp.run(duration=0.5, fast_forward=True)
     FULL = gauge(sp)
     ok(sp.read8(SYM['dmg']) == 0 and FULL == OUTLINE + FILL, 'at the start: no damage, the gauge\'s icon full (%d pixels lit: its outline and all its fill)' % FULL)
+    seen = set()
+    for k in range(40):
+        sp.run(duration=0.06, fast_forward=True); q = patch(sp)
+        seen.add('A' if (q & STEAM == SA).all() else 'B' if (q & STEAM == SB).all() else '?')
+    ok(seen == {'A', 'B'}, 'the steam moves: its two wisps are seen in both their places, and nowhere else (%s)' % ' '.join(sorted(seen)))
     tx, ty = os_[40]
     put(sp, 0, tx * 8 - 1, ty * 8 - 6, 16); sp.run(duration=0.15, fast_forward=True)
     d1 = sp.read8(SYM['dmg']); sp.run(duration=0.05, fast_forward=True)

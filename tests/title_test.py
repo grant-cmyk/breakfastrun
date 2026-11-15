@@ -66,8 +66,9 @@ with Racer(headless=True) as sp:
        and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 12, 6, 14) == '2  TWO PLAYERS' and screen_text(sp, 14, 6, 14) == 'K  CHOOSE KEYS'
        and all(attr(sp, r, c) == 0x78 for r in range(9, 16) for c in range(3, 29)),
        "TODAY'S MENU in red; the choices black on the white card: 1 ONE PLAYER, 2 TWO PLAYERS, K CHOOSE KEYS")
-    ok([attr(sp, 16, 7 + 4 * i) for i in range(5)] == [0x57, 0x68, 0x60, 0x58, 0x78] and all(sb[128:144, 56 + 32 * i:72 + 32 * i].any() for i in range(5)),
-       'the five drivers\' faces in a row, each on its car\'s colour')
+    ok([attr(sp, 16, 7 + 4 * i) for i in range(5)] == [0x57, 0x68, 0x60, 0x58, 0x38] and all(sb[128:144, 56 + 32 * i:72 + 32 * i].any() for i in range(5))
+       and all(sb[146:151, 48 + 32 * i:80 + 32 * i].sum() >= 12 for i in range(5)) and not sb[152:, 24:232].any() + 0 > 99,
+       'the five drivers\' faces in a row, each on its car\'s colour (the white driver\'s on plain white, so it shows on the card), each with the name under it in the small letters')
     ok(screen_text(sp, 19, 6, 10) == 'LAP RECORD' and screen_text(sp, 19, 19, 6) == '-:--.-' and attr(sp, 19, 6) == 0x79,
        'LAP RECORD in blue at the card\'s foot (no record yet: -:--.-)')
     ok(screen_text(sp, 23, 5, 5) != 'PRESS' and screen_text(sp, 20, 6, 20).strip() == '' and all(attr(sp, 23, c) in (0x50, 0x78) for c in range(32)), 'no PRESS 1 OR 2 TO START line (Grant, 15 Nov 2026: "you can remove" it)')

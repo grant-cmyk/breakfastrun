@@ -2141,3 +2141,11 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the title has clean cells and the grid. All thirteen suites PASS.
 - Grant: "bring up alternative graphics for the damage": docs/design/damage_icons_3.png (Q
   battery ... Y star; tools/make_damage_icons.py THIRD). He likes the mug: an editor follows.
+
+## 15 Nov 2026 15:38 SAST - steaming mug gauge, names on the title, three longer track designs
+- The health gauge is the **steaming mug** (tools/gauge_mugs.txt, "Steaming mug"); its two wisps of steam swap every 8th picture (dmg_anim, src/plate_slow.asm). The icon sits 4 pixels in from the window's edge (was 2) so the steam is in one byte. A row of coffee goes with each hit.
+- Title: each driver's name under the face (t_name, in the table block); the white driver's band is plain white so it shows on the card; the red driver's three faces moved one pixel left.
+- Editors in Claude: gauge https://claude.ai/artifact/PFiNoJusv2vj7pfHQhigDg, steam https://claude.ai/artifact/LYKXjHYFaS3JFRXgWjFFo7, faces https://claude.ai/artifact/Nfxfa54baoZdTsPSAgzU8c (v5).
+- Three longer track DESIGNS (not in the game): docs/design/tracks/ (TRACKS.md, tracks_overview.png), tools/make_track_designs.py. Tracks 3 and 4 need a taller map; memory must be found first.
+- Asked next (not started in the game): one track that crosses over itself - a bridge, ramps, the car hidden under the road.
+- Memory after this: low area 0 bytes free, table block 7, main about 10.

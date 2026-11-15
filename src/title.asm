@@ -161,6 +161,10 @@ t_face:
         ld (t_tmp+1),a
         ld b,16
         ld a,(hl)
+        cp 0x78                 ; the white driver's band: plain white, so it shows on the card's bright white
+        jr nz,t_f1              ; (Grant, 15 Nov 2026: "put the lady in bright zero area, so she also has a colour border")
+        ld a,0x38
+t_f1:
         ld de,0x0202
         call set_attrs
         ld a,(t_tmp)
@@ -175,11 +179,12 @@ t_face:
         ld a,(t_tmp+1)
         ld c,a
         ld b,16
+        push bc
         call tr_face_c
-        ld a,(t_tmp+1)
-        ld c,a
-        ld b,17
+        pop bc
+        inc b
         call tr_face_c
+        call t_name             ; the driver's name under the face (racer.asm, in the table block)
         ld a,(t_tmp)
         inc a
         cp NCARS

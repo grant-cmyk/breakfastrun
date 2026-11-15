@@ -158,12 +158,8 @@ pl_bmp:  defs PL_W*PL_H          ; the plate, composed
 ; bytes - the outline, and the fill in every row but the first C (dmg_emp: it empties from the top).
 dmg_make:
         ld (hl),a
-        add a,dmg_emp AND 255
-        ld l,a
-        ld a,0
-        adc a,dmg_emp/256
-        ld h,a
-        ld c,(hl)
+        add a,5                 ; the mug: a clear row, 3 of steam, the rim, then a row of coffee a hit
+        ld c,a
         ld hl,dmg_heart         ; for each byte: the outline, the fill
         ld de,dmg_bmp
         ld b,DMG_ROWS
@@ -190,9 +186,28 @@ dk_3:
 dk_4:
         djnz dk_1
         ret
+; DMG_ANIM: the gauge with its steam moving - every 8th picture the two wisps (pixels 9 and 13 of the
+; rows 1 and 3, 8 and 12 of row 2: all in the middle byte) swap places with each other's. (Grant, 15 Nov
+; 2026: "animate it so that the steam out of the top looks like steam coming out of the cup ... just
+; those top bits".)
+dmg_anim:
+        ld a,(renders)
+        and 7
+        jr nz,da_2
+        ld hl,dmg_bmp+4
+        ld b,3
+da_1:
+        ld a,(hl)
+        xor 0xCC
+        ld (hl),a
+        inc hl
+        inc hl
+        inc hl
+        djnz da_1
+da_2:
+        jp dmg_draw
 dmg_sh:  db 0xFF                 ; the damage dmg_bmp shows (0xFF: none yet)
 dmg_bmp: defs 3*DMG_ROWS
-dmg_emp: db 2,3,4,5,6,7,9,11,16         ; rows without fill (the first is clear) for damage 0 to 8
         include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
 pl_tl:   dw 0xFFFF               ; the lap time (frames) the plate's figures were last cut for
 

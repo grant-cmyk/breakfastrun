@@ -35,13 +35,13 @@ textarea{width:100%;box-sizing:border-box;min-height:140px;font:12px/1.3 var(--m
 <script>
 const DATA=/*DATA*/{};const MOODS=['now','happy','sad'];
 let faces=JSON.parse(JSON.stringify(DATA.faces));
-try{const s=localStorage.getItem('br-faces-4');if(s){const v=JSON.parse(s);if(v.length===faces.length)faces=v}}catch(e){}
+try{const s=localStorage.getItem('br-faces-5');if(s){const v=JSON.parse(s);if(v.length===faces.length)faces=v}}catch(e){}
 const root=document.getElementById('drivers'),out=document.getElementById('out');
 function draw(cv,art,col,grid){const n=cv.width/16,c=cv.getContext('2d');c.fillStyle=col;c.fillRect(0,0,cv.width,cv.height);c.fillStyle='#000';
  art.forEach((r,y)=>{for(let x=0;x<16;x++)if(r[x]==='#')c.fillRect(x*n,y*n,n,n)});
  if(grid){c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=1;for(let i=1;i<16;i++){c.beginPath();c.moveTo(i*n+.5,0);c.lineTo(i*n+.5,cv.height);c.moveTo(0,i*n+.5);c.lineTo(cv.width,i*n+.5);c.stroke()}}}
 function text(){return DATA.names.map((nm,d)=>MOODS.map((m,k)=>nm+' '+m+'\n'+faces[d][k].join('\n')).join('\n\n')).join('\n\n')}
-function save(){out.value=text();try{localStorage.setItem('br-faces-4',JSON.stringify(faces))}catch(e){}}
+function save(){out.value=text();try{localStorage.setItem('br-faces-5',JSON.stringify(faces))}catch(e){}}
 function build(){root.textContent='';root.style.cssText='display:flex;flex-direction:column;gap:16px';
  DATA.names.forEach((nm,d)=>{const s=document.createElement('section');s.className='driver';const h=document.createElement('h2');h.textContent=nm;s.appendChild(h);
   const row=document.createElement('div');row.className='moods';s.appendChild(row);
