@@ -36,20 +36,20 @@ NCARS   equ 5           ; you + 4 computer cars
 LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
-; THE MINI-MAP IS IN THE WINDOW (Grant, 15 Nov 2026: "have the track map on the bottom left inside of
-; play"): a box of 6 x 5 colour cells of its own in the window's bottom left corner, black on yellow. It
-; is on the SCREEN only: the copy routine leaves those 48 x 40 pixels alone (make_copier), so the map
-; costs nothing a picture - cars and cloth that pass under it are simply not copied there.
-MBOX_W  equ 6                   ; cells across (the copy routine: 3 register pairs fewer on its lines)
-MBOX_H  equ 5                   ; cells down: the window's last five rows
-MBOX_Y  equ 8+152-MBOX_H*8      ; its first line on the screen (120: WIN_Y + WIN_H - 40, checked at the end)
-; ... which makes the copy routine 8 bytes a line shorter over those 40 lines: 320 bytes free above it.
-HIMEM   equ COPIER + 152*40 + 3 - MBOX_H*8*8     ; 0xFE83 .. 0xFFF3: some of the map's row lists, the arrows' table
-; and what was never used of the back buffer's bottom rows (docs/design/RAM-SWEEP.md, 4.4): rows 168-191,
-; bytes 0-25 of each (the last 6 can take an interrupt's pushes) - 90 bytes on each of pages D0-D7 from
-; xxA0, less D2's (cloth_pat). start_once fills them.
-MAPPIC  equ BUF+0x10A0          ; the mini-map's picture as kept: 39 lines of 6 bytes, 13 lines on each of D0, D1, D3
-ARROW_F equ BUF+0x14A0          ; the corner arrows' frames: 8 x 44 bytes, two on each of D4, D5, D6, D7
+; THE MINI-MAP IS IN THE WINDOW, bottom left (Grant, 15 Nov 2026: "have the track map on the bottom left inside
+; of play"; then, of the sizes mocked up, "c (2)4 is good, and the inside parts could be blue - so no masking
+; inside required"): 24 pixels wide, the road a solid ribbon, in the window's own blue on cyan. It is INK ONLY,
+; ORed into the back buffer each picture after the cars (map_blit, hud.asm): the picture shows through wherever
+; there is no ribbon. (The first version was a yellow box on the screen that the copy routine skipped.)
+HIMEM   equ COPIER + 152*40 + 3 ; 0xFFC3 .. 0xFFF3: 49 bytes above the screen-copy routine - a few of the map's row lists
+; What was never used of the back buffer's bottom rows (docs/design/RAM-SWEEP.md, 4.4): rows 168-191, bytes 0-25
+; of each (the last 6 can take an interrupt's pushes) - 90 bytes on each of pages D0-D7 from xxA0, less D2's
+; (cloth_pat is at D2C0: 32 bytes there). start_once fills them.
+MAPDAT  equ BUF+0x10A0          ; D0: the mini-map's ink, 3 bytes a line (the cars' dots are XORed into it here: map_update)
+STRIP1  equ BUF+0x11A0          ; D1: the corner arrows' table (a byte a waypoint), then some of the map's row lists
+STRIP2  equ BUF+0x12A0          ; D2: row lists (32 bytes)
+STRIP3  equ BUF+0x13A0          ; D3: row lists
+ARROW_F equ BUF+0x14A0          ; D4-D7: the corner arrows' frames, 8 x 44 bytes, two a page
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
@@ -205,7 +205,8 @@ draw_all:
         add ix,de
         pop bc
         djnz draw_all
-        call arrow_draw         ; the corner arrow in front of your car (under the gauge, spoons, bubble and plate: they are drawn after it)
+        call arrow_draw         ; the corner arrow, at its fixed spot (over the cars; the gauge, spoons, bubble and plate are drawn after it)
+        call map_blit           ; the mini-map, ORed over the bottom left corner (hud.asm)
         ld a,(lt_on)            ; the start lights, while they are up
         or a
         call nz,lights_draw
@@ -4043,20 +4044,23 @@ start_once:                     ; (start, from the start-up area)
         call so_blk
         call make_tables
         call make_copier        ; the program writes its own copy routine
-        ld hl,hi_src            ; above it: some of the map's row lists, the arrows' table
+        ld hl,minimap_src       ; the mini-map's ink
+        ld de,MAPDAT
+        ld bc,MAP_H*3
+        ldir
+        ld hl,s1_src            ; the arrows' table and the row lists kept outside the program: the four
+        ld de,STRIP1            ; blocks sit back to back (hirows.asm), so HL runs on from one into the next
+        ld bc,s1_end-s1_src
+        ldir
         ld de,HIMEM
         ld bc,hi_end-hi_src
-        ldir
-        ld hl,minimap_src+5*6   ; the mini-map's picture (its lines 5-43), 13 lines to a strip: D0, D1, D3
-        ld de,MAPPIC
-        ld bc,13*6
-        ldir
-        ld de,MAPPIC+0x100
-        ld bc,13*6
-        ldir
-        ld de,MAPPIC+0x300
-        ld bc,13*6
-        ldir
+        call so_blk
+        ld de,STRIP2
+        ld bc,s2_end-s2_src
+        call so_blk
+        ld de,STRIP3
+        ld bc,s3_end-s3_src
+        call so_blk
         ld hl,arrow_src         ; the arrows' frames, two to a strip: D4-D7
         ld de,ARROW_F
         ld a,4
@@ -4218,7 +4222,13 @@ so_attr:
         pop bc
         djnz so_attr
         endif
-        ret                     ; (the mini-map is put up by map_init, each race: hud.asm)
+        ld hl,shown_dot         ; no dots on the mini-map yet
+        ld b,2*NCARS
+so_d:
+        ld (hl),0xFF
+        inc hl
+        djnz so_d
+        ret
 so_race: db 0xC4,0x6E, 0xAA,0x88, 0xCE,0x8C, 0xAA,0x88, 0xAA,0x6E     ; R A C E, 3 x 5, a pixel apart
 
         if OPT_AY
@@ -4320,13 +4330,14 @@ dl_attr:
 
         include "strip_img.asm" ; the driver strip's fixed picture and colours
         include "logo.asm"      ; the logo (drawn once, from here)
-        include "minimap.asm"   ; the mini-map's picture (start_once keeps lines 5-43 of it at MAPPIC)
+        include "minimap.asm"   ; the mini-map's ink (start_once copies it to MAPDAT)
+MAP_ROW equ BUF_TOP+WIN_H-3-MAP_H       ; its first line in the back buffer: its last is 3 lines above the window's foot
+MAP_BUF equ BUF + (MAP_ROW AND 0xC0)*32 + (MAP_ROW AND 7)*256 + (MAP_ROW AND 0x38)*4 + 2    ; ... and that line's address, the window's first byte
         include "arrows.asm"    ; the corner arrows' frames (tools/make_arrows.py; start_once copies them to ARROW_F)
-hi_src:                         ; what start_once copies above the screen-copy routine (HIMEM):
-        include "arrowtab.asm"  ; the corner arrows, a byte a waypoint (tools/make_world.py)
-        include "hirows.asm"    ; some of the map's row lists
-hi_end:
-arrow_tab equ HIMEM + arrow_tab_src - hi_src
+s1_src:                         ; what start_once copies to STRIP1: the corner arrows, a byte a waypoint (tools/make_world.py) ...
+        include "arrowtab.asm"
+        include "hirows.asm"    ; ... and row lists; then (hi_src) those for HIMEM, (s2_src, s3_src) for STRIP2 and STRIP3
+arrow_tab equ STRIP1 + arrow_tab_src - s1_src
 
 ; ---------------------------------------------------------------------
 ; make_tables: for each shift s = 0..7, two 256-byte tables:
@@ -4385,15 +4396,9 @@ make_copier:
         xor a
 mc_row:
         ld (mc_y),a
-        cp WIN_H-MBOX_H*8       ; the mini-map's lines: its 6 bytes are not copied (it lives on the screen) -
         ld a,7                  ; bytes 0..13: 7 pairs
         ld (mc_n),a
-        ld a,0
-        jr c,mc_r1
-        ld a,4                  ; ... bytes 6..13 only, 4 pairs
-        ld (mc_n),a
-        ld a,MBOX_W
-mc_r1:
+        xor a
         call mc_half
         ld a,5                  ; bytes 14..23: 5 pairs. That is 24 bytes for a 23-byte window: the
         ld (mc_n),a             ; last is the frame's own column, which fr_col keeps in the buffer
@@ -4457,14 +4462,11 @@ mc_h1:
         ldir
         ret
 mc_cnt:                         ; BC = 8 for 7 pairs (with the EXX), 6 for 5 (pop af, bc, de, hl, exx,
-        ld bc,8                 ; pop bc - and the pushes to match), 4 for 4 (pop af, bc, de, hl)
+        ld bc,8                 ; pop bc - and the pushes to match)
         ld a,(mc_n)
         cp 7
         ret z
         ld c,6
-        cp 5
-        ret z
-        ld c,4
         ret
 mc_op:                          ; write opcode A and address HL
         ld (de),a
@@ -4705,11 +4707,11 @@ faces     equ faces_src
         if (thrust_tab + 63) / 256 - thrust_tab / 256
         .error arrow_draw: thrust_tab must be on one page
         endif
-        if (MAP_H - 5 - 39) + (WIN_H - 152) + (WIN_COL - 1) + (WIN_Y - 8) + (WIN_W - 24)
-        .error the mini-map's box is written for 39 lines of map (5 to 43) in a 152-line, 24-column window at line 8, column 1
+        if (s1_end - s1_src - 1) / 90 + (s2_end - s2_src) / 33 + (s3_end - s3_src - 1) / 90 + (MAP_H * 3 - 1) / 90 + (WIN_H - 152)
+        .error a block for the back buffer's unused strips is too long (90 bytes; 32 on D2), or the window is not 152 lines
         endif
-        if init_end > MAPPIC
-        .error the start-up area runs into the strips start_once fills (MAPPIC, 0xD0A0)
+        if init_end > MAPDAT
+        .error the start-up area runs into the strips start_once fills (MAPDAT, 0xD0A0)
         endif
         if init_end > TAB_HI*256
         .error the start-up routines run into the shift tables they build

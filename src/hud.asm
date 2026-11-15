@@ -1092,51 +1092,48 @@ tc_row:
 ; car: 2 x 2 for the computer cars, 3 x 3 and blinking for you. Each update
 ; puts back the map under the old dots, then draws the new ones.
 ; ---------------------------------------------------------------------
-; In the WINDOW's bottom left corner since 15 Nov 2026 (Grant: "have the track map on the bottom left
-; inside of play"): 6 x 5 cells of its own, black on yellow; on the screen only (see MBOX_W, racer.asm).
-MAP_X   equ WIN_COL*8           ; screen pixel of the map's top-left
-MAP_Y   equ MBOX_Y-5            ; (the map's own picture starts 5 lines down: its line 5 is the box's first)
-map_init:                       ; a new race: the box cleared and coloured, the map's picture put up from where
-        ld bc,WIN_COL+(MBOX_Y/8)*256   ; it is kept (MAPPIC: three strips of 13 lines), and no dots on it yet
-        ld de,MBOX_H*256+MBOX_W
-        push bc
-        push de
-        call clear_cells
-        pop de
-        pop bc
-        ld a,0x30               ; black on yellow
-        call set_attrs
-        ld hl,MAPPIC
-        ld b,MBOX_Y
-mi_1:
-        push hl
-        ld c,MAP_X
-        call scr_addr
-        ex de,hl
-        pop hl
-        push bc
-        ld bc,6
-        ldir
-        pop bc
-        ld a,l
-        cp (MAPPIC AND 255) + 13*6
-        jr nz,mi_2
-        ld l,MAPPIC AND 255     ; the next strip: the page after, or the one after cloth_pat's
-        inc h
-        bit 1,h
-        jr z,mi_2
-        inc h
-mi_2:
-        inc b
-        ld a,b
-        cp MBOX_Y+39
-        jr nz,mi_1
-        ld hl,shown_dot
-        ld b,2*NCARS
-mi_3:
-        ld (hl),0xFF
-        inc hl
-        djnz mi_3
+; In the WINDOW's bottom left corner since 15 Nov 2026 (Grant: "have the track map on the bottom left inside of
+; play"; "c (2)4 is good, and the inside parts could be blue - so no masking inside required"): 24 pixels wide,
+; MAP_H lines, the road a solid ribbon of ink. Its ink is kept at MAPDAT, 3 bytes a line, and map_blit ORs it
+; into the back buffer each picture. The dots are XORed into MAPDAT itself: on the ribbon a dot is a HOLE the
+; picture shows through (yours 2 x 2 and blinking, the others a single pixel); off the road it is ink.
+map_init:                       ; a new race: the last race's dots out of the map
+        jp map_off
+; MAP_BLIT: the mini-map over the picture, each picture after the cars and the arrow (about 130 T a line)
+map_blit:
+        ld hl,MAPDAT
+        ld de,MAP_BUF
+        ld b,MAP_H
+mb_1:
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc l
+        inc e
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc l
+        inc e
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc l
+        dec e
+        dec e
+        inc d                   ; the next line down (the buffer is laid out like the screen)
+        ld a,d
+        and 7
+        jr nz,mb_2
+        ld a,e
+        add a,32
+        ld e,a
+        jr c,mb_2
+        ld a,d
+        sub 8
+        ld d,a
+mb_2:
+        djnz mb_1
         ret
 
 map_update:
@@ -1152,9 +1149,9 @@ mu_new:
         ld de,8-MMX0
         add hl,de
         call map_c3
-        cp 46
+        cp 23
         jr c,mu_x
-        ld a,45
+        ld a,22
 mu_x:
         push af                 ; (x kept: map_c3 uses DE)
         ld l,(ix+C_Y)           ; map y = (y + 8 - MMY0) * 3 / 32, 0..45
@@ -1162,14 +1159,10 @@ mu_x:
         ld de,8-MMY0
         add hl,de
         call map_c3
-        cp MAP_H-2
+        cp MAP_H-1
         jr c,mu_y
-        ld a,MAP_H-3
+        ld a,MAP_H-2
 mu_y:
-        cp 5                    ; (and not above the box: the map shows from its line 5)
-        jr nc,mu_y2
-        ld a,5
-mu_y2:
         ld d,a
         pop af
         ld e,a
@@ -1188,8 +1181,8 @@ mu_n1:
         ld (hl),d
         ld a,c
         or a
-        ld b,0xC0               ; 2 x 2 for a computer car
-        ld c,2
+        ld b,0x80               ; a single pixel for a computer car
+        ld c,1
         jr nz,mu_draw
         ld a,(blink)            ; you: 3 x 3, shown 2 updates in 4
         and 2
@@ -1198,8 +1191,8 @@ mu_n1:
         ld (hl),0xFF            ; (blinked off: nothing to take off next time)
         jr mu_skip
 mu_you:
-        ld b,0xE0
-        ld c,3
+        ld b,0xC0
+        ld c,2
 mu_draw:
         call map_dot
 mu_skip:
@@ -1233,11 +1226,11 @@ mo_2:
         push bc
         ld a,c
         or a
-        ld b,0xC0               ; a computer car's 2 x 2, your 3 x 3
-        ld c,2
+        ld b,0x80               ; a computer car's pixel, your 2 x 2
+        ld c,1
         jr nz,mo_4
-        ld b,0xE0
-        ld c,3
+        ld b,0xC0
+        ld c,2
 mo_4:
         call map_dot
         pop bc
@@ -1248,24 +1241,14 @@ mo_3:
         jr nz,mo_1
         ret
 
-map_c3:                         ; HL (0..~700) * 3 / 32 -> A
-        ld d,h                  ; (21/256 since the panel lost a column: the map is 48 wide)
+map_c3:                         ; HL (0..~700) * 11 / 256 -> A (every track: the map is 24 wide)
+        ld d,h
         ld e,l
-        if MAPH > 64            ; a map taller than 64 rows (track 3: 84) is drawn smaller, 14/256, to fit above
-        add hl,hl               ; the RACE heading (tools/make_world.py, MSC)
-        add hl,hl
-        add hl,hl
-        or a
-        sbc hl,de               ; * 7
-        add hl,hl               ; * 14: H = HL * 14 / 256
-        else
         add hl,hl
         add hl,hl
         add hl,de               ; * 5
         add hl,hl
-        add hl,hl
-        add hl,de               ; * 21: H = HL * 21 / 256
-        endif
+        add hl,de               ; * 11
         ld a,h
         ret
 
@@ -1289,20 +1272,26 @@ md_s0:
 md_row:
         push bc
         push de
-        ld a,d
-        add a,MAP_Y
-        ld b,a
+        ld a,d                  ; MAPDAT + 3 * the line + the byte across
+        add a,a
+        add a,d
+        ld l,a
         ld a,e
-        add a,MAP_X
-        ld c,a
-        call scr_addr
+        rrca
+        rrca
+        rrca
+        and 3
+        add a,l
+        add a,MAPDAT AND 255
+        ld l,a
+        ld h,MAPDAT/256
         ld bc,(md_pat)
         ld a,(hl)
         xor c
         ld (hl),a
         ld a,e
         and 0xF8
-        cp 40                   ; the map's last byte: nothing to the right
+        cp 16                   ; the map's last byte: nothing to the right
         jr nc,md_one
         inc l
         ld a,(hl)
