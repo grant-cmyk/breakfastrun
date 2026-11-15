@@ -139,6 +139,8 @@ class Racer(Spectrum):
         self.run(duration=0.5, fast_forward=True)                    # (the rest of the title is drawn after its prompt)
         press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)
         self.run(duration=0.26, fast_forward=True)                   # (the race screen is drawn; from here the computer cars'
+        self.write(SYM['jin_on'], bytes([0xFF]))                     # (the start ditty and its automatic countdown held off: Q starts
+                                                                     # the lights, as these tests expect - tests/finish_test.py has the ditty)
                                                                      # 90 s below run just as they did before there was a title:
                                                                      # the same laps. One check there turns on when the race starts)
 
@@ -375,10 +377,10 @@ with Racer(headless=True) as sp:
     put(sp, 0, 250, SY - 8, 16)
     hold(sp, ['Q'], 1.5)
     sp.run(duration=0.3, fast_forward=True)
-    flag, pq = screen_text(sp, 10, 4, 15), screen_text(sp, 12, 8, 7)
-    print('after crossing the line on lap 3:', repr(flag), repr(pq), 'race_over', sp.read8(SYM['race_over']))
+    card = [sp.read8(0x5800 + r * 32 + c) for r, c in ((5, 5), (6, 5), (15, 20), (14, 20))]
+    print('after crossing the line on lap 3: the card\'s colours', ['%02X' % v for v in card], 'race_over', sp.read8(SYM['race_over']))
     check(sp.read8(SYM['race_over']) != 0, 'crossing the line on the last lap: the race is over')
-    check(flag == 'CHEQUERED FLAG!' and pq == 'PRESS Q', 'every car in: CHEQUERED FLAG! and PRESS Q in the window')
+    check(card == [0x4F, 0x70, 0x4F, 0x70], 'every car in: the podium\'s yellow card in the window, its head and foot blue (tests/finish_test.py has the rest)')
     r1 = g(sp, 'renders'); t1 = g(sp, 'race_time')
     sp.run(duration=0.5, fast_forward=True)
     check(g(sp, 'renders') == r1 and g(sp, 'race_time') == t1, 'the race over: everything stops (no pictures, the clock still)')

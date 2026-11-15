@@ -119,6 +119,7 @@ st_so:
         ldir
         ld a,(FRAMES)
         ld (last_frame),a
+        call jin_start          ; the start ditty, then the lights by themselves (plate_slow.asm)
 
 ; ---------------------------------------------------------------------
 ; MAIN LOOP
@@ -130,7 +131,7 @@ main:
         jr nz,main_wait
         inc a
         ld (race_over),a
-        call race_box
+        call podium             ; (plate_slow.asm)
 main_wait:
         call hud_over           ; Q: a new race
         halt
@@ -277,6 +278,7 @@ tk_clock:
         jr z,tk_nb
         dec (hl)
 tk_nb:
+        call auto_go            ; the ditty over: the start lights come on by themselves
         call read_keys          ; your buttons -> your car's C_CTRL
         ld a,(race_on)          ; before green: Q starts the lights, but your
         or a                    ; car stays on the grid
@@ -376,6 +378,9 @@ k_go:   ld a,0xFB               ; Q
         ld a,(q_free)           ; first press of Q starts the lights - a new
         or a                    ; press: the Q that started this race (after
         jr z,rk3                ; the last one finished) has to be let go.
+        ld a,(jin_on)           ; (only with the automatic start held off - jin_on 0xFF, which the
+        inc a                   ; tests set: Grant, 15 Nov 2026, "the countdown after the ditty
+        jr nz,rk3               ; automatically begins")
         ld a,(start_go)         ; (the race itself starts on green:
         or a                    ; start_lights in hud.asm)
         jr nz,rk3
@@ -3441,6 +3446,7 @@ mu_va:    db 0                  ; the AY's volumes: the tune's (channel A),
 mu_vb:    db 0                  ; the bass's (B: the byte after mu_va),
 mu_vn:    db 0                  ; the hat's (C)
 mu_beat:  db 0                  ; steps played: odd ones have the high bass and the hat
+jin_on:   db 0                  ; the start ditty: 1 playing, 0 over (the lights come on), 0xFF held off (Q starts them)
 isr_bc:   dw 0                  ; BC, kept here while the interrupt writes to the AY
 AY_VA     equ 13                ; a note starts this loud (of 15) and falls 3
 AY_VB     equ 11
@@ -3669,6 +3675,7 @@ gd_2:
         include "omap.asm"      ; the cereal O's: one bit a tile
         include "faces.asm"     ; the drivers' faces for the race order
         include "plateco.asm"   ; the place plate in the window (pl_draw)
+        include "faces_win.asm" ; each driver happy (tools/make_faces.py, from Grant's drawings)
         if OPT_TALL
         include "hudtext_gfx.asm"
         include "tdtab.asm"
@@ -3798,18 +3805,21 @@ AYW     macro reg, val          ; AY register reg <- the register val (H or L)
         out (c),val
         endm
         ld (isr_bc),bc
-        ld a,(race_on)          ; only from the green light until you finish
-        or a
-        jp z,ay_quiet
+        ld a,(race_on)          ; from the green light until you finish - and before it, the
+        or a                    ; start ditty (jin_on 1)
+        jp z,ay_pre
         ld a,(you_done)
         or a
         jp nz,ay_quiet
+ay_go:
         ld hl,mu_wait
         dec (hl)
         jp nz,ay_decay
         ld (hl),MU_STEP         ; ---- a new step: the tune's note on channel A
         ld hl,(mu_ptr)
         ld a,(hl)
+        cp 253                  ; the ditty's end: quiet, and auto_go starts the lights
+        jp z,ay_jend
         cp 255                  ; the end: round again
         jr nz,ay_1
         ld hl,mu_tune
@@ -3869,6 +3879,14 @@ ay_d2:
 ay_d3:
         ld (hl),a
         jr ay_vols
+ay_pre:
+        ld a,(jin_on)
+        dec a
+        jp z,ay_go
+        jr ay_quiet
+ay_jend:
+        xor a
+        ld (jin_on),a
 ay_quiet:                       ; no race: the three voices off (once)
         ld hl,(mu_va)
         ld a,h

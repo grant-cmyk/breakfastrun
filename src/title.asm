@@ -490,10 +490,7 @@ ka_5:
         inc a
         cp 5
         jp nz,ka_1
-        ld a,(k_go+1)           ; the accelerate key also ends the wait after a race (hud_over)
-        ld (ho_key+1),a
-        ld a,(k_go+5)
-        ld (ho_key+5),a
+        ; (any key ends the wait after a race now: hud_over)
         ld a,(TD + key_ch_src - td_src + 2)         ; the race screen's PRESS Q names the new key
         ld (txt_strip+7),a
         ld (TOPMEM + txt_pressq_src - high_src + 6),a

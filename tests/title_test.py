@@ -110,6 +110,7 @@ with Racer(headless=True) as sp:
     tap(sp, 'L'); tap(sp, 'M'); tap(sp, 'N', 0.2, 1.0)
     ok(title_up(sp, 5.0) < 5.0 and bytes(sp.read(TDV('key_ch'), 5)) == b'ZXLMN', 'after the fifth key: back to the title (keys %r)' % bytes(sp.read(TDV('key_ch'), 5)))
     tap(sp, '1', 0.2, 2.0)
+    sp.write(SYM['jin_on'], bytes([0xFF]))          # (the start ditty's automatic countdown held off from here on: the keys are what is tested - tests/finish_test.py has the ditty)
     ok(g(sp, 'renders') > 0 and frame_ok(sp), '1: the race screen, whole')
     hold(sp, ['Q'], 1.0); hold(sp, ['O', 'P', 'A'], 0.5)
     ok(sp.read8(SYM['start_go']) == 0 and sp.read8(SYM['cars'] + 11) == 0, 'the old keys (Q O P A) do nothing now')
@@ -145,7 +146,7 @@ with Racer(headless=True) as sp:
     sp.write(SYM['rec_lap'], bytes([0x2A, 0x03]))                 # a lap record of 810 frames: 16.2 s
     sp.write(SYM['race_over'], bytes([1]))
     sp.run(duration=1.0, fast_forward=True)
-    ok(screen_text(sp, 12, 8, 7) == 'PRESS Q' and sp.read8(PROMPT) != 0x7A, 'the race over: the box says PRESS Q')
+    ok(sp.read8(0x5800 + 6 * 32 + 5) == 0x70 and sp.read8(PROMPT) != 0x7A, 'the race over: the podium\'s card is up')
     tap(sp, 'Q', 0.2, 1.5)
     ok(sp.read8(PROMPT) == 0x7A and screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and sp.read8(SYM['snd_rate']) == 0,
        'Q after the race: the title screen again, the engine quiet')

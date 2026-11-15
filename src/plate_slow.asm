@@ -204,3 +204,216 @@ dmg_bmp: defs 3*DMG_ROWS
 dmg_emp: db 2,3,4,5,6,7,9,11,16         ; rows without fill (the first is clear) for damage 0 to 8
         include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
 pl_tl:   dw 0xFFFF               ; the lap time (frames) the plate's figures were last cut for
+
+; ---------------------------------------------------------------------
+; THE RACE'S START AND END (Grant, 15 Nov 2026): "once you click 1 or 2, then a ditty plays and
+; the countdown after the ditty automatically begins"; "once all players are finished, there is
+; a winner display in the centre of the gameplay area ... a podium with their faces, 1st, 2nd,
+; 3rd, then also show fastest lap. Winner must have a graphic showing them smiling"; "on game
+; over, it should go back to the title screen" (hud_over: any key). Layout A4 of
+; docs/design/podium_inside.png: a yellow card, each driver on a step of their own colour.
+; ---------------------------------------------------------------------
+jin_start:                      ; a new race: the ditty from its first note (unless held off)
+        ld a,(jin_on)
+        inc a
+        ret z
+        if OPT_AY
+        ld hl,mu_jing
+        ld (mu_ptr),hl
+        ld a,1
+        ld (mu_wait),a
+        else
+        xor a
+        endif
+        ld (jin_on),a
+        ret
+auto_go:                        ; each TV frame: the ditty over and no lights yet? they come on
+        ld a,(jin_on)
+        or a
+        ret nz
+        ld a,(race_on)
+        ld hl,start_go
+        or (hl)
+        ret nz
+        inc (hl)
+        ld a,(FRAMES)
+        ld (start_f0),a
+        ret
+mu_jing:                        ; the start ditty: the tune's pitches (mu_ptab), a step each; 253 ends it
+        db 0,2,4,6, 6,4,6,254, 8,4,2,4, 6,254,6,254, 6,254,254,254, 253
+
+podium:
+        ld bc,0x0505            ; the card: rows 5-15, columns 5-20, black on bright yellow -
+        ld de,0x0B10            ; a colour no driver has, so nobody blends into it
+        call clear_cells
+        ld bc,0x0505
+        ld de,0x0B10
+        ld a,0x70
+        call set_attrs
+        ld bc,0x0505            ; its head and foot: white on blue
+        call pd_bar
+        ld bc,0x0F05
+        call pd_bar
+        ld a,(order)            ; the steps, each its driver's colour: 1st in the middle, the tallest
+        ld bc,0x070B
+        ld de,0x0704
+        call pd_col
+        ld a,(order+1)
+        ld bc,0x0807
+        ld de,0x0604
+        call pd_col
+        ld a,(order+2)
+        ld bc,0x090F
+        ld de,0x0504
+        call pd_col
+        ld hl,pd_t1
+        ld bc,41*256+104
+        call sm_ctr
+        ld hl,pd_t2
+        ld bc,50*256+104
+        call sm_ctr
+        ld hl,pd_t3
+        ld bc,114*256+68
+        call sm_ctr
+        ld hl,pd_t4
+        ld bc,121*256+104
+        call sm_ctr
+        ld a,(order)            ; their names
+        ld bc,91*256+104
+        call pd_name
+        ld a,(order+1)
+        ld bc,99*256+72
+        call pd_name
+        ld a,(order+2)
+        ld bc,106*256+136
+        call pd_name
+        ld hl,(best_lap)        ; the fastest lap: whose, and the time
+        ld a,h
+        and l
+        inc a
+        jr z,pd_nb
+        ld a,(best_car)
+        ld bc,114*256+106
+        call pd_name
+        ld hl,(best_lap)
+        call time_fmt
+        ld hl,time_txt+2
+        ld b,114
+        ld c,15
+        call st_text
+pd_nb:
+        ld hl,pd_d1             ; the places, large
+        ld bc,0x090C
+        ld a,(order)
+        call pd_big
+        ld hl,pd_d2
+        ld bc,0x0A08
+        ld a,(order+1)
+        call pd_big
+        ld hl,pd_d3
+        ld bc,0x0B10
+        ld a,(order+2)
+        call pd_big
+        ld a,(order+1)          ; the faces: 2nd and 3rd as every day ...
+        ld bc,0x0808
+        call pd_face
+        ld a,(order+2)
+        ld bc,0x0910
+        call pd_face
+        ld a,(order)            ; ... the winner smiling - the same size as the others (Grant, 15 Nov
+        ld bc,0x070C            ; 2026: "the faces can all be the same size")
+        ld hl,faces_win
+        jr pd_f2
+pd_bar:
+        ld de,0x0110
+        ld a,0x4F
+        jp set_attrs
+pd_cc:                          ; A = a car -> A = its colour
+        push hl
+        ld hl,car_colours
+        add a,l
+        ld l,a
+        jr nc,pd_c1
+        inc h
+pd_c1:
+        ld a,(hl)
+        pop hl
+        ret
+pd_col:
+        call pd_cc
+        jp set_attrs
+pd_big:
+        call pd_cc
+        jp print_big
+pd_face:                        ; car A's everyday face into cells B, C (2 x 2)
+        ld hl,faces
+pd_f2:                          ; (... or its face from the set at HL)
+        push bc
+        rrca
+        rrca
+        rrca
+        ld e,a
+        ld d,0
+        add hl,de
+        ex de,hl
+        pop bc
+        push bc
+        call tr_face_c
+        pop bc
+        inc b
+        jp tr_face_c
+pd_name:                        ; car A's name, small, centred on x C at line B
+        push bc
+        ld hl,pd_names
+        call str_skip
+        pop bc
+sm_ctr:                         ; the text at HL in the small letters (4 pixels each), centred on x C at line B
+        push hl
+sc_1:
+        ld a,(hl)
+        or a
+        jr z,sc_2
+        inc hl
+        dec c
+        dec c
+        jr sc_1
+sc_2:
+        pop hl
+        ld a,c
+        ld (MSG_X),a
+        ld a,b
+        ld (MSG_Y),a
+sm_text:
+        ld a,(hl)
+        or a
+        ret z
+        push hl
+        call glyph
+        ld hl,MSG_X
+        ld a,(hl)
+        add a,4
+        ld (hl),a
+        pop hl
+        inc hl
+        jr sm_text
+pd_t1:  db "CHEQUERED FLAG",0
+pd_t2:  db "WINNER",0
+pd_t3:  db "FASTEST LAP",0
+pd_t4:  db "PRESS ANY KEY",0
+pd_d1:  db "1",0
+pd_d2:  db "2",0
+pd_d3:  db "3",0
+pd_names:                       ; by car: you, cyan, green, pink, white (Grant, 15 Nov 2026: "each player needs a name")
+        db "YOU",0,"FRANK",0,"SPIKE",0,"BRUNO",0,"JANE",0
+sm_dig:                         ; the small figures 0-9 and the colon, as the letters: 15 bits, top row first
+        db 0xF6,0xDE   ; 0
+        db 0x59,0x2E   ; 1
+        db 0xE7,0xCE   ; 2
+        db 0xE7,0x9E   ; 3
+        db 0xB7,0x92   ; 4
+        db 0xF3,0x9E   ; 5
+        db 0xF3,0xDE   ; 6
+        db 0xE5,0x24   ; 7
+        db 0xF7,0xDE   ; 8
+        db 0xF7,0x9E   ; 9
+        db 0x08,0x20   ; :

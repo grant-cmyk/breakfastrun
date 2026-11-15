@@ -267,9 +267,21 @@ bb_attr:                        ; A = the bubble's colour: columns 11-20, rows 2
 
         ; (line_x: in clothmini.asm, the gap before sq4's page)
 
+        endif
 ; GLYPH: A = a letter (A-Z ! . - '; anything else is a gap), drawn at
 ; MSG_X, MSG_Y in the 3 x 5 letters: 15 bits, top row first
 glyph:
+        cp '0'                  ; a figure or a colon (the podium's: sm_dig, plate_slow.asm)
+        jr c,gl_sym
+        cp ':'+1
+        jr nc,gl_let
+        sub '0'
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,sm_dig
+        jr gl_fd
+gl_let:
         cp 'A'
         jr c,gl_sym
         cp 'Z'+1
@@ -293,6 +305,7 @@ gl_go:
         ld l,a
         ld h,0
         ld de,LFONT
+gl_fd:
         add hl,de
         ld d,(hl)
         inc hl
@@ -357,6 +370,7 @@ gl_next:
         jr nz,gl_row
         ret
 gl_syms: db "!.-'"              ; in the font's order: 26..29 (B counts down)
+        if OPT_PIT
 
 ; WAVE_TICK: the radio wave - 13 lines about a mid line, a new shape while
 ; the chief talks, flat when he stops
@@ -525,40 +539,7 @@ trg_3:
 
 ; RACE_BOX: the race is over - the chequered flag in the middle of the
 ; window, over the last picture, which stays (Grant: everything stops)
-race_box:
-        ld b,9                  ; cells rows 9-13, columns 3-20, wiped
-        ld c,3
-        ld d,5
-        ld e,18
-        call clear_cells
-        ld b,74                 ; lines above and below (a banner)
-        call rb_line
-        ld b,109
-        call rb_line
-        ld hl,txt_flag          ; CHEQUERED FLAG!
-        ld b,10
-        ld c,4
-        call print_at
-        ld hl,txt_youfin        ; YOU FINISHED 3RD
-        ld b,11
-        ld c,4
-        call print_at
-        ld a,(position)
-        dec a
-        add a,a
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,txt_places
-        add hl,de
-        ld b,11
-        ld c,17
-        call print_at
-        ld hl,txt_pressq        ; PRESS Q
-        ld b,12
-        ld c,8
-        jp print_at
-        ; (rb_line: in clothmini.asm, the gap before sq4's page)
+; (race_box, the CHEQUERED FLAG / PRESS Q banner, went on 15 Nov 2026: the podium - plate_slow.asm - is the race's end)
 
 ; ---------------------------------------------------------------------
 ; NOS (Grant, 10 Nov 2026): you start with one canister; SPACE fires one -

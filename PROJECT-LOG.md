@@ -1759,3 +1759,29 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - HAPPY and SAD -> tools/face_moods.txt (new). Not in the game yet: for the race-end display.
 - tools/make_podium_mock.py reads both files, so the mock-ups and the page show his drawings;
   the page's "put back" button now restores these. title and drive tests PASS.
+
+## 2026-11-15 08:30 SAST - the race's start and end: ditty, automatic lights, the podium, back to the title
+
+- Grant: names agreed (YOU, FRANK cyan, SPIKE green, BRUNO pink, JANE white). "once you click 1
+  or 2, then a ditty plays and the countdown after the ditty automatically begins"; "on game
+  over, it should go back to the title screen"; a podium "with their faces, 1st, 2nd, 3rd, then
+  also show fastest lap. Winner must have a graphic showing them smiling"; A4 (the yellow card);
+  "the faces can all be the same size".
+- START: jin_start (new race) sets jin_on 1 and points the AY player at mu_jing (20 steps, 2.4 s:
+  src/plate_slow.asm); at its end the interrupt clears jin_on and auto_go (each TV frame) starts
+  the lights. Green 5.0 s after the race screen appears. Q no longer starts the lights - unless
+  jin_on is 0xFF (held off), which the older tests set. At green the race tune starts from its
+  first note. On a plain 48K the ditty is silent but the timing is the same.
+- SET-UP KEYS (1, 2, 3, 0): unchanged - they work from the race screen appearing until the
+  lights come on, which is now only the ditty's 2.4 s. Grant has NOT decided where they go.
+- END: `podium` (src/plate_slow.asm) replaces the CHEQUERED FLAG / PRESS Q banner: a bright yellow
+  card, rows 5-15, columns 5-20; three steps in the drivers' own colours (order[0..2]); each a
+  face (the winner's from src/faces_win.asm, Grant's happy drawings; all 16 x 16), its place
+  large, its name in the small letters; FASTEST LAP, whose and the time; PRESS ANY KEY. hud_over
+  takes ANY key (k_scan), then title_again.
+- `glyph` (src/strip.asm) is built again (it was left out with the pit talk) and now draws
+  figures and a colon too (sm_dig); sm_ctr centres a small text on a pixel.
+- NOT DONE: the sad face (ideas from Grant: the driver you overtake, the last one home) and a
+  happy face in the HUD for the best lap - "keeping it as a potential nice feature".
+- tests/finish_test.py (new) PASS; all eleven suites PASS. Speed alone 74 / 203 / 3 (unchanged).
+  code_end 0xBF89 (119 bytes free in the main area). docs/design/podium_built.png.
