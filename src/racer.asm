@@ -3561,7 +3561,6 @@ bar_shown:   defs 7             ; the message bar: the 6 big letters shown (0: n
                                 ; then 1: LAP and the time are shown
 bar_next:    dw 0               ; the race time when the clock's next second is due
 race_vars_end:
-bar_time:    db "0:00",0        ; the race time, m:ss (hud_init starts it)
 shown_dot:   defs 2*NCARS       ; each car's dot on the mini-map (0xFF x: none) - not reset
 last_shown: db 0
 tr_base:  dw 0

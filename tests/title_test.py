@@ -51,8 +51,11 @@ with Racer(headless=True) as sp:
     sb = screen_bits(sp)
     A = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)])
     rr, cc = np.mgrid[0:24, 0:32]; edge = (rr < 3) | (rr > 20) | (cc < 3) | (cc > 28)
-    ok((A[edge] == np.where((rr + cc) % 2 == 0, 0x50, 0x78)[edge]).all(),
-       'the tablecloth: red and white checks, a cell each, 3 cells deep all round the card (black ink in every one, so the car cannot clash)')
+    CLOTH = np.kron(edge & ((rr + cc) % 2 == 0), np.ones((8, 8), dtype=bool))       # the red checks: cells of solid ink
+    RING = np.kron(edge, np.ones((8, 8), dtype=bool))
+    stray = (sb.astype(bool) ^ CLOTH) & RING                                         # (what is not cloth out there: the cars)
+    ok((A[edge] == 0x7A).all() and 150 < stray.sum() < 1100,
+       'the tablecloth: 3 cells deep round the card, every cell red ink on white, its red checks cells of solid ink - so a car can be masked in front of them (%d pixels of car on it)' % stray.sum())
     ok((sb[24:40, 88:200] == BIG[:16]).all() and all(attr(sp, r, c) == 0x60 for r in range(3, 8) for c in (3, 4, 9, 10, 25, 28)) and attr(sp, 8, 3) == 0x78,
        'BREAKFAST twice its size, black on the card\'s green head (rows 3-7, bright)')
     ok(sb[40:47, 112:192].sum() > 250 and sb[49:56, 112:192].sum() > 250 and not sb[47:49, 112:200].any() and not sb[56:64, 24:232].any()
@@ -69,7 +72,7 @@ with Racer(headless=True) as sp:
        'the five drivers\' faces in a row, each on its car\'s colour')
     ok(screen_text(sp, 19, 6, 10) == 'LAP RECORD' and screen_text(sp, 19, 19, 6) == '-:--.-' and attr(sp, 19, 6) == 0x79,
        'LAP RECORD in blue at the card\'s foot (no record yet: -:--.-)')
-    ok(screen_text(sp, 23, 5, 5) != 'PRESS' and screen_text(sp, 20, 6, 20).strip() == '' and all(attr(sp, 23, c) in (0x50, 0x78) for c in range(32)), 'no PRESS 1 OR 2 TO START line (Grant, 15 Nov 2026: "you can remove" it)')
+    ok(screen_text(sp, 23, 5, 5) != 'PRESS' and screen_text(sp, 20, 6, 20).strip() == '' and all(attr(sp, 23, c) == 0x7A for c in range(32)), 'no PRESS 1 OR 2 TO START line (Grant, 15 Nov 2026: "you can remove" it)')
     # the car's laps of the edge: 45 s, sampled 10 times a second
     card = np.zeros((192, 256), dtype=bool); card[24:168, 24:232] = True
     inner = np.zeros((192, 256), dtype=bool); inner[32:160, 32:224] = True      # (the car's corners cut 8 pixels into the card's)
@@ -81,8 +84,7 @@ with Racer(headless=True) as sp:
         spots.add((x, y))
         sides.add('top' if y < 24 else 'bottom' if y > 168 else 'left' if x < 24 else 'right' if x > 232 else '?')
         leaks += int(((sb != base) & inner).sum())
-        ink = sb & ~card
-        n = int(ink.sum()); gone += int(n < 5 * 45); leaks += 1000 * int(n > 5 * 125)      # (a car is 60-110 pixels of ink: all five are out there, and nothing else)
+        n = int(((sb.astype(bool) ^ CLOTH) & RING).sum()); gone += int(n < 5 * 30); leaks += 1000 * int(n > 5 * 230)   # (a car changes 40-200 pixels of the cloth: all five are out there, and nothing else)
         A2 = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); clash += int((A2 != A).sum())
     ok(len(spots) > 100 and sides >= {'top', 'bottom', 'left', 'right'}, 'the cars lap the edge: the last of them seen on all four sides (%d different places in 45 s)' % len(spots))
     ok(gone == 0, 'all five cars are in sight all the way round, the right-hand side too (%d of 450 looks with one missing)' % gone)

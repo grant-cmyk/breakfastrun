@@ -181,17 +181,19 @@ yl_1:
         ret z                   ; (a lap not done: you did not finish)
         call time_fmt
         call yl_y
-        ld c,28
+        ld c,29
         ld hl,time_txt+2
         call st_text
-        ld a,(yl_n)
+        call yl_y               ; LAP, the lap, its time (Grant, 15 Nov 2026: "is there space to have lap written there")
+        ld a,b
+        ld (MSG_Y),a
+        ld a,209
+        ld (MSG_X),a
+        ld hl,pd_t5
+        call sm_text
+        ld a,(yl_n)             ; (its number straight after LAP, in the same letters)
         add a,'1'
-        ld (yl_t),a
-        call yl_y
-        ld c,26
-        ld a,3
-        ld hl,yl_t
-        call st_text_x
+        call glyph
         ld a,(yl_n)
         inc a
         cp LAPS
@@ -206,7 +208,6 @@ yl_y:                           ; B = lap yl_n's line: 153, 161, 169 (rows 19-21
         ld b,a
         ret
 yl_n:   db 0
-yl_t:   db "1",0
 
 ; the podium's words and figures (plate_slow.asm has its code: the room under 0x8000 is full)
 pd_t1:  db "CHEQUERED FLAG",0

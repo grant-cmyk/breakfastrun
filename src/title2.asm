@@ -9,29 +9,23 @@
 ; race's shift tables (TAB_HI). Cut off at the cloth's edges, byte by byte.
 ; =====================================================================
 
-; A_WIPE: the car's old picture off. (It was put back from what was kept under it; the title's
-; edge has nothing drawn in it, so it is just cleared - and five cars need no five copies.)
-; AD_DRAW: its new picture on.
-a_wipe:
-        ld a,(a_kc)             ; (its first column, as it was drawn)
-        ld (a_k0+1),a
-        ld a,(a_on)
-        or a
-        ret z
-        ld b,a
-        ld a,(a_oy)
-ar_row:
+; AD_DRAW: the car's picture on - and never off first. The title's edge has nothing else drawn
+; in it, so each row of the car is simply STORED over the tablecloth's own pattern: its 3 bytes, a
+; byte of cloth either side, 4 rows of cloth above and below. That box covers where the car was a step ago (2 pixels away, or
+; the next picture round), so the old one goes as the new one comes, a row at a time - no moment
+; with no car there. (Wiped first, then drawn, five cars took over a TV frame and the beam often
+; caught one wiped: Grant, 15 Nov 2026, "there is still flicker in the title screen for the cars".)
+a_zr:                           ; B rows from row A: the box's 5 bytes are the tablecloth again
         push bc
         push af
+        call a_rowf
         call a_radr
         jr nc,ar_next
-        ld b,3
+        dec l
+        dec c
+        ld b,5
 ar_b:
-        ld a,c
-        cp 32
-        jr nc,ar_s
-        ld (hl),0
-ar_s:
+        call a_bgw
         inc l
         inc c
         djnz ar_b
@@ -39,10 +33,47 @@ ar_next:
         pop af
         inc a
         pop bc
-        djnz ar_row
+        djnz a_zr
+        ret
+a_rowf:                         ; row A (kept): is it one of the card's lines (24-167)? -> zr_f
+        push af
+        sub 56
+        cp 144
+        sbc a,a
+        ld (zr_f+1),a
+        pop af
+        ret
+a_bgw:                          ; the tablecloth's byte back at HL (column C) - unless it is off the screen, or
+        ld a,c                  ; the card's (its letters are not the cars' to wipe)
+        cp 32
+        ret nc
+        call a_bg
+        ret c
+        ld (hl),a
+        ret
+a_bg:                           ; A = what the cloth has at HL, column C: 0xFF in a red check, 0 in a white one;
+zr_f:   ld a,0                  ; on the card 0, and carry
+        or a
+        jr z,ab_p
+        ld a,c
+        sub 3
+        cp 26
+        jr nc,ab_p
+        xor a
+        scf
+        ret
+ab_p:
+        ld a,l                  ; (column + row) even: red
+        rlca
+        rlca
+        rlca
+        xor l
+        rra
+        ccf
+        sbc a,a
+        or a
         ret
 ad_draw:
-        ld ix,a_sav
         ld a,(t_drv)            ; the frame: big_tab[car * 16 + heading]
         add a,a
         add a,a
@@ -87,13 +118,22 @@ ad_draw:
                                 ; on the right-hand side x + 7 then ran past 255 and the car was drawn nowhere -
                                 ; Grant, 15 Nov 2026: "on the right side of the screen the racing car disappears")
         ld (a_k0+1),a
-        ld (a_kc),a
+        ld a,(a_oy)             ; the clear rows above ...
+        sub 4
+        ld b,4
+        call a_zr
+        ld a,(a_oy)             ; ... and below
+        ld hl,a_on
+        add a,(hl)
+        ld b,4
+        call a_zr
         ld a,(a_on)
         ld b,a
         ld a,(a_oy)
 ad_row:
         push bc
         push af
+        call a_rowf
         call a_radr
         exx
         jr c,ad_vis
@@ -108,6 +148,11 @@ ad_o:
 ad_vis:
         ld bc,0                 ; B', C' = the mask's and the ink's bits carried on
         exx                     ; from the byte before
+        dec l                   ; the cloth's byte on the left
+        dec c
+        call a_bgw
+        inc l
+        inc c
         ld b,3
 ad_b:
         exx
@@ -134,11 +179,10 @@ ad_b:
         ld a,c
         cp 32                   ; on the screen (bytes 0..31)?
         jr nc,ad_s
-        ld a,(hl)
-        ld (ix+0),a             ; keep what is there
-        inc ix
+        call a_bg               ; the cloth there, a hole the car's shape cut in it, the car's lines
+        ld d,a
         ex af,af'
-        and (hl)                ; a hole the car's shape, then the car
+        and d
         or e
         ld (hl),a
 ad_s:
@@ -155,6 +199,7 @@ ad_s:
         exx
         jr ad_b
 ad_done:
+        call a_bgw              ; the cloth's byte on the right
         exx
         ld de,(a_sde)
         exx

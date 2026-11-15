@@ -1913,3 +1913,24 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - MEMORY: code_end 0xBFD8 - 40 bytes free in the main area; the room under 0x8000 about 40; the
   gap before sq4 about 20. The game is full: the next feature needs something taken out.
 - All eleven test suites PASS. Speed alone 74 / 202 / 4. docs/design/podium_built.png.
+
+## 2026-11-15 SAST (morning) - the title's cars: no flicker, masked in front of the checks; LAP in YOUR RACE
+
+- Grant: "there is still flicker in the title screen for the cars. Also - is it possible to mask
+  the cars in that area so the red doesn't show through"; then "I did want the cars to drive in
+  front of the red and white area, not just a white area, but wanted that they were masked, a
+  tight mask". And "In the your race area, is there space to have lap written there?"
+- FLICKER, the cause measured: wiping then drawing five cars took ~72,000 T a step - more than
+  a TV frame - so the beam often showed a car wiped. Now a car is never wiped: each of its rows
+  is STORED over the cloth's own pattern (3 bytes, a byte of cloth either side, 4 rows of cloth
+  above and below), so the old picture goes as the new one comes (src/title2.asm: a_zr, a_bg,
+  ad_draw). zxdev's tear report: 0 frames with a car "in between". What is left is tearing
+  (a row old, a row new, 2 pixels apart). NOT judged by eye by me.
+- MASK: the checks are pixels now (t_ging: every cell red ink on white, the red checks cells of
+  solid ink), so each car cuts a white hole its own shape from the red and is drawn in red line.
+  Three colours a cell there are not: the cars are red, not black. (An earlier try, a white road
+  inside a one-cell edging, is gone: he wanted the checks behind the cars.)
+- One wait a step in the title's loop (the cars take over a frame): 25 steps a second as before.
+- YOUR RACE: each row reads LAP n and the time (the P was first overwritten by the number).
+- Room made: the old message bar's words and clock, the keys screen's PRESS-key patches.
+  code_end 0xBFD6 (42 bytes free in the main area). All eleven test suites PASS; speed 74/202/4.

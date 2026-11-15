@@ -54,10 +54,6 @@ hud_init:                       ; a new race: what changes (the rest: screen_onc
         ld a,h
         or l
         call nz,best_panel
-        ld hl,0x3030            ; the race time: 0:00
-        ld (bar_time+2),hl
-        ld a,l
-        ld (bar_time),a
         call strip_reset        ; the driver strip: inventory, the radio
         ld a,M_SETUP            ; the crew chief: pick your upgrades
         call msg_say
@@ -1333,8 +1329,5 @@ tm_d1:
         ld (time_txt+2),a
         ret
 ; (the HUD's fixed text is in hudtext.asm, kept at the top of memory)
-txt_digit:    db "0",0
-bar_lap:      db " LAP 1/",'0'+LAPS," ",0  ; the strip while racing
-txt_strip:    db " PRESS Q ",0,"FINAL LAP",0,"FINISHED!",0   ; ... and its other three (10 bytes each)
-txt_time:     db "TIME",0
+; (the old message bar's words went on 15 Nov 2026: nothing showed them)
 time_txt:     db "0:00.0",0

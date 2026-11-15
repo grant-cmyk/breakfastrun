@@ -319,7 +319,6 @@ tcs_1:
         ld de,a_x
         ld bc,14
         ldir
-        call a_wipe
         call a_step
         call ad_draw
         pop de

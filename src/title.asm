@@ -189,8 +189,8 @@ t_face:
         call tc_init            ; the five cars, round the cloth's edge (plateco.asm)
 t_loop:
         halt
-        call tc_step            ; the cars, straight after the interrupt
-        halt
+        call tc_step            ; the cars, straight after the interrupt (five masked cars take more than
+                                ; one TV frame, so there is no second HALT: a step every other frame, 25 a second)
         ld hl,t_msg             ; the 2UP message: the choice again after 1.5 s
         ld a,(hl)
         or a
@@ -231,26 +231,43 @@ t_cls:                          ; the whole screen: the bare table
         ldir
         ret
 
-; T_GING: the tablecloth - every cell bright red or bright white paper in turn (ink black, and
-; not a pixel set: the car that laps the edge is black ink on whichever it is over, so no clash)
+; T_GING: the tablecloth. Its red checks are PIXELS - red ink on white paper, every cell the same
+; two colours - so a car in front of them can be masked: a white hole its own shape cut from
+; the red, its lines in red (Grant, 15 Nov 2026: "I did want the cars to drive in front of the
+; red and white area ... masked, a tight mask"). Three colours a cell there are not: black is out.
 t_ging:
         ld hl,0x5800
 tgg_1:
-        ld a,l                  ; (column + row) odd? the column's low bit is L's, the row's is L's bit 5
+        ld (hl),0x7A            ; every cell red INK on white paper ...
+        ld a,l                  ; (column + row) even? the column's low bit is L's, the row's is L's bit 5
         rlca
         rlca
         rlca
         xor l
         rra
-        ld (hl),0x50
-        jr nc,tgg_2
-        ld (hl),T_CARD
+        jr c,tgg_2
+        push hl                 ; ... and the red checks are cells of solid ink
+        ld a,h
+        and 3
+        rlca
+        rlca
+        rlca
+        or 0x40
+        ld h,a
+        ld b,8
+tgg_3:
+        ld (hl),0xFF
+        inc h
+        djnz tgg_3
+        pop hl
 tgg_2:
         inc hl
         ld a,h
         cp 0x5B
         jr nz,tgg_1
-        ret
+        ld bc,0x0303            ; (the card's cells clear: the list colours them)
+        ld de,0x121A
+        jp clear_cells
 ; A_START: the car's run, from its start (title3.asm, a_runs)
 a_start:
         ld hl,TD + a_runs_src - td_src
@@ -499,9 +516,6 @@ ka_5:
         cp 5
         jp nz,ka_1
         ; (any key ends the wait after a race now: hud_over)
-        ld a,(TD + key_ch_src - td_src + 2)         ; the race screen's PRESS Q names the new key
-        ld (txt_strip+7),a
-        ld (TOPMEM + txt_pressq_src - high_src + 6),a
         jp k_up
 k_rowb:                         ; B = the cell row of key k_i
         ld a,(k_i)
@@ -547,7 +561,7 @@ kc_1:
         jp print_at
 ; the title's own layout and messages (here, under 0x8000: the tables at TD are full)
 t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "I like title screen B")
-        db 0x83,3,18,26,T_CARD  ; the card: rows 3-20, columns 3-28, on the cloth of checks
+        db 0x83,3,18,26,T_CARD  ; the card: rows 3-20, columns 3-28
         db 0x83,3,5,26,0x60     ; its head GREEN, bright, rows 3-7 (Grant, 15 Nov 2026: "share a colour between character
                                 ; blocks, but switch a colour to create its outside ... make the breakfast run area green";
                                 ; "the run should not touch the bottom white area, it should be surround by green")
