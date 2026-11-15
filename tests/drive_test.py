@@ -162,51 +162,52 @@ def cloth(camx, camy):
     return ((((x >> 5) + (y >> 5)) & 1) == 1) & ((y & 1) == 0) & ((x & 3) == (y & 2))   # dark checks: 1 in 8, staggered
 
 # ---- the layout of 15 Nov 2026 (Grant: "have the track map on the bottom left inside of play. Move the damage
-# to the right"): the mini-map's box is the window's bottom left 6 x 5 cells (screen x 8-55, lines 120-159),
-# the spoons are screen columns 19-21 and the mug 22-24 of rows 18-19; and the corner arrow flashes ahead of your car.
-MBOX = (WH - 40, WH, 0, 48)                              # the map's box in the window: y0, y1, x0, x1
+# to the right"; then "c (2)4 is good, and the inside parts could be blue - so no masking inside required"): the
+# mini-map is 24 pixels wide, a solid ribbon of the window's own ink ORed over the picture in its bottom left
+# corner (its last line 3 above the window's foot); the spoons are screen columns 19-21 and the mug 22-24 of rows
+# 18-19; and the corner arrow flashes at a fixed spot.
 _mm = open(os.path.join(ROOT, 'src', 'minimap.asm')).read()
 MM_SC = int(re.search(r'\* (\d+) / 256', _mm).group(1)); MM_X0 = int(re.search(r'MMX0\s+equ\s+(-?\d+)', _mm).group(1)); MM_Y0 = int(re.search(r'MMY0\s+equ\s+(-?\d+)', _mm).group(1))
 MM_ROWS = np.array([[int(c) for b in l.split('defb')[1].split(',') for c in b.strip().lstrip('%')] for l in _mm.splitlines() if 'defb' in l], dtype=np.uint8)
+MM_H = MM_ROWS.shape[0]; MM_TOP = WH - 3 - MM_H           # its lines, and its first line in the window (x: 0-23)
 def map_dots(sp):
-    """where the game puts each car's dot on the map: (x, y) in the box (the map's own line 5 is the box's line 0)"""
+    """where the game puts each car's dot on the map: (x, y), its top-left"""
     out = []
     for n in range(N):
         c = car(sp, n)
-        out.append((min((c['x'] + 8 - MM_X0) * MM_SC // 256, 45), min(max((c['y'] + 8 - MM_Y0) * MM_SC // 256, 5), MM_ROWS.shape[0] - 3) - 5))
+        out.append((min((c['x'] + 8 - MM_X0) * MM_SC // 256, 22), min((c['y'] + 8 - MM_Y0) * MM_SC // 256, MM_H - 2)))
     return out
+def map_now(sp):
+    """the map's ink as the game holds it now (MAPDAT: 3 bytes a line, the dots XORed in)"""
+    return np.unpackbits(np.frombuffer(bytes(sp.read(SYM['mapdat'], 3 * MM_H)), dtype=np.uint8)).reshape(MM_H, 24)
 def minimap_diff(sp):
-    """The map in the window's bottom left corner (screen lines 120-159, 48 wide from x = 8) against the generated
-    one (its lines 5-43) with the dots the game says are on it (shown_dot: 3 x 3 yours, 2 x 2 the others, drawn
-    with XOR; a dot is up to four pictures behind its car): (pixels that differ, the dots' places in the box -
-    None for one not shown - and the map's ink)"""
-    sb = screen_bits(sp); want = np.zeros((40, 48), dtype=np.uint8); want[:39] = MM_ROWS[5:44]
-    dots = []
+    """The map the game holds against the generated one with the dots the game says are in it (shown_dot: 2 x 2
+    yours, a pixel each the others, XORed - a hole on the ribbon, ink off it; a dot is up to four pictures behind
+    its car): (pixels that differ, the dots' places - None for one not shown - and the map's ink). That it is on
+    the screen, over the picture, is window_bad's to check."""
+    want = MM_ROWS.copy(); dots = []
     for n in range(N):
         x, y = sp.read8(SYM['shown_dot'] + 2 * n), sp.read8(SYM['shown_dot'] + 2 * n + 1)
         if x == 0xFF: dots.append(None); continue
-        k = 3 if n == 0 else 2
-        want[y - 5:y - 5 + k, x:x + k] ^= 1; dots.append((x, y - 5))
-    return int((sb[120:160, 8:56] != want).sum()), dots, int(MM_ROWS[5:44].sum())
+        k = 2 if n == 0 else 1
+        want[y:y + k, x:x + k] ^= 1; dots.append((x, y))
+    return int((map_now(sp) != want).sum()), dots, int(MM_ROWS.sum())
 ARROW_KINDS = ['none', 'straight', 'gentle left', 'gentle right', 'sharp left', 'sharp right']
 def arrow_state(sp):
     """The corner arrow in the picture now on the screen (call at copy_done): None if it is not drawn, else
-    (code, x, y): its table byte and its 16 x 11 frame's top-left in the window."""
+    (code, x, y): its table byte and its 16 x 11 frame's top-left in the window - always the same spot."""
     if not (g(sp, 'renders') & 2) or sp.read8(SYM['race_on']) == 0 or sp.read8(SYM['you_done']): return None
-    c = car(sp, 0); code = sp.read8(SYM['arrow_tab'] + c['wp'])
-    if not code: return None
-    t = SYM['thrust_tab'] + (c['ang'] & 0x3C)
-    s8 = lambda v: v - 256 if v > 127 else v
-    return code, c['x'] - g(sp, 'camx') + (s8(sp.read8(t)) >> 1), c['y'] - g(sp, 'camy') + (s8(sp.read8(t + 2)) >> 1) + 3
+    code = sp.read8(SYM['arrow_tab'] + car(sp, 0)['wp'])
+    return (code, SYM['arrow_x'] - 8, SYM['arrow_y'] - 5) if code else None
 def window_bad(sp, stop=True):
     if stop: at_copy_done(sp)               # (stop=False: the picture already stopped at, when the caller has looked at its state)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
     bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]     # the window
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
+    want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:24] |= map_now(sp)   # the mini-map: its ribbon solid, the picture showing everywhere else
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
     mask[WH - 16:WH, WW - 48:WW] = False     # the spoons and the mug gauge, bottom right
-    mask[MBOX[0]:MBOX[1], MBOX[2]:MBOX[3]] = False    # the mini-map's box, bottom left
     ar = arrow_state(sp)
     if ar: mask[max(ar[2], 0):max(ar[2] + 11, 0), max(ar[1], 0):max(ar[1] + 16, 0)] = False   # the corner arrow, while it is on
     mask[2:20, WW - 40:WW] = False                       # your place on its plate, in the top right corner
@@ -240,9 +241,9 @@ with Racer(headless=True) as sp:
     check((sb[168:184, 72:128] == np.array(logo)).all() and not sb[184:192, 0:128].any() and not sb[168:192, 0:72].any() and not sb[168:176, 128:256].any() and hid == [0x36] * 20,
           'the BREAKFAST RUN logo is under the window, centred on it (columns 9-15, rows 21-22); nothing else to SEE down there (the crew\'s bubble is kept beside it in yellow on yellow)')
     md, dots, mink = minimap_diff(sp)
-    check(md == 0 and mink > 120 and all(sp.read8(0x5800 + r * 32 + c) == 0x30 for r in range(15, 20) for c in range(1, 7)) and not sb[0:40, 208:256].any() and all(sp.read8(0x5800 + r * 32 + c) == 0x30 for r in range(0, 5) for c in range(26, 32))
+    check(md == 0 and mink > 60 and all(sp.read8(0x5800 + r * 32 + c) == 0x29 for r in range(15, 20) for c in range(1, 7)) and not sb[0:40, 208:256].any() and all(sp.read8(0x5800 + r * 32 + c) == 0x30 for r in range(0, 5) for c in range(26, 32))
           and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F and sp.read8(0x5800 + 17 * 32 + 26) == 0x4F and sb[137:142, 208:256].any(),
-          'the mini-map is INSIDE the window, bottom left (6 x 5 cells, black on yellow, the track line for line: %d pixels, %d wrong); the panel\'s top right is plain; RACE and the five cars (rows 5-15); YOUR RACE under them (row 17)' % (mink, md))
+          'the mini-map is INSIDE the window, bottom left, in the window\'s own colours (the track line for line: %d pixels of ribbon, %d wrong); the panel\'s top right is plain; RACE and the five cars (rows 5-15); YOUR RACE under them (row 17)' % (mink, md))
     msg = screen_text(sp, 22, 1, 8) + '/' + screen_text(sp, 23, 1, 8)
     check(MR != 1 or screen_text(sp, 0, 1, 22) == "BREAKFAST AT TIFFANY'S", 'the track is named along the top: %r' % screen_text(sp, 0, 1, 22))
     attr = lambda r, c: sp.read8(0x5800 + 32 * r + c)
