@@ -1,6 +1,7 @@
 ; made by tools/make_music_ay.py (JKEYS=ditty3:43,ditty12:47): the jingles, for jin_start / jin_flag (plateco.asm)
 ; Two voices on the one speaker: the tune, and under it a bass on the key note - low, high, low, high, four steps to
 ; a beat - with a kick on each beat and a tick of noise half way. Kept in the table block at TD (racer.asm: jc_a, jc_b).
+        if 1 - JIN_PART
 ; the start: "Spilt Milk", 56 steps, 5.6 s
 jc_a_src:                       ; what jin_go copies to jc: the tune, the periods, a step's turns, a beat's, the bass low and high
         dw TD + jb_tune_a - td_src, TD + jb_per_a - td_src, 3846, 3269
@@ -17,6 +18,8 @@ jb_per_a:                       ; each pitch's period
         db 22    ; 874 Hz (wanted 880)
 jb_tune_a:                      ; a pitch a step; 254 a rest; 255 ends
         db 0,1,3,3,254,254,3,3,254,254,254,254,7,7,254,254,6,5,4,4,254,254,1,1,254,254,254,254,254,254,254,254,0,1,3,3,254,254,3,3,254,254,8,8,7,7,254,254,4,4,254,254,2,2,254,254,255
+        endif
+        if JIN_PART
 ; the chequered flag: "Second Helpings", 36 steps, 5.8 s
 jc_b_src:                       ; what jin_go copies to jc: the tune, the periods, a step's turns, a beat's, the bass low and high
         dw TD + jb_tune_b - td_src, TD + jb_per_b - td_src, 6154, 5577
@@ -32,3 +35,4 @@ jb_per_b:                       ; each pitch's period
         db 19    ; 1012 Hz (wanted 988)
 jb_tune_b:                      ; a pitch a step; 254 a rest; 255 ends
         db 3,5,254,5,7,5,3,3,2,4,254,4,7,4,2,2,1,3,254,3,5,3,1,1,0,2,4,7,6,4,2,2,3,5,254,5,255
+        endif

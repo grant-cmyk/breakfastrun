@@ -58,8 +58,8 @@ with Racer(headless=True) as sp:
         f = screen_bits(sp).astype(bool)
         seen[0].add(which(f[56:72, 96:112], 'WHITE')); seen[1].add(which(f[64:80, 64:80], 'CYAN')); seen[2].add(which(f[72:88, 128:144], 'YOU'))
         sp.run(duration=0.16, fast_forward=True)
-    ok(seen[0] == {'every', 'happy'}, 'the winner\'s face moves between the everyday one and the HAPPY one (%s)' % ' '.join(sorted(seen[0])))
-    ok(seen[1] == {'every', 'sad'} and seen[2] == {'every', 'sad'}, 'second and third move between everyday and SAD (%s; %s) - their eyes frames, where drawn, show as their own' % (' '.join(sorted(seen[1])), ' '.join(sorted(seen[2]))))
+    ok({'every', 'happy'} <= seen[0] <= {'every', 'eyes', 'happy'}, 'the winner\'s face moves between the everyday one and the HAPPY one (%s)' % ' '.join(sorted(seen[0])))
+    ok(all({'every', 'sad'} <= q <= {'every', 'eyes', 'sad'} for q in seen[1:]), 'second and third move between everyday and SAD (%s; %s) - their eyes frames, where drawn, show as their own' % (' '.join(sorted(seen[1])), ' '.join(sorted(seen[2]))))
     sb = screen_bits(sp).astype(bool)
     ok(sb[72:88, 96:112].any() and sb[80:96, 64:80].any() and sb[88:104, 128:144].any() and sb[91:96, 96:112].any() and sb[99:104, 60:84].any() and sb[106:111, 128:144].any(),
        'each step has its place, large, and its driver\'s name in the small letters')

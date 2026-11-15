@@ -16,21 +16,14 @@ k_names_src:
 a_runs_src:
         db 32,30,64,  96,0, 16,4, 64,0, 16,4, 96,0, 16,4, 64,0, 16,4, 0
 ; POD_ANIM: the podium's faces move (Grant, 15 Nov 2026). Called each TV frame while the podium is up
-; (main_wait), it ends in hud_over. Every 32 frames a step: the everyday face, the eyes, the everyday
-; face, then happy for the winner and sad for second and third. Each face is drawn afresh as every day
-; and the step's rows laid over it (faces_mood). It runs here in the table block (in the room before
-; FRAMES that the title's old tables left): its own calls go through the equs in racer.asm.
+; (main_wait), it ends in hud_over. Every 32 frames a step (pa_step, plate_slow.asm): the everyday face,
+; the eyes, the everyday face, then happy for the winner and sad for second and third. Each face is drawn
+; afresh as every day and the step's rows laid over it (faces_mood). The title's row of faces does the
+; same with happy (t_anim, plate_slow.asm). It runs here in the table block (in the room before FRAMES
+; that the title's old tables left): its own calls go through the equs in racer.asm.
 pod_anim_src:
-        ld a,(FRAMES)
-        ld d,a
-        and 31
-        jr nz,pa_out
-        ld a,d
-        rlca
-        rlca
-        rlca
-        and 3
-        ld e,a                  ; E = the step, 0-3
+        call pa_step
+        jr z,pa_out
         ld d,1                  ; D = the mood's frame: 1 happy (the winner), then 2 sad
         ld hl,order
         ld bc,0x070C
@@ -45,6 +38,11 @@ pa_one_src:                     ; the car at (HL)'s face in cells B, C for step 
         ld a,(hl)
         inc hl
         push hl
+        call pa_car
+        pop hl
+        ld d,2
+        ret
+pa_car_src:                     ; car A's face in cells B, C for step E (mood frame D); E and D kept
         push de
         push bc
         push af
@@ -53,7 +51,7 @@ pa_one_src:                     ; the car at (HL)'s face in cells B, C for step 
         pop bc
         pop de
         bit 0,e
-        jr z,po_1               ; (steps 0 and 2: as every day)
+        ret z                   ; (steps 0 and 2: as every day)
         ld l,a
         add a,a
         add a,l                 ; the car's three lists: eyes, happy, sad
@@ -64,9 +62,6 @@ po_0:
         push de
         call pa_face
         pop de
-po_1:
-        pop hl
-        ld d,2
         ret
 pa_face_src:                    ; list A of faces_mood laid over the face in cells B, C
         ld hl,faces_mood
@@ -112,6 +107,18 @@ pf_a1:
         ld (de),a
         inc hl
         jr pf_a
+t_name_src:                     ; the title: the driver's name under the face, in the small letters, centred
+        ld a,(t_tmp+1)          ; on it (Grant, 15 Nov 2026: "have each persons name underneath"). It runs
+        inc a                   ; in the table block, at t_name: nothing in it is tied to where it is.
+        add a,a
+        add a,a
+        add a,a
+        ld c,a
+        ld b,146
+        ld a,(t_tmp)
+        jp pd_name
+JIN_PART defl 1
+        include "jingle.asm"    ; the flag jingle's notes
         defs 0x5C78 - TD - ($ - td_src)   ; (up to FRAMES ...
         defs 3                  ; ... which the copy sets to 0, once, at start-up)
 key_ch_src: db "OPQA "              ; 1UP's keys: left, right, accelerate, brake, NOS

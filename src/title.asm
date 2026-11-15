@@ -194,6 +194,7 @@ t_f1:
         call tc_init            ; the five cars, round the cloth's edge (plateco.asm)
 t_loop:
         halt
+        call t_anim             ; the faces (plate_slow.asm)
         call tc_step            ; the cars, straight after the interrupt (five masked cars take more than
                                 ; one TV frame, so there is no second HALT: a step every other frame, 25 a second)
         ld hl,t_msg             ; the 2UP message: the choice again after 1.5 s

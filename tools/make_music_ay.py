@@ -68,3 +68,12 @@ with open(os.path.join(ROOT, 'src', 'jingle.asm'), 'w') as f:
             hz = md.freq_of(k - LOW); f.write('        db %d    ; %.0f Hz (wanted %.0f)\n' % (bper(hz), (3500000 / LOOP_T / 2) / bper(hz), hz))
         f.write('jb_tune_%s:                      ; a pitch a step; 254 a rest; 255 ends\n        db ' % tag + ','.join('254' if m is None else '%d' % jkinds.index(m) for m in jsteps) + ',255\n')
 print('music_ay.asm: %s, %d steps, %d pitches, %d bytes' % (d['name'], len(steps), len(kinds), len(steps) + 1 + 2 * len(kinds)))
+
+# (the file in two parts: racer.asm includes it with JIN_PART 0 for the start's jingle and title3.asm with
+#  JIN_PART 1 for the flag's - the table block has room in two places, not one: 15 Nov 2026)
+_p = os.path.join(ROOT, 'src', 'jingle.asm'); _s = open(_p).read()
+if 'JIN_PART' not in _s:
+    _i = _s.index('jc_a_src:'); _i = _s.rindex('\n', 0, _s.rindex('\n', 0, _i)) + 1 if _s[:_i].rstrip().endswith('s') else _i
+    _a = _s.index('; the start:') if '; the start:' in _s else _s.index('jc_a_src:'); _b = _s.rindex('\n', 0, _s.index('jc_b_src:') - 1) + 1
+    _s = _s[:_a] + '        if 1 - JIN_PART\n' + _s[_a:_b] + '        endif\n        if JIN_PART\n' + _s[_b:].rstrip('\n') + '\n        endif\n'
+    open(_p, 'w').write(_s)

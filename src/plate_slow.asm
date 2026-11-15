@@ -31,39 +31,42 @@ ps_1:
         ld c,3
         ld hl,pl_bmp+3*PL_W+3
         jp pl_pair
-pl_cols:                        ; C columns of 5 rows from DE, at HL and on to the right
-        push hl
-        ld b,5
-        call pl_cut
-        pop hl
-        inc l
-        dec c
-        jr nz,pl_cols
-        ret
-pl_cut:                         ; B rows of the column at HL: the bits of (DE) on cut out of the plate
-        ld a,(de)
-        xor (hl)
+; (pl_cols, pl_cut and pl_fill, which nothing called any more, went on 15 Nov 2026: 63 bytes)
+; PA_STEP: the faces' step, 0-3 in A and E - a new one every 32 TV frames; Z if it is the one last given.
+pa_step:
+        ld a,(FRAMES)
+        rlca
+        rlca
+        rlca
+        and 3
+        ld e,a
+        ld hl,pa_last
+        cp (hl)
         ld (hl),a
-        inc de
-        call pl_down
-        djnz pl_cut
         ret
-pl_fill:                        ; HL = its top left byte, B = its solid rows, C = bytes: a clear line, two
-        ld de,0x0000            ; rounding rows, the solid rows, two rounding rows, a clear line
-        call pf_row
-        ld de,0x07E0
-        call pf_row
-        ld de,0x0FF0
-        call pf_row
-pf_1:
-        ld de,0x1FF8            ; (3 pixels in at each side)
-        call pf_row
-        djnz pf_1
-        ld de,0x0FF0
-        call pf_row
-        ld de,0x07E0
-        call pf_row
-        ld de,0x0000
+pa_last: db 0
+; T_ANIM: the title's row of faces moves: everyday, eyes, everyday, happy (Grant, 15 Nov 2026: "in the
+; title screen you can run the rotation of eyes and the happy face").
+t_anim:
+        call pa_step
+        ret z
+        ld d,1
+        xor a
+ta_1:
+        push af
+        add a,a
+        add a,a
+        add a,7
+        ld c,a
+        ld b,16
+        pop af
+        push af
+        call pa_car
+        pop af
+        inc a
+        cp NCARS
+        jr nz,ta_1
+        ret
 pf_row:                         ; a row: D its left byte, E its right, solid between (clear if D is 0)
         push hl
         push bc

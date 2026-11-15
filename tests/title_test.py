@@ -76,6 +76,8 @@ with Racer(headless=True) as sp:
     card = np.zeros((192, 256), dtype=bool); card[24:168, 24:232] = True
     inner = np.zeros((192, 256), dtype=bool); inner[32:160, 32:224] = True      # (the car's corners cut 8 pixels into the card's)
     base = sb.copy(); spots = set(); leaks = 0; clash = 0; sides = set(); gone = 0
+    inner = inner.copy(); inner[128:144, 56:216] = False     # (the row of faces moves: its own check, below)
+    faces_seen = set()
     for i in range(450):
         sp.run(duration=0.1, fast_forward=True)
         sb = screen_bits(sp)
@@ -83,10 +85,12 @@ with Racer(headless=True) as sp:
         spots.add((x, y))
         sides.add('top' if y < 24 else 'bottom' if y > 168 else 'left' if x < 24 else 'right' if x > 232 else '?')
         leaks += int(((sb != base) & inner).sum())
+        faces_seen.add(sb[128:144, 56:216].tobytes())
         n = int((sb.astype(bool) & RING).sum()); gone += int(n < 5 * 45); leaks += 1000 * int(n > 5 * 125)   # (a car is 60-110 pixels of ink: all five are out there, and nothing else)
         A2 = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); clash += int((A2 != A).sum())
     ok(len(spots) > 100 and sides >= {'top', 'bottom', 'left', 'right'}, 'the cars lap the edge: the last of them seen on all four sides (%d different places in 45 s)' % len(spots))
     ok(gone == 0, 'all five cars are in sight all the way round, the right-hand side too (%d of 450 looks with one missing)' % gone)
+    ok(2 <= len(faces_seen) <= 3, 'the row of faces moves: everyday, eyes, happy - %d different pictures of it seen' % len(faces_seen))
     ok(leaks == 0, 'they leave nothing behind and never touch the menu (%d stray pixels)' % leaks)
     ok(clash == 0, 'not one colour cell changes while it runs: no colour clash')
     ok(g(sp, 'renders') == 0 and sp.read8(SYM['race_on']) == 0, 'no race runs behind the title')
