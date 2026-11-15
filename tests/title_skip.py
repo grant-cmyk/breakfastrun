@@ -4,7 +4,7 @@ PRESS 1 OR 2 TO START and presses 1 (1UP), so a tool written for the race screen
 import zx._spectrum as zs
 def leave(sp, limit=60.0):
     t = 0.0
-    while sp.read8(0x5800 + 23 * 32 + 5) != 0xB0 and t < limit: sp.run(duration=0.1, fast_forward=True); t += 0.1
+    while sp.read8(0x5800 + 8 * 32 + 10) != 0x7A and t < limit: sp.run(duration=0.1, fast_forward=True); t += 0.1
     sp.run(duration=0.5, fast_forward=True)                         # (the rest of the title is drawn after its prompt)
     sp.devices.notify(zs.KeyStroke(zs.KEYS['1'].ID, pressed=True)); sp.run(duration=0.2, fast_forward=True)
     sp.devices.notify(zs.KeyStroke(zs.KEYS['1'].ID, pressed=False))

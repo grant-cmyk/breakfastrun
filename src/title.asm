@@ -115,12 +115,13 @@ title:
         ld (t_lsk+1),a
 t_redraw:
         call t_cls
-        ld hl,TD + t_script_src - td_src
+        call t_ging
+        ld hl,t_script
         call ds_run
-t_logo: ld de,0                 ; the logo twice the size: 14 x 4 cells from column 1
+t_logo: ld de,0                 ; the logo twice the size: 14 x 4 cells, centred on the card
 t_lsk:  ld a,0
         ld (db_skip+1),a
-        ld bc,0x0008
+        ld bc,0x1848
         ld a,7
         call dbl
         ld hl,(rec_lap)         ; the lap record: the best lap since loading
@@ -133,13 +134,50 @@ t_lsk:  ld a,0
         call time_fmt
         ld hl,time_txt
 t_rec:
-        ld bc,0x0112
-        ld a,T_TABLE
-        call print_big
-        call st_frame
+        ld bc,0x1313
+        call print_at
+        xor a                   ; the five drivers' faces in a row, each on its car's colour
+t_face:
+        ld (t_tmp),a
+        ld e,a
+        ld d,0
+        ld hl,car_colours_src
+        add hl,de
+        add a,a
+        add a,a
+        add a,7
+        ld c,a
+        ld (t_tmp+1),a
+        ld b,16
+        ld a,(hl)
+        ld de,0x0202
+        call set_attrs
+        ld a,(t_tmp)
+        rrca
+        rrca
+        rrca
+        ld e,a
+        ld d,0
+        ld hl,faces_src
+        add hl,de
+        ex de,hl
+        ld a,(t_tmp+1)
+        ld c,a
+        ld b,16
+        call tr_face_c
+        ld a,(t_tmp+1)
+        ld c,a
+        ld b,17
+        call tr_face_c
+        ld a,(t_tmp)
+        inc a
+        cp NCARS
+        jr nz,t_face
         xor a
         ld (t_msg),a
-        call a_new
+        ld (t_drv),a            ; your car, round the cloth's edge
+        ld (a_on),a
+        call a_start
 t_loop:
         halt
         call a_show             ; the car, straight after the interrupt
@@ -150,7 +188,7 @@ t_loop:
         or a
         jr z,t_keys
         dec (hl)
-        ld hl,TD + t_press_src - td_src
+        ld hl,t_press
         call z,t_prompt
 t_keys:
         call k_scan
@@ -162,16 +200,16 @@ t_keys:
         jr nz,t_k
         ld a,40
         ld (t_msg),a
-        ld hl,TD + t_soon_src - td_src
+        ld hl,t_soon
         call t_prompt
         jr t_loop
 t_k:
         cp 32                   ; K: the keys
         jr nz,t_loop
         call keys_screen
-        jr t_redraw
+        jp t_redraw
 t_prompt:
-        ld bc,0x1705
+        ld bc,0x1406
         jp print_at
 
 t_cls:                          ; the whole screen: the bare table
@@ -183,6 +221,40 @@ t_cls:                          ; the whole screen: the bare table
         ld (hl),T_TABLE
         ld bc,767
         ldir
+        ret
+
+; T_GING: the tablecloth - every cell bright red or bright white paper in turn (ink black, and
+; not a pixel set: the car that laps the edge is black ink on whichever it is over, so no clash)
+t_ging:
+        ld hl,0x5800
+tgg_1:
+        ld a,l                  ; (column + row) odd? the column's low bit is L's, the row's is L's bit 5
+        rlca
+        rlca
+        rlca
+        xor l
+        rra
+        ld (hl),0x50
+        jr nc,tgg_2
+        ld (hl),T_CARD
+tgg_2:
+        inc hl
+        ld a,h
+        cp 0x5B
+        jr nz,tgg_1
+        ret
+; A_START: the car's run, from its start (title3.asm, a_runs)
+a_start:
+        ld hl,TD + a_runs_src - td_src
+        ld de,a_x+1
+        ldi
+        inc de
+        ldi
+        ldi
+        ld (a_scr),hl
+        xor a
+        ld (a_n),a
+        ld (a_dr),a
         ret
 
 ; DS_RUN: draw what the list at HL says. Each entry starts row + kind, column:
@@ -268,195 +340,6 @@ db_1:
         jr nz,db_b
         pop bc
         inc b
-        ret
-
-; ST_FRAME: the stage's slim frame, as the play window's: a 2-pixel line with
-; rounded corners, 3 pixels of table inside it (lines 35-36 and 139-140, x 11-12
-; and 131-132, round the cloth at x 16-127, lines 40-135)
-st_frame:
-        ld b,35
-        ld de,0x07E0
-        call st_h
-        ld de,0x0FF0
-        call st_h
-st_v:
-        ld c,8
-        call scr_addr
-        ld (hl),0x18
-        ld a,l
-        add a,15
-        ld l,a
-        ld (hl),0x18
-        inc b
-        ld a,b
-        cp 139
-        jr nz,st_v
-        ld de,0x0FF0
-        call st_h
-        ld de,0x07E0
-st_h:                           ; line B: D, 14 bytes solid, E; then B + 1
-        ld c,8
-        call scr_addr
-        ld (hl),d
-        ld a,14
-st_h1:
-        inc l
-        ld (hl),0xFF
-        dec a
-        jr nz,st_h1
-        inc l
-        ld (hl),e
-        inc b
-        ret
-
-; CL_FILL: the cloth, clean: 32-pixel checks, the dark ones dotted (as the race's)
-tcl_fill:
-        ld b,0                  ; B = the cloth's line, 0..95
-tcl_row:
-        push bc
-        ld a,b
-        add a,40
-        ld b,a
-        ld c,16
-        call scr_addr
-        pop bc
-        ld a,b                  ; D = a dark check's byte on this line
-        and 3
-        ld d,0x22
-        jr z,tcl_p
-        cp 2
-        ld d,0x88
-        jr z,tcl_p
-        ld d,0
-tcl_p:
-        ld c,0                  ; C = the byte, 0..13
-tcl_col:
-        ld a,b                  ; dark if (line / 32 + byte / 4) is odd
-        rlca
-        rlca
-        rlca
-        ld e,a
-        ld a,c
-        rrca
-        rrca
-        add a,e
-        rrca
-        ld a,d
-        jr c,tcl_d
-        xor a
-tcl_d:
-        ld (hl),a
-        inc l
-        inc c
-        ld a,c
-        cp 14
-        jr nz,tcl_col
-        inc b
-        ld a,b
-        cp 96
-        jr nz,tcl_row
-        ret
-
-; A_NEW: the driver t_drv comes on: a clean cloth, the card (number, face on the
-; car's colour, name, two lines about them), and the run from its start
-a_new:
-        call tcl_fill
-        ld a,(t_drv)
-        add a,'1'
-        ld hl,t_tmp
-        ld (hl),a
-        inc hl
-        ld (hl),0
-        dec hl
-        ld bc,0x0519
-        call print_at
-        ld a,(t_drv)
-        ld e,a
-        ld d,0
-        ld hl,car_colours_src
-        add hl,de
-        ld a,(hl)
-        ld bc,0x0612
-        ld de,0x0404
-        call set_attrs
-        ld a,(t_drv)
-        rrca
-        rrca
-        rrca
-        ld e,a
-        ld d,0
-        ld hl,faces_src
-        add hl,de
-        ex de,hl
-        xor a
-        ld (db_skip+1),a
-        ld bc,0x3090
-        ld a,2
-        call dbl
-        ld a,(t_drv)            ; the car, facing right, twice the size: the race order's
-        ld h,a                  ; picture of it (tower_cars: 16 rows of mask, ink, mask,
-        ld l,0                  ; ink, 64 bytes a car) - its ink put together first
-        srl h
-        rr l
-        srl h
-        rr l
-        ld de,tower_cars+1
-        add hl,de
-        ld de,a_sav
-        ld b,32
-an_car:
-        ld a,(hl)
-        ld (de),a
-        inc de
-        inc hl
-        inc hl
-        djnz an_car
-        ld de,a_sav
-        ld bc,0x68B0            ; (line 104, x 176: rows 13-16, columns 22-25)
-        ld a,2
-        call dbl
-        ld bc,0x0717
-        ld de,0x0208
-        call clear_cells
-        ld bc,0x0A12
-        ld de,0x020D
-        call clear_cells
-        ld a,(t_drv)
-        add a,a
-        add a,a
-        ld hl,TD + t_cast_src - td_src
-        call str_skip
-        ld bc,0x0717
-        call print_at
-        inc hl
-        ld bc,0x0817
-        call print_at
-        inc hl
-        ld bc,0x0A12
-        call print_at
-        inc hl
-        ld bc,0x0B12
-        call print_at
-        ld a,(t_drv)            ; the run: 12 bytes a driver
-        add a,a
-        add a,a
-        ld e,a
-        add a,a
-        add a,e
-        ld e,a
-        ld d,0
-        ld hl,TD + a_runs_src - td_src
-        add hl,de
-        ld de,a_x+1
-        ldi
-        inc de
-        ldi
-        ldi
-        ld (a_scr),hl
-        xor a
-        ld (a_n),a
-        ld (a_dr),a
-        ld (a_on),a
         ret
 
 str_skip:                       ; HL = texts, one after another: on past A of them
@@ -657,78 +540,21 @@ kc_1:
         pop hl
         pop bc
         jp print_at
-
-; A_MARKS: while it drifts, its skid marks - two dots a step, 4 pixels either side
-; of its middle across the way the nose points. (Here, not with the car's drawing
-; in title2.asm: the program has less room, and this is quick.) Put down before the car is drawn
-; (so they are kept with what is under it), and left behind as it moves on.
-a_marks:
-        ld a,(a_dr)
-        add a,16
-        cp 33
-        ret c                   ; (the nose within 22 degrees of the way it goes: gripping)
-        ld a,(a_h)
-        add a,a
-        add a,a
-        call heading_push       ; E = 64 sin, C = -64 cos of the nose's heading
-        ld a,c
-        call am_q
-        neg
-        ld d,a                  ; D, E = 4 pixels across the car
-        ld a,e
-        call am_q
-        ld e,a
-        ld a,(a_x+1)            ; H, L = its middle on the cloth
-        sub 24
-        ld h,a
-        ld a,(a_y+1)
-        sub 18
-        ld l,a
-        push hl
-        push de
-        ld a,h
-        add a,d
-        ld d,a
-        ld a,l
-        add a,e
-        ld e,a
-        call am_plot
-        pop de
-        pop hl
-        ld a,h
-        sub d
-        ld d,a
-        ld a,l
-        sub e
-        ld e,a
-am_plot:                        ; a dot at D, E on the cloth (112 x 96), if it is on it
-        ld a,d
-        cp 112
-        ret nc
-        ld a,e
-        cp 96
-        ret nc
-        add a,40
-        ld b,a
-        ld a,d
-        add a,16
-        ld c,a
-        call scr_addr
-        ld a,c
-        and 7
-        inc a
-        ld b,a
-        xor a
-        scf
-am_1:
-        rra
-        djnz am_1
-        or (hl)
-        ld (hl),a
-        ret
-am_q:                           ; A / 16, signed
-        sra a
-        sra a
-        sra a
-        sra a
-        ret
+; the title's own layout and messages (here, under 0x8000: the tables at TD are full)
+t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "I like title screen B")
+        db 0x83,3,18,26,T_CARD  ; the card: rows 3-20, columns 3-28, on the cloth of checks
+        db 0x83,3,4,26,T_TABLE  ; its head the table's yellow, so the logo's white egg shows (it was lost on the white card)
+        db 0x85,9,2,10,0x72     ; the logo's colours: RUN red, the egg white
+        db 0x85,19,2,4,0x77
+        db 0x88,10,1,12,0x7A
+        db 8,10,"TODAY'S MENU",0
+        db 9,6,"--------------------",0
+        db 10,6,"1  ONE PLAYER",0
+        db 12,6,"2  TWO PLAYERS",0
+        db 14,6,"K  CHOOSE KEYS",0
+        db 15,6,"--------------------",0
+        db 0x93,6,1,20,0x79
+        db 19,6,"LAP RECORD",0
+        db 0xFF
+t_press: db "                    ",0
+t_soon: db "  2UP COMING SOON   ",0

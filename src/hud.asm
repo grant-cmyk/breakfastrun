@@ -1012,6 +1012,7 @@ tr_glyph16:                     ; 16 rows at DE into cells tr_row and below, col
         jr tr_glyph
 tr_face:                        ; 8 rows x 2 bytes at DE into cells B, 29-30
         ld c,30                 ; (column 29 left clear: a gap after the car)
+tr_face_c:                      ; (... into cells B, C and C + 1: the title's row of faces)
         call cell_addr
         ld b,8
 tf_row:

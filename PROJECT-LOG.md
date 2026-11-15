@@ -1700,3 +1700,23 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   C Banner, D Night, E Tablecloth) and docs/design/layout_title.png (NOW + A Centred, B Menu
   card, C Night, D Poster). Real 256 x 192 screens built from the game's own screens
   (docs/design/layout_src/), each checked: no cell has more than two colours. Nothing built.
+
+## 2026-11-15 07:14 SAST - the title screen: the menu card, your car lapping the tablecloth
+
+- Grant: "I like title screen B, you can remove the 1 or 2 player to start at the bottom. Is it
+  possible to have my car racing around the outside of the title screen".
+- BUILT (src/title.asm, title2.asm, title3.asm): the whole screen a red-and-white check cloth,
+  a cell a check (t_ging: colours only, not a pixel set); the card on it, rows 3-20, columns
+  3-28: a yellow head with the logo twice its size (on white the logo's white egg was lost),
+  TODAY'S MENU in red, 1 ONE PLAYER / 2 TWO PLAYERS / K CHOOSE KEYS, the five faces on their
+  cars' colours, LAP RECORD in blue. No PRESS 1 OR 2 TO START line; "2UP COMING SOON" shows at
+  the card's foot for 1.5 s.
+- YOUR CAR laps the 3-cell border, clockwise, 2 px a step, 25 steps a second (a lap ~14 s), its
+  nose turned into each corner. It is black ink on cells that are only paper, so no clash; what
+  is under it is kept and put back (the old stage's code, now for the whole screen: a_x is the
+  screen's x + 16). The run is one line of data: a_runs in title3.asm.
+- GONE: the cloth stage, the driver's card that showed each driver in turn, the skid marks.
+- The title is known by TODAY'S MENU's red (0x7A at row 8, column 10): tests/drive_test.py,
+  title_skip.py, title_test.py and zxlap.py look there now (they looked for the flashing prompt).
+- The title's layout list moved from the tables at TD (full) to the room under 0x8000.
+- docs/design/title_built.png, docs/design/title_lap.gif (the lap, 8 s). All ten tests PASS.

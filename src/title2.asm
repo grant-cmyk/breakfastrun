@@ -25,7 +25,7 @@ ar_row:
         ld b,3
 ar_b:
         ld a,c
-        cp 14
+        cp 32
         jr nc,ar_s
         ld a,(ix+0)
         ld (hl),a
@@ -40,7 +40,6 @@ ar_next:
         pop bc
         djnz ar_row
 ad_draw:
-        call a_marks
         ld ix,a_sav
         ld a,(t_drv)            ; the frame: big_tab[car * 16 + heading]
         add a,a
@@ -82,7 +81,7 @@ ad_draw:
         rrca
         rrca
         and 31
-        sub 5
+        sub 3                   ; (x is the screen's + 16 since the car laps the title's edge: 15 Nov 2026)
         ld (a_k0+1),a
         ld a,(a_on)
         ld b,a
@@ -128,7 +127,7 @@ ad_b:
         exx
         ld e,a
         ld a,c
-        cp 14                   ; on the cloth (bytes 0..13)?
+        cp 32                   ; on the screen (bytes 0..31)?
         jr nc,ad_s
         ld a,(hl)
         ld (ix+0),a             ; keep what is there
@@ -168,11 +167,10 @@ a_zero: db 0,0
 ; of the car's first byte in it, C = that byte's column on the cloth (signed)
 a_radr:
         sub 32
-        cp 96
+        cp 192
         ret nc
-        add a,40
         ld b,a
-        ld c,16
+        ld c,0
         call scr_addr
 a_k0:   ld c,0
         ld a,c
@@ -252,16 +250,8 @@ as_d1:
         add hl,de
         ld (a_y),hl
         ret
-as_end:                         ; the run is over: the next driver
-        ld hl,t_drv
-        ld a,(hl)
-        inc a
-        cp NCARS
-        jr c,as_e1
-        xor a
-as_e1:
-        ld (hl),a
-        jp a_new
+as_end:                         ; the lap is done: round again from the start
+        jp a_start
 a_vel:                          ; A = heading 0..63 -> HL = 2 x its sine, 8.8
         call trig
         ld l,c

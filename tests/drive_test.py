@@ -134,7 +134,8 @@ class Racer(Spectrum):
     def load_tape(self, filename):          # the title screen comes up first (src/title.asm):
         super().load_tape(filename)         # wait for its flashing PRESS 1 OR 2 TO START, press
         t = 0                               # 1 (1UP) - and every test begins on the race screen
-        while self.read8(0x5800 + 23 * 32 + 5) != 0xB0 and t < 60: self.run(duration=0.1, fast_forward=True); t += 0.1
+        while self.read8(0x5800 + 8 * 32 + 10) != 0x7A and t < 60:   # (TODAY'S MENU, red on the card)
+            self.run(duration=0.1, fast_forward=True); t += 0.1
         self.run(duration=0.5, fast_forward=True)                    # (the rest of the title is drawn after its prompt)
         press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)
         self.run(duration=0.26, fast_forward=True)                   # (the race screen is drawn; from here the computer cars'
@@ -383,7 +384,7 @@ with Racer(headless=True) as sp:
     check(g(sp, 'renders') == r1 and g(sp, 'race_time') == t1, 'the race over: everything stops (no pictures, the clock still)')
     hold(sp, ['Q'], 0.3)                           # let go, then press: the title screen (src/title.asm) ...
     sp.run(duration=1.0, fast_forward=True)
-    check(sp.read8(0x5800 + 23 * 32 + 5) == 0xB0 and screen_text(sp, 23, 5, 21) == 'PRESS 1 OR 2 TO START'
+    check(sp.read8(0x5800 + 8 * 32 + 10) == 0x7A and screen_text(sp, 8, 10, 12) == "TODAY'S MENU"
           and sp.read8(SYM['snd_rate']) == 0, 'Q after the finish: back to the title screen, the engine quiet')
     hold(sp, ['1'], 0.2)                           # ... and 1 (1UP): a new race
     sp.run(duration=1.5, fast_forward=True)

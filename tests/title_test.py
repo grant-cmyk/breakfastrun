@@ -23,12 +23,12 @@ fails = 0
 def ok(c, m):
     global fails
     print('PASS' if c else 'FAIL', m); fails += 0 if c else 1
-PROMPT = 0x5800 + 23 * 32 + 5                        # the flashing PRESS 1 OR 2 TO START
+PROMPT = 0x5800 + 8 * 32 + 10                        # TODAY'S MENU, red on the card: the title is up
 TDV = lambda name: SYM['td'] + SYM[name + '_src'] - SYM['td_src']   # a table copied out of the program (title3.asm)
 def attr(sp, r, c): return sp.read8(0x5800 + r * 32 + c)
 def title_up(sp, limit=60.0):                        # run until the title is showing; the seconds it took
     t = 0.0
-    while not (sp.read8(PROMPT) == 0xB0 and screen_text(sp, 23, 5, 5) == 'PRESS') and t < limit:
+    while not (sp.read8(PROMPT) == 0x7A and screen_text(sp, 8, 10, 7) == "TODAY'S") and t < limit:
         sp.run(duration=0.1, fast_forward=True); t += 0.1
     return t
 def tap(sp, k, down=0.2, after=0.4):
@@ -48,51 +48,48 @@ with Racer(headless=True) as sp:
     ok(t < 60 and g(sp, 'renders') == 0, 'the title screen comes up after loading, before any race picture (%.1f s after the tape)' % t)
     sp.run(duration=0.5, fast_forward=True)
     sb = screen_bits(sp)
-    ok((sb[0:32, 8:120] == np.kron(LOGO, np.ones((2, 2), dtype=np.uint8))).all() and attr(sp, 2, 1) == 0x72 and attr(sp, 3, 14) == 0x77,
-       'the logo twice its size, top left: RUN red, the egg white')
-    ok(screen_text(sp, 0, 19, 10) == 'LAP RECORD' and attr(sp, 0, 17) == 0x4F and sb[8:24, 144:240].any(),
-       'LAP RECORD top right, a big line under it (no record yet: -:--.-)')
-    ok(all(attr(sp, r, c) == 0x29 for r in range(5, 17) for c in range(2, 16)) and attr(sp, 4, 1) == 0x31 and attr(sp, 17, 16) == 0x31
-       and sb[35, 13:131].all() and sb[36, 12:132].all() and sb[139, 12:132].all() and sb[140, 13:131].all() and sb[37:139, 11:13].all() and sb[37:139, 131:133].all()
-       and not sb[37:40, 13:131].any() and not sb[136:139, 13:131].any(),
-       'the stage: 14 x 12 cells of blue-on-cyan cloth in a slim blue frame')
-    ok(screen_text(sp, 5, 18, 13) == 'DRIVER 1 OF 5' and attr(sp, 5, 18) == 0x4F and attr(sp, 16, 30) == 0x78 and screen_text(sp, 7, 23, 3) == 'YOU'
-       and attr(sp, 6, 18) == 0x57 and sb[48:80, 144:176].any() and sb[104:136, 176:208].any(),
-       'the driver\'s card: DRIVER 1 OF 5, a face on the car\'s colour, YOU, the car')
-    ok(screen_text(sp, 19, 9, 14) == '1 - ONE PLAYER' and screen_text(sp, 20, 9, 15) == '2 - TWO PLAYERS' and screen_text(sp, 21, 9, 8) == 'K - KEYS'
-       and all(attr(sp, r, c) == 0x30 for r in range(18, 23) for c in range(32))
-       and not sb[144:152].any() and not sb[176:184].any() and not sb[152:176, 0:72].any() and not sb[152:176, 192:256].any(),
-       'the choices, a plain list in normal letters, black on the table: 1 - ONE PLAYER, 2 - TWO PLAYERS, K - KEYS')
-    ok(screen_text(sp, 23, 5, 21) == 'PRESS 1 OR 2 TO START' and all(attr(sp, 23, c) == 0xB0 for c in range(5, 26)),
-       'PRESS 1 OR 2 TO START, flashing')
-    # the attract sequence: 45 s, sampled 10 times a second
-    off0 = sb.copy(); off0[STAGE] = 0; off0[40:136, 144:248] = 0          # everything but the cloth and the card
-    seen = {}; spots = set(); leaks = 0; clean = cloth_clean(); clash = 0; most = 0
+    A = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)])
+    rr, cc = np.mgrid[0:24, 0:32]; edge = (rr < 3) | (rr > 20) | (cc < 3) | (cc > 28)
+    ok((A[edge] == np.where((rr + cc) % 2 == 0, 0x50, 0x78)[edge]).all(),
+       'the tablecloth: red and white checks, a cell each, 3 cells deep all round the card (black ink in every one, so the car cannot clash)')
+    ok((sb[24:56, 72:184] == np.kron(LOGO, np.ones((2, 2), dtype=np.uint8))).all() and attr(sp, 5, 9) == 0x72 and attr(sp, 6, 22) == 0x77 and attr(sp, 3, 3) == 0x30 and attr(sp, 6, 28) == 0x30,
+       'the logo twice its size, centred on the card\'s yellow head: RUN red, the egg white')
+    ok(screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and all(attr(sp, 8, c) == 0x7A for c in range(10, 22))
+       and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 12, 6, 14) == '2  TWO PLAYERS' and screen_text(sp, 14, 6, 14) == 'K  CHOOSE KEYS'
+       and all(attr(sp, r, c) == 0x78 for r in range(9, 16) for c in range(3, 29)),
+       "TODAY'S MENU in red; the choices black on the white card: 1 ONE PLAYER, 2 TWO PLAYERS, K CHOOSE KEYS")
+    ok([attr(sp, 16, 7 + 4 * i) for i in range(5)] == [0x57, 0x68, 0x60, 0x58, 0x78] and all(sb[128:144, 56 + 32 * i:72 + 32 * i].any() for i in range(5)),
+       'the five drivers\' faces in a row, each on its car\'s colour')
+    ok(screen_text(sp, 19, 6, 10) == 'LAP RECORD' and screen_text(sp, 19, 19, 6) == '-:--.-' and attr(sp, 19, 6) == 0x79,
+       'LAP RECORD in blue at the card\'s foot (no record yet: -:--.-)')
+    ok(screen_text(sp, 23, 5, 5) != 'PRESS' and screen_text(sp, 20, 6, 20).strip() == '' and all(attr(sp, 23, c) in (0x50, 0x78) for c in range(32)), 'no PRESS 1 OR 2 TO START line (Grant, 15 Nov 2026: "you can remove" it)')
+    # the car's laps of the edge: 45 s, sampled 10 times a second
+    card = np.zeros((192, 256), dtype=bool); card[24:168, 24:232] = True
+    inner = np.zeros((192, 256), dtype=bool); inner[32:160, 32:224] = True      # (the car's corners cut 8 pixels into the card's)
+    base = sb.copy(); spots = set(); leaks = 0; clash = 0; sides = set(); cw = 0; last = None
     for i in range(450):
         sp.run(duration=0.1, fast_forward=True)
         sb = screen_bits(sp)
-        d = screen_text(sp, 5, 25, 1)
-        if d in '12345': seen[d] = (screen_text(sp, 7, 23, 5).strip(), attr(sp, 6, 18))     # (as last seen: the card is redrawn bit by bit)
-        spots.add((sp.read8(SYM['a_x'] + 1), sp.read8(SYM['a_y'] + 1)))
-        o = sb.copy(); o[STAGE] = 0; o[40:136, 144:248] = 0
-        leaks += int((o != off0).sum())
-        extra = (sb[STAGE] != clean); most = max(most, int(extra.sum()))
-        clash += sum(1 for r in range(5, 17) if bytes(sp.read(0x5800 + r * 32 + 2, 14)) != bytes([0x29]) * 14)
-    ok(len(spots) > 300, 'the car on the stage moves (%d different places in 45 s)' % len(spots))
-    ok(leaks == 0, 'nothing is drawn outside the cloth and the card while it runs (%d pixels changed)' % leaks)
-    ok(most > 150, 'the car leaves skid marks on the cloth (up to %d pixels on it besides the checks)' % most)
-    ok(clash == 0, 'the cloth stays blue on cyan all the while: no colour clash')
-    names = [seen.get(d, ('', 0))[0] for d in '12345']
-    ok(len(seen) == 5 and names == ['YOU', 'CYAN', 'GREEN', 'PINK', 'SLIM'] and [seen[d][1] for d in '12345'] == [0x57, 0x68, 0x60, 0x58, 0x78],
-       'all five drivers take their turn, each with its name and colour (%s)' % ' '.join(names))
+        x, y = sp.read8(SYM['a_x'] + 1) - 8, sp.read8(SYM['a_y'] + 1) - 18      # its middle on the screen
+        spots.add((x, y))
+        sides.add('top' if y < 24 else 'bottom' if y > 168 else 'left' if x < 24 else 'right' if x > 232 else '?')
+        leaks += int(((sb != base) & inner).sum())
+        ink = sb & ~card
+        if ink.any():
+            ys, xs = np.nonzero(ink)
+            if xs.max() - xs.min() > 20 or ys.max() - ys.min() > 20: leaks += 1000        # more than one car's worth of ink out there
+        A2 = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); clash += int((A2 != A).sum())
+    ok(len(spots) > 100 and sides >= {'top', 'bottom', 'left', 'right'}, 'your car laps the edge: seen on all four sides (%d different places in 45 s: the lap is the same each time, about 14 s)' % len(spots))
+    ok(leaks == 0, 'it leaves nothing behind and never touches the menu (%d stray pixels)' % leaks)
+    ok(clash == 0, 'not one colour cell changes while it runs: no colour clash')
     ok(g(sp, 'renders') == 0 and sp.read8(SYM['race_on']) == 0, 'no race runs behind the title')
     # 2: not built yet
     title_up(sp)
     tap(sp, '2', 0.2, 0.3)
-    soon = screen_text(sp, 23, 5, 21)
+    soon = screen_text(sp, 20, 6, 20)
     sp.run(duration=2.5, fast_forward=True)
-    ok(soon.strip() == '2UP COMING SOON' and screen_text(sp, 23, 5, 21) == 'PRESS 1 OR 2 TO START' and g(sp, 'renders') == 0,
-       '2 says 2UP COMING SOON, then the prompt again (%r)' % soon.strip())
+    ok(soon.strip() == '2UP COMING SOON' and screen_text(sp, 20, 6, 20).strip() == '' and g(sp, 'renders') == 0,
+       '2 says 2UP COMING SOON at the card\'s foot, then it goes (%r)' % soon.strip())
 
     # ---------------------------------------------------------------- 2: K - the keys
     tap(sp, 'K', 0.2, 0.5)
@@ -148,11 +145,11 @@ with Racer(headless=True) as sp:
     sp.write(SYM['rec_lap'], bytes([0x2A, 0x03]))                 # a lap record of 810 frames: 16.2 s
     sp.write(SYM['race_over'], bytes([1]))
     sp.run(duration=1.0, fast_forward=True)
-    ok(screen_text(sp, 12, 8, 7) == 'PRESS Q' and sp.read8(PROMPT) != 0xB0, 'the race over: the box says PRESS Q')
+    ok(screen_text(sp, 12, 8, 7) == 'PRESS Q' and sp.read8(PROMPT) != 0x7A, 'the race over: the box says PRESS Q')
     tap(sp, 'Q', 0.2, 1.5)
-    ok(sp.read8(PROMPT) == 0xB0 and screen_text(sp, 23, 5, 21) == 'PRESS 1 OR 2 TO START' and sp.read8(SYM['snd_rate']) == 0,
+    ok(sp.read8(PROMPT) == 0x7A and screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and sp.read8(SYM['snd_rate']) == 0,
        'Q after the race: the title screen again, the engine quiet')
-    ok(screen_bits(sp)[8:24, 144:240].any() and (screen_bits(sp)[0:32, 8:120] == np.kron(LOGO, np.ones((2, 2), dtype=np.uint8))).all(),
+    ok(screen_text(sp, 19, 19, 6).strip() not in ('', '-:--.-') and (screen_bits(sp)[24:56, 72:184] == np.kron(LOGO, np.ones((2, 2), dtype=np.uint8))).all(),
        'it shows the lap record, and its logo is whole (read back from the race screen)')
     r0 = g(sp, 'renders'); sp.run(duration=3.0, fast_forward=True)
     ok(g(sp, 'renders') == r0 and len({(sp.read8(SYM['a_x'] + 1), sp.read8(SYM['a_y'] + 1)) for _ in range(20) if sp.run(duration=0.1, fast_forward=True) is None}) > 10,
