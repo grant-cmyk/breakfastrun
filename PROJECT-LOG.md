@@ -1691,3 +1691,12 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   the build while OPT_PIT is 0 (it made the room): code_end 0xBE9E.
 - SPEED: alone 73 pictures at 3 frames / 200 / 5 (91 / 193 / 3 without the tune); pack 19 / 241 / 11.
 - All ten tests PASS.
+
+## 2026-11-15 SAST (morning) - mock-ups: whole-screen layouts for the race and the title
+
+- Grant: "we're going to keep the play area the same size, Can you mockup again some overall
+  design layout options for the game and the title screen". (So the 24 x 19 window stays.)
+- tools/make_layout_options.py -> docs/design/layout_game.png (NOW + A Full panel, B Mirror,
+  C Banner, D Night, E Tablecloth) and docs/design/layout_title.png (NOW + A Centred, B Menu
+  card, C Night, D Poster). Real 256 x 192 screens built from the game's own screens
+  (docs/design/layout_src/), each checked: no cell has more than two colours. Nothing built.
