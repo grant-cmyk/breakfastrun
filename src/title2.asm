@@ -51,27 +51,14 @@ a_bgw:                          ; the tablecloth's byte back at HL (column C) - 
         ret c
         ld (hl),a
         ret
-a_bg:                           ; A = what the cloth has at HL, column C: 0xFF in a red check, 0 in a white one;
-zr_f:   ld a,0                  ; on the card 0, and carry
+a_bg:                           ; A = what the cloth has at HL: nothing (its checks are colours, not pixels).
+zr_f:   ld a,0                  ; Carry: it is one of the card's bytes (column C on a card line)
         or a
-        jr z,ab_p
+        ret z
         ld a,c
         sub 3
-        cp 26
-        jr nc,ab_p
-        xor a
-        scf
-        ret
-ab_p:
-        ld a,l                  ; (column + row) even: red
-        rlca
-        rlca
-        rlca
-        xor l
-        rra
-        ccf
-        sbc a,a
-        or a
+        cp 26                   ; (carry: columns 3-28)
+        ld a,0
         ret
 ad_draw:
         ld a,(t_drv)            ; the frame: big_tab[car * 16 + heading]
@@ -179,12 +166,7 @@ ad_b:
         ld a,c
         cp 32                   ; on the screen (bytes 0..31)?
         jr nc,ad_s
-        call a_bg               ; the cloth there, a hole the car's shape cut in it, the car's lines
-        ld d,a
-        ex af,af'
-        and d
-        or e
-        ld (hl),a
+        ld (hl),e               ; the car's lines, stored (the cloth has no pixels of its own)
 ad_s:
         inc l
         inc c

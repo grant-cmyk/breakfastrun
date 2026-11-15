@@ -1948,3 +1948,10 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - Grant: "have the press any key a row lower in the finish race view - so an extra yellow line
   below the fast time details". The card is rows 5-18; its foot and PRESS ANY KEY on row 18.
   finish, drive, title tests PASS. docs/design/podium_built.png.
+
+## 2026-11-15 SAST (morning) - the title's cars black again, the checks showing through
+
+- Grant: "okay lets go back to A - black line see through". t_ging is colours only again; the
+  cars' rows are stored as they are (ink only), still never wiped first. (A slip on the way: the
+  card test in a_bg was the wrong way round and the cars left trails down the sides - caught by
+  the screenshot and by title_test's "leave nothing behind".) title test PASS.
