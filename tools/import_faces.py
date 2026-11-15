@@ -5,7 +5,7 @@ import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 KEY = {'YOU': 'YOU', 'CYAN': 'CYAN', 'SLIM': 'WHITE', 'PINK': 'PINK', 'GREEN': 'GREEN'}
 d = {}
-for m in re.finditer(r'(\w+) (now|happy|sad)\n((?:[#.]{16}\n?){16})', open(sys.argv[1]).read()):
+for m in re.finditer(r'(\w+) (now|eyes|happy|sad)\n((?:[#.]{16}\n?){16})', open(sys.argv[1]).read()):
     rows = m.group(3).split(); assert len(rows) == 16, m.group(0)[:20]
     d[(KEY[m.group(1)], m.group(2))] = [r.replace('#', 'X') for r in rows]
 p = os.path.join(HERE, 'face_art.txt'); s = open(p).read(); n = 0
@@ -18,6 +18,7 @@ p = os.path.join(HERE, 'face_moods.txt'); s = open(p).read()
 for (k, mood), rows in d.items():
     if mood == 'now': continue
     pat = re.compile(r'== %s %s ==\n(?:[X.]{16}\n){16}' % (k, mood)); new = '== %s %s ==\n%s\n' % (k, mood, '\n'.join(rows))
+    if not pat.search(s): s = s.rstrip('\n') + '\n\n' + new; n += 1; continue      # (a frame the file has not had before: eyes)
     n += pat.search(s).group(0) != new; s = pat.sub(new, s)
 open(p, 'w').write(s)
 print('%d faces read, %d changed' % (len(d), n))
