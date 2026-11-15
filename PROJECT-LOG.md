@@ -1720,3 +1720,22 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   title_skip.py, title_test.py and zxlap.py look there now (they looked for the flashing prompt).
 - The title's layout list moved from the tables at TD (full) to the room under 0x8000.
 - docs/design/title_built.png, docs/design/title_lap.gif (the lap, 8 s). All ten tests PASS.
+
+## 2026-11-15 SAST (morning) - RACE in small letters; mock-ups: podium, frames, faces
+
+- Grant: "the RACE font should also be the smaller font - on the right in the HUD". BUILT:
+  screen_once draws RACE from 10 bytes (so_race, src/racer.asm) in the 3 x 5 letters, centred
+  on the heading's blue bar. drive, title, plate tests PASS.
+- Grant, on the race's end: back to the title on game over; after 1 or 2 a ditty, then the
+  countdown starts by itself; when all are in, a winner display in the window's middle - a
+  podium with faces, 1st 2nd 3rd, the fastest lap, the winner smiling. MOCK-UPS ONLY so far:
+  tools/make_podium_mock.py -> docs/design/podium_options.png (A card, B night, C table, D band).
+  Grant: "I like A podium - but tighten it up please - smaller fonts, writing and numbers
+  centred" -> docs/design/podium_tight.png (A2; A3 with plain steps), 14 x 13 cells.
+- NOT BUILT, and one question open: if the countdown starts by itself after the ditty, the
+  set-up keys (1, 2, 3 before the start) only have the ditty's few seconds - where do they go?
+- Grant: the frame round the play area "doesn't quite work for me": tools/make_frame_options.py
+  -> docs/design/frame_options.png (NOW + A None ... H Black). Nothing built.
+- Grant: each driver's face three ways - as now, happy, sad. Drafted in tools/make_podium_mock.py
+  (FACE from the game, WIN, SAD); docs/design/podium_faces.png; and an editable page in Claude
+  (tools/faces_page.template.html): https://claude.ai/artifact/Nfxfa54baoZdTsPSAgzU8c

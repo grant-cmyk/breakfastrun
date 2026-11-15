@@ -1,0 +1,59 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Breakfast Run Faces</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600&family=IBM+Plex+Mono&display=swap">
+<style>
+/* layout: one row a driver, three moods across; each face a big editable 16 x 16 grid with its real-size picture beside the name */
+:root{--bg:#f4f5f1;--panel:#fff;--fg:#1c2026;--muted:#5d6672;--line:#d5d9d2;--accent:#b3261e;--font:'Inter',system-ui,sans-serif;--head:'Space Grotesk','Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181c;--panel:#1e2228;--fg:#eceef0;--muted:#a0a8b3;--line:#343a43;--accent:#ff7a6e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15181c;--panel:#1e2228;--fg:#eceef0;--muted:#a0a8b3;--line:#343a43;--accent:#ff7a6e;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--head);font-size:26px;margin:0;text-wrap:balance}
+p{margin:0;color:var(--muted);max-width:65ch;line-height:1.5}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+button{font:600 14px var(--font);padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.driver{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.driver h2{font-family:var(--head);font-size:18px;margin:0}
+.moods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:640px){.moods{grid-template-columns:1fr}}
+.mood{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cap{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cap canvas{image-rendering:pixelated;width:32px;height:32px;border:1px solid var(--line)}
+canvas.grid{width:100%;max-width:288px;aspect-ratio:1;image-rendering:pixelated;touch-action:none;cursor:crosshair;border:1px solid var(--line)}
+textarea{width:100%;box-sizing:border-box;min-height:140px;font:12px/1.3 var(--mono);background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:10px}
+#said{color:var(--muted);font-size:13px}
+</style>
+<main>
+<h1>Breakfast Run: the drivers' faces</h1>
+<p>Each driver three ways: as in the game now, happy (for the winner on the podium) and sad. The happy and sad ones are first drafts. Click or drag on a big picture to change its pixels; the small picture beside each name is its real size, doubled. When you are happy with them, copy the text and paste it back to Claude.</p>
+<div class="bar"><button id="copy">Copy all faces as text</button><button id="reset">Put back the drafts</button><span id="said"></span></div>
+<div id="drivers"></div>
+<label for="out" class="cap">The faces as text (# is ink)</label>
+<textarea id="out" readonly></textarea>
+</main>
+<script>
+const DATA=/*DATA*/{};const MOODS=['now','happy','sad'];
+let faces=JSON.parse(JSON.stringify(DATA.faces));
+try{const s=localStorage.getItem('br-faces');if(s){const v=JSON.parse(s);if(v.length===faces.length)faces=v}}catch(e){}
+const root=document.getElementById('drivers'),out=document.getElementById('out');
+function draw(cv,art,col,grid){const n=cv.width/16,c=cv.getContext('2d');c.fillStyle=col;c.fillRect(0,0,cv.width,cv.height);c.fillStyle='#000';
+ art.forEach((r,y)=>{for(let x=0;x<16;x++)if(r[x]==='#')c.fillRect(x*n,y*n,n,n)});
+ if(grid){c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=1;for(let i=1;i<16;i++){c.beginPath();c.moveTo(i*n+.5,0);c.lineTo(i*n+.5,cv.height);c.moveTo(0,i*n+.5);c.lineTo(cv.width,i*n+.5);c.stroke()}}}
+function text(){return DATA.names.map((nm,d)=>MOODS.map((m,k)=>nm+' '+m+'\n'+faces[d][k].join('\n')).join('\n\n')).join('\n\n')}
+function save(){out.value=text();try{localStorage.setItem('br-faces',JSON.stringify(faces))}catch(e){}}
+function build(){root.textContent='';root.style.cssText='display:flex;flex-direction:column;gap:16px';
+ DATA.names.forEach((nm,d)=>{const s=document.createElement('section');s.className='driver';const h=document.createElement('h2');h.textContent=nm;s.appendChild(h);
+  const row=document.createElement('div');row.className='moods';s.appendChild(row);
+  MOODS.forEach((m,k)=>{const box=document.createElement('div');box.className='mood';const cap=document.createElement('div');cap.className='cap';
+   const sm=document.createElement('canvas');sm.width=sm.height=16;cap.appendChild(sm);cap.appendChild(document.createTextNode(m));
+   const g=document.createElement('canvas');g.className='grid';g.width=g.height=288;g.setAttribute('aria-label',nm+' '+m+' face, editable');
+   const re=()=>{draw(g,faces[d][k],DATA.colours[d],true);draw(sm,faces[d][k],DATA.colours[d],false)};re();
+   let ink=null;const at=e=>{const b=g.getBoundingClientRect();return[Math.min(15,Math.max(0,Math.floor((e.clientX-b.left)/b.width*16))),Math.min(15,Math.max(0,Math.floor((e.clientY-b.top)/b.height*16)))]};
+   const put=e=>{const[x,y]=at(e),r=faces[d][k][y];if(ink===null)ink=r[x]==='#'?'.':'#';faces[d][k][y]=r.slice(0,x)+ink+r.slice(x+1);re();save()};
+   g.addEventListener('pointerdown',e=>{g.setPointerCapture(e.pointerId);ink=null;put(e)});g.addEventListener('pointermove',e=>{if(e.buttons&&ink!==null)put(e)});
+   box.appendChild(cap);box.appendChild(g);row.appendChild(box)});root.appendChild(s)});save()}
+document.getElementById('copy').addEventListener('click',()=>{const said=document.getElementById('said');navigator.clipboard.writeText(text()).then(()=>said.textContent='Copied.',()=>{out.focus();out.select();said.textContent='Select the text below and copy it.'})});
+document.getElementById('reset').addEventListener('click',()=>{faces=JSON.parse(JSON.stringify(DATA.faces));build();document.getElementById('said').textContent='Drafts put back.'});
+build();
+</script>

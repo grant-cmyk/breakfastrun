@@ -4072,10 +4072,22 @@ win_attr:
         ld b,LOGO_ROW           ; the logo, 7 x 2 cells, centred under the window (Grant, 14 Nov 2026)
         ld c,LOGO_COL
         call draw_logo
-        ld hl,txt_race
-        ld b,TOWER_Y-1
-        ld c,26
-        call print_at
+        ld de,so_race           ; RACE, in the small 3 x 5 letters (Grant, 15 Nov 2026: "the RACE font
+        ld b,(TOWER_Y-1)*8+1    ; should also be the smaller font"): 16 pixels, in the panel's middle
+so_rc:
+        ld c,28*8
+        call scr_addr
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc l
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc b
+        ld a,b
+        cp (TOWER_Y-1)*8+6
+        jr nz,so_rc
         ld b,TOWER_Y-1          ; RACE: white on blue across the panel
         ld c,26
         ld d,1
@@ -4135,6 +4147,7 @@ so_d:
         djnz so_d
         ret
 so_y:   db 2
+so_race: db 0xC4,0x6E, 0xAA,0x88, 0xCE,0x8C, 0xAA,0x88, 0xAA,0x6E     ; R A C E, 3 x 5, a pixel apart
 
         if OPT_AY
 ay_set:                         ; AY register H <- L
