@@ -45,12 +45,12 @@ pa_step:
         ld (hl),a
         ret
 pa_last: db 0
-; T_ANIM: the title's row of faces moves: everyday, eyes, everyday, happy (Grant, 15 Nov 2026: "in the
+; T_ANIM: the title's row of faces moves: everyday, eyes, in turn (at first with happy as well) (Grant, 15 Nov 2026: "in the
 ; title screen you can run the rotation of eyes and the happy face").
 t_anim:
         call pa_step
         ret z
-        ld d,1
+        res 1,e                 ; (just the two looks, no smile: Grant, 15 Nov 2026 - steps 0 and 1 in turn)
         xor a
 ta_1:
         push af

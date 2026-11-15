@@ -90,7 +90,7 @@ with Racer(headless=True) as sp:
         A2 = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); clash += int((A2 != A).sum())
     ok(len(spots) > 100 and sides >= {'top', 'bottom', 'left', 'right'}, 'the cars lap the edge: the last of them seen on all four sides (%d different places in 45 s)' % len(spots))
     ok(gone == 0, 'all five cars are in sight all the way round, the right-hand side too (%d of 450 looks with one missing)' % gone)
-    ok(2 <= len(faces_seen) <= 3, 'the row of faces moves: everyday, eyes, happy - %d different pictures of it seen' % len(faces_seen))
+    ok(len(faces_seen) == 2, 'the row of faces moves between its two looks, everyday and eyes - no smile (%d different pictures of it seen)' % len(faces_seen))
     ok(leaks == 0, 'they leave nothing behind and never touch the menu (%d stray pixels)' % leaks)
     ok(clash == 0, 'not one colour cell changes while it runs: no colour clash')
     ok(g(sp, 'renders') == 0 and sp.read8(SYM['race_on']) == 0, 'no race runs behind the title')
