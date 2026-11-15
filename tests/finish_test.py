@@ -86,6 +86,9 @@ with Racer(headless=True) as sp:
     cars_ink = w[60:110, 20:140].sum()
     ok((A[4:15, 1:25] == 0x29).all() and (A[15:17, 7:25] == 0x29).all() and (A[17:20, 17:21] == 0x29).all() and (A[15:20, 1:7] == 0x30).all() and minimap_diff(sp)[0] == 0,
        'the second race: every cell of the window is the cloth\'s blue on cyan again - nothing of the podium\'s colours - and the mini-map\'s box whole again, black on yellow (the card had covered two of its columns)')
+    AF = [int(v, 16) for l in open(os.path.join(ROOT, 'src', 'arrows.asm')) if 'defb' in l for v in l.split('defb')[1].split(',')]
+    ok(all(bytes(sp.read(SYM['arrow_f'] + 0x100 * i, 88)) == bytes(AF[88 * i:88 * i + 88]) for i in range(4)) and bytes(sp.read(SYM['mappic'], 78)) == bytes(np.packbits(MM_ROWS[5:18], axis=1).ravel().tolist()),
+       'after a race, the podium and the title, the arrows\' frames and the map\'s picture are still whole where they are kept (the back buffer\'s unused bottom rows)')
     ok(not w[36:44, 60:150].all(axis=1).any() and cars_ink > 150 and screen_text(sp, 8, 10, 12) != "TODAY'S MENU",
        'and it shows the grid while the jingle plays - not what the title left there (%d pixels of cars)' % cars_ink)
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)
