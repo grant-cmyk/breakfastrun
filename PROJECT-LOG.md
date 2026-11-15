@@ -2023,3 +2023,20 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
   "background beeping" three times over (14 Nov). MUSIC=1 still builds that old version.
 - 234 bytes back in the main area (code_end 0xBF03: 253 free). All twelve test suites PASS.
   Speed alone 57 / 213 / 5; pack 5 / 253 / 7. docs/sound/race_now.mp3: 16 s of it.
+
+## 2026-11-15 11:25 SAST - the start jingle in two voices with a beat; mock-up: FINAL LAP in the play area
+
+- Grant: "the jingle uses simple beeps could you add some sophistication to the sound, make it
+  almost trancy with a background to it?"
+- jin_start (src/plateco.asm) no longer uses the ROM's BEEPER. Its own loop counts two voices
+  down at once and puts out either: the tune (Kettle's On, 24 steps) and a bass on B - low,
+  high, low, high, four steps to a beat; a KICK on each beat (six flips, 2,500 T further apart
+  each time) and a TICK of noise half way: 125 beats a minute. 91 T a turn of the loop
+  (measured from the recording: the first build assumed 89 and was 2% flat). Interrupts off.
+  Pitches come out within 1% but the highest two (the loop's periods are whole numbers: 988 Hz
+  is 1,012). docs/sound/race_now.mp3. NOT heard by me. finish, drive, title PASS.
+- Grant: "when I'm on the final lap, have a display at the bottom - mockup a pit crew message in
+  the play area - 'final lap' and a small pitcrew face and speech bubble" (the old strip under
+  the window went unseen: "the player is focused on the game area"). tools/make_finallap_mock.py
+  -> docs/design/finallap_options.png: A white bubble, B small letters, C blue band, D yellow
+  bubble, E corner, F red. Nothing built (FINAL LAP! is still the small plate top right).

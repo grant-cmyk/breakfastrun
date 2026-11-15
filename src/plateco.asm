@@ -365,3 +365,110 @@ yb_2:
         ld de,0x0106
         ld a,0x70
         jp set_attrs
+
+; ---------------------------------------------------------------------
+; JIN_START: a new race - the start jingle (unless held off: jin_on 0xFF), then auto_go starts the
+; lights. Kettle's On on the Spectrum's own speaker, but not as plain beeps (Grant, 15 Nov 2026:
+; "add some sophistication to the sound, make it almost trancy with a background to it"): TWO
+; voices at once - the tune and a bass under it - by a loop that counts both down and puts out
+; either; a KICK on every beat (six flips, further and further apart: a thump) and a TICK of
+; noise half way to the next. Nothing else runs while it plays; interrupts are off, for its timing.
+; src/jingle.asm (tools/make_music_ay.py) has the notes and the loop's counts.
+; ---------------------------------------------------------------------
+jin_start:
+        ld a,(jin_on)
+        inc a
+        ret z
+        di
+        push ix
+        ld hl,jb_tune
+        xor a
+jb_1:
+        ld (jb_n+1),a           ; the step, counted from 0
+        ld a,(hl)
+        inc hl
+        cp 255
+        jr z,jb_end
+        push hl
+        ld e,a
+        ld d,0
+        ld hl,jb_per
+        add hl,de
+        ld h,(hl)               ; H = the tune's period
+jb_n:   ld a,0
+        and 3
+        ld ix,JB_LEN
+        ld l,JB_B_LO
+        jr z,jb_kick            ; the beat: the kick, the low bass
+        ld l,JB_B_HI
+        rra
+        jr c,jb_tone            ; steps 1 and 3: the high bass
+        ld l,JB_B_LO            ; step 2: the low bass again, after a tick of noise
+        ld b,48
+jb_hat:
+        ld a,r
+        and 16
+        or 6
+        out (254),a
+        djnz jb_hat
+        jr jb_tone
+jb_kick:
+        ld ix,JB_LEN-JB_KICK
+        ld b,6
+jb_k1:
+        ld a,b                  ; a flip ...
+        rra
+        sbc a,a
+        and 16
+        or 6
+        out (254),a
+        ld a,7                  ; ... then 1, 2, .. 6 waits of 2,500 T: the pitch falls
+        sub b
+        ld c,a
+jb_k2:
+        ld de,96
+jb_k3:
+        dec de
+        ld a,d
+        or e
+        jr nz,jb_k3
+        dec c
+        jr nz,jb_k2
+        djnz jb_k1
+jb_tone:
+        ld d,6                  ; D, E = each voice's speaker bit (and the border's yellow)
+        ld e,0
+        ld b,h                  ; B, C = each voice's count down to its next flip
+        ld c,l
+jb_t:
+        dec b
+        jr nz,jb_t1
+        ld b,h
+        ld a,d
+        xor 16
+        ld d,a
+jb_t1:
+        dec c
+        jr nz,jb_t2
+        ld c,l
+        ld a,e
+        xor 16
+        ld e,a
+jb_t2:
+        ld a,d
+        or e
+        out (254),a
+        dec ix
+        ld a,ixh
+        or ixl
+        jr nz,jb_t
+        pop hl
+        ld a,(jb_n+1)
+        inc a
+        jr jb_1
+jb_end:
+        pop ix
+        xor a
+        ld (jin_on),a
+        ei
+        ret

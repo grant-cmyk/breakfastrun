@@ -1,14 +1,18 @@
-; made by tools/make_music_ay.py: the first 24 steps of "Kettle's On, driving" for the ROM's beeper routine - the start jingle
-; (Grant, 15 Nov 2026: "At the start of the game before the lights - play the kettle's on jingle"). A step is
-; a note of 0.10 s and a HALT. jb_tab: a pitch's cycles (DE) and its period (HL); jb_tune: a pitch's place in it, 255 ends
-jb_tab:
-        dw 49,856    ; 494 Hz
-        dw 62,673    ; 622 Hz
-        dw 74,561    ; 740 Hz
-        dw 99,413    ; 988 Hz
-        dw 83,497    ; 831 Hz
-        dw 55,759    ; 554 Hz
-        dw 66,634    ; 659 Hz
-        dw 111,364    ; 1109 Hz
-jb_tune:
-        db 0,4,8,12,0,8,16,0,8,4,0,0,20,4,24,8,8,4,20,8,8,8,8,8,255
+; made by tools/make_music_ay.py: the first 24 steps of "Kettle's On, driving" for the start jingle (jin_start, plateco.asm)
+; Two voices on the one speaker: the tune, and under it a bass on the key note - low, high, low, high, four steps to
+; a beat - with a kick on each beat and a tick of noise half way: 125 beats a minute.
+JB_LEN  equ 4615                ; turns of the loop in a step ...
+JB_KICK equ 577                 ; ... less these on a beat: the kick takes their time
+JB_B_LO equ 156                 ; the bass: 123 Hz
+JB_B_HI equ 78                  ; and 247 Hz
+jb_per:                         ; each pitch's period
+        db 39    ; 493 Hz (wanted 494)
+        db 31    ; 620 Hz (wanted 622)
+        db 26    ; 740 Hz (wanted 740)
+        db 19    ; 1012 Hz (wanted 988)
+        db 23    ; 836 Hz (wanted 831)
+        db 35    ; 549 Hz (wanted 554)
+        db 29    ; 663 Hz (wanted 659)
+        db 17    ; 1131 Hz (wanted 1109)
+jb_tune:                        ; a pitch a step; 255 ends
+        db 0,1,2,3,0,2,4,0,2,1,0,0,5,1,6,2,2,1,5,2,2,2,2,2,255
