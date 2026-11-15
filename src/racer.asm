@@ -36,6 +36,20 @@ NCARS   equ 5           ; you + 4 computer cars
 LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
+; THE MINI-MAP IS IN THE WINDOW (Grant, 15 Nov 2026: "have the track map on the bottom left inside of
+; play"): a box of 6 x 5 colour cells of its own in the window's bottom left corner, black on yellow. It
+; is on the SCREEN only: the copy routine leaves those 48 x 40 pixels alone (make_copier), so the map
+; costs nothing a picture - cars and cloth that pass under it are simply not copied there.
+MBOX_W  equ 6                   ; cells across (the copy routine: 3 register pairs fewer on its lines)
+MBOX_H  equ 5                   ; cells down: the window's last five rows
+MBOX_Y  equ 8+152-MBOX_H*8      ; its first line on the screen (120: WIN_Y + WIN_H - 40, checked at the end)
+; ... which makes the copy routine 8 bytes a line shorter over those 40 lines: 320 bytes free above it.
+HIMEM   equ COPIER + 152*40 + 3 - MBOX_H*8*8     ; 0xFE83 .. 0xFFF3: some of the map's row lists, the arrows' table
+; and what was never used of the back buffer's bottom rows (docs/design/RAM-SWEEP.md, 4.4): rows 168-191,
+; bytes 0-25 of each (the last 6 can take an interrupt's pushes) - 90 bytes on each of pages D0-D7 from
+; xxA0, less D2's (cloth_pat). start_once fills them.
+MAPPIC  equ BUF+0x10A0          ; the mini-map's picture as kept: 39 lines of 6 bytes, 13 lines on each of D0, D1, D3
+ARROW_F equ BUF+0x14A0          ; the corner arrows' frames: 8 x 44 bytes, two on each of D4, D5, D6, D7
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
@@ -191,6 +205,7 @@ draw_all:
         add ix,de
         pop bc
         djnz draw_all
+        call arrow_draw         ; the corner arrow in front of your car (under the gauge, spoons, bubble and plate: they are drawn after it)
         ld a,(lt_on)            ; the start lights, while they are up
         or a
         call nz,lights_draw
@@ -2383,11 +2398,12 @@ ld_r1:
 ; corner, in the window's own colours: each replaces its byte of the cloth on 10 lines,
 ; so it stands clear of what is behind it (layout G3; the inventory slots have gone).
 ; Window lines 132-135 are buffer rows 140-143 (one character row), 136-141 rows 144-149.
-NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 2      ; buffer row 148 (third 2, char row 2, line 4), byte 24
-NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 2      ; buffer row 152 (third 2, char row 3, line 0)
+NOS_COL equ 24-4                ; the first spoon's column in the window (WIN_W - 4): the one beside the gauge (the others to its left)
+NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 2 + NOS_COL      ; buffer row 148 (third 2, char row 2, line 4)
+NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 2 + NOS_COL      ; buffer row 152 (third 2, char row 3, line 0)
 nos_draw:
         ld hl,INV
-        ld c,0                  ; C = slot 0..2: bytes 23, 22, 21
+        ld c,0                  ; C = slot 0..2: the window's columns 20, 19, 18 (screen 21, 20, 19) - beside the gauge, then leftwards
 nd_1:
         ld a,(hl)
         or a
@@ -2396,13 +2412,13 @@ nd_1:
         ld de,nos_can
         ld hl,NOS_BA
         ld a,l
-        add a,c                 ; (from the window's left edge inwards: Grant, 15 Nov 2026, "the coffee mug on the right and the NOS to the left")
+        sub c                   ; (beside the gauge and leftwards: Grant, 15 Nov 2026, "Move the damage to the right" - the map has the left corner)
         ld l,a
         ld b,4
         call nd_col
         ld hl,NOS_BB
         ld a,l
-        add a,c
+        sub c
         ld l,a
         ld b,6
         call nd_col
@@ -3687,6 +3703,7 @@ gd_2:
         include "sq4.asm"
         include "world.asm"
         include "hud.asm"
+        include "arrow.asm"     ; the corner arrow in front of your car (here, after the page-aligned tables: code put before sq4 moves them a page on)
         include "gen_tiles.asm"
         include "gen_bumps.asm"
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
@@ -4026,6 +4043,30 @@ start_once:                     ; (start, from the start-up area)
         call so_blk
         call make_tables
         call make_copier        ; the program writes its own copy routine
+        ld hl,hi_src            ; above it: some of the map's row lists, the arrows' table
+        ld de,HIMEM
+        ld bc,hi_end-hi_src
+        ldir
+        ld hl,minimap_src+5*6   ; the mini-map's picture (its lines 5-43), 13 lines to a strip: D0, D1, D3
+        ld de,MAPPIC
+        ld bc,13*6
+        ldir
+        ld de,MAPPIC+0x100
+        ld bc,13*6
+        ldir
+        ld de,MAPPIC+0x300
+        ld bc,13*6
+        ldir
+        ld hl,arrow_src         ; the arrows' frames, two to a strip: D4-D7
+        ld de,ARROW_F
+        ld a,4
+so_arr:
+        ld bc,2*ARROW_ROWS*4
+        ldir
+        ld e,ARROW_F AND 255
+        inc d
+        dec a
+        jr nz,so_arr
         xor a                   ; the engine quiet until the first picture
         ld (snd_rate),a
         ld (t_drv),a            ; the title's first driver
@@ -4177,29 +4218,7 @@ so_attr:
         pop bc
         djnz so_attr
         endif
-        ld de,minimap_src+5*6   ; the mini-map, black on yellow, at the panel's top (its picture
-        ld b,2                  ; (MAP_Y + 5) starts 6 lines down: screen line 3); the cars' dots are XORed on it
-so_map:
-        ld c,MAP_X
-        call scr_addr
-        ex de,hl
-        ld bc,6
-        ldir
-        ex de,hl
-        ld a,(so_y)             ; (B is 0 after LDIR: the row is kept in so_y)
-        inc a
-        ld (so_y),a
-        ld b,a
-        cp MAP_H-3              ; (MAP_Y + MAP_H)
-        jr nz,so_map
-        ld hl,shown_dot         ; no dots on it yet
-        ld b,2*NCARS
-so_d:
-        ld (hl),0xFF
-        inc hl
-        djnz so_d
-        ret
-so_y:   db 2
+        ret                     ; (the mini-map is put up by map_init, each race: hud.asm)
 so_race: db 0xC4,0x6E, 0xAA,0x88, 0xCE,0x8C, 0xAA,0x88, 0xAA,0x6E     ; R A C E, 3 x 5, a pixel apart
 
         if OPT_AY
@@ -4301,7 +4320,13 @@ dl_attr:
 
         include "strip_img.asm" ; the driver strip's fixed picture and colours
         include "logo.asm"      ; the logo (drawn once, from here)
-        include "minimap.asm"   ; the mini-map's picture (drawn once, below)
+        include "minimap.asm"   ; the mini-map's picture (start_once keeps lines 5-43 of it at MAPPIC)
+        include "arrows.asm"    ; the corner arrows' frames (tools/make_arrows.py; start_once copies them to ARROW_F)
+hi_src:                         ; what start_once copies above the screen-copy routine (HIMEM):
+        include "arrowtab.asm"  ; the corner arrows, a byte a waypoint (tools/make_world.py)
+        include "hirows.asm"    ; some of the map's row lists
+hi_end:
+arrow_tab equ HIMEM + arrow_tab_src - hi_src
 
 ; ---------------------------------------------------------------------
 ; make_tables: for each shift s = 0..7, two 256-byte tables:
@@ -4360,9 +4385,15 @@ make_copier:
         xor a
 mc_row:
         ld (mc_y),a
+        cp WIN_H-MBOX_H*8       ; the mini-map's lines: its 6 bytes are not copied (it lives on the screen) -
         ld a,7                  ; bytes 0..13: 7 pairs
         ld (mc_n),a
-        xor a
+        ld a,0
+        jr c,mc_r1
+        ld a,4                  ; ... bytes 6..13 only, 4 pairs
+        ld (mc_n),a
+        ld a,MBOX_W
+mc_r1:
         call mc_half
         ld a,5                  ; bytes 14..23: 5 pairs. That is 24 bytes for a 23-byte window: the
         ld (mc_n),a             ; last is the frame's own column, which fr_col keeps in the buffer
@@ -4426,11 +4457,14 @@ mc_h1:
         ldir
         ret
 mc_cnt:                         ; BC = 8 for 7 pairs (with the EXX), 6 for 5 (pop af, bc, de, hl, exx,
-        ld bc,8                 ; pop bc - and the pushes to match)
+        ld bc,8                 ; pop bc - and the pushes to match), 4 for 4 (pop af, bc, de, hl)
         ld a,(mc_n)
         cp 7
         ret z
         ld c,6
+        cp 5
+        ret z
+        ld c,4
         ret
 mc_op:                          ; write opcode A and address HL
         ld (de),a
@@ -4661,6 +4695,18 @@ faces     equ faces_src
         endif
         if (bufa_src - high_end) + (bufb_src - bufa_end) + (bufd_src - bufb_end) + (buff_src - bufd_end) + (bufh_src - buff_end) + (bufg_src - bufh_end) + (bufe_src - bufg_end)
         .error start_once copies the blocks back to back: keep them in this order
+        endif
+        if HIMEM + hi_end - hi_src > 0xFFF4
+        .error the data above the copy routine runs into the interrupt's jump at 0xFFF4
+        endif
+        if (arrow_tab + NWP - 1) / 256 - arrow_tab / 256
+        .error arrow_draw: the arrows' table must be on one page
+        endif
+        if (thrust_tab + 63) / 256 - thrust_tab / 256
+        .error arrow_draw: thrust_tab must be on one page
+        endif
+        if (MAP_H - 5 - 39) + (WIN_H - 152) + (WIN_COL - 1) + (WIN_Y - 8) + (WIN_W - 24)
+        .error the mini-map's box is written for 39 lines of map (5 to 43) in a 152-line, 24-column window at line 8, column 1
         endif
         if init_end > TAB_HI*256
         .error the start-up routines run into the shift tables they build

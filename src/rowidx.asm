@@ -34,34 +34,34 @@ row_index_src:
         dw row_30 - high_src + TOPMEM
         dw row_31 - high_src + TOPMEM
         dw row_32 - high_src + TOPMEM
-        dw row_33
+        dw row_33 - hi_src + HIMEM
         dw row_34 - high_src + TOPMEM
         dw row_35 - high_src + TOPMEM
-        dw row_36
-        dw row_37
-        dw row_38
-        dw row_39
+        dw row_36 - hi_src + HIMEM
+        dw row_37 - hi_src + HIMEM
+        dw row_38 - hi_src + HIMEM
+        dw row_39 - hi_src + HIMEM
         dw row_40 - high_src + TOPMEM
-        dw row_41
-        dw row_42
-        dw row_43
-        dw row_44
-        dw row_45
-        dw row_46
-        dw row_47
-        dw row_48
-        dw row_49
-        dw row_50
-        dw row_51
-        dw row_52
-        dw row_53
-        dw row_54
-        dw row_55
-        dw row_56
-        dw row_57
-        dw row_58
-        dw row_59
-        dw row_60
+        dw row_41 - hi_src + HIMEM
+        dw row_42 - hi_src + HIMEM
+        dw row_43 - hi_src + HIMEM
+        dw row_44 - hi_src + HIMEM
+        dw row_45 - hi_src + HIMEM
+        dw row_46 - hi_src + HIMEM
+        dw row_47 - hi_src + HIMEM
+        dw row_48 - hi_src + HIMEM
+        dw row_49 - hi_src + HIMEM
+        dw row_50 - hi_src + HIMEM
+        dw row_51 - hi_src + HIMEM
+        dw row_52 - hi_src + HIMEM
+        dw row_53 - hi_src + HIMEM
+        dw row_54 - hi_src + HIMEM
+        dw row_55 - hi_src + HIMEM
+        dw row_56 - hi_src + HIMEM
+        dw row_57 - hi_src + HIMEM
+        dw row_58 - hi_src + HIMEM
+        dw row_59 - hi_src + HIMEM
+        dw row_60 - hi_src + HIMEM
         dw row_61
         dw row_62
-        dw row_63
+        dw row_63 - hi_src + HIMEM

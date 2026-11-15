@@ -1092,10 +1092,52 @@ tc_row:
 ; car: 2 x 2 for the computer cars, 3 x 3 and blinking for you. Each update
 ; puts back the map under the old dots, then draws the new ones.
 ; ---------------------------------------------------------------------
-MAP_X   equ 26*8                ; screen pixel of the map's top-left: the panel's top (Grant, 14 Nov 2026: "shift the map up")
-MAP_Y   equ 0xFD                ; (-3: the map's own picture starts 6 lines down, so it shows from screen line 3)
-map_init:                       ; a new race: the last race's dots off the map (the
-        jp map_off              ; map itself is drawn once, by screen_once)
+; In the WINDOW's bottom left corner since 15 Nov 2026 (Grant: "have the track map on the bottom left
+; inside of play"): 6 x 5 cells of its own, black on yellow; on the screen only (see MBOX_W, racer.asm).
+MAP_X   equ WIN_COL*8           ; screen pixel of the map's top-left
+MAP_Y   equ MBOX_Y-5            ; (the map's own picture starts 5 lines down: its line 5 is the box's first)
+map_init:                       ; a new race: the box cleared and coloured, the map's picture put up from where
+        ld bc,WIN_COL+(MBOX_Y/8)*256   ; it is kept (MAPPIC: three strips of 13 lines), and no dots on it yet
+        ld de,MBOX_H*256+MBOX_W
+        push bc
+        push de
+        call clear_cells
+        pop de
+        pop bc
+        ld a,0x30               ; black on yellow
+        call set_attrs
+        ld hl,MAPPIC
+        ld b,MBOX_Y
+mi_1:
+        push hl
+        ld c,MAP_X
+        call scr_addr
+        ex de,hl
+        pop hl
+        push bc
+        ld bc,6
+        ldir
+        pop bc
+        ld a,l
+        cp (MAPPIC AND 255) + 13*6
+        jr nz,mi_2
+        ld l,MAPPIC AND 255     ; the next strip: the page after, or the one after cloth_pat's
+        inc h
+        bit 1,h
+        jr z,mi_2
+        inc h
+mi_2:
+        inc b
+        ld a,b
+        cp MBOX_Y+39
+        jr nz,mi_1
+        ld hl,shown_dot
+        ld b,2*NCARS
+mi_3:
+        ld (hl),0xFF
+        inc hl
+        djnz mi_3
+        ret
 
 map_update:
         ld hl,blink             ; your dot blinks: on 2 updates, off 2
@@ -1124,9 +1166,9 @@ mu_x:
         jr c,mu_y
         ld a,MAP_H-3
 mu_y:
-        cp 3                    ; (and not above the screen's top line: MAP_Y is -3)
+        cp 5                    ; (and not above the box: the map shows from its line 5)
         jr nc,mu_y2
-        ld a,3
+        ld a,5
 mu_y2:
         ld d,a
         pop af

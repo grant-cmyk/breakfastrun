@@ -20,7 +20,7 @@ WW = SYM['win_w'] * 8                                   # the window's width (18
 WY, WH, MR = SYM['win_y'], SYM['win_h'], SYM['msg_row']   # the window's top line and height, the message bar's row (build options)
 CS = SYM['c_size']; CARS = SYM['cars']; N = SYM['ncars']; CPUS = list(range(1, N)); TOWER_Y = SYM['tower_y']
 
-src = open(os.path.join(ROOT, 'src', 'world.asm')).read() + open(os.path.join(ROOT, 'src', 'waypoints.asm')).read() + open(os.path.join(ROOT, 'src', 'toprows.asm')).read()
+src = open(os.path.join(ROOT, 'src', 'world.asm')).read() + open(os.path.join(ROOT, 'src', 'waypoints.asm')).read() + open(os.path.join(ROOT, 'src', 'toprows.asm')).read() + open(os.path.join(ROOT, 'src', 'hirows.asm')).read()
 MAPW = int(re.search(r'MAPW\s+equ\s+(\d+)', src).group(1))
 MAPH = int(re.search(r'MAPH\s+equ\s+(\d+)', src).group(1))
 NWP = int(re.search(r'NWP\s+equ\s+(\d+)', src).group(1))

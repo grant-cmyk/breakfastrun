@@ -138,17 +138,17 @@ hud_pre:
         ld (hl),a
         inc l
         ld (hl),a
-        ld a,(INV)              ; the canisters: red
-        ld hl,HP_AT
-        ld de,HP_NB - (WIN_W - 1)
+        ld a,(INV)              ; the spoons: red - beside the gauge, then leftwards (NOS_COL, racer.asm)
+        ld hl,HP_AT + WIN_W - 4
+        ld de,HP_NB - 3
         call hp_slot
         ld a,(INV+1)
-        ld hl,HP_AT + 1
-        ld de,HP_NB - (WIN_W - 1) + 1
+        ld hl,HP_AT + WIN_W - 5
+        ld de,HP_NB - 4
         call hp_slot
         ld a,(INV+2)
-        ld hl,HP_AT + 2
-        ld de,HP_NB - (WIN_W - 1) + 2
+        ld hl,HP_AT + WIN_W - 6
+        ld de,HP_NB - 5
 hp_slot:                        ; A = the slot (0: empty), HL = its upper cell on the screen, DE = in the buffer
         or a
         ld a,WIN_ATTR2
