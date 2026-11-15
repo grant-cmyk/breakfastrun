@@ -1779,8 +1779,8 @@
     433
    ]
   ],
-  "distinct_tiles": 150,
-  "cereal_os": 158,
+  "distinct_tiles": 122,
+  "cereal_os": 156,
   "start_line_x": 384,
   "start_straight_y": 520,
   "grid": [
@@ -1848,12 +1848,12 @@
    ]
   ],
   "data_bytes": {
-   "rows": 1046,
+   "rows": 1004,
    "index": 148,
    "surface": 666,
    "omap": 666,
    "waypoints": 280,
-   "tiles": 1200
+   "tiles": 976
   },
   "crossover": {
    "crossing_x_y": [
