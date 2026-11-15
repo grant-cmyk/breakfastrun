@@ -6,6 +6,7 @@ longer tracks. This script only makes design material - it does NOT touch the ga
     docs/design/tracks/crossover_closeup.png                how the bridge could be drawn, three ways
     docs/design/tracks/crossover_walls.png                  the bridge with side walls and no O's, three walls
     docs/design/tracks/crossover_shadow.png                 the bridge with a tapering shadow; shadow and wall options
+    docs/design/tracks/crossover_concrete.png               the concrete bridge: side face, wing walls, tunnel mouth
     docs/design/tracks/tracks_overview.png                  all five at the same scale
     docs/design/tracks/TRACKS.md                            the note, with the figures
     docs/design/tracks/tracks_data.json                     vertices, waypoints, figures
@@ -115,6 +116,8 @@ def track5_verts():
     yb = 74 * 8 - 72; yt = M; y2 = yt + 108; yc = BR_Y        # start straight; top lane; second lane; the lower road
     return [(BR_X, yb, 55), (XR, yb, 55), (XR, yc, 55), (XL, yc, 55), (XL, yt, 55), (XR, yt, 54), (XR, y2, 54), (BR_X, y2, 55)]
 BR_X, BR_Y = 188, 336              # the crossing: the upper road runs north-south at x = BR_X, the lower east-west at y = BR_Y
+FACE = 16                          # px: the side face of the one-sided 'oblique' alternative (kept as one extra panel)
+SIDE = 8                           # px: the concrete wall along each side of the bridge, at its thickest (beside the deck)
 RAMP, DECK = 48, 96                # suggested: each ramp 48 px (6 tiles), the level deck 96 px (the 72 px road below + 12 each side)
 BRIDGE = dict(cross=(BR_X, BR_Y),
               upper='the north-south road at x = %d, driven southwards (down the screen)' % BR_X,
@@ -122,7 +125,7 @@ BRIDGE = dict(cross=(BR_X, BR_Y),
               ramp_up=(BR_Y - DECK // 2 - RAMP, BR_Y - DECK // 2),      # y from .. to, on the upper road
               deck=(BR_Y - DECK // 2, BR_Y + DECK // 2),
               ramp_down=(BR_Y + DECK // 2, BR_Y + DECK // 2 + RAMP),
-              hidden=(BR_X + ROAD // 2 + 8, BR_X - ROAD // 2 - 8))       # x from .. to, on the lower road: a car there is (partly) under the deck
+              hidden=(BR_X + ROAD // 2 + 8 + SIDE, BR_X - ROAD // 2 - 8 - SIDE))       # x from .. to, on the lower road: a car there is (partly) under the deck
 
 TRACKS = [
     dict(n=1, name="BREAKFAST AT TIFFANY'S", W=72, H=64, sy=416, lx=288, verts=None,
@@ -376,7 +379,103 @@ def shadow_ink(b, shadow='S1', wall='V1'):
                 if on or end: out.add((x, y))
     return out, cells
 
+JUT = 24          # px: how far the concrete walls jut out along the lower road, each side of the tunnel
+def plan_parts(b, opt='P4'):
+    """The concrete bridge seen from STRAIGHT ABOVE (Grant: "the concrete juts out on each side"): at the
+    tunnel, concrete walls project outward from BOTH sides of the bridge - two each side, flanking the
+    lower road where it goes under (four in all) - with the tunnel mouth between each pair as a dark band
+    under the deck's edge. Blue-and-white kerb walls on top (V3), open deck, ramp arrows.
+      P1 straight stubs at right angles to the bridge
+      P2 splayed wings, angling away from the road: a funnel into the tunnel
+      P3 wedge wings, thick at the bridge and thin at the tip: the height falling away
+      P4 P3, and the concrete also runs along the ramps both sides: thin at the ramp's foot, SIDE px thick by the deck
+    Returns the same six things as concrete_parts (the last: how far out the mouth's dark band reaches)."""
+    xc, yc = b['cross']; x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1
+    (u0, u1), (d0, d1), (r0, r1) = b['ramp_up'], b['deck'], b['ramp_down']
+    xr, xl = x1 + WALL8 + 1, x0 - WALL8 - 1                     # the first pixel outside each kerb wall
+    G = SIDE if opt == 'P4' else 0; MB = G or 4                 # the side wall's thickness; the mouth's dark band
+    gw, gi, tw, ti = set(), set(), set(), set()
+    kerb, cells = shadow_ink(b, 'S1', 'V3')
+    ti |= {(x, y) for (x, y) in kerb if x0 - WALL8 <= x <= x1 + WALL8}
+    m0, m1 = yc - ROAD // 2, yc + ROAD // 2
+    both = lambda i, y: ((xr + i, y), (xl - i, y))              # the same thing on both sides of the bridge
+    if G:                                                       # P4: the wall along the ramps and deck
+        strip = set()
+        for y in range(u0, r1):
+            for i in range(int(round(bridge_height(b, y) * G))): strip |= set(both(i, y))
+        tw |= strip
+        ti |= {(x, y) for (x, y) in strip if (x + 1, y) not in strip and x > xc or (x - 1, y) not in strip and x < xc
+               or (x, y - 1) not in strip or (x, y + 1) not in strip}
+    for y in range(m0, m1):                                     # the mouths: a dark band under each edge of the deck
+        for i in range(MB):
+            for q in both(i, y): tw.add(q); ti.add(q)
+    wing = set()
+    for i in range(JUT):                                        # the four walls that jut out
+        if opt == 'P1': ya, yb = m0 - 7, m0
+        elif opt == 'P2': off = i * 12 // JUT; ya, yb = m0 - 7 - off, m0 - off
+        else: th = 9 - (i * 7) // (JUT - 1); ya, yb = m0 - th, m0
+        for y in range(ya, yb):
+            for q in both(G + i, y) + both(G + i, 2 * yc - 1 - y): wing.add(q)
+    gw |= wing
+    gi |= {(x, y) for (x, y) in wing if not {(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)} <= wing}
+    if opt in ('P1', 'P2'):                                     # one joint line across each
+        gi |= {(x, y) for (x, y) in wing if x in (xr + G + JUT // 2, xl - G - JUT // 2)}
+    return gw, gi, tw, ti, cells, MB
+CON_BOX = (84, 104)   # px left / right of the upper road's middle kept clear of cereal O's for the concrete bridge
+def concrete_parts(b, opt='C2'):
+    """The concrete bridge (Grant, after crossover_shadow.png, with a photo of a road underpass): we look
+    down but a little from the right, so the bridge's SIDE FACE shows as a band of concrete beside the
+    upper road - as tall as the bridge is high: nothing at the foot of a ramp, growing up the ramp (the
+    wing wall), full height beside the deck. In the face, where the lower road goes in, the dark tunnel
+    MOUTH. Blue-and-white kerb walls on top (V3), open deck, ramp arrows.
+      C1 the face, wing walls and mouth          C2 + abutment walls jutting out each side of the lower road
+      C3 a taller face and a hard diagonal shadow, as in the photo
+      C5 C2 with the face in a light dither (it is the side away from the light)
+    Returns ground wipe, ground ink (under a car on the lower road), top wipe, top ink (over it), the
+    kerb walls' cells, and the face's height."""
+    if opt[0] == 'P': return plan_parts(b, opt)
+    xc, yc = b['cross']; x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1
+    (u0, u1), (d0, d1), (r0, r1) = b['ramp_up'], b['deck'], b['ramp_down']
+    F = 28 if opt == 'C3' else FACE; xf = x1 + WALL8 + 1
+    gw, gi, tw, ti = set(), set(), set(), set()
+    kerb, cells = shadow_ink(b, 'S1', 'V3')
+    ti |= {(x, y) for (x, y) in kerb if x0 - WALL8 <= x <= x1 + WALL8}       # the kerb walls and the arrows, no shadow
+    m0, m1 = yc - ROAD // 2, yc + ROAD // 2                     # the mouth: the lower road's width
+    prev = 0
+    for y in range(u0, r1 + 1):                                 # the face: a wedge, outlined, a joint every 24 px
+        fw = int(round(bridge_height(b, y) * F)) if y < r1 else 0
+        for i in range(fw):
+            x = xf + i; tw.add((x, y))
+            if (y - u0) % 24 == 0 and d0 - 12 <= y <= d1 + 12: ti.add((x, y))
+            if opt == 'C5' and (x + y) % 4 == 0 and y % 2 == 0: ti.add((x, y))
+        for i in range(min(prev, fw), max(prev, fw) + 1):        # its outer edge, joined up where the width changes
+            if i >= 1: ti.add((xf + i - 1, y if fw >= prev else y - 1))
+        if fw: ti.add((xf + fw - 1, y))
+        prev = fw
+    for y in range(m0, m1):                                     # the mouth: solid dark
+        for i in range(F - 1): ti.add((xf + i, y))
+    if opt == 'C3':
+        for y in range(m1, m1 + F):                             # a hard shadow slanting down the face below the mouth ...
+            for i in range(F - 1 - (y - m1)):
+                if (xf + i + y) % 2 == 0: ti.add((xf + i, y))
+        for y in range(m0, m1):                                 # ... and on across the lower road
+            for i in range((y - m0) // 2):
+                if (xf + F + i + y) % 2 == 0: gi.add((xf + F + i, y))
+    if opt != 'C1':
+        for ya, yb in ((m0 - 7, m0), (m1, m1 + 7)):             # near side: two abutment walls jutting out from the face
+            for y in range(ya, yb):
+                for x in range(xf + F, xf + F + JUT):
+                    gw.add((x, y))
+                    if y in (ya, yb - 1) or x == xf + F + JUT - 1 or x == xf + F + JUT // 2: gi.add((x, y))
+        for ya, yb in ((m0 - 5, m0), (m1, m1 + 5)):             # far side: just the tops of the same walls
+            for y in range(ya, yb):
+                for x in range(x0 - WALL8 - JUT, x0 - WALL8):
+                    gw.add((x, y))
+                    if y in (ya, yb - 1) or x == x0 - WALL8 - JUT: gi.add((x, y))
+    return gw, gi, tw, ti, cells, F
+
 def build_world(t, walls=True):
+    if walls is True: walls = 'P4'                              # the look in track5.png
     W, H, PATH, SY, LX = t['W'], t['H'], t['path'], t['sy'], t['lx']
     PW, PH = W * 8, H * 8
     def road_mask(width):
@@ -412,8 +511,8 @@ def build_world(t, walls=True):
         OS = [(ox, oy) for ox, oy in OS if not inner[ox + 4, oy + 4]]
         if walls:            # the bridge and its ramps have walls: no O's beside them, on either road
             b_ = t['bridge']
-            right = WALL_BOX if walls == 'W3' else SHADOW_BOX   # (the shadow's side: no O's in the shadow)
-            OS = [(ox, oy) for ox, oy in OS if not (-WALL_BOX <= ox + 4 - b_['cross'][0] <= right and b_['ramp_up'][0] - 4 <= oy + 4 <= b_['ramp_down'][1] + 4)]
+            left, right = (WALL_BOX, WALL_BOX) if walls == 'W3' else CON_BOX if walls[0] in 'CP' else (WALL_BOX, SHADOW_BOX)
+            OS = [(ox, oy) for ox, oy in OS if not (-left <= ox + 4 - b_['cross'][0] <= right and b_['ramp_up'][0] - 4 <= oy + 4 <= b_['ramp_down'][1] + 4)]
     for ox, oy in OS:
         for j, r in enumerate(O_RING):
             for i, c in enumerate(r):
@@ -423,7 +522,8 @@ def build_world(t, walls=True):
         # walls: False = the first idea (style A); 'W3' = crossover_walls.png's double rail; True = the tapering shadow
         # S1 with the dithered wall V1 (the one in track5.png); or a (shadow, wall) pair from crossover_shadow.png
         look = ('S1', 'V1') if walls is True else walls
-        for (x, y) in (bridge_ink(t['bridge'], 'A') if not walls else walls_ink(t['bridge'], 'W3') if walls == 'W3' else shadow_ink(t['bridge'], *look)[0]): px[x, y] = 1
+        con = concrete_parts(t['bridge'], walls) if isinstance(walls, str) and walls[0] in 'CP' else None
+        for (x, y) in (bridge_ink(t['bridge'], 'A') if not walls else walls_ink(t['bridge'], 'W3') if walls == 'W3' else (con[1] | con[3]) if con else shadow_ink(t['bridge'], *look)[0]): px[x, y] = 1
     # the grid and the start line (track 1: the line at x = 288, the cars 40 .. 104 px behind it)
     LANE_A, LANE_B = SY - 14 - 8, SY + 14 - 8
     GRID = [(LX - 40, LANE_A), (LX - 56, LANE_B), (LX - 72, LANE_A), (LX - 88, LANE_B), (LX - 104, LANE_A)]
@@ -447,7 +547,8 @@ def build_world(t, walls=True):
     taken = set()
     if t.get('bridge') and walls and walls != 'W3':            # no breakfast things in the bridge's shadow
         b_ = t['bridge']
-        taken |= {(tx, ty) for tx in range((b_['cross'][0] - WALL_BOX) // 8, (b_['cross'][0] + SHADOW_BOX) // 8 + 1)
+        lr = CON_BOX if walls[0] in 'CP' else (WALL_BOX, SHADOW_BOX)
+        taken |= {(tx, ty) for tx in range((b_['cross'][0] - lr[0]) // 8, (b_['cross'][0] + lr[1]) // 8 + 1)
                   for ty in range(b_['ramp_up'][0] // 8 - 1, b_['ramp_down'][1] // 8 + 1)}
     def free(tx, ty, w, h):
         for j in range(h):
@@ -549,7 +650,12 @@ def build_world(t, walls=True):
         (x0, y0), (x1, y1) = loop[i], loop[i + 1]; u = dd / seglen[i]
         wps.append((round(x0 + (x1 - x0) * u), round(y0 + (y1 - y0) * u)))
     data = dict(rows=row_bytes, index=2 * H, surface=(W // 8) * H, omap=(W // 8) * H, waypoints=4 * NWP, tiles=8 * tiles)
-    return dict(road=road_a, ink=ink_a, imask=imask, cloth_on=cloth_on, OS=OS, GRID=GRID, grid_ok=grid_ok, CANS=CANS,
+    white = np.zeros((PH, PW), dtype=bool); wipe = np.zeros((PH, PW), dtype=bool)
+    if t.get('bridge') and isinstance(walls, str) and walls[0] in 'CP':
+        gw_, gi_, tw_, ti_, cells_, _F = concrete_parts(t['bridge'], walls)
+        for (x, y) in cells_: white[y, x] = True
+        for (x, y) in gw_ | tw_: wipe[y, x] = True
+    return dict(white=white, wipe=wipe, road=road_a, ink=ink_a, imask=imask, cloth_on=cloth_on, OS=OS, GRID=GRID, grid_ok=grid_ok, CANS=CANS,
                 placed=placed, tiles=tiles, masked=len(masked), road_tiles=road_tiles, nwp=NWP, wps=wps,
                 data=data, data_total=sum(data.values()))
 
@@ -568,6 +674,8 @@ def world_image(w):
     a[w['road'] & w['cloth_on']] = ROAD_DOT
     a[w['imask'] & ~w['road']] = CYAN
     a[w['imask'] & w['road']] = ROAD_PAPER
+    a[w['wipe']] = CYAN                                         # concrete: clean paper
+    a[w['white']] = WHITE                                       # kerb walls: white paper in their cells
     a[w['ink']] = BLUE
     return Image.fromarray(a)
 
@@ -761,7 +869,7 @@ def walls_picture(t, s=4):
 def shadow_picture(t, s=4):
     """A sheet of options for the bridge with a tapering shadow: three shadows (top row), then
     wall drawings on shadow S1 (bottom row) - the two-tone walls with white paper and in cyan only."""
-    b = t['bridge']; w = t['w']; xc, yc = b['cross']
+    b = t['bridge']; w = t['w_shadow']; xc, yc = b['cross']
     cw, ch = 176, 216; cx0, cy0 = xc - 72, yc - ch // 2
     x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1
     ink_c, sol_c = car_art('YOU')
@@ -792,7 +900,7 @@ def shadow_picture(t, s=4):
             for (x, y) in cells: a[y, x] = WHITE
         a[bit] = BLUE
         return Image.fromarray(a[cy0:cy0 + ch, cx0:cx0 + cw]).resize((cw * s, ch * s), Image.NEAREST)
-    tiles = lambda sh, wl: t['w']['tiles'] if (sh, wl) == ('S1', 'V1') else build_world(t, walls=(sh, wl))['tiles']
+    tiles = lambda sh, wl: build_world(t, walls=(sh, wl))['tiles']
     rows = [('SHADOW OPTIONS - the wall is V1 in all three. The shadow is as wide as the bridge is high: nothing at the foot of each ramp, widest beside the level deck.',
              [('S1', 'V1', False, 'S1  FLAT SHADOW', ['one 50% dither, on the right', '(light from the left)']),
               ('S2', 'V1', False, 'S2  GRADED SHADOW', ['50% by the wall, 25% in the', 'outer half of the wedge']),
@@ -827,6 +935,68 @@ def shadow_picture(t, s=4):
         d.text((pad, y + i * 22), line, fill=(70, 70, 0) if i == 5 else BLACK, font=font(16))
     im.save(os.path.join(OUTDIR, 'crossover_shadow.png'))
 
+def concrete_picture(t, s=4):
+    """The concrete bridge seen from above: concrete jutting out each side of the tunnel, four ways, the best
+    in cyan only, and the earlier one-sided oblique face as an alternative."""
+    b = t['bridge']; w = t['w']; xc, yc = b['cross']
+    cw, ch = 184, 216; cx0, cy0 = xc - 84, yc - ch // 2
+    x0, x1 = xc - ROAD // 2, xc + ROAD // 2 - 1; xf = x1 + WALL8 + 1
+    ink_c, sol_c = car_art('YOU')
+    mine = concrete_parts(b, 'P4'); mine = mine[1] | mine[3]
+    def halo(sol, n=2):
+        P = np.pad(sol, n); out = P.copy()
+        for dy in range(-n, n + 1):
+            for dx in range(-n, n + 1): out |= np.roll(np.roll(P, dy, 0), dx, 1)
+        return out
+    def panel(opt, white):
+        gw, gi, tw, ti, cells, F = concrete_parts(b, opt)
+        base = w['ink'].copy()
+        for (x, y) in mine: base[y, x] = False                  # (the world was built with P4: take it off)
+        bit = base | w['cloth_on']
+        for (x, y) in gw: bit[y, x] = False                     # on the ground: the abutment walls, the shadow on the road
+        for (x, y) in gi: bit[y, x] = True
+        ci, cs = np.rot90(ink_c), np.rot90(sol_c)               # the car below, driving left, half into the mouth
+        cx, cy = xf + F - 9, yc - 10
+        hl = halo(cs); bit[cy - 2:cy + 22, cx - 2:cx + 22][hl] = False
+        bit[cy:cy + 20, cx:cx + 20][ci] = True
+        bit[b['ramp_up'][0]:b['ramp_down'][1], x0 - WALL8:x1 + WALL8 + 1] = False     # over it: the bridge, its walls ...
+        for (x, y) in tw: bit[y, x] = False                                           # ... and its side face
+        for (x, y) in ti: bit[y, x] = True
+        ci, cs = np.rot90(ink_c, 2), np.rot90(sol_c, 2)         # the car on the deck, whole
+        sl = bit[yc - 34:yc - 14, xc - 22:xc - 2]; sl[cs] = False; sl[ci] = True
+        a = np.empty(bit.shape + (3,), dtype=np.uint8); a[:] = CYAN
+        if white:
+            for (x, y) in cells: a[y, x] = WHITE
+        a[bit] = BLUE
+        return Image.fromarray(a[cy0:cy0 + ch, cx0:cx0 + cw]).resize((cw * s, ch * s), Image.NEAREST)
+    opts = [('P1', True, 'P1  STRAIGHT STUBS', ['four walls at right angles to the', 'bridge; road hidden for 96 px']),
+            ('P2', True, 'P2  SPLAYED WINGS', ['angled away from the road: a', 'funnel into the tunnel']),
+            ('P3', True, 'P3  WEDGE WINGS', ['thick at the bridge, thin at the tip:', 'the height falling away']),
+            ('P4', True, 'P4  P3 + WALLS ALONG THE RAMPS', ['concrete both sides, thin at the ramp', 'foot, %d px by the deck; hidden %d px' % (SIDE, abs(b['hidden'][0] - b['hidden'][1]))]),
+            ('P4', False, 'P4 IN CYAN ONLY', ['no white paper: what the game', 'can colour today']),
+            ('C2', True, 'ALTERNATIVE: OBLIQUE, ONE SIDE', ['an earlier idea, not the main set:', 'seen from the right, side face %d px' % FACE])]
+    pad, head, cap, foot = 24, 56, 108, 172
+    per = 3; nrow = (len(opts) + per - 1) // per
+    im = Image.new('RGB', (pad + (cw * s + pad) * per, head + (ch * s + cap) * nrow + foot), YELLOW); d = ImageDraw.Draw(im)
+    d.text((pad, 12), 'TRACK 5 CONCRETE BRIDGE - concrete jutting out each side of the tunnel (mock-up, 4x, the game\'s blue ink)', fill=BLACK, font=font(28))
+    for k, (opt, white, name, sub) in enumerate(opts):
+        x = pad + (k % per) * (cw * s + pad); y = head + (k // per) * (ch * s + cap)
+        im.paste(panel(opt, white), (x, y))
+        d.rectangle([x - 2, y - 2, x + cw * s + 1, y + ch * s + 1], outline=BLUE, width=2)
+        d.text((x, y + ch * s + 6), name, fill=BLACK, font=font(24))
+        for i, line in enumerate(sub + ['track 5 would need %d tiles' % build_world(t, walls=opt)['tiles']]):
+            d.text((x, y + ch * s + 36 + i * 20), line, fill=BLACK, font=font(17))
+    y = head + (ch * s + cap) * nrow + 4
+    for i, line in enumerate([
+            'Seen from straight above. At the tunnel the concrete juts out %d px from BOTH sides of the bridge: two walls each side, flanking the lower road (four in all). The dark band between each pair is the tunnel mouth.' % JUT,
+            'One car is on the deck; one on the lower road is half way into the mouth. Blue-and-white kerb walls down both sides of the deck and ramps; open deck; arrows on the ramps; no cereal O\'s near the bridge or its walls.',
+            'WHITE HAS A PRICE: the window is blue ink on cyan paper and a Spectrum cell (8 x 8 px) holds two colours. The kerb walls are one cell wide on the cell grid so their paper can be white, but the game',
+            'does not change cell colours inside the scrolling window today: it would cost speed whenever the bridge is in view, and the white would move in 8 px steps (an estimate - not measured). The cyan-only panel needs none of that.',
+            'The concrete (walls and deck) is shown as clean paper with the cloth\'s dots wiped off. In the game that needs masks, as the breakfast things have; the tile counts here are the ink pictures only.',
+            'A mock-up drawn by tools/make_track_designs.py - not from the game, which has no bridges yet. Classification: Internal.']):
+        d.text((pad, y + i * 22), line, fill=(70, 70, 0) if i == 5 else BLACK, font=font(16))
+    im.save(os.path.join(OUTDIR, 'crossover_concrete.png'))
+
 # ------------------------------------------------------------------ measure, check, write
 def main():
     os.makedirs(OUTDIR, exist_ok=True)
@@ -837,6 +1007,7 @@ def main():
         if t.get('bridge'):
             t['w_open'] = build_world(t, walls=False)     # (as first drawn: O's by the bridge, no walls)
             t['w_walls'] = build_world(t, walls='W3')     # (as crossover_walls.png was drawn)
+            t['w_shadow'] = build_world(t, walls=('S1', 'V1'))     # (as crossover_shadow.png was drawn)
         xs, ys = [q[0] for q in p], [q[1] for q in p]
         t['margin'] = min(min(xs), t['W'] * 8 - max(xs), min(ys), t['H'] * 8 - max(ys))
         t['crossings'] = self_crossings(p)
@@ -888,7 +1059,7 @@ def main():
         gridd = min(math.hypot(gx + 10 - xc, gy + 10 - yc) for gx, gy in t['w']['GRID'])
         os_on = sum(1 for ox, oy in t['w']['OS'] if abs(ox + 4 - xc) < 60 and abs(oy + 4 - yc) < 60
                     and (abs(ox + 4 - xc) < ROAD // 2 - 4 or abs(oy + 4 - yc) < ROAD // 2 - 4))
-        os_wall = sum(1 for ox, oy in t['w']['OS'] if -WALL_BOX <= ox + 4 - xc <= SHADOW_BOX and b['ramp_up'][0] - 4 <= oy + 4 <= b['ramp_down'][1] + 4)
+        os_wall = sum(1 for ox, oy in t['w']['OS'] if -CON_BOX[0] <= ox + 4 - xc <= CON_BOX[1] and b['ramp_up'][0] - 4 <= oy + 4 <= b['ramp_down'][1] + 4)
         wl = [1 if abs(x - xc) < 2 and b['ramp_up'][0] <= y <= b['ramp_down'][1] else 0 for x, y in t['w']['wps']]
         t['wp_levels'] = wl
         xp = t['xpts']
@@ -900,7 +1071,7 @@ def main():
             ('crossing to the start straight (px between the middles of the roads; want >= 150)', float(t['sy'] - yc), t['sy'] - yc >= 150),
             ('crossing to the nearest grid box (px; want >= 150)', gridd, gridd >= 150),
             ('cereal O\'s standing on either road at the crossing (count)', os_on, os_on == 0),
-            ('cereal O\'s beside the bridge or its ramps, or in its shadow (count)', os_wall, os_wall == 0),
+            ('cereal O\'s beside the bridge, its ramps or its concrete walls (count)', os_wall, os_wall == 0),
             ('waypoints on the upper level (ramps and deck)', sum(wl), sum(wl) >= 3),
         ]
         t['bridge_checks'] = bc
@@ -910,7 +1081,7 @@ def main():
             print('   %s  %-90s %s' % ('PASS' if ok else 'FAIL', what, ('%.1f' % val) if isinstance(val, float) else val))
     for t in TRACKS[1:]: track_picture(t)
     for t in TRACKS:
-        if t.get('bridge'): closeup_picture(t); walls_picture(t); shadow_picture(t)
+        if t.get('bridge'): closeup_picture(t); walls_picture(t); shadow_picture(t); concrete_picture(t)
     overview_picture(TRACKS)
     json.dump([dict(track=t['n'], name=t['name'], map_tiles=[t['W'], t['H']], lap_px=round(t['lap'], 1), multiple=round(t['mult'], 3),
                     waypoints=t['w']['wps'], distinct_tiles=t['w']['tiles'], cereal_os=len(t['w']['OS']),
@@ -936,7 +1107,7 @@ HARD = {
         "The start straight is short (222 pixels): the grid fits, but the first bend comes sooner after the line than on track 1."],
     5: ["**The game cannot do this today: it has no bridges.** Everything under 'What the crossover needs in the game' below is new work.",
         "Needs a taller map: 74 rows instead of 64 (the same 72 wide), with the same changes as track 3.",
-        "The bridge's pictures add tiles (counted here with the tapering shadow S1 and the dithered wall V1), and its deck needs a mask so it can be redrawn over a car underneath.",
+        "The bridge's pictures add tiles (counted here as the concrete bridge P4 with white kerb walls), and its deck needs a mask so it can be redrawn over a car underneath.",
         "The start straight is the shortest of all five: the grid fits, with as much room behind the line as it needs but less after it than track 1."],
 }
 NEEDS = [
@@ -966,10 +1137,15 @@ def crossover_note(t):
           '- `crossover_walls.png` is the follow-up Grant asked for: A and B combined, with solid side walls and no cereal O\'s on the bridge. Three ways to draw the wall: W1 brick parapet, W2 thick rail with posts, W3 double rail.',
           '- **Walls stop a car leaving the bridge.** They run down both sides from the foot of the ramp up to the foot of the ramp down (y %d to %d, at x = %d and x = %d). In the game that is a collision with a straight line - "on the upper level, between these two y values, x may not pass this value" - which should be simpler than the O collisions, as an estimate (not tried).'
           % (b['ramp_up'][0], b['ramp_down'][1], xc - ROAD // 2, xc + ROAD // 2),
-          '- **Fewer cereal O\'s.** With walls there instead, the O\'s beside the bridge and its ramps are gone: track 5 has %d O\'s (it had %d before the walls). The upper road\'s O\'s stop where the ramp walls start; the lower road\'s stop %d pixels to the left of the bridge\'s middle and %d to the right (clear of the shadow).'
-          % (len(t['w']['OS']), len(t['w_open']['OS']), WALL_BOX, SHADOW_BOX),
+          '- **Fewer cereal O\'s.** With walls there instead, the O\'s beside the bridge and its ramps are gone: track 5 has %d O\'s (it had %d before the walls). The upper road\'s O\'s stop where the ramp walls start; the lower road\'s stop %d pixels to the left of the bridge\'s middle and %d to the right (clear of the concrete walls).'
+          % (len(t['w']['OS']), len(t['w_open']['OS']), CON_BOX[0], CON_BOX[1]),
           '- `crossover_shadow.png` is the next step Grant asked for: the bridge\'s height shown by a **shadow of dither beside it** - nothing at the foot of each ramp, widening up the ramp, widest (%d pixels) beside the level deck where it also lies across the lower road, then tapering away down the other ramp. Shadow options S1 flat, S2 graded, S3 both sides; wall options V1 dithered, V2 two-tone bar, V3 kerb blocks.' % SHADOW_MAX,
-          '- **In `track5.png` and the figures: shadow S1 with wall V1** - the cheapest that reads well. The ramps themselves are no longer shaded (that alone cost about 30 tiles): track 5 now needs %d distinct tiles, against %d with the shaded ramps of `crossover_walls.png` and %d for the first plain idea.' % (t['w']['tiles'], t['w_walls']['tiles'], t['w_open']['tiles']),
+          '- With shadow S1 and wall V1 track 5 needs %d distinct tiles, against %d with the shaded ramps of `crossover_walls.png` and %d for the first plain idea. Grant liked the blue-and-white walls but not the shadow, which led to:' % (t['w_shadow']['tiles'], t['w_walls']['tiles'], t['w_open']['tiles']),
+          '- `crossover_concrete.png`, **the concrete bridge**, seen from straight above: at the tunnel the concrete juts out %d pixels from BOTH sides of the bridge - two walls each side, flanking the lower road where it goes under (four in all) - with the tunnel mouth between each pair as a dark band under the deck\'s edge. Options: P1 straight stubs; P2 splayed wings (a funnel into the tunnel); P3 wedge wings, thick at the bridge and thin at the tip; P4 = P3 with the concrete also running along the ramps on both sides, thin at the ramp\'s foot and %d pixels thick beside the deck; P4 again in cyan only; and one earlier idea kept as an alternative (a one-sided oblique side face).' % (JUT, SIDE),
+          '- **In `track5.png` and the figures: P4 with white kerb walls** - the wedge wings and the thickening ramp walls both say "this road is rising" without any shading. Distinct tiles: %s (the cyan-only P4 uses the same tiles; the oblique alternative %d). These count the ink pictures only: wiping the cloth\'s dots off the concrete needs masks as well, not counted.'
+          % (', '.join('%s %d' % (o, build_world(t, walls=o)['tiles']) for o in ('P1', 'P2', 'P3', 'P4')), build_world(t, walls='C2')['tiles']),
+          '- **The concrete hides a little more of the lower road.** The mouth\'s dark band and (in P4) the side wall cover ground on both sides of the bridge, so a car on the lower road is under cover from x %d to x %d: %d pixels in P4, 96 in P1 to P3, against 88 for the bare deck and kerb walls. The hidden stretch in the data is the P4 one.'
+          % (b['hidden'][0], b['hidden'][1], b['hidden'][0] - b['hidden'][1]),
           '- **White in the walls (V2, V3) has a price.** The window is blue ink on cyan paper and a Spectrum cell holds two colours, so white needs the walls\' cells switched to white paper. The walls are drawn one cell wide on the cell grid so that it is possible, but the game does not change cell colours inside the scrolling window today; it would cost speed and the white would move in 8-pixel steps. An estimate, not tried. The sheet shows both in cyan only as well.', '',
           'Crossover checks the script ran:', '', '| Check | Result |', '|---|---|']
     for what, val, ok in t['bridge_checks']:
@@ -987,7 +1163,7 @@ def write_note(tracks):
           'Classification: Internal', '',
           'These are **designs only**. Nothing here is in the game yet, and the game was not changed.',
           'Made by `tools/make_track_designs.py` (run it again to redraw the pictures and this note).',
-          'Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png` (first ideas), `crossover_walls.png` (with side walls) and `crossover_shadow.png` (tapering shadow, softer walls).', '',
+          'Pictures: `track2.png` to `track5.png`, all five side by side in `tracks_overview.png`, and the bridge close up in `crossover_closeup.png` (first ideas), `crossover_walls.png` (with side walls), `crossover_shadow.png` (tapering shadow, softer walls) and `crossover_concrete.png` (the concrete bridge - the latest).', '',
           '## The figures', '',
           '| | Name | Map (tiles) | Lap (pixels) | Times track 1 | Waypoints | Distinct tiles | Cereal O\'s | Map data (bytes, estimate) |',
           '|---|---|---|---|---|---|---|---|---|']
