@@ -10,4 +10,4 @@ build/track*/
 build/track*_*.png
 
 # trial builds made in a copy of src/ (BDIR=... bash build.sh)
-build/roadwhite*/
+build/road*/

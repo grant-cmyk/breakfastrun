@@ -126,9 +126,10 @@ HP_AT   equ 0x5800 + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL   ; the window's last 
 HP_NB   equ BUF + 0x800*2 + 2*32 + 2 + WIN_W - 1            ; the first canister's upper cell in the buffer (its last byte)
         if OPT_ROADW            ; ROADW (roadwhite.asm): a square here keeps the paper it has - the road's white
 HP_PUT  macro                   ; or the table's cyan - and takes C's ink
-        ld a,(hl)
-        and 0x10
-        or c
+        ld a,(hl)               ; (the paper's three bits from the square, the rest from C)
+        xor c
+        and 0x38
+        xor c
         ld (hl),a
         endm
         else

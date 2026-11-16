@@ -32,6 +32,9 @@
 ; lights and the bubble are not touched. rw_state watches for them coming and going. Nothing
 ; outside the window is written.
 ; =====================================================================
+RW_ROAD equ OPT_ROADCOL*8+1     ; the road's colour: blue on white (ROADCOL 7) or on yellow (ROADCOL=6 bash build.sh:
+                                ; Grant, 16 Nov 2026, "Can we try that in a yellow road")
+RW_X    equ RW_ROAD XOR 0x29    ; the bits that turn the road's colour into the table's blue on cyan
 RW_ROWS equ WIN_H/8             ; the window's rows of squares (19)
 RW_AT   equ 0x5800 + (WIN_Y/8)*32 + WIN_COL     ; its first square's colour on the screen
 
@@ -232,7 +235,7 @@ ra_w:
         jr nc,ra_1
         inc h
 ra_1:
-        ld bc,0x1039            ; (B: the bit that is cyan paper and not white; C: blue on white)
+        ld bc,RW_X*256+RW_ROAD            ; (B: the bit that is cyan paper and not white; C: blue on white)
         ld a,ixl                ; the kind's bit 0: squares 0-15 the careful way
         bit 4,a
         call ra_put
@@ -294,24 +297,32 @@ rw_safe:
         rl d
 rs_l:
         jr c,rs_t
-        ld a,(hl)
-        or b
-        and 0xF8
-        cp 0x38
+        call rs_ours
         jr nz,rs_n
-        set 4,(hl)              ; the road: white paper
+        or RW_ROAD AND 0xF8     ; the road's paper
+        ld (hl),a
         jr rs_n
 rs_t:
-        ld a,(hl)
-        or b
-        and 0xF8
-        cp 0x38
+        call rs_ours
         jr nz,rs_n
-        res 4,(hl)              ; the table: cyan paper
+        or 0x28                 ; the table: cyan paper
+        ld (hl),a
 rs_n:
         inc l
         sla d
         jr nz,rs_l
+        ret
+rs_ours:                        ; Z if (HL)'s paper is the table's or the road's (not bright, not flashing): then A = its ink
+        ld a,(hl)
+        and 0xF8
+        cp 0x28
+        jr z,rs_o1
+        cp RW_ROAD AND 0xF8
+        ret nz
+rs_o1:
+        ld a,(hl)
+        and 7
+        cp a                    ; (Z)
         ret
 
 ; RW_STATE: are the start lights up, is the crew chief's bubble up, what spoons are held? When any
