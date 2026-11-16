@@ -10,13 +10,18 @@ same in all of them belongs to a track: its tiles, row lists, surface, O map, wa
 mini-map, grid - and the numbers the assembler built into the code (MAPH, NWP, the start, the cans' places).
 Long stretches of such bytes are packed with ZX0, short ones kept as they are; the lot, with the unpacker
 (src/hp.asm), loads with the first track's game and is copied above the looped copy routine.
-ZX0: needs the `zx0` program (github.com/einar-saukas/ZX0, built with gcc) - ZX0=path, or on the PATH."""
+ZX0: the packer (github.com/einar-saukas/ZX0) is in tools/zx0 and is built with gcc the first time; ZX0=path uses another."""
 import os, sys, subprocess, shutil, re
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.join(HERE, '..')
 TRACKS = [int(v) for v in (sys.argv[1] if len(sys.argv) > 1 else '1 2').split()]
 NAMES = {1: "TRACK 1  TIFFANY'S  ", 2: 'TRACK 2  THE CLUB   ', 3: 'TRACK 3  GREEN EGGS ', 5: 'TRACK 5  THE FRIDGE '}
 OUTN = os.environ.get('OUT', 'racer_%dtracks' % len(TRACKS))
-ZX0 = os.environ.get('ZX0') or shutil.which('zx0') or '/tmp/claude-0/-home-user/fffe8284-32d1-5fde-8a48-51a919ed51ce/scratchpad/ext/ZX0/zx0'
+ZX0 = os.environ.get('ZX0') or shutil.which('zx0')
+if not ZX0:                                     # the packer's own source is in tools/zx0 (Einar Saukas, BSD 3-clause): built here the first time
+    ZX0 = os.path.join(ROOT, 'build', 'zx0')
+    if not os.path.exists(ZX0):
+        zs = os.path.join(HERE, 'zx0')
+        subprocess.run(['gcc', '-O2', '-o', ZX0] + [os.path.join(zs, f) for f in ('zx0.c', 'optimize.c', 'compress.c', 'memory.c')], check=True)
 M = os.path.join(ROOT, 'build', 'multi'); os.makedirs(M, exist_ok=True)
 BLOCKS = ['world', 'wp', 'ridx', 'omap', 'top', 'trow']
 EXTRA = [v for v in os.environ.get('MULTI_ENV', '').split() if '=' in v]      # more build options, e.g. "FLIP=1"

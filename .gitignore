@@ -8,3 +8,5 @@ __pycache__/
 # a track other than 1 is built in a copy of src/ here (build.sh); its test pictures
 build/track*/
 build/track*_*.png
+build/zx0
+build/multi/
