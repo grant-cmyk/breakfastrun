@@ -40,6 +40,8 @@ pa_one_src:                     ; the car at (HL)'s face in cells B, C for step 
         push hl
         call pa_car
         pop hl
+        inc e                   ; (the next face a step on: Grant, 16 Nov 2026, "have the animations happening at
+                                ; different cycles, they look too synchronised")
         ld d,2
         ret
 pa_car_src:                     ; car A's face in cells B, C for step E (mood frame D); E and D kept
