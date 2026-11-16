@@ -45,7 +45,7 @@ def window_bad_t(sp):
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False; mask[WH - 16:WH, WW - 48:WW] = False
-    want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:24] |= map_now(sp)   # (the mini-map over the picture: as window_bad)
+    want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:MM_W] |= map_now(sp)   # (the mini-map over the picture: as window_bad)
     mask[2:20, WW - 40:WW] = False; mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False     # (the lights, spoons and mug, map, plate, bubble: as window_bad)
     ar = arrow_state(sp)
     if ar: mask[max(ar[2], 0):max(ar[2] + AR_H, 0), max(ar[1], 0):max(ar[1] + AR_W, 0)] = False   # (and the corner arrow, while it is on)

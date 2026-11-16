@@ -11,3 +11,6 @@ build/track*_*.png
 
 # trial builds made in a copy of src/ (BDIR=... bash build.sh)
 build/roadwhite*/
+
+# the 40-wide mini-map option builds in a copy of src/ here (MAPW40=1 bash build.sh); its screens for the sheet
+build/map40_t*
