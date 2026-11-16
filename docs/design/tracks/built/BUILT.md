@@ -182,6 +182,6 @@ first tape's plainer bridge); 12.5 elsewhere. With your car parked and nothing e
 only under about 227,000. The masked tiles are the dearest part (without them: 10.7). Options that would win
 some back, none applied because each can be seen: `docs/design/tracks/bridge_efficiency_options.png`.
 
-Memory: program 2 bytes free, TOPMEM 11, start-up area 64. Found for this: the kerbs out of the map (96 bytes of
+Memory (after the larger corner arrow came in, 16 Nov): program 2 bytes free, TOPMEM 3, start-up area 13; a mask is 4 bytes here, and 90 bytes of row lists sit under the stack at 0x5E46 (the stack has 96; a test checks they are untouched). Before that: Found for this: the kerbs out of the map (96 bytes of
 row lists), row lists in 54 bytes the title never uses (0x5B16) and 48 at the bottom of the stack's page (0x5E58:
 the stack now has 120 bytes; seen 56 deep), the cans' masks.

@@ -19,8 +19,8 @@
 ; =====================================================================
 LVL     equ 0x5E00              ; the cars' levels, 5 bytes; and
 RMP     equ LVL+8               ; and whether each is on a ramp: 1 the ramp up, 0xFF the ramp down, 0 neither; and
-                                ; (0x5E58: BR_ROW2, 48 bytes of the map's row lists - racer.asm; then the stack, to 0x5F00: 120 bytes)
-BR_SAVE equ 0x5E10              ; 72 bytes: the buffer under a half-hidden car (the bottom of the stack's
+                                ; (0x5E46: BR_ROW2, 90 bytes of the map's row lists - racer.asm; then the stack, 0x5EA0 to 0x5F00: 96 bytes, seen 56 deep)
+BR_SAVE equ 0x5E10              ; 54 bytes (3 x 18: a car's frame is on lines y - 1 to y + 16): the buffer under a half-hidden car (the bottom of the stack's
                                 ; page: the stack, from 0x5F00 down, has been seen 56 bytes deep)
 RAMP_SHIFT equ 3                ; THE RAMPS: on the ramp up a car's push and top speed are less by 1 / 2^RAMP_SHIFT (3: an eighth,
                                 ; 12.5%), on the ramp down more by as much - you and the computer cars alike (ramp_adj)
@@ -386,12 +386,12 @@ dcb_k4:
         ld c,a
         dec d
         jr nz,dcb_mk
-        ld l,(ix+C_Y)           ; buffer row y - camy + BUF_TOP - 4, 24 rows from there
+        ld l,(ix+C_Y)           ; buffer row y - camy + BUF_TOP - 1, 18 rows from there
         ld h,(ix+C_Y+1)
         ld de,(camy)
         or a
         sbc hl,de
-        ld de,BUF_TOP-4
+        ld de,BUF_TOP-1
         add hl,de
         bit 7,h
         jr z,dcb_r1
@@ -401,15 +401,15 @@ dcb_r1:
         or a
         ret nz
         ld a,l
-        cp 168
+        cp BUF_TOP+WIN_H
         ret nc                  ; below the window
         ld b,a
 dcb_x:
         ld c,0
         call buf_addr           ; HL = the box's first byte
         push hl
-        ld de,BR_SAVE           ; keep the 24 rows of 3 bytes
-        ld bc,72
+        ld de,BR_SAVE           ; keep the 18 rows of 3 bytes
+        ld bc,54
 dcb_s1:
         push hl
         ldi
@@ -423,7 +423,7 @@ dcb_s1:
         call draw_car
         pop hl
         ld de,BR_SAVE
-        ld b,24
+        ld b,18
 dcb_p1:
         push hl
 dcb_m0:
@@ -616,7 +616,10 @@ kd_nx:
 ; hold only the cloth dots to be hidden - most of their lines are empty - so a line's mask and its picture are each
 ; done only if they have something in them, and the mask is read once a line (tdraw_m reads it three times).
 tdraw_mb:
+        bit 0,e                 ; (a mask is kept as its lines 0, 2, 4, 6: the cloth has no dots on the others)
+        jr nz,tmb_ink
         ld a,(ix+0)
+        inc ix
         or a
         jr z,tmb_ink
         ld c,a
@@ -648,7 +651,6 @@ tmb_ink:
         dec b
         dec l
 tmb_next:
-        inc ix
         inc h
         ld a,h
         and 7

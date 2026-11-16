@@ -48,7 +48,7 @@ def window_bad_t(sp):
     want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:24] |= map_now(sp)   # (the mini-map over the picture: as window_bad)
     mask[2:20, WW - 40:WW] = False; mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False     # (the lights, spoons and mug, map, plate, bubble: as window_bad)
     ar = arrow_state(sp)
-    if ar: mask[max(ar[2], 0):max(ar[2] + 11, 0), max(ar[1], 0):max(ar[1] + 16, 0)] = False   # (and the corner arrow, while it is on)
+    if ar: mask[max(ar[2], 0):max(ar[2] + AR_H, 0), max(ar[1], 0):max(ar[1] + AR_W, 0)] = False   # (and the corner arrow, while it is on)
     for n in range(N):
         c = car(sp, n); cx, cy = c['x'] - camx, c['y'] - camy
         mask[max(cy - 6, 0):max(cy + 23, 0), max(cx - 3, 0):max(cx + 21, 0)] = False
@@ -445,6 +445,12 @@ if not os.environ.get('BRIDGE'):
     card = [sp.read8(0x5800 + r * 32 + c) for r, c in ((5, 5), (6, 5), (18, 20), (17, 20))]
     ok(sp.read8(SYM['race_over']) != 0 and card == [0x4F, 0x70, 0x4F, 0x70], 'four cars in: the race ends and the podium card comes up (%.0f s after you finished)' % t)
     shot(sp, 'track%s_podium.png' % TRACK)
+    # the stack's page: 90 bytes of the map's row lists sit under the stack (0x5E46 up; the stack comes down from 0x5F00). After a whole
+    # race and the podium they must be as loaded, the cans' own tiles apart (the game switches those)
+    binf = open(os.path.join(ROOT_, 'build', 'racer_track5.bin'), 'rb').read(); a0, a1 = SYM['tk_src'], SYM['tk_end']
+    cans_t = {v for k, v in SYM.items() if re.match(r'nos_[abc]_t[01]$', k)}
+    diff = [i for i in range(a1 - a0) if SYM['br_row2'] + i not in cans_t and sp.read8(SYM['br_row2'] + i) != binf[a0 - 0x5F00 + i]]
+    ok(a1 - a0 > 40 and not diff, 'the %d bytes of row lists under the stack are untouched after the race and the podium (the stack never came down to them; it has %d bytes)' % (a1 - a0, 0x5F00 - SYM['br_row2'] - (a1 - a0)))
     sp.__exit__(None, None, None)
 
 # ---------------------------------------------------------------- a computer car dropped off its line finds the way on

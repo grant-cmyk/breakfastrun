@@ -131,8 +131,8 @@ sp.write(SYM['inv'], bytes([0, 0, 0])); sp.write(SYM['dmg'], bytes([0]))
 seen_on = seen_off = 0; mdbad = 0; moved = set(); holes = 0
 for k in range(0, NWP, max(1, NWP // 12)):
     x, y = WPS[k]; put(sp, 0, x - 8, y - 8); sp.write(CARS + C_WP, bytes([(k + 1) % NWP]))
-    for j in range(8):
-        sp.run(duration=0.1, fast_forward=True); at_copy_done(sp)
+    for j in range(11):                               # (11 looks, not 8: the dot's blink can fall in step with 8 looks 0.1 s apart - on track 5 it
+        sp.run(duration=0.1, fast_forward=True); at_copy_done(sp)   # was off at every look from the 5th on, where the settled view is checked)
         md, dots, _ = minimap_diff(sp); mdbad += md
         if dots[0] is None: seen_off += 1
         else:
@@ -155,22 +155,22 @@ def look(on):
         sp.run(duration=0.02, fast_forward=True)
     return arrow_state(sp), window_bad(sp), screen_bits(sp)[WY:WY + WH, 8:8 + WW].astype(bool)
 def arrow_ok(st, w):
-    code, x, y = st; ink, mask = FRAMES[code & 7]; box = w[y:y + 11, x:x + 16]
-    return box.shape == (11, 16) and (box[mask] == ink[mask]).all()
+    code, x, y = st; ink, mask = FRAMES[code & 7]; box = w[y:y + AR_H, x:x + AR_W]
+    return box.shape == (15, 24) and (box[mask] == ink[mask]).all() and ink.sum() > 80
 bad = []; spots = set(); sides = set()
 for k, kind, d in KNOWN:
     stand(k); st, wb, w = look(True); c = car(sp, 0)
     if c['wp'] != k or st is None or st[0] != ATAB[k] or wb or not arrow_ok(st, w): bad.append((k, kind, c['wp'], st, wb)); continue
     spots.add(st[1:]); sides.add(kind)
     cx, cy = c['x'] - g(sp, 'camx'), c['y'] - g(sp, 'camy')           # your car, standing: its 16 x 16 and the arrow's 16 x 11 apart
-    if not (st[1] + 16 <= cx or cx + 16 <= st[1] or st[2] + 11 <= cy or cy + 16 <= st[2]): bad.append((k, 'on the car', st, cx, cy))
+    if not (st[1] + AR_W <= cx or cx + 16 <= st[1] or st[2] + AR_H <= cy or cy + 16 <= st[2]): bad.append((k, 'on the car', st, cx, cy))
     st2, wb2, w2 = look(False)
     if st2 is not None or wb2: bad.append((k, 'the off picture', st2, wb2))
     if k == KNOWN[0][0]: shot(sp, 'arrow_known_t%s.png' % TRACK)
 AX, AY = SYM['arrow_x'], SYM['arrow_y']
-ok(not bad and len(spots) == 1 and spots == {(AX - 8, AY - 5)} and len(sides) >= 3,
-   'at each of those places (%s) the game draws that arrow, pixel for pixel with its clear edge, and always at the same spot: its middle at (%d, %d) of the window - %d across from the middle, %d above it, clear of your car standing still; the rest of the window is the map; two pictures later it is off and nothing is left (%s)'
-   % (', '.join(sorted(sides)), AX, AY, AX - WW // 2, WH // 2 - AY, bad))
+ok(not bad and len(spots) == 1 and spots == {(AX - 12, AY - 7)} and len(sides) >= 3 and abs(AX - 88) <= 8 and 2 <= 128 - (AY + 8) <= 4,
+   'at each of those places (%s) the game draws that arrow, pixel for pixel with its clear edge, and always at the same spot, 24 x 15: its middle at (%d, %d) of the window, over the crew chief\'s bubble (%d across from the window\'s middle, %d below it; the bubble\'s top is line 128), clear of your car standing still; the rest of the window is the map; two pictures later it is off and nothing is left (%s)'
+   % (', '.join(sorted(sides)), AX, AY, AX - WW // 2, AY - WH // 2, bad))
 bad = []
 for k in PLAIN:
     stand(k)
@@ -182,18 +182,18 @@ ok(not bad, 'on the plain stretches: no arrow in either pair of pictures, the wi
 stand(KNOWN[0][0]); seq = []
 for _ in range(12):
     at_copy_done(sp); st = arrow_state(sp); w = screen_bits(sp)[WY:WY + WH, 8:8 + WW].astype(bool)
-    code = ATAB[KNOWN[0][0]]; x, y = AX - 8, AY - 5
-    ink, mask = FRAMES[code & 7]; seq.append(int((w[y:y + 11, x:x + 16][ink]).all()))
+    code = ATAB[KNOWN[0][0]]; x, y = AX - 12, AY - 7
+    ink, mask = FRAMES[code & 7]; seq.append(int((w[y:y + AR_H, x:x + AR_W][ink]).all()))
     sp.run(duration=0.02, fast_forward=True)
 s = ''.join(map(str, seq))
 ok(s in ('110011001100', '100110011001', '001100110011', '011001100110'), 'it flashes: on for two pictures, off for two (%s) - about three times a second at 12 to 14 pictures a second' % s)
 
 # ---------------------------------------------------------------- clear of the map, the mug, the spoons, the bubble, the plate, the lights
 # (it has one fixed spot now, so this is a matter of where that is)
-box = np.zeros((WH, WW), dtype=bool); box[AY - 5:AY + 6, AX - 8:AX + 8] = True
+box = np.zeros((WH, WW), dtype=bool); box[AY - 7:AY + 8, AX - 12:AX + 12] = True
 hud = np.zeros((WH, WW), dtype=bool); hud[MM_TOP:MM_TOP + MM_H, 0:24] = True; hud[WH - 16:WH, WW - 48:WW] = True; hud[136 - WY:152 - WY, 56 - 8:136 - 8] = True
 hud[2:20, WW - 40:WW] = True; hud[8 - WY:32 - WY, 56 - 8:136 - 8] = True
-ok(box.sum() == 176 and not (box & hud).any(), 'the arrow\'s spot is clear of the mini-map, the crew chief\'s bubble, the spoons, the mug, your place\'s plate and the start lights')
+ok(box.sum() == 360 and not (box & hud).any() and box[111].any() and box[125].any() and not box[126:].any(), 'the arrow\'s spot is clear of the mini-map, the crew chief\'s bubble, the spoons, the mug, your place\'s plate and the start lights')
 sp.__exit__(None, None, None)
 
 # ---------------------------------------------------------------- no trails, driving

@@ -255,6 +255,23 @@ yg_pushv: dw G_PUSH             ; ... its push
 yg_topv:  dw G_TOP              ; ... its top speed
 yg_topn:  dw G_TOP              ; this frame's top speed (twice it with NOS)
 ; (hudtext_flag.asm's two texts were here: nothing showed them any more - 29 bytes, 15 Nov 2026)
+; JB_KEY: the jingle's step A kept, and A KEY SKIPS THE JINGLE (Grant, 16 Nov 2026: "key should skip a jingle").
+; Looked for once a step. The keys that count are the number rows and the two bottom rows (1-0, SPACE, ENTER,
+; SYMBOL SHIFT, CAPS SHIFT, Z X C V, B N M, H J K L): NOT the rows of Q, A and P, so the accelerator, brake or
+; steering held over the finish line does not cut the flag's jingle short. Called from jb_1 (plateco.asm) in
+; place of its 3-byte LD (jb_n+1),A, and kept out of the jingle player on purpose: on 16 Nov 2026 a build with
+; 23 bytes more in the player - even 23 unused bytes - failed drive_test's ramming check (the computer car put
+; in front of you jumped 66 pixels down in one frame). Something later in the program depends on where it
+; sits; not found yet.
+jb_key:
+        ld (jb_n+1),a
+        ld a,0x26               ; (the address lines low for those five rows)
+        in a,(254)
+        or 0xE0
+        inc a
+        ret z                   ; none of them down
+        pop af                  ; (the call's return: we leave by jb_end instead)
+        jp jb_end
 ; CF_BLINK: the crew chief blinks (Grant, 15 Nov 2026: "His eyes will just become one dot for a brief
 ; period and then two pixels each again"). His face is kept on the screen under the window (screen_once);
 ; its eyes are 2 pixels high, in rows 5 and 6. For 2 pictures in every 32 the upper pixel of each is

@@ -48,10 +48,9 @@ HIMEM   equ COPIER + 152*40 + 3 ; 0xFFC3 .. 0xFFF3: 49 bytes above the screen-co
 MAPDAT  equ BUF+0x10A0          ; D0: the mini-map's ink, 3 bytes a line (the cars' dots are XORed into it here: map_update)
 STRIP1  equ BUF+0x11A0          ; D1: the corner arrows' table (a byte a waypoint), then some of the map's row lists
 STRIP2  equ BUF+0x12A0          ; D2: row lists (32 bytes)
-STRIP3  equ BUF+0x13A0          ; D3: row lists
-BR_ROW2 equ 0x5E58              ; (track 5 only: 48 more bytes of row lists, at the bottom of the stack's page - bridge.asm)
-BR_ROWS equ 0x5B16              ; (track 5 only: row lists where title.asm's a_sav was declared - 54 bytes nothing reads or writes)
-ARROW_F equ BUF+0x14A0          ; D4-D7: the corner arrows' frames, 8 x 44 bytes, two a page
+STRIP3  equ 0x5B16              ; row lists (54 bytes: the title's a_sav, which nothing uses - RAM-SWEEP 5.1; D3 has an arrow now)
+ARROW_F equ BUF+0x13A0          ; D3-D7: the corner arrows' five pictures, 90 bytes each, one a page (arrow.asm)
+BR_ROW2 equ 0x5E46              ; (track 5 only: 90 bytes of row lists at the bottom of the stack's page - bridge.asm)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
@@ -1979,7 +1978,9 @@ dt_mask:                        ; IX = its mask, DE = its picture, HL = where
         ld h,d
         add hl,hl
         add hl,hl
+        if 1-OPT_BRIDGE         ; (BRIDGE: a mask is 4 bytes - its even lines)
         add hl,hl
+        endif
         ld de,tmask
         add hl,de
         push hl
@@ -3498,7 +3499,9 @@ oc_dy:    dw 0
 snd_bump: db 0                  ; crash noise: pictures left
 O_FREE   equ 6
 o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
+        if OPT_AY + OPT_MUSIC
 mu_wait:  db 1                  ; the ditty: frames until its next note
+        endif
         if OPT_OBJ
 ob_cx:    dw 0                  ; the coloured objects: the camera their colours were last put up for
 ob_cy:    dw 0
@@ -3512,15 +3515,29 @@ op_min:   db 0                  ; and its first and last ink pixel
 op_max:   db 0
         include "objects.asm"
         endif
+        if OPT_AY + OPT_MUSIC
 mu_ph:    db 0                  ; ... frames this note still sounds for
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_off:   db 0                  ; ... where its burst is in mu_ptab
+        endif
 mu_ptr:   dw mu_tune            ; ... the next note in the tune (music.asm is kept at TD: see td_end2)
+        if OPT_AY + OPT_MUSIC
 mu_va:    db 0                  ; the AY's volumes: the tune's (channel A),
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_vb:    db 0                  ; the bass's (B: the byte after mu_va),
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_vn:    db 0                  ; the hat's (C)
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_beat:  db 0                  ; steps played: odd ones have the high bass and the hat
+        endif
 jin_on:   db 0                  ; the start ditty: 1 playing, 0 over (the lights come on), 0xFF held off (Q starts them)
+        if OPT_AY + OPT_MUSIC
 isr_bc:   dw 0                  ; BC, kept here while the interrupt writes to the AY
+        endif
 AY_VA     equ 13                ; a note starts this loud (of 15) and falls 3
 AY_VB     equ 11
 AY_VN     equ 9
@@ -3585,9 +3602,9 @@ yg_s0:       dw 0
 yg_df:       db 0               ;   their changes, as bytes
 yg_ds:       db 0
 yg_tang:     db 0               ;   heading + 1 the sine/cosine are for (0: none)
-yg_pvf:      dw 0               ;   vf, vs, heading the world speed was made from
-yg_pvs:      dw 0
-yg_pang:     db 0
+; (yg_pvf, which nothing read, went on 16 Nov 2026)
+; (yg_pvs, which nothing read, went on 16 Nov 2026)
+; (yg_pang, which nothing read, went on 16 Nov 2026)
 start_go:    db 0               ; Q pressed: the lights are coming on
 start_f0:    db 0               ; FRAMES when Q was pressed
 start_ph:    db 0               ; the lights shown: 0 none, 1-3 red, 4 green
@@ -3632,7 +3649,7 @@ gd_place:    db 0
 gd_y:        db 0               ; Q has been let go since this race was set up
 bar_shown:   defs 7             ; the message bar: the 6 big letters shown (0: none),
                                 ; then 1: LAP and the time are shown
-bar_next:    dw 0               ; the race time when the clock's next second is due
+; (bar_next, which nothing read, went on 16 Nov 2026)
 race_vars_end:
 shown_dot:   defs 2*NCARS       ; each car's dot on the mini-map (0xFF x: none) - not reset
 last_shown: db 0
@@ -4045,32 +4062,6 @@ isr_x:
         ei
         ret
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
-; JB_KEY: the jingle's step A kept, and A KEY SKIPS THE JINGLE (Grant, 16 Nov 2026: "key should skip a jingle").
-; Looked for once a step, and only a key pressed AFTER every key was seen up counts: not the 1 that started
-; the race, nor the accelerator held over the line. Called from jb_1 (plateco.asm) in place of its 3-byte
-; LD (jb_n+1),A, and kept HERE, last in the program, on purpose: on 16 Nov 2026 a build with 23 bytes more in
-; the jingle player - even 23 unused bytes - failed drive_test's ramming check (the computer car put in front
-; of you jumped 66 pixels down in one frame). Something after plateco.asm depends on where it sits; not found yet.
-jb_key:
-        ld (jb_n+1),a
-        or a
-        jr nz,jk_1
-        ld (jb_arm+1),a         ; (the first step: no key has been seen let go yet)
-jk_1:
-        xor a
-        in a,(254)
-        cpl
-        and 0x1F
-        jr z,jk_up
-jb_arm: ld a,0
-        or a
-        ret z
-        pop af                  ; (the call's return: we leave by jb_end instead)
-        jp jb_end
-jk_up:
-        inc a
-        ld (jb_arm+1),a
-        ret
 code_end:
 
 ; ---------------------------------------------------------------------
@@ -4127,19 +4118,16 @@ start_once:                     ; (start, from the start-up area)
         ld de,STRIP3
         ld bc,s3_end-s3_src
         call so_blk
-        if OPT_BRIDGE           ; BRIDGE: a few more row lists, in 54 bytes the title never uses (they follow strip 3's in hirows.asm)
-        ld de,BR_ROW2           ; (and 48 bytes at the bottom of the stack's page)
+        if OPT_BRIDGE           ; BRIDGE: a few more row lists at the bottom of the stack's page (they follow strip 3's in hirows.asm)
+        ld de,BR_ROW2
         ld bc,tk_end-tk_src
         call so_blk
-        ld de,BR_ROWS
-        ld bc,ts_end-ts_src
-        call so_blk
         endif
-        ld hl,arrow_src         ; the arrows' frames, two to a strip: D4-D7
+        ld hl,arrow_src         ; the arrows' five pictures, one to a strip: D3-D7
         ld de,ARROW_F
-        ld a,4
+        ld a,5
 so_arr:
-        ld bc,2*ARROW_ROWS*4
+        ld bc,6*ARROW_ROWS
         ldir
         ld e,ARROW_F AND 255
         inc d
@@ -4783,7 +4771,7 @@ faces     equ faces_src
         if (thrust_tab + 63) / 256 - thrust_tab / 256
         .error arrow_draw: thrust_tab must be on one page
         endif
-        if (s1_end - s1_src - 1) / 90 + (s2_end - s2_src) / 33 + (s3_end - s3_src - 1) / 90 + (MAP_H * 3 - 1) / 90 + (WIN_H - 152)
+        if (s1_end - s1_src - 1) / 90 + (s2_end - s2_src) / 33 + (s3_end - s3_src) / 55 + (MAP_H * 3 - 1) / 90 + (WIN_H - 152)
         .error a block for the back buffer's unused strips is too long (90 bytes; 32 on D2), or the window is not 152 lines
         endif
         if init_end > MAPDAT

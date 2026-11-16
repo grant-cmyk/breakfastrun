@@ -52,11 +52,11 @@ row_index_src:
         dw row_48 - hi_src + HIMEM
         dw row_49 - s2_src + STRIP2
         dw row_50 - s3_src + STRIP3
-        dw row_51 - s3_src + STRIP3
-        dw row_52 - s3_src + STRIP3
+        dw row_51
+        dw row_52
         dw row_53
         dw row_54
-        dw row_55 - s3_src + STRIP3
+        dw row_55
         dw row_56
         dw row_57 - s1_src + STRIP1
         dw row_58 - s2_src + STRIP2

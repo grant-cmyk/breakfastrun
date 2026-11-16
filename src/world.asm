@@ -112,8 +112,11 @@ tiles:
         defb 0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00   ; 96
         defb 0xFC,0x07,0x00,0x00,0x00,0x00,0x00,0x00   ; 97
         defb 0xFF,0xFF,0xFF,0xA1,0x81,0x7E,0x00,0x00   ; 98
+row_51:  defb 9,6,51,19,15,22,39,23,18,26,39,27,18,30,39,31,18,36,77
+row_52:  defb 6,19,98,24,6,25,10,28,6,29,10,36,77
 row_53:  defb 8,8,51,24,37,28,37,36,77,65,51,69,11,70,25,71,19
 row_54:  defb 8,24,38,25,4,28,38,29,4,36,77,69,54,70,78,71,36
+row_55:  defb 6,10,51,36,77,63,51,69,46,70,13,71,35
 row_56:  defb 19,13,51,16,51,19,51,22,51,25,51,28,51,31,51,34,51,36,76,37,51,40,51,43,51,46,51,49,51,52,51,55,51,57,51,60,51,70,80
 row_60:  defb 6,20,11,21,25,22,19,45,20,46,32,47,28
 row_61:  defb 6,20,54,21,78,22,36,45,55,46,41,47,65
@@ -129,9 +132,9 @@ NOS_B_T1 equ row_18 - high_src + TOPMEM + 8   ; its tile in the list
 NOS_B_V1 equ 63
 NOS_C_T1 equ row_18 - high_src + TOPMEM + 4   ; its tile in the list
 NOS_C_V1 equ 64
-NOS_A_T0 equ row_51 - s3_src + STRIP3 + 4   ; its tile in the list
+NOS_A_T0 equ row_51 + 4   ; its tile in the list
 NOS_A_V0 equ 15
-NOS_A_T1 equ row_52 - s3_src + STRIP3 + 2   ; its tile in the list
+NOS_A_T1 equ row_52 + 2   ; its tile in the list
 NOS_A_V1 equ 98
 NOS_A_X equ 156
 NOS_A_Y equ 416   ; its centre
