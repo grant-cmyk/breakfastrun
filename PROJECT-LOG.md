@@ -2242,3 +2242,7 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 - YOUR CAR AND THE SPOT: standing, your car is at lines 68-84; the look-ahead lets it down 16 at most, and its picture is at most 17 lines: it ends by line 107, 4 above the arrow. So your car does not reach it in ordinary driving (not tried at the world's edge, where the camera stops). The other cars do drive through it: the arrow is drawn over them (docs/design/arrows/v3_t1_car_under.png).
 - SPEED (tests/zxlap.py, a lap, track 1): in the pack 4.02 TV frames a picture before and after; alone 3.96 -> 3.95.
 - TESTS: 15 suites pass on track 1; arrow_test (23) on tracks 2, 3 and 5; track2_test QUICK on 2 and 3; track5_test QUICK on 5. Pictures: docs/design/arrows/v3_* (tracks 1 and 2).
+
+## 16 Nov 2026 07:46 SAST - the larger arrow above the crew bubble merged; the key-skip made smaller to fit
+- Arrow v3 merged (fixed 24 x 15 field at window 80-103, lines 111-125; arrow 15 x 13). Track 1 then had no room for jb_key's 30 bytes, so: jb_key is now 15 bytes in the gap (clothmini.asm) and reads only the number rows and the two bottom rows - not the rows of Q, A and P - so no "seen up first" logic is needed. Four unused variables went (yg_pvf, yg_pvs, yg_pang, bar_next) and the music-only ones are kept out of builds without music.
+- Program free: track 1 23 bytes, track 2 40, track 3 30, track 5 108. All suites pass on track 1; arrow_test on 2; track tests QUICK on 2 and 5.

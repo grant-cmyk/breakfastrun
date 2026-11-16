@@ -3487,7 +3487,9 @@ oc_dy:    dw 0
 snd_bump: db 0                  ; crash noise: pictures left
 O_FREE   equ 6
 o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
+        if OPT_AY + OPT_MUSIC
 mu_wait:  db 1                  ; the ditty: frames until its next note
+        endif
         if OPT_OBJ
 ob_cx:    dw 0                  ; the coloured objects: the camera their colours were last put up for
 ob_cy:    dw 0
@@ -3501,15 +3503,29 @@ op_min:   db 0                  ; and its first and last ink pixel
 op_max:   db 0
         include "objects.asm"
         endif
+        if OPT_AY + OPT_MUSIC
 mu_ph:    db 0                  ; ... frames this note still sounds for
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_off:   db 0                  ; ... where its burst is in mu_ptab
+        endif
 mu_ptr:   dw mu_tune            ; ... the next note in the tune (music.asm is kept at TD: see td_end2)
+        if OPT_AY + OPT_MUSIC
 mu_va:    db 0                  ; the AY's volumes: the tune's (channel A),
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_vb:    db 0                  ; the bass's (B: the byte after mu_va),
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_vn:    db 0                  ; the hat's (C)
+        endif
+        if OPT_AY + OPT_MUSIC
 mu_beat:  db 0                  ; steps played: odd ones have the high bass and the hat
+        endif
 jin_on:   db 0                  ; the start ditty: 1 playing, 0 over (the lights come on), 0xFF held off (Q starts them)
+        if OPT_AY + OPT_MUSIC
 isr_bc:   dw 0                  ; BC, kept here while the interrupt writes to the AY
+        endif
 AY_VA     equ 13                ; a note starts this loud (of 15) and falls 3
 AY_VB     equ 11
 AY_VN     equ 9
@@ -3574,9 +3590,9 @@ yg_s0:       dw 0
 yg_df:       db 0               ;   their changes, as bytes
 yg_ds:       db 0
 yg_tang:     db 0               ;   heading + 1 the sine/cosine are for (0: none)
-yg_pvf:      dw 0               ;   vf, vs, heading the world speed was made from
-yg_pvs:      dw 0
-yg_pang:     db 0
+; (yg_pvf, which nothing read, went on 16 Nov 2026)
+; (yg_pvs, which nothing read, went on 16 Nov 2026)
+; (yg_pang, which nothing read, went on 16 Nov 2026)
 start_go:    db 0               ; Q pressed: the lights are coming on
 start_f0:    db 0               ; FRAMES when Q was pressed
 start_ph:    db 0               ; the lights shown: 0 none, 1-3 red, 4 green
@@ -3621,7 +3637,7 @@ gd_place:    db 0
 gd_y:        db 0               ; Q has been let go since this race was set up
 bar_shown:   defs 7             ; the message bar: the 6 big letters shown (0: none),
                                 ; then 1: LAP and the time are shown
-bar_next:    dw 0               ; the race time when the clock's next second is due
+; (bar_next, which nothing read, went on 16 Nov 2026)
 race_vars_end:
 shown_dot:   defs 2*NCARS       ; each car's dot on the mini-map (0xFF x: none) - not reset
 last_shown: db 0
@@ -4034,32 +4050,6 @@ isr_x:
         ei
         ret
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
-; JB_KEY: the jingle's step A kept, and A KEY SKIPS THE JINGLE (Grant, 16 Nov 2026: "key should skip a jingle").
-; Looked for once a step, and only a key pressed AFTER every key was seen up counts: not the 1 that started
-; the race, nor the accelerator held over the line. Called from jb_1 (plateco.asm) in place of its 3-byte
-; LD (jb_n+1),A, and kept HERE, last in the program, on purpose: on 16 Nov 2026 a build with 23 bytes more in
-; the jingle player - even 23 unused bytes - failed drive_test's ramming check (the computer car put in front
-; of you jumped 66 pixels down in one frame). Something after plateco.asm depends on where it sits; not found yet.
-jb_key:
-        ld (jb_n+1),a
-        or a
-        jr nz,jk_1
-        ld (jb_arm+1),a         ; (the first step: no key has been seen let go yet)
-jk_1:
-        xor a
-        in a,(254)
-        cpl
-        and 0x1F
-        jr z,jk_up
-jb_arm: ld a,0
-        or a
-        ret z
-        pop af                  ; (the call's return: we leave by jb_end instead)
-        jp jb_end
-jk_up:
-        inc a
-        ld (jb_arm+1),a
-        ret
 code_end:
 
 ; ---------------------------------------------------------------------
