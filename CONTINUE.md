@@ -3,19 +3,22 @@
 **Stamped:** 2026-11-16 SAST (the choose screen added; the rest as of 2026-11-15 15:17) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
-**The race track trial (16 Nov 2026, branches worktree-agent-af8779cbaad3c1b51 then worktree-agent-ab8bf2b0bee0348cf, not
-merged):** Grant scrapped the breakfast table for a traditional track - black road, solid green grass from 10 px beyond
-the road's edge, a dashed white limit line, each car its own colour, and clash rule 4. Built as a trial tape of track 1:
-`RACETRACK=1 bash build.sh` -> build/racer_racetrack.tap (off by default; the plain build and tracks 2, 3, 5 are byte for
-byte unchanged). He drove it: "the look is right ... it is just not smooth". The speed pass (PROJECT-LOG's last entry)
-took it from 7.0-7.5 pictures a second to 7.6-8.5 with no change to the look - today's tape makes 12.4-12.6 - by hiding
-all-grass and plain-road squares by their colour and making up only the squares that show something, straight onto the
-screen (src/racetrack.asm; the data from tools/make_world.py). Two concessions are built for him to try:
-`RT_DASH=sparse RACETRACK=1 bash build.sh` (dashes 8 on 24 off: 8.5-9.6) and `RT_NOLINE=1 RACETRACK=1 bash build.sh` (no
-limit line: 9.6-10.6); pictures and real-speed GIFs of all three in docs/design/racetrack/built/speed_*. Getting back to
-12.5 takes the limit line and about a quarter of the play window, or the line and three savings costed in the log and
-not built. About 1,200 bytes are free in these builds. Next for Grant: drive the three tapes and choose from the log's
-menu (or say the trial stops here).
+**The race track trial (16-17 Nov 2026, branches worktree-agent-af8779cbaad3c1b51, worktree-agent-ab8bf2b0bee0348cf, then
+worktree-agent-ae2e8b23fd6243e9b - not merged):** Grant scrapped the breakfast table for a traditional track - black road,
+solid green grass from 10 px beyond the road's edge, a dashed white limit line, each car its own colour, clash rule 4. A
+trial of track 1: `RACETRACK=1 bash build.sh` -> build/racer_racetrack.tap (off by default; the plain build and tracks 2,
+3, 5 are byte for byte unchanged). He drove it: "the look is right ... it is just not smooth", then asked for the speed
+back. PROJECT-LOG's last entry (17 Nov) has the ranked menu, all built and measured (pictures a second: start / mid-lap /
+in the pack; today's tape 12.4 / 12.4 / 12.6): white dashes 9.6 / 10.0 / 9.0; sparse dashes 10.5 / 10.75 / 9.9; a green
+1-px line 11.6 / 12.0 / 10.0; NO LINE 12.25 / 12.75 / 11.1 (`RT_NOLINE=1`) - all with the picture exactly as it was; and
+no line with `GRIP1=1` (your car moved and its grip worked out once a picture - it may change the handling, so it is a
+switch, off by default) 12.9 / 13.0 / 12.25. What did it: the drawing code moved out of the slow memory under 0x8000
+(src/racetrack_hot.asm), and the mini-map, plate and mug sent to the screen only when they change (tests/rt_fixed_test.py
+checks them). A smaller play window is a switch too (`RT_ROWS=16`: a black band under the play area) but buys nothing in
+the pack. Not built: the kinds a byte a block (no room: 1,316 bytes wanted, 747 free), the 2-pixel rim fix. Pictures and
+real-speed GIFs: docs/design/racetrack/built/speed_*. Next for Grant: drive racer_racetrack_noline.tap and
+racer_racetrack_noline_grip1.tap side by side (does the car feel the same?), and say whether the road reads without a
+line - or pick another row of the menu.
 
 **Latest (14 Nov 2026, 22:16 SAST) - read this before the older status below:** the window is 192 x 152
 (24 columns, 19 rows); the right panel is 6 columns: the mini-map at its top, RACE and the order under it

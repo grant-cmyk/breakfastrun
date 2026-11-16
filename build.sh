@@ -27,7 +27,7 @@ if [ "${RACETRACK:-0}" = "1" ]; then
   [ "${GRIP1:-0}" = "1" ] && RTN="${RTN}_grip1"
   BDIR="${BDIR:-racetrack$RTN}"; OUT="${OUT:-racer_racetrack$RTN}"
 elif [ "${GRIP1:-0}" = "1" ]; then
-  BDIR="${BDIR:-grip1_t${TRACK:-1}}"; OUT="${OUT:-racer_grip1}"      # (GRIP1=1 alone: today's game with the switch -> build/racer_grip1.tap)
+  BDIR="${BDIR:-grip1_t${TRACK:-1}}"; OUT="${OUT:-racer_grip1}"      # (GRIP1=1 without RACETRACK: today's game with the switch -> build/racer_grip1.tap. It needs a few bytes: TILE1=1 FLIP=1 TOWER=1 GRIP1=1 bash build.sh)
 fi
 CARS="$CARSOPT" python3 "$ROOT/tools/make_data.py" | grep -i "cars:"
 U=15; [ "$CARSOPT" = "big" ] && U=12
