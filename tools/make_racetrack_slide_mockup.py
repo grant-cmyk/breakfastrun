@@ -17,6 +17,13 @@ PAD = 140
 def plain(width): return np.pad(np.array(road_mask(width), dtype=bool), PAD)
 grass = ~plain(ROAD + 20)                                    # the grass starts 10 px beyond the track's limit
 limit = plain(ROAD) & ~plain(ROAD - 4)                       # the white limit line
+# DITH=1 (Grant, 16 Nov 2026: "try that again, but make the grass area dithered. I'd also like the side lines of the
+# track dashed"): three panels, all with his rule, the grass in three dithers of green on black, the line dashed
+# -> docs/design/racetrack/grass_dither.gif
+DITH = os.environ.get('DITH') == '1'
+_yy, _xx = np.mgrid[0:grass.shape[0], 0:grass.shape[1]]
+if DITH: limit &= ((_xx + _yy) // 8) % 2 == 0
+PATS = {'light': ~((_xx % 2 == 0) & (_yy % 2 == 0)), 'half': (_xx + _yy) % 2 == 0, 'coarse': ((_xx // 2) + (_yy // 2)) % 2 == 0, None: np.ones_like(grass)}
 K, G, WH, CY = (0, 0, 0), (0, 200, 0), (215, 215, 215), (0, 215, 215)
 ca = open(os.path.join(HERE, 'car_art.txt')).read()
 art = re.search(r'== YOU heading 0 ==\n((?:[Xo.]{16}\n){16})', ca).group(1).split()
@@ -49,9 +56,9 @@ for f in range(400):
         x += math.cos(h) * v; y += math.sin(h) * v
     track.append((x, y, h))
     if phase == 2 and not on_grass and tgt > ic + 120: break
-S = 3; WW, WHT = 192, 152
+S = 2 if DITH else 3; WW, WHT = 192, 152
 fnt = ImageFont.load_default()
-OPTS = [('before', "the grass's green wins: the car goes green"), ('new', "the car keeps its colour: its squares are car colour on green")]
+OPTS = [('light', 'A: light dither - 3 green pixels in 4'), ('half', 'B: half-tone - every other pixel'), ('coarse', 'C: coarse - 2 x 2 blocks')] if DITH else [('before', "the grass's green wins: the car goes green"), ('new', "the car keeps its colour: its squares are car colour on green")]
 def frame(x, y, h, cam):
     vx, vy = int(cam[0]) - WW // 2, int(cam[1]) - WHT // 2
     deg = -math.degrees(h) - 90
@@ -60,9 +67,10 @@ def frame(x, y, h, cam):
     px, py = int(x) - vx - 8, int(y) - vy - 8
     cI[py:py + 16, px:px + 16] = ri; cB[py:py + 16, px:px + 16] = rb
     g, white = grass[vy:vy + WHT, vx:vx + WW], limit[vy:vy + WHT, vx:vx + WW]
-    sheet = Image.new('RGB', (2 * (WW * S + 12) + 12, WHT * S + 38), (40, 42, 48)); d = ImageDraw.Draw(sheet)
+    sheet = Image.new('RGB', (len(OPTS) * (WW * S + 12) + 12, WHT * S + 38), (40, 42, 48)); d = ImageDraw.Draw(sheet)
     for k, (mode, what) in enumerate(OPTS):
-        out = np.zeros((WHT, WW, 3), np.uint8)
+        out = np.zeros((WHT, WW, 3), np.uint8); pat = PATS[mode if DITH else None][vy:vy + WHT, vx:vx + WW]
+        if DITH: mode = 'new'
         for qy in range(WHT // 8):
             for qx in range(WW // 8):
                 c = (slice(qy * 8, qy * 8 + 8), slice(qx * 8, qx * 8 + 8))
@@ -72,7 +80,7 @@ def frame(x, y, h, cam):
                 elif car and not gr and mode == 'new':           # on the black: the car's colour wins over the line
                     ink, icol, pcol = cI[c] | (white[c] & ~cB[c]), CY, K
                 else:
-                    ink = (g[c] & ~cB[c]) | cI[c] | (white[c] & ~cB[c])
+                    ink = (g[c] & pat[c] & ~cB[c]) | cI[c] | (white[c] & ~cB[c])
                     icol = G if gr else (WH if white[c].any() else CY); pcol = K
                 out[c] = np.where(ink[..., None], np.array(icol, np.uint8), np.array(pcol, np.uint8))
         ox = 12 + k * (WW * S + 12)
@@ -88,5 +96,6 @@ for n, (x, y, h) in enumerate(track):
 out = os.path.join(ROOT, 'docs', 'design', 'racetrack')
 pal = frames[len(frames) // 2].convert('P', palette=Image.ADAPTIVE, colors=16)
 fr = [f.quantize(palette=pal, dither=Image.NONE) for f in frames]
-fr[0].save(os.path.join(out, 'grass_slide.gif'), save_all=True, append_images=fr[1:], duration=70, loop=0)
-frames[min(still or 0, len(frames) - 1)].save(os.path.join(out, 'grass_slide.png')); print('wrote', len(frames), 'frames; bend at', ic, 'drive', len(track))
+NAME = 'grass_dither' if DITH else 'grass_slide'
+fr[0].save(os.path.join(out, NAME + '.gif'), save_all=True, append_images=fr[1:], duration=70, loop=0)
+frames[min(still or 0, len(frames) - 1)].save(os.path.join(out, NAME + '.png')); print('wrote', len(frames), 'frames; bend at', ic, 'drive', len(track))
