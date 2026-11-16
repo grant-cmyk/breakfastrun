@@ -239,15 +239,19 @@ pass.
 ## 6. What is not verified
 
 - Nothing has been driven by a person. All figures are from autopilot laps and the test suites.
-- **Lap-time checks**: on the multi-track tapes two checks fail on thresholds: "the fastest computer car is
-  competitive" (17.4 s against a limit near 17.5) on track 1 after going round the tracks, and "no lap is much
-  longer than another" on track 2 (21.1 to 29.3 s). Memory is identical to each track's own build, so this is the
-  single build's behaviour with `PACEFIX`, the loop and the other savings, not the track switching. Not
-  investigated further.
+- **Three checks fail on the multi-track tapes.** Results of `bash tests/multi_test.sh racer_3tracks`: track 1
+  drive 52 of 53, arrow 23 of 23, copy exact; track 2 track test 35 of 36, arrow 23 of 23; track 3 track test 36
+  of 36, arrow 23 of 23; memory after choosing exact on all three; unpacking round and back exact. The failures:
+  (1) track 1, "the race order shows gaps to the leader": the leader's row shows a gap and the second row none.
+  Two computer cars averaged the same 18.2 s a lap in that race, which suggests a dead heat at the line; not
+  investigated, and it did not happen on the two-track tape. (2) Track 2, "no lap is much longer than another":
+  21.1 to 29.2 s against a limit of 1.35 times. (3) On the two-track tape, "the fastest computer car is
+  competitive": 17.4 s against a limit near 17.5. Memory is identical to each track's own build, so (2) and (3)
+  are that build's racing with `PACEFIX` and the savings, not the track switching: thresholds set for today's
+  pace. None of the three was run down to a cause.
 - The full 15 suites were run on today's code and on `LOOP=1` (tracks 1, 2, 3, 5). On the multi-track tapes only
   the suites that take a tape from the environment were run: drive, arrow, copy on track 1; the track test and
   arrow on tracks 2 and 3. Finish, title, crew, damage, nos, plate, setup, skip, stuck were not run on them.
-  The three-track run was still going when this was written: see the report for its result.
 - `FLIP=1` and `TILE1=1` were tested on track 1 by themselves and on tracks 1-3 inside the three-track tape, not
   on track 5. The title's lapping cars with `FLIP=1` were looked at once, not compared pixel for pixel.
 - `LOOP=2` (the copy behind the beam) is an experiment: only the tear report and a lap were run. The interrupt
