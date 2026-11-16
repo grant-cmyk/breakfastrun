@@ -129,7 +129,7 @@ if 'mem' in PARTS:
         b1, b2 = looks(os.path.join(M, 'pad_t%d.tap' % t), [])
         var = lambda x: a1[x] != a2[x] or b1[x] != b2[x]
         diff = [x for lo, hi in AREAS for x in range(lo, hi) if a1[x] != b1[x] and not var(x)]
-        own = [x for x in diff if SYM['ch_np'] <= x < SYM['cwho'] + 10 or x in (SYM['cr_draw'] + 1, SYM['cr_draw'] + 2, SYM['pb_attr'], SYM['pa_last'])]   # the choose screen's own variables
+        own = [x for x in diff if SYM['ch_np'] <= x < SYM['cwho'] + 10 or 0x5B00 <= x < 0x5B16 or SYM['shown_dot'] <= x < SYM['shown_dot'] + 10 or x in (SYM['md_pat'], SYM['md_pat'] + 1) or x in (SYM['cr_draw'] + 1, SYM['cr_draw'] + 2, SYM['pb_attr'], SYM['pa_last'])]   # the choose screen's own variables, and the title's (0x5B00-0x5B15: its cars, which stand still while the choose screen is up); the mini-map's dots, marked "none shown" by the track step (the game itself does that when the first race starts)
         scratch = [x for x in diff if 0xD2C0 <= x < 0xD2FA]                      # (cloth_pat, PNUM: printing's scratch)
         left = [x for x in diff if SYM['mapdat'] + 3 * 17 <= x < SYM['mapdat'] + 90]   # (the mini-map's strip past a shorter map's last line: start-up leftovers, as tests/multi_mem_check.py)
         rest = [x for x in diff if x not in own and x not in scratch and x not in left]
@@ -227,7 +227,7 @@ if 'extra' in PARTS:
     ok(G['p'] == [[1, 0, 0x78], [1, 1, 0x70], [1, 0, 0x78]] and S['p'] == [[1, 0, 0x78], [1, 0, 0x78], [1, 1, 0x70]], 'right moves the choice, and the second pip with it: GRIP, then SPEED')
     ok(A['lv'] == [1, 1, 2, 0] and G['lv'] == [2, 1, 1, 0] and S['lv'] == [1, 2, 1, 0] and all(r['lv2'] == r['lv'] for r in R),
        'the race starts with that part at level 2 and the other two at 1, no points to spend; keys 1 2 3 before the lights change nothing now')
-    ok(all(r['clean'] for r in R), 'on the grid the window is the cloth and the cars only: the crew chief does not ask for upgrades with keys 1 2 3 any more')
+    ok(all(r['clean'] for r in R), 'on the grid the window is whole (the cloth matches the map outside the cars) with each extra')
     ok(1.90 <= S['top'] <= 1.93 and 1.74 <= A['top'] <= 1.76 and 1.74 <= G['top'] <= 1.76 and S['topv'] == 492 and A['topv'] == G['topv'] == 448,
        'SPEED: top speed %.2f px a frame against %.2f (+%.1f%%); ACCELERATION and GRIP leave it at %.2f, %.2f' % (S['top'], G['top'], 100 * (S['top'] / G['top'] - 1), A['top'], G['top']))
     ok(A['t15'] < G['t15'] - 2 and A['t10'] < G['t10'] and abs(S['t15'] - G['t15']) <= 1 and abs(S['t10'] - G['t10']) <= 1 and A['push'] == 71 and G['push'] == S['push'] == 64,

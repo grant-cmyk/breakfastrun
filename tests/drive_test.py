@@ -93,6 +93,15 @@ def put(sp, n, x, y, ang=None):
     sp.write(b + 6, bytes(4))
     if ang is not None: sp.write(b + 10, bytes([ang]))
 def g(sp, name): return sp.read16(SYM[name])
+CHOOSE = 'ch_np' in SYM                                 # the tape with the choose screen (tools/build_choose.sh)
+def through_choose(sp):
+    """On the tape with the choose screen, 1 at the title goes to that screen: accelerate through its four steps
+    (track, driver, car, extra as they stand) to the race. Any other tape: nothing. Call it straight after the 1."""
+    if not CHOOSE: return
+    sp.run(duration=0.3, fast_forward=True)
+    for i in range(4):
+        press(sp, 'Q', True); sp.run(duration=0.15, fast_forward=True); press(sp, 'Q', False)
+        if i < 3: sp.run(duration=0.3, fast_forward=True)
 def go_green(sp, limit=4.0):
     # Q starts the start lights; the race starts on green (Grant, 10 Nov 2026). Hold Q
     # until then; the seconds it took
@@ -455,6 +464,7 @@ with Racer(headless=True) as sp:
     check(sp.read8(0x5800 + 8 * 32 + 10) == 0x7A and screen_text(sp, 8, 10, 12) == "TODAY'S MENU"
           and sp.read8(SYM['snd_rate']) == 0, 'Q after the finish: back to the title screen, the engine quiet')
     hold(sp, ['1'], 0.2)                           # ... and 1 (1UP): a new race
+    through_choose(sp)
     sp.run(duration=1.5, fast_forward=True)
     p5 = car(sp, 0)
     check(sp.read8(SYM['race_over']) == 0 and sp.read8(SYM['race_on']) == 0

@@ -55,10 +55,8 @@ hud_init:                       ; a new race: what changes (the rest: screen_onc
         or l
         call nz,best_panel
         call strip_reset        ; the driver strip: inventory, the radio
-        if 1-OPT_CHOOSE         ; (CHOOSE: the extra was picked on the choose screen)
-        ld a,M_SETUP            ; the crew chief: pick your upgrades
-        call msg_say
-        endif
+        ld a,M_SETUP            ; the crew chief: pick your upgrades (CHOOSE: the extra is picked on the choose screen - he says
+        call msg_say            ; ON THE GRID / WAIT FOR GREEN instead)
         call su_apply           ; your car's set-up, and its row on the HUD
         call map_init
         ld b,0                  ; the tower in grid order, all at once

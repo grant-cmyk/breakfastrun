@@ -21,7 +21,7 @@ with Racer(headless=True) as sp:
     while g(sp, 'renders') == 0 and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
     sp.run(duration=0.6, fast_forward=True); at_copy_done(sp)
     up, l1, l2, face = bubble(sp)
-    ok(up and words(sp) == SYM['m_setup'] and l1 > 60 and l2 > 30 and face > 60, 'on the grid: the chief and his bubble at the foot of the window - PICK 2 UPGRADES / KEYS 1 2 3 (%d and %d pixels of letters, %d of face)' % (l1, l2, face))
+    ok(up and words(sp) == SYM['m_setup'] and l1 > 60 and l2 > 30 and face > 60, 'on the grid: the chief and his bubble at the foot of the window - %s (%d and %d pixels of letters, %d of face)' % ('ON THE GRID / WAIT FOR GREEN' if CHOOSE else 'PICK 2 UPGRADES / KEYS 1 2 3', l1, l2, face))
     ok(not screen_bits(sp)[176:192, 128:208].any() or all(attr(sp, r, c) == 0x36 for r in (22, 23) for c in range(16, 26)), 'the bubble\'s picture is kept under the window where it cannot be seen: yellow on yellow')
     sp.run(duration=4.0, fast_forward=True)
     ok(not bubble(sp)[0] and all(attr(sp, r, c) == 0x29 for r in (17, 18) for c in range(7, 17)), 'after 3 seconds it goes: those cells the cloth\'s colours again')

@@ -24,6 +24,8 @@ with R(headless=True) as sp:
     sp.run(duration=0.5, fast_forward=True); sp.write(SYM['jin_on'], bytes([0xFF]))
     k = os.environ.get('TKEY', '1')
     press(sp, k, True); sp.run(duration=0.2, fast_forward=True); press(sp, k, False)
+    if 'ch_np' in SYM:                                  # (the tape with the choose screen: accelerate through its four steps)
+        for _ in range(4): sp.run(duration=0.3, fast_forward=True); press(sp, 'Q', True); sp.run(duration=0.15, fast_forward=True); press(sp, 'Q', False)
     sp.run(duration=3.0, fast_forward=True)
     press(sp, 'Q', True); press(sp, 'P', True)
     bad = 0; rows = 0; where = set(); N = int(os.environ.get('PICS', '40'))

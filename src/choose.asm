@@ -298,7 +298,8 @@ ch_col:
 ; The track: unpacked, then its road drawn from the track's own SURFACE MAP - a bit a tile, 9 bytes a row, 0 = road -
 ; a pixel a tile, so the picture is 72 across and as many lines as the track has tile rows (64 to 84). Its name above.
 ch_d_trk:
-        ld a,(ch_j)
+        call map_off            ; (the last race's dots out of the mini-map first: the track's own map is about to be unpacked
+        ld a,(ch_j)             ; over it, clean, and the next race would take them "out" of that - leaving them in)
         call HP+4               ; (trk_set, hp.asm)
         ld bc,0x080C
         ld de,0x0B09

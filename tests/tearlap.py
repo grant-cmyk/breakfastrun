@@ -36,6 +36,8 @@ while mem(0x5800 + 8 * 32 + 10, 1)[0] != 0x7A and n < 400: rpc('run', frames=5);
 rpc('run', frames=25)
 if 'jin_on' in SYM: rpc('write', addr=SYM['jin_on'], value=0xFF)
 rpc('press', keys=os.environ.get('TKEY', '1'), frames=10, after=5)
+if 'ch_np' in SYM:                                      # (the tape with the choose screen: accelerate through its four steps)
+    for _ in range(4): rpc('press', keys='Q', frames=8, after=18)
 while w16(SYM['renders']) == 0: rpc('run', frames=5)
 key('Q', True)
 while mem(SYM['race_on'], 1)[0] == 0: rpc('run', frames=1)
