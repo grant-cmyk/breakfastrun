@@ -72,15 +72,26 @@ rt_new:
         ldir
         ret
 
-; RT_CLEAR: the buffer's 152 window lines, bytes 0-25, to nothing - with the stack pointer, as the
-; cloth was filled (an interrupt's 6 bytes land in the margin of the line before: harmless).
+; RT_CLEAR: the buffer's window lines, bytes 0-25, to nothing - with the stack pointer, as the cloth was filled (an
+; interrupt's 6 bytes land in the margin of the line before: harmless). A row of squares that is all grass is left as it
+; is: nothing in it shows (rt_class notes those rows in rt_dead; a car or a box there clears its own squares).
 rt_clear:
         ld (rt_sp),sp
         ld ixh,BUF_HI
         ld ixl,(BUF_TOP/8)*32+26
         ld hl,0
+        ld de,rt_dead
         ld b,WIN_H/8
 rtc_row:
+        ld a,(de)
+        inc de
+        or a
+        jr z,rtc_live
+        ld a,ixh                ; all grass: on to the next row
+        add a,8
+        ld ixh,a
+        jp rtc_next
+rtc_live:
         rept 8
         ld sp,ix
         rept 13
@@ -88,6 +99,7 @@ rtc_row:
         endm
         inc ixh
         endm
+rtc_next:
         ld a,ixl                ; the next character row: 32 bytes on, and back up its 8 lines -
         add a,32                ; unless that was the last row of a third of the buffer
         ld ixl,a
@@ -145,6 +157,8 @@ rcl_m1:
         ld ix,RT_AL
         xor a
         ld (rt_aln),a
+        ld hl,rt_dead
+        ld (rt_deadp),hl
         ld hl,RT_SH+32+1        ; the window's first square
         ld a,WIN_H/8
 rcl_row:
@@ -155,24 +169,44 @@ rcl_row:
         ld a,(hl)
         inc hl
         ld h,(hl)
-        ld l,a
-        inc hl                  ; (past the count of runs)
-        ex de,hl                ; DE = this row's runs, HL = its first square
+        ld l,a                  ; HL = the row: the run that holds column 24, the column it starts at, how many runs; the runs
         ld a,(rt_c0)
+        cp 24
+        jr c,rcl_f0
+        inc hl                  ; a window from column 24 on starts at that run
+        sub (hl)
         ld c,a                  ; C = blocks still to pass over
+        dec hl
+        ld a,(hl)
+        add a,3
+        jr rcl_f1
+rcl_f0:
+        ld c,a
+        ld a,3
+rcl_f1:
+        add a,l
+        ld l,a
+        jr nc,rcl_f2
+        inc h
+rcl_f2:
+        ex de,hl                ; DE = the runs, HL = the row's first square
+        push hl
+        ld hl,(rt_deadp)        ; (the row's note for rt_clear: 0 unless one run of grass fills it)
+        ld (hl),0
+        pop hl
         ld b,WIN_W              ; B = squares still to fill
+        inc c
+        dec c
+        jr z,rcl_next
 rcl_skip:
         ld a,(de)
         inc de
         and 63
         inc a                   ; the run's length
         sub c
-        jr z,rcl_s0
+        jr z,rcl_next           ; (it ends where the window starts)
         jr nc,rcl_have          ; A = how much of it is in view
         neg
-        ld c,a
-        jr rcl_skip
-rcl_s0:
         ld c,a
         jr rcl_skip
 rcl_next:
@@ -188,19 +222,14 @@ rcl_h1:
         ld c,a                  ; C = squares of this run
         ld a,b
         sub c
-        ld b,a
-        push bc
+        ld b,a                  ; B = squares left after it
         dec de
         ld a,(de)
         inc de
-        rlca
-        rlca
-        and 3                   ; the kind: 0 all grass, 1 no grass, 2 some, 3 some - or white
-        ld b,c
+        and 0xC0                ; the kind: 0 all grass, 0x40 no grass, 0x80 some, 0xC0 some - or white
         jr z,rcl_g
-        dec a
-        jr z,rcl_r
-        dec a
+        cp 0x80
+        jr c,rcl_r
         jr z,rcl_e
         ld (ix+0),l             ; grass or white: listed (where, how many)
         ld (ix+1),h
@@ -218,15 +247,35 @@ rcl_r:
         ld a,RT_ROAD
         jr rcl_fill
 rcl_g:
+        ld a,c                  ; all 24 of the row grass: nothing in it will show - noted for rt_clear
+        cp WIN_W
         ld a,RT_GRASS
+        jr nz,rcl_fill
+        push hl
+        ld hl,(rt_deadp)
+        ld (hl),1
+        pop hl
 rcl_fill:
+        ex af,af'               ; the colour: C squares of it, into the row of 24 "LD (HL),A, INC L" below
+        ld a,c
+        add a,a
+        neg
+        add a,rcl_blk_end AND 255
+        ld (rcl_j+1),a
+        ex af,af'
+rcl_j:  jp rcl_blk_end
+rcl_blk:
+        rept WIN_W
         ld (hl),a
         inc l
-        djnz rcl_fill
-        pop bc
+        endm
+rcl_blk_end:
         ld a,b
         or a
-        jr nz,rcl_next
+        jp nz,rcl_next
+        ld hl,(rt_deadp)
+        inc hl
+        ld (rt_deadp),hl
         ld hl,(rt_rowp)
         inc hl
         inc hl
@@ -236,8 +285,11 @@ rcl_fill:
         add hl,de
         ld a,(rt_cnt)
         dec a
-        jr nz,rcl_row
+        jp nz,rcl_row
         ret
+        if (rcl_blk / 256) - (rcl_blk_end / 256)
+        .error rt_class: the row of LD (HL),A must be on one page (rcl_j is given its low byte only)
+        endif
 
 ; RT_GRASS: the grass's pixels - draw_tiles' loop over the rows' grass lists. A number from 16 up
 ; is a part-grass tile's picture (drawn like any tile: tdraw_one, gen_tiles1.asm); 1-15 is an
@@ -283,6 +335,8 @@ rg_row:
         inc hl
         ld (dt_rowp),hl
         ex de,hl
+        inc hl
+        inc hl
         ld e,(hl)               ; past the runs, to the grass list
         ld d,0
         inc hl
@@ -292,6 +346,19 @@ rg_row:
         pop hl                  ; HL' = the list
         ld b,(hl)               ; B' = how many tiles in it
         inc hl
+        ld a,c
+        cp 24
+        ld a,(hl)               ; (how many of them are left of column 24: a window from there on passes over them at once)
+        inc hl
+        jr c,rg_all
+        ld e,a
+        ld a,b
+        sub e
+        ld b,a
+        ld d,0
+        add hl,de
+        add hl,de
+rg_all:
         ld a,b
         or a
         jr z,rg_row_done
@@ -631,12 +698,11 @@ rq_cell:
         jr z,rq_amb
         and 0x38
         jr z,rq_road
-rq_grass:                       ; all grass: the car's colour on green (there are no pixels in such a square)
-        ld a,(rt_ink)
-        or 0x20
-        ld (hl),a
-        ret
-rq_grass_c:                     ; all grass, and drawn so: its pixels cleared first
+rq_grass:                       ; all grass: nothing but the car in it, the car's colour on green (unless another car has it
+        ld a,(hl)               ; already: that car's pixels stay)
+        cp RT_GRASS
+        jr nz,rq_gset
+rq_grass_c:
         call rt_bufsq
         xor a
         rept 7
@@ -644,6 +710,7 @@ rq_grass_c:                     ; all grass, and drawn so: its pixels cleared fi
         inc d
         endm
         ld (de),a
+rq_gset:
         ld a,(rt_ink)
         or 0x20
         ld (hl),a
@@ -686,15 +753,25 @@ rq_mix:
 ; start lights and the crew chief's bubble keep their colours (their own routines, writing to
 ; rt_sh instead of the screen for once: attr_addr's page is switched).
 rt_hud:
-        ld bc,0x1101            ; the mini-map: screen rows 17-19, columns 1-3
-        ld de,0x0303
-        call rt_box
+        ld hl,RT_SH+(WIN_Y/8+16)*32+WIN_COL     ; the mini-map: the window's rows 16-18, columns 0-2
+        ld bc,0x0303
+        call rt_attrs
+        ld hl,BUF+0x1000+1*32+2 ; ... their 24 lines of 3 bytes cleared (buffer rows 136-159)
+        ld bc,0x0303
+        call rt_wipe
         ld a,(lt_on)
         or a
         jr nz,rh_lights
-        ld bc,0x0114            ; the place plate: rows 1-3, columns 20-24
-        ld de,0x0305
-        call rt_box
+        ld hl,RT_SH+(WIN_Y/8)*32+WIN_COL+19     ; the place plate: rows 0-2, columns 19-23
+        ld bc,0x0305
+        call rt_attrs
+        ld hl,BUF+1*32+21       ; ... the 2 lines above the plate's picture and the 4 below it (pl_draw writes the 18 between
+        ld de,0                 ; whole): buffer rows 8-9 and 28-31
+        ld b,2
+        call rw_lines
+        ld hl,BUF+3*32+4*256+21
+        ld b,4
+        call rw_lines
         jr rh_1
 rh_lights:
         call rh_on
@@ -715,50 +792,88 @@ rh_on:
 rh_set:
         ld (aa_hi+1),a
         ret
-; RT_BOX: D rows x E columns of squares from screen row B, column C: white on black, and their
-; pixels cleared in the buffer.
-rt_box:
-        call rh_on
-        call attr_addr
-        call rh_off
-rb_row:
+; RT_ATTRS: B rows x C columns of rt_sh from HL: white on black.
+rt_attrs:
+        ld de,32
+rat_r:
         push hl
-        ld b,e
-rb_col:
+        ld a,c
+rat_c:
         ld (hl),RT_ROAD
-        push de
-        call rt_bufsq
-        xor a
-        rept 7
-        ld (de),a
-        inc d
-        endm
-        ld (de),a
-        pop de
         inc l
-        djnz rb_col
+        dec a
+        jr nz,rat_c
         pop hl
-        ld bc,32
-        add hl,bc
-        dec d
-        jr nz,rb_row
+        add hl,de
+        djnz rat_r
+        ret
+; RT_WIPE: B rows of squares, C bytes wide (3 or 5), from HL in the buffer (a row's first line): cleared.
+; RW_LINES: B lines of 5 bytes from HL (within one row of squares).
+rt_wipe:
+        ld de,0
+rwp_r:
+        push bc
+        push hl
+        ld b,8
+        ld a,c
+        cp 5
+        jr z,rwp_5
+rwp_3:
+        ld (hl),d
+        inc l
+        ld (hl),d
+        inc l
+        ld (hl),d
+        dec l
+        dec l
+        inc h
+        djnz rwp_3
+        jr rwp_n
+rwp_5:
+        call rw_lines
+rwp_n:
+        pop hl
+        ld a,l                  ; the next row of squares: 32 bytes on, or the next third
+        add a,32
+        ld l,a
+        jr nc,rwp_1
+        ld a,h
+        add a,8
+        ld h,a
+rwp_1:
+        pop bc
+        djnz rwp_r
+        ret
+rw_lines:
+        ld (hl),d
+        inc l
+        ld (hl),d
+        inc l
+        ld (hl),d
+        inc l
+        ld (hl),d
+        inc l
+        ld (hl),d
+        ld a,l
+        sub 4
+        ld l,a
+        inc h
+        djnz rw_lines
         ret
 
-; RT_ARROW (from arrow_draw, when it is about to draw): the corner arrow's 3 x 3 squares take
-; yellow ink - but not a grass-and-road square: there it shows in the grass's green.
+; RT_ARROW (from arrow_draw, when it is about to draw): the corner arrow's 3 x 3 squares take yellow ink, by the cars'
+; rule (rq_cell) - so in a grass-and-road square it shows in the grass's green.
 rt_arrow:
+        ld a,6
+        ld (rt_ink),a
         ld hl,RT_SH+(WIN_Y/8+ARROW_TOP/8)*32+WIN_COL+ARROW_COL
         ld c,3
 ra_r:
         ld b,3
 ra_c:
-        ld a,(hl)
-        cp RT_EDGE
-        jr z,ra_n
-        and 0x38
-        or 6
-        ld (hl),a
-ra_n:
+        push bc
+        call rq_cell
+        pop bc
         inc l
         djnz ra_c
         ld a,l
@@ -795,6 +910,8 @@ rta_row:
         ret
 
 rt_sp:    dw 0
+rt_deadp: dw 0
+rt_dead:  defs WIN_H/8          ; each row of squares: 1 - all grass (nothing in it shows: rt_clear leaves it)
 rt_rowp:  dw 0                  ; the grass rows' index, as rt_class walks it
 rt_mlr:   dw 0                  ; low byte: the left byte's bits of a tile (its first camx AND 7 pixels); high: the right's
 rt_c0:    db 0                  ; the first block column in view

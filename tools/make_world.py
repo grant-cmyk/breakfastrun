@@ -123,7 +123,11 @@ if RT:                            # RACETRACK: the grass, and the dashed white l
     import numpy as _np
     rt_grass = ~_np.array(road_mask(ROAD + 2 * RT_RUNOFF), dtype=bool)
     _yy, _xx = _np.mgrid[0:PH, 0:PW]
-    _line = _np.array(road_mask(ROAD), dtype=bool) & ~_np.array(road_mask(ROAD - 4), dtype=bool) & (((_xx + _yy) // 8) % 2 == 0)
+    # The dashes: 8 on, 8 off. RT_DASH=diag is the mock-ups' pattern (bands across x + y); the default goes by the world's 8 x 8
+    # tiles, a chequerboard of them - the same 8 on / 8 off along a straight, and a tile then holds a whole dash or none, which
+    # nearly halves the tiles the game draws for the line (396 -> 223; measured: PROJECT-LOG, 16 Nov 2026)
+    _dash = (((_xx + _yy) // 8) % 2 == 0) if os.environ.get('RT_DASH') == 'diag' else (((_xx // 8) + (_yy // 8)) % 2 == 0)
+    _line = _np.array(road_mask(ROAD), dtype=bool) & ~_np.array(road_mask(ROAD - 4), dtype=bool) & _dash
     # A colour square is 8 x 8 and holds two colours: black and green, or black and white. So no white pixel may ever be in a
     # square with a green one - none within 7 pixels of the grass, across or down. (10 pixels of run-off make that so; this checks.)
     _near = _np.zeros_like(rt_grass); _gp = _np.pad(rt_grass, 7, constant_values=True)
@@ -749,7 +753,12 @@ if RT:
                 if q: ent.append((tx, q))
             elif g_any[ty + 1, tx + 1]:
                 ent.append((tx, gnum[bytes(_np.packbits(rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8], axis=1).ravel().tolist())]))
-        rows.append(('        defb %d,%s   ; row %d\n        defb %d%s\n' % (len(runs), ','.join(str(v) for v in runs), ty, len(ent), ''.join(',%d,%d' % e for e in ent)), 2 + len(runs) + 2 * len(ent)))
+        # (a window that starts at column 24 or beyond begins part-way along: at run _mid, which starts at column _mc - and
+        # past the first _nb grass tiles)
+        _ends = [sum((r & 63) + 1 for r in runs[:i + 1]) for i in range(len(runs))]
+        _mid = next(i for i, e in enumerate(_ends) if e > 24); _mc = _ends[_mid - 1] if _mid else 0
+        _nb = sum(1 for e in ent if e[0] < 24)
+        rows.append(('        defb %d,%d,%d,%s   ; row %d\n        defb %d,%d%s\n' % (_mid, _mc, len(runs), ','.join(str(v) for v in runs), ty, len(ent), _nb, ''.join(',%d,%d' % e for e in ent)), 5 + len(runs) + 2 * len(ent)))
         nb += rows[-1][1]
     # One block, loaded after the start-up area and copied by start_once to RT_DATA, a page boundary above the looped copy
     # routine: the rows' index (2 bytes a row, in the room of the 16 numbers that are quarters), the pictures, the rows.
@@ -760,6 +769,6 @@ if RT:
         for ty in range(H): f.write('        dw RT_DATA + %d\n' % off); off += rows[ty][1]
         f.write('        defs rt_src + 128 - $\n; the part-grass tiles\' pictures, 8 bytes each (1 = grass), numbers 16 up\n')
         for b in gpics: f.write('        defb ' + ','.join('0x%02X' % v for v in b) + '\n')
-        f.write('; each row: how many runs, the runs along its row of blocks (kind * 64 + length - 1), then its grass tiles - how many,\n; then (column, number) pairs: 1-15 the quarters of an all-grass tile, 16 up a picture\n')
+        f.write('; each row: the run that holds column 24, the column that run starts at, how many runs; the runs along its row of blocks\n; (kind * 64 + length - 1); then its grass tiles - how many, how many of them left of column 24, then (column, number)\n; pairs: 1-15 the quarters of an all-grass tile, 16 up a picture\n')
         f.write(''.join(t for t, n in rows) + 'rt_src_end:\n')
     print('racetrack: %d grass-edge pictures (%d bytes), rows %d bytes' % (len(gpics), 128 + 8 * len(gpics), nb))

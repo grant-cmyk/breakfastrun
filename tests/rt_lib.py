@@ -37,12 +37,16 @@ class Game:
         self.run(25)
         if 'jin_on' in self.sym: self.rpc('write', addr=self.sym['jin_on'], value=0xFF)
         self.rpc('press', keys='1', frames=10, after=5)
-        while self.w16(self.sym['renders']) == 0: self.run(5)
+        n = 0
+        while self.w16(self.sym['renders']) == 0 and n < 200: self.run(5); n += 1
+        assert n < 200, 'the race never started'
         self.run(10)
     def go(self, alone=False):
         """Q until the lights are green; alone: the computer cars stay on the grid"""
         self.key('Q', True)
-        while self.mem(self.sym['race_on'], 1)[0] == 0: self.run(1)
+        n = 0
+        while self.mem(self.sym['race_on'], 1)[0] == 0 and n < 600: self.run(1); n += 1
+        assert n < 600, 'the lights never went green'
         if alone:
             for i in range(1, 5): self.rpc('write', addr=self.sym['cars'] + i * self.sym['c_size'] + 19, value=0)
         self.wp = self.mem(self.sym['cars'], 14)[13]
