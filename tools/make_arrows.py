@@ -1,42 +1,40 @@
 """The corner arrows' pictures (Grant, 15 Nov 2026: "a flashing arrow pointing either diagonally right or
-sharp right to indicate turns"): eight arrows, one for each eighth of a turn, 0 = up the screen, clockwise.
-Two are drawn here - RIGHT (11 x 9) and UP-RIGHT (9 x 9); the other six are those two turned by quarter
-turns, so all eight are the same weight. Each becomes a frame in the cars' own format (draw_car draws
-it): 11 rows of 4 bytes - mask, ink, mask, ink - 16 pixels wide, the arrow's middle at column 8, row 5.
-The mask is the arrow and one pixel all round it (cut off at the frame's edge: the up and down arrows
-are 11 tall and have no clear line beyond their two ends).
-Writes src/arrows.asm (8 x 44 bytes; start_once copies them into four unused strips of the back
-buffer's bottom rows) and build/arrows_sheet.png, the eight at 8 x for looking at."""
-import os
+sharp right to indicate turns"; 16 Nov: "just above the pitstop messages, and slightly larger"): eight arrows,
+one for each eighth of a turn, 0 = up the screen, clockwise. The shape is drawn once here, pointing right
+(15 long, 13 across; it was 11 x 9), and turned: by quarter turns for up, down and left, and by an eighth
+(drawn afresh at the same weight, 12 x 12) for the four diagonals.
+Each sits in a field of 24 x 15 pixels, which the game lays at a fixed, byte-aligned spot of the window
+(arrow_draw, src/arrow.asm). Only FIVE are kept - up, up-right, right, up-left, left - as 15 rows of
+6 bytes: for each of the field's 3 bytes, what to KEEP of the picture under it (0 bits: the arrow and one
+pixel all round it, cut off at the field's edge), then the ink. Down, down-right and down-left are up,
+up-right and up-left drawn from the last row back.
+Writes src/arrows.asm (5 x 90 bytes; start_once copies them into five unused strips of the back buffer's
+bottom rows) and build/arrows_sheet.png, the eight at 8 x for looking at."""
+import os, math
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.environ.get('WORLD_OUT') or os.path.join(HERE, '..', 'src')
 BLD = os.path.join(HERE, '..', 'build')
-RIGHT = ["......X....",
-         "......XX...",
-         "......XXX..",
-         "XXXXXXXXXX.",
-         "XXXXXXXXXXX",
-         "XXXXXXXXXX.",
-         "......XXX..",
-         "......XX...",
-         "......X...."]
-UPRIGHT = ["...XXXXXX",
-           "....XXXXX",
-           ".....XXXX",
-           "....XXXXX",
-           "...XXX.XX",
-           "..XXX...X",
-           ".XXX.....",
-           "XXX......",
-           ".X......."]
-ROWS, W = 11, 16
-def arr(rows): return np.array([[c == 'X' for c in r] for r in rows], dtype=bool)
-def frame(a):
-    """the picture a, centred on (8, 5) of a 16 x 11 frame: its ink and its mask"""
+ROWS, W = 15, 24
+def right():
+    """the arrow pointing right: a shaft 5 thick and 8 long, a head 13 across and 7 long"""
+    a = np.zeros((13, 15), dtype=bool); a[4:9, 0:8] = True
+    for r in range(13): a[r, 8:8 + min(r, 12 - r) + 1] = True
+    return a
+def diagonal():
+    """... and pointing up and to the right: the same arrow a little shorter (tip to tail 16), turned an eighth,
+    drawn 8 x and counted down; made the same either side of its own line"""
+    S = 8; n = 12; im = Image.new('L', (n * S, n * S), 0)
+    pts = [(-8, -2.5), (0.5, -2.5), (0.5, -6.5), (8, 0), (0.5, 6.5), (0.5, 2.5), (-8, 2.5)]       # along x, tip at +8
+    c = math.cos(-math.pi / 4); s = math.sin(-math.pi / 4)
+    ImageDraw.Draw(im).polygon([((x * c - y * s + n / 2) * S, (x * s + y * c + n / 2) * S) for x, y in pts], fill=255)
+    a = np.array(im.resize((n, n), Image.BOX)) >= 128
+    return a | a[::-1, ::-1].T                                         # (mirrored in the line from bottom left to top right)
+def field(a):
+    """the picture a in the middle of the 24 x 15 field: its ink and its mask (itself and a pixel all round)"""
     h, w = a.shape; ink = np.zeros((ROWS, W), dtype=bool)
-    y0, x0 = 5 - h // 2, 8 - w // 2
+    y0, x0 = (ROWS - h) // 2, (W - w) // 2
     ink[y0:y0 + h, x0:x0 + w] = a
     m = ink.copy()
     for dy in (-1, 0, 1):
@@ -45,17 +43,20 @@ def frame(a):
             xs = slice(max(0, dx), W + min(0, dx)); xd = slice(max(0, -dx), W + min(0, -dx))
             s[yd, xd] = ink[ys, xs]; m |= s
     return ink, m
-r, d = arr(RIGHT), arr(UPRIGHT)
-ARROWS = [np.rot90(r, 1), d, r, np.rot90(d, -1), np.rot90(r, -1), np.rot90(d, 2), np.rot90(r, 2), np.rot90(d, 1)]   # up, up-right, right, ...
+r, d = right(), diagonal()
+KEPT = [field(np.rot90(r, 1)), field(d), field(r), field(d[:, ::-1]), field(r[:, ::-1])]     # up, up-right, right, up-left, left
+KEPT_NAMES = ['up', 'up-right', 'right', 'up-left', 'left']
+HOW = [(0, 0), (1, 0), (2, 0), (1, 1), (0, 1), (3, 1), (4, 0), (3, 0)]     # each direction: which kept picture, and upside down?
 NAMES = ['up', 'up-right', 'right', 'down-right', 'down', 'down-left', 'left', 'up-left']
-FRAMES = [frame(a) for a in ARROWS]
+FRAMES = [tuple(v[::-1] if flip else v for v in KEPT[k]) for k, flip in HOW]   # all eight as the game draws them: (ink, mask)
 if __name__ == '__main__':
     with open(os.path.join(SRC, 'arrows.asm'), 'w') as f:
-        f.write('; GENERATED by tools/make_arrows.py - do not edit by hand\n; the corner arrows: 8 frames (0 = up, clockwise) of %d rows x 4 bytes: mask, ink, mask, ink\narrow_src:\n' % ROWS)
-        for n, (ink, m) in enumerate(FRAMES):
-            f.write('; %d: %s\n' % (n, NAMES[n]))
+        f.write('; GENERATED by tools/make_arrows.py - do not edit by hand\n; the corner arrows: 5 pictures (up, up-right, right, up-left, left) of %d rows x 6 bytes: keep, ink for each of 3 bytes\n' % ROWS)
+        f.write('; (down, down-right, down-left: up, up-right, up-left from the last row back - aw_tab, arrow.asm)\narrow_src:\n')
+        for n, (ink, m) in enumerate(KEPT):
+            f.write('; %s\n' % KEPT_NAMES[n])
             for y in range(ROWS):
-                b = [int(np.packbits(v[y, x:x + 8])[0]) for x in (0, 8) for v in (m, ink)]
+                b = [int(np.packbits(v[y, x:x + 8])[0]) for x in (0, 8, 16) for v in (~m, ink)]
                 f.write('        defb ' + ','.join('0x%02X' % v for v in b) + '\n')
         f.write('arrow_src_end:\n')
     os.makedirs(BLD, exist_ok=True)
@@ -66,4 +67,4 @@ if __name__ == '__main__':
         cell[(np.indices((ROWS, W)).sum(0) % 4 == 0)] = (0, 0, 205)                 # some cloth dots, to show the mask
         cell[m] = (0, 205, 205); cell[ink] = (0, 0, 205)
     Image.fromarray(sheet).resize((sheet.shape[1] * 8, sheet.shape[0] * 8), Image.NEAREST).save(os.path.join(BLD, 'arrows_sheet.png'))
-    print('arrows: 8 frames, %d bytes' % (8 * ROWS * 4))
+    print('arrows: 5 pictures kept, %d bytes; ink pixels %s' % (5 * ROWS * 6, [int(i.sum()) for i, m in FRAMES]))

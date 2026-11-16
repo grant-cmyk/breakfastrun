@@ -87,8 +87,9 @@ with Racer(headless=True) as sp:
     ok((A[4:17, 1:25] == 0x29).all() and (A[17:20, 1:7] == 0x29).all() and (A[17:20, 17:21] == 0x29).all() and minimap_diff(sp)[0] == 0,
        'the second race: every cell of the window is the cloth\'s blue on cyan again - nothing of the podium\'s colours - and the mini-map whole, the last race\'s dots out of it')
     AF = [int(v, 16) for l in open(os.path.join(ROOT, 'src', 'arrows.asm')) if 'defb' in l for v in l.split('defb')[1].split(',')]
-    ok(all(bytes(sp.read(SYM['arrow_f'] + 0x100 * i, 88)) == bytes(AF[88 * i:88 * i + 88]) for i in range(4)),
-       'after a race, the podium and the title, the arrows\' frames are still whole where they are kept (the back buffer\'s unused bottom rows)')
+    _h = open(os.path.join(ROOT, 'src', 'hirows.asm')).read(); S3 = [int(v) for l in _h[_h.index('s3_src:'):_h.index('s3_end:')].splitlines() if 'defb' in l for v in l.split('defb')[1].split(',')]
+    ok(all(bytes(sp.read(SYM['arrow_f'] + 0x100 * i, 90)) == bytes(AF[90 * i:90 * i + 90]) for i in range(5)) and len(AF) == 450 and len(S3) > 20 and sum(a != b for a, b in zip(S3, sp.read(SYM['strip3'], len(S3)))) <= 6,
+       'after a race, the podium and the title, the arrows\' five pictures are still whole where they are kept (the back buffer\'s unused bottom rows), and so are the %d bytes of row lists kept in the title\'s unused a_sav (but for the cans\' tiles, which come and go)' % len(S3))
     ok(not w[36:44, 60:150].all(axis=1).any() and cars_ink > 150 and screen_text(sp, 8, 10, 12) != "TODAY'S MENU",
        'and it shows the grid while the jingle plays - not what the title left there (%d pixels of cars)' % cars_ink)
 print('RESULT:', 'PASS' if fails == 0 else '%d FAIL' % fails)

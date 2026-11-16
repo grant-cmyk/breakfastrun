@@ -48,7 +48,7 @@ def window_bad_t(sp):
     want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:24] |= map_now(sp)   # (the mini-map over the picture: as window_bad)
     mask[2:20, WW - 40:WW] = False; mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False     # (the lights, spoons and mug, map, plate, bubble: as window_bad)
     ar = arrow_state(sp)
-    if ar: mask[max(ar[2], 0):max(ar[2] + 11, 0), max(ar[1], 0):max(ar[1] + 16, 0)] = False   # (and the corner arrow, while it is on)
+    if ar: mask[max(ar[2], 0):max(ar[2] + AR_H, 0), max(ar[1], 0):max(ar[1] + AR_W, 0)] = False   # (and the corner arrow, while it is on)
     for n in range(N):
         c = car(sp, n); cx, cy = c['x'] - camx, c['y'] - camy
         mask[max(cy - 6, 0):max(cy + 23, 0), max(cx - 3, 0):max(cx + 21, 0)] = False

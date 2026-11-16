@@ -195,10 +195,11 @@ def minimap_diff(sp):
 ARROW_KINDS = ['none', 'straight', 'gentle left', 'gentle right', 'sharp left', 'sharp right']
 def arrow_state(sp):
     """The corner arrow in the picture now on the screen (call at copy_done): None if it is not drawn, else
-    (code, x, y): its table byte and its 16 x 11 frame's top-left in the window - always the same spot."""
+    (code, x, y): its table byte and its field's top-left in the window (AR_W x AR_H: 24 x 15) - always the same spot."""
     if not (g(sp, 'renders') & 2) or sp.read8(SYM['race_on']) == 0 or sp.read8(SYM['you_done']): return None
     code = sp.read8(SYM['arrow_tab'] + car(sp, 0)['wp'])
-    return (code, SYM['arrow_x'] - 8, SYM['arrow_y'] - 5) if code else None
+    return (code, SYM['arrow_col'] * 8, SYM['arrow_top']) if code else None
+AR_W, AR_H = SYM['arrow_w'], SYM['arrow_rows']
 def window_bad(sp, stop=True):
     if stop: at_copy_done(sp)               # (stop=False: the picture already stopped at, when the caller has looked at its state)
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
@@ -209,7 +210,7 @@ def window_bad(sp, stop=True):
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
     mask[WH - 16:WH, WW - 48:WW] = False     # the spoons and the mug gauge, bottom right
     ar = arrow_state(sp)
-    if ar: mask[max(ar[2], 0):max(ar[2] + 11, 0), max(ar[1], 0):max(ar[1] + 16, 0)] = False   # the corner arrow, while it is on
+    if ar: mask[max(ar[2], 0):max(ar[2] + AR_H, 0), max(ar[1], 0):max(ar[1] + AR_W, 0)] = False   # the corner arrow, while it is on
     mask[2:20, WW - 40:WW] = False                       # your place on its plate, in the top right corner
     mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False       # the crew chief and his bubble, at the foot of the window (rows 17-18, columns 7-16)
     for n in range(N):

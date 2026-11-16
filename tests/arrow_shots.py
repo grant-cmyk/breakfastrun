@@ -1,12 +1,11 @@
 """Pictures of the layout of 15 Nov 2026 and the corner arrows, from the game itself (real 48K ROM, zx package),
 into docs/design/arrows/: for the track built (TRACK=1, 2 or 3; default 1)
-  v2_tN_grid.png  _gentle.png  _sharp.png  _straight.png     the whole screen, 2 x
-  v2_tN_strip.png       the window's bottom strip, 4 x: the map, a message, three spoons, the mug at full damage
-  v2_tN_map_road.png  v2_tN_map_cloth.png    the mini-map close up, 6 x, over road and over busy cloth
-  v2_tN_corner.gif      driven by script from the line through the first corner, the arrow flashing
-  v2_t1_arrow_above_centre.png  v2_t1_arrow_dead_centre.png   (track 1) the arrow's spot as built, and at the window's
-                        exact middle: your car standing (left) and flat out (right)
-(the pictures without v2_ are the first version's: a yellow map box, the arrow ahead of the car)
+  v3_tN_grid.png  _gentle.png  _sharp.png  _straight.png     the whole screen, 2 x
+  v3_tN_strip.png       the window's bottom strip, 4 x: the map, a message, three spoons, the mug at full damage
+  v3_tN_map_road.png  v3_tN_map_cloth.png    the mini-map close up, 6 x, over road and over busy cloth
+  v3_tN_corner.gif      driven by script from the line through the first corner, the arrow flashing
+  v3_tN_car_under.png   another car under the arrow's spot
+(v2_*: the arrow above the window's middle, 16 x 11; without a prefix: the first version, a yellow map box)
 Usage: python3 tests/arrow_shots.py      (TRACK=n bash build.sh first for tracks 2 and 3)"""
 import os, sys, math
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +32,7 @@ def frame(sp):
 def save(sp, name, box=None, zoom=2):
     im = frame(sp)
     if box: im = im.crop(box)
-    im.resize((im.width * zoom, im.height * zoom), Image.NEAREST).save(os.path.join(DEST, 'v2_t%s_%s.png' % (TRACK, name)))
+    im.resize((im.width * zoom, im.height * zoom), Image.NEAREST).save(os.path.join(DEST, 'v3_t%s_%s.png' % (TRACK, name)))
 def boot():
     sp = Racer(headless=True); sp.__enter__(); sp.load_tape(TAP); t = 0
     while g(sp, 'renders') == 0 and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
@@ -64,7 +63,14 @@ def stand(k, others=True):                                          # your car s
         sp.write(CARS + i * CS + 19, bytes([0]))
     sp.run(duration=0.6, fast_forward=True); sp.write(CARS + C_WP, bytes([k]))
 for name, k in PLACES.items():
-    stand(k); print(name, 'waypoint', k, ARROW_KINDS[ATAB[k] >> 3], 'arrow on:', arrow_on(sp)); save(sp, name)
+    sp.write(SYM['msg_timer'], bytes([200 if name == 'sharp' else 1]))     # (the sharp corner with the chief talking, the others without)
+    stand(k)
+    if name == 'sharp':                                             # (his last words put back up: the timer, and the bubble's white cells)
+        sp.write(SYM['msg_timer'], bytes([200]))
+        for r_ in (17, 18):
+            for c_ in range(7, 17): sp.write(0x5800 + r_ * 32 + c_, bytes([0x78]))
+        sp.run(duration=0.1, fast_forward=True)
+    print(name, 'waypoint', k, ARROW_KINDS[ATAB[k] >> 3], 'arrow on:', arrow_on(sp)); save(sp, name)
 # the map close up, 6 x: where the most road lies under it, and where the busiest cloth does
 def under(k):
     (x0, y0), (x1, y1) = WPS[(k - 2) % NWP], WPS[(k - 1) % NWP]; d = math.dist((x0, y0), (x1, y1))
@@ -76,19 +82,11 @@ sc = {k: under(k) for k in range(NWP)}
 for name, k in (('map_road', max(sc, key=lambda k: sc[k][0])), ('map_cloth', max(sc, key=lambda k: sc[k][1] - 1000 * (sc[k][0] > 0.2)))):
     stand(k, others=False); at_copy_done(sp); print(name, 'waypoint', k, 'road under it %.0f%%, map ink under it %d' % (100 * sc[k][0], sc[k][1]))
     save(sp, name, (OX + 4, OY + 8 + MM_TOP - 12, OX + 4 + 64, OY + 8 + WH + 4), 6)
-if TRACK == '1':                                                    # the arrow's spot against the window's exact middle: your car standing, then at speed
-    for spot, y in (('spot', SYM['arrow_y']), ('centre', WH // 2)):
-        sp.write(SYM['ad_y'] + 1, bytes([y - 5 + SYM['buf_top']]))
-        stand(0, others=False); arrow_on(sp); im1 = frame(sp).crop((OX, OY, OX + 208, OY + 168))
-        put(sp, 0, WPS[41][0] - 8, WPS[41][1] - 8, 16); sp.write(CARS + C_WP, bytes([42])); press(sp, 'Q', True); r = None
-        for _ in range(150):                                        # flat out along the start straight until the corner's arrow is up
-            sp.run(duration=0.04, fast_forward=True); at_copy_done(sp)
-            if car(sp, 0)['vx'] > 1.5 and sp.read8(SYM['arrow_tab'] + car(sp, 0)['wp']) and g(sp, 'renders') & 2: break
-        press(sp, 'Q', False); im2 = frame(sp).crop((OX, OY, OX + 208, OY + 168))
-        both = Image.new('RGB', (424, 168), (255, 255, 255)); both.paste(im1, (0, 0)); both.paste(im2, (216, 0))
-        both.resize((848, 336), Image.NEAREST).save(os.path.join(DEST, 'v2_t1_%s.png' % ('arrow_above_centre' if spot == 'spot' else 'arrow_dead_centre')))
-        sp.run(duration=1.0, fast_forward=True)
-    sp.write(SYM['ad_y'] + 1, bytes([SYM['arrow_y'] - 5 + SYM['buf_top']]))
+# another car driving through the arrow's spot (yours does not reach it: standing it is 27 lines above, and the
+# look-ahead camera lets it down 16 at most): the arrow is drawn over the car, with its clear edge
+stand(PLACES['sharp'], others=False)
+put(sp, 1, g(sp, 'camx') + SYM['arrow_x'] - 14, g(sp, 'camy') + SYM['arrow_y'] - 6, 20)
+arrow_on(sp); save(sp, 'car_under')
 sp.__exit__(None, None, None)
 
 # the GIF: from the line, round the first corner, steering at the waypoints with the keys
@@ -108,6 +106,6 @@ while t < 14.0 and len(frames) < 120:
         r_last = r; at_copy_done(sp)
         frames.append(frame(sp).crop((OX, OY, OX + 208, OY + 168)).resize((416, 336), Image.NEAREST).convert('P', palette=Image.ADAPTIVE, colors=16))
 for k in list(keys): press(sp, k, False)
-frames[0].save(os.path.join(DEST, 'v2_t%s_corner.gif' % TRACK), save_all=True, append_images=frames[1:], duration=80, loop=0)
+frames[0].save(os.path.join(DEST, 'v3_t%s_corner.gif' % TRACK), save_all=True, append_images=frames[1:], duration=80, loop=0)
 print('gif:', len(frames), 'pictures; your car ended heading for waypoint', car(sp, 0)['wp'])
 sp.__exit__(None, None, None)
