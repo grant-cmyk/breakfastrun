@@ -2228,3 +2228,8 @@ Authoritative log for this workstream (house rule 5.2). Newest at the bottom. Ti
 ## 15 Nov 2026 22:20 SAST - the bridge track merged: track 5 is its own tape
 - `TRACK=5 bash build.sh` -> build/racer_track5.tap ("A FRIDGE TOO FAR", 72 x 74, one bridge), all behind OPT_BRIDGE. Tapes of tracks 1-3 are byte-identical to before the merge (cmp). Notes: docs/design/tracks/built/BUILT.md.
 - Merged on top of the small see-through map and the fixed arrow: the generator's old mini-map block (with a bridge tweak for the old outline map) was dropped in favour of the new ribbon; tests/track5_test.py re-pointed to the new map (QUICK=1 run: PASS; arrow_test on track 5: PASS). The agent's pictures in docs/design/tracks/built/track5_* show the earlier yellow map box.
+
+## 16 Nov 2026 07:20 SAST - a key skips a jingle; the bridge's fixes mocked up
+- A key pressed during the start or the flag jingle stops it (jb_key, last in the program; tests/skip_test.py: lights at 1.4 s against 6.0 s). Only a key pressed after every key was seen up counts.
+- LATENT FAULT, NOT FOUND: any build with more bytes in the jingle player (plateco.asm), even 23 unused ones, fails drive_test's ramming check - the computer car put in front of you jumps 66 pixels down within one TV frame. So something later in the program depends on where it sits. jb_key was put at the program's end to move nothing. To be hunted down before more code goes into the middle of the program.
+- Bridge fixes after Grant's drive, mock-up only: docs/design/tracks/bridge_fix_mock.png, bridge_fix_overview.png (tools/make_bridge_fix_mock.py): concrete masked, kerbs K1/K2/K3, six more O's. Estimated costs are on the sheet.

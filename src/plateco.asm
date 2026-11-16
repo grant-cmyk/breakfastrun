@@ -432,7 +432,8 @@ jin_go:
         ld hl,(jc)
         xor a
 jb_1:
-        ld (jb_n+1),a           ; the step, counted from 0
+        call jb_key             ; the step, counted from 0, kept (jb_n+1) - and a key skips the jingle (jb_key: at the
+                                ; program's very end, so that nothing here moves - see the note there)
         ld a,(hl)
         inc hl
         cp 255

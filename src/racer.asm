@@ -4034,6 +4034,32 @@ isr_x:
         ei
         ret
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
+; JB_KEY: the jingle's step A kept, and A KEY SKIPS THE JINGLE (Grant, 16 Nov 2026: "key should skip a jingle").
+; Looked for once a step, and only a key pressed AFTER every key was seen up counts: not the 1 that started
+; the race, nor the accelerator held over the line. Called from jb_1 (plateco.asm) in place of its 3-byte
+; LD (jb_n+1),A, and kept HERE, last in the program, on purpose: on 16 Nov 2026 a build with 23 bytes more in
+; the jingle player - even 23 unused bytes - failed drive_test's ramming check (the computer car put in front
+; of you jumped 66 pixels down in one frame). Something after plateco.asm depends on where it sits; not found yet.
+jb_key:
+        ld (jb_n+1),a
+        or a
+        jr nz,jk_1
+        ld (jb_arm+1),a         ; (the first step: no key has been seen let go yet)
+jk_1:
+        xor a
+        in a,(254)
+        cpl
+        and 0x1F
+        jr z,jk_up
+jb_arm: ld a,0
+        or a
+        ret z
+        pop af                  ; (the call's return: we leave by jb_end instead)
+        jp jb_end
+jk_up:
+        inc a
+        ld (jb_arm+1),a
+        ret
 code_end:
 
 ; ---------------------------------------------------------------------
