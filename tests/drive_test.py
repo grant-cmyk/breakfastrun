@@ -147,6 +147,13 @@ class Racer(Spectrum):
         self.run(duration=0.5, fast_forward=True)                    # (the rest of the title is drawn after its prompt)
         self.write(SYM['jin_on'], bytes([0xFF]))                     # (the start jingle and its automatic countdown held off: Q starts
                                                                      # the lights, as these tests expect - tests/finish_test.py has the jingle)
+        if 'ch_np' in SYM:                                           # (the tape with the CHOOSE SCREEN, tools/build_choose.sh: 1, then the
+            press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)   # track - TSEL steps right - and
+            self.run(duration=0.3, fast_forward=True)                # accelerate four times: track, driver, car, extra as they stand.
+                                                                     # CSEL: other keys to press on the way, e.g. "Q,P,Q,Q,P,Q")
+            for k in (os.environ['CSEL'].split(',') if os.environ.get('CSEL') else ['P'] * int(os.environ.get('TSEL', '0')) + ['Q'] * 4):
+                press(self, k, True); self.run(duration=0.15, fast_forward=True); press(self, k, False); self.run(duration=0.3, fast_forward=True)
+            return
         for _ in range(int(os.environ.get('TSEL', '0'))):               # (a tape with several tracks, tools/make_multi.py: T at the title is the next track)
             press(self, 'T', True); self.run(duration=0.3, fast_forward=True); press(self, 'T', False); self.run(duration=0.5, fast_forward=True)
         press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)
