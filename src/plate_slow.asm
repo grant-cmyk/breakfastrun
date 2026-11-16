@@ -128,7 +128,7 @@ HP_NB   equ BUF + 0x800*2 + 2*32 + 2 + WIN_W - 1            ; the first canister
 HP_PUT  macro                   ; or the table's cyan - and takes C's ink
         ld a,(hl)               ; (the paper's three bits from the square, the rest from C)
         xor c
-        and 0x38
+        and 0x78                ; (and its brightness)
         xor c
         ld (hl),a
         endm

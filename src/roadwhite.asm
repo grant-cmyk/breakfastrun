@@ -32,7 +32,8 @@
 ; lights and the bubble are not touched. rw_state watches for them coming and going. Nothing
 ; outside the window is written.
 ; =====================================================================
-RW_ROAD equ OPT_ROADCOL*8+1     ; the road's colour: blue on white (ROADCOL 7) or on yellow (ROADCOL=6 bash build.sh:
+RW_ROAD equ OPT_ROADCOL*8+1+OPT_ROADBR*64   ; (ROADBR=1: bright - ROADCOL=5 ROADBR=1 is the table's own cyan, brighter)
+; the road's colour: blue on white (ROADCOL 7) or on yellow (ROADCOL=6 bash build.sh:
                                 ; Grant, 16 Nov 2026, "Can we try that in a yellow road")
 RW_X    equ RW_ROAD XOR 0x29    ; the bits that turn the road's colour into the table's blue on cyan
 RW_ROWS equ WIN_H/8             ; the window's rows of squares (19)

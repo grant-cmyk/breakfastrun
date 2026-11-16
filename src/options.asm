@@ -13,4 +13,5 @@ OPT_FLIP equ 0                 ; 1: draw_car and the title car read such a frame
 OPT_TILE1 equ 0                ; 1: one tile routine (TILE1=1 bash build.sh)
 OPT_PACEFIX equ 0              ; 1: pace_gate counts pictures (PACEFIX=1 bash build.sh)
 OPT_ROADCOL equ 7              ; the trial road paper: 7 white, 6 yellow (ROADCOL=6 ROADW=1 bash build.sh)
+OPT_ROADBR equ 0               ; 1: the trial road paper bright (ROADCOL=5 ROADBR=1 ROADW=1 bash build.sh: bright cyan)
 OPT_ROADW equ 0                ; 1: the road white (ROADW=1 bash build.sh); 2: and plain, no dots (ROADW=2) - a trial

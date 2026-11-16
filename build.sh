@@ -33,6 +33,7 @@ printf 'OPT_PACEFIX equ %s              ; 1: pace_gate counts pictures (PACEFIX=
 # ROADW=1: A TRIAL - the road on white paper, by colour square (src/roadwhite.asm; Grant, 16 Nov 2026: "Try E as a trial tape").
 # ROADW=2: that, and no dots on the road's squares. It needs room: build it with TILE1=1 FLIP=1 TOWER=1 (PROJECT-LOG, 16 Nov 2026).
 printf 'OPT_ROADCOL equ %s              ; the trial road paper: 7 white, 6 yellow (ROADCOL=6 ROADW=1 bash build.sh)\n' "${ROADCOL:-7}" >> "$ROOT/src/options.asm"
+printf 'OPT_ROADBR equ %s               ; 1: the trial road paper bright (ROADCOL=5 ROADBR=1 ROADW=1 bash build.sh: bright cyan)\n' "${ROADBR:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_ROADW equ %s                ; 1: the road white (ROADW=1 bash build.sh); 2: and plain, no dots (ROADW=2) - a trial\n' "${ROADW:-0}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
