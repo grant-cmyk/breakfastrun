@@ -28,6 +28,8 @@ printf 'OPT_MULTI equ %s                ; 1: several tracks in one load (tools/m
 printf 'OPT_FLIP equ %s                 ; 1: draw_car and the title car read such a frame last row first (FLIP=1 bash build.sh)\n' "${FLIP:-0}" >> "$ROOT/src/options.asm"
 # TILE1=1: the eight unrolled tile routines as one, patched once a picture (src/gen_tiles1.asm): about 1 KB of program
 printf 'OPT_TILE1 equ %s                ; 1: one tile routine (TILE1=1 bash build.sh)\n' "${TILE1:-0}" >> "$ROOT/src/options.asm"
+# PACEFIX=1: the computer cars' throttle counted in pictures, not TV frames (their pace no longer depends on the picture rate)
+printf 'OPT_PACEFIX equ %s              ; 1: pace_gate counts pictures (PACEFIX=1 bash build.sh)\n' "${PACEFIX:-0}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as

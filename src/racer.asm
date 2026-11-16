@@ -1127,9 +1127,14 @@ ai_style:
         ret
 ; pace_gate (IX): A = CT_GO on PACE of every 16 frames, else 0
 pace_gate:
+        if OPT_PACEFIX          ; PACEFIX=1 (OPTIMISATION-PLAN.md, 5.2): counted in PICTURES. A computer car is pushed once a
+        ld a,(renders)          ; picture with the buttons of its last think; counted in TV frames, a steady 4 frames a
+        add a,(ix+C_KIND)       ; picture only ever asks on the even counts - every car with PACE 8 or more is then
+        else                    ; pushed every picture, and they all go at the same, top, speed
         ld a,(ticks)            ; counted in the car's own frames (it thinks
         add a,(ix+C_KIND)       ; on every other one): PACE of 16 of them,
         rrca                    ; the frames off spread evenly through the 16
+        endif
         and 15                  ; (bit-reversed count) - in a block they made
         push hl                 ; the car surge and slow
         ld l,a

@@ -423,6 +423,7 @@ with Racer(headless=True) as sp:
     for _ in range(40):
         sp.run(duration=0.02, fast_forward=True)
         if g(sp, 'bumps') > b1:
+            at_copy_done(sp)                       # (16 Nov 2026: read between pictures - a stop inside bump itself sees the count up and the kick not yet given)
             seen = (car(sp, 0), car(sp, 1)); break
     print('just after the head-on bump', seen)
     check(seen is not None and seen[0]['vx'] < 0 < seen[1]['vx'],
