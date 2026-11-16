@@ -136,6 +136,9 @@ st_so:
         call lv_reset           ; BRIDGE: everyone starts on the table (bridge.asm)
         endif
         call win_cells          ; (plate_slow.asm)
+        if OPT_ROADW
+        call rw_new             ; ROADW: the road's white squares start afresh (roadwhite.asm)
+        endif
         call hud_init
         ld hl,cars_init         ; copy the starting records into place
         ld de,cars
@@ -207,6 +210,9 @@ cpu_move:
         call hud_update         ; the panel, message bar and lap strip
         call camera
         call cloth_fill         ; the tablecloth, as the camera sees it
+        if OPT_ROADW
+        call rw_masks           ; ROADW: which squares of the window are road (and, ROADW=2, no dots on them) - roadwhite.asm
+        endif
         if OPT_BRIDGE
         call kerb_draw          ; BRIDGE: the bridge's kerb walls, under the map's tiles (bridge.asm)
         endif
@@ -271,6 +277,9 @@ wait_show:
         ld a,(FRAMES)
         ld (last_shown),a
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
+        if OPT_ROADW
+        call rw_attrs           ; ROADW: the road's squares white, the table's cyan (roadwhite.asm)
+        endif
         if OPT_OBJ
         ld hl,(ob_cx)           ; the coloured objects: wipe the colours put up for the
         ld (op_cx),hl           ; last picture's camera, then put them up for this one's
@@ -4148,6 +4157,9 @@ isr_x:
         pop af
         ei
         ret
+        if OPT_ROADW
+        include "roadwhite.asm" ; ROADW (a trial): the road on white paper, by colour square
+        endif
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
 code_end:
 
