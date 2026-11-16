@@ -131,6 +131,11 @@ yg_forces:
         ld (yg_f0),hl           ; changes by what they change
         ld hl,(yg_vs)
         ld (yg_s0),hl
+        if OPT_GRIP1            ; GRIP1 (a trial switch: GRIP1=1 bash build.sh): you_grip is called once a PICTURE, not once a
+        ld a,(ph_steps)         ; TV frame. The engine, the drag and the tyres below are still done once for each TV frame of
+        ld (yg_n),a             ; the picture (they are cheap); the turning of the speed above and the sums that make the
+yg_again:                       ; world speed of it (yg_world, the dear part) are done once. It changes how the car handles
+        endif                   ; a little: it is OFF unless asked for.
         ; ---- the engine and drag: forwards only ----
         ld hl,(yg_pushv)        ; the push: by your car's set-up (su_apply)
         if OPT_CHOOSE           ; CHOOSE: the SPEED extra's push (its higher top speed needs it), only from 1.5 px a frame
@@ -340,6 +345,11 @@ yg_c3:
 yg_c4:
         ld (yg_vf),hl
 yg_world:                       ; the world speed += dF along the heading + dS across
+        if OPT_GRIP1            ; (GRIP1: the forces again for each TV frame of the picture first)
+        ld hl,yg_n
+        dec (hl)
+        jp nz,yg_again
+        endif
         ld hl,(yg_vf)           ; it: small numbers, so the quick multiply (mul8s);
         ld de,(yg_f0)           ; a big change (NOS, the top-speed cap) or a fresh
         or a                    ; start: the full sum (yg_w2)
@@ -398,6 +408,9 @@ yg_world:                       ; the world speed += dF along the heading + dS a
         ld (ix+C_VY+1),h
         ld (yg_vy),hl
         ret
+        if OPT_GRIP1
+yg_n:   db 1                    ; GRIP1: the picture's TV frames still to do
+        endif
 yg_byte:                        ; HL in -63..63?  Z and A = L; else NZ
         ld a,h
         or a

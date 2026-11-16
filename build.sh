@@ -20,7 +20,11 @@ if [ "${RACETRACK:-0}" = "1" ]; then
   # RT_PIN=solid or dash with RT_NOLINE=1: the limit as a thin green line just inside the grass's edge -> ..._noline_pin.tap, _pindash.tap
   [ "${RT_PIN:-}" = "solid" ] && RTN="${RTN}_pin"
   [ "${RT_PIN:-}" = "dash" ] && RTN="${RTN}_pindash"
+  # GRIP1=1 with it: your car's grip sums once a picture (a trial switch, below) -> ..._grip1.tap
+  [ "${GRIP1:-0}" = "1" ] && RTN="${RTN}_grip1"
   BDIR="${BDIR:-racetrack$RTN}"; OUT="${OUT:-racer_racetrack$RTN}"
+elif [ "${GRIP1:-0}" = "1" ]; then
+  BDIR="${BDIR:-grip1_t${TRACK:-1}}"; OUT="${OUT:-racer_grip1}"      # (GRIP1=1 alone: today's game with the switch -> build/racer_grip1.tap)
 fi
 CARS="$CARSOPT" python3 "$ROOT/tools/make_data.py" | grep -i "cars:"
 U=15; [ "$CARSOPT" = "big" ] && U=12
@@ -61,6 +65,9 @@ printf 'OPT_RT equ %s                   ; 1: the race track trial - black road, 
 # CHOOSE=1: the choose screen between the title and the race - track, driver, car, extra (src/choose.asm). Only with the
 # several-tracks build: use tools/build_choose.sh -> build/racer_choose.tap
 printf 'OPT_CHOOSE equ %s               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)\n' "${CHOOSE:-0}" >> "$ROOT/src/options.asm"
+# GRIP1=1: A TRIAL SWITCH - your car is moved once a picture like the computer cars, its grip sums once a picture (it still
+# steers every TV frame). Quicker, but it changes the handling a little: off unless asked for (PROJECT-LOG, 17 Nov 2026).
+printf 'OPT_GRIP1 equ %s                ; 1: your car moved, and its grip worked out, once a picture (GRIP1=1 bash build.sh)\n' "${GRIP1:-0}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as

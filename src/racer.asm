@@ -233,8 +233,13 @@ tick_loop:
         ; They still THINK frame by frame (tick), and your car moves every frame.
         ld a,(dt)
         ld (ph_steps),a
+        if OPT_GRIP1            ; (GRIP1: your car too)
+        ld ix,cars
+        ld b,NCARS
+        else
         ld ix,cars+C_SIZE
         ld b,NCARS-1
+        endif
 cpu_move:
         push bc
         call physics
@@ -404,10 +409,30 @@ tk_on:
         xor a
         ld (cars+C_CTRL),a
 tk_you:
+        if OPT_GRIP1            ; GRIP1 (a trial switch): each TV frame your car only STEERS; it is moved once a picture, with
+        ld a,(cars+C_CTRL)      ; the computer cars (main: cpu_move), and its grip sums are done once a picture (grip.asm)
+        ld e,a
+        ld hl,cars+C_ANG
+        bit 0,e
+        jr z,tk_ys
+        ld a,(hl)
+        dec a
+        and 63
+        ld (hl),a
+tk_ys:
+        bit 1,e
+        jr z,tk_yn
+        ld a,(hl)
+        inc a
+        and 63
+        ld (hl),a
+tk_yn:
+        else
         ld ix,cars              ; you: every TV frame
         ld a,1
         ld (ph_steps),a
         call physics
+        endif
         ld ix,cars+C_SIZE       ; the computer cars THINK on alternate frames
         ld b,NCARS-1            ; (cars 2 and 4 on one, 1 and 3 on the other);
 tk_ai:                          ; they are moved once a picture, a whole
@@ -538,6 +563,13 @@ physics:
         ld e,(ix+C_CTRL)
         ld a,(ph_steps)         ; steering: one heading step per frame
         ld d,a
+        if OPT_GRIP1            ; (GRIP1: your car has steered already, frame by frame - tick)
+        ld a,(ix+C_KIND)
+        or a
+        jr nz,ph_st
+        ld d,a
+ph_st:
+        endif
         bit 0,e
         jr z,ph_nl
         ld a,(ix+C_ANG)
@@ -593,7 +625,11 @@ ph_some:
 ph_push_set:
         ld a,(ix+C_KIND)        ; look at the ground under the car now and then
         or a                    ; (it cannot change much in a few frames): you,
+        if OPT_GRIP1            ; (GRIP1: you, every picture)
+        ld a,0
+        else
         ld a,(ticks)            ; one frame in 4; a computer car, every other
+        endif
         jr z,ph_s4              ; picture (they take turns)
         ld a,(renders)
         add a,(ix+C_KIND)

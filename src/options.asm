@@ -18,3 +18,4 @@ OPT_ROADW equ 0                ; 1: the road white (ROADW=1 bash build.sh); 2: a
 OPT_MAP40 equ 0                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)
 OPT_RT equ 0                   ; 1: the race track trial - black road, green grass (RACETRACK=1 bash build.sh)
 OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)
+OPT_GRIP1 equ 0                ; 1: your car moved, and its grip worked out, once a picture (GRIP1=1 bash build.sh)
