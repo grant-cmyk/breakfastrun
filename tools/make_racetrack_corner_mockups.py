@@ -44,7 +44,13 @@ OPTS = [('1', 'colour by square alone: the jerkiness', 'attr', grass0, none),
         ('4', '3 + black run-off, dashed limit line', 'pix', grassR, limit & dash),
         ('5', '3 + black run-off, solid limit line', 'pix', grassR, limit),
         ('6', '5 + a half-tone shoulder to the grass', 'pix', grassR, limit)]
-S = 2; WW, WHT = 192, 152
+# TWO=1: just two panels, larger - panel 5 as it was (the line's white wins in a square a car shares with it) and the
+# same with the CAR's colour winning there (Grant, 16 Nov 2026: "where the car is over the white line, the blue takes
+# over from white - just where the car is") -> docs/design/racetrack/line_car_wins.gif
+TWO = os.environ.get('TWO') == '1'
+if TWO: OPTS = [('5', 'the line stays white: the car turns white on it', 'pix', grassR, limit),
+                ('5b', "the car's colour wins: the line takes it, just there", 'pixcar', grassR, limit)]
+S = 3 if TWO else 2; COLS = 2 if TWO else 3; ROWS = 1 if TWO else 2; WW, WHT = 192, 152
 fnt = ImageFont.load_default()
 def frame(i):
     cx, cy, th = at(i); vx, vy = int(cx) - WW // 2, int(cy) - WHT // 2
@@ -57,7 +63,7 @@ def frame(i):
         if 0 <= px < WW - 16 and 0 <= py < WHT - 16:
             cI[py:py + 16, px:px + 16] |= ri; cB[py:py + 16, px:px + 16] |= rb; cC[py:py + 16, px:px + 16][rb] = n
     sl = (slice(vy, vy + WHT), slice(vx, vx + WW))
-    sheet = Image.new('RGB', (3 * (WW * S + 12) + 12, 2 * (WHT * S + 30) + 8), (40, 42, 48)); d = ImageDraw.Draw(sheet)
+    sheet = Image.new('RGB', (COLS * (WW * S + 12) + 12, ROWS * (WHT * S + 30) + 8), (40, 42, 48)); d = ImageDraw.Draw(sheet)
     for k, (tag, what, mode, gr, wh) in enumerate(OPTS):
         g, white = gr[sl], wh[sl]; hole = shoulder[sl] if tag == '6' else none[sl]
         out = np.zeros((WHT, WW, 3), np.uint8)
@@ -65,14 +71,14 @@ def frame(i):
             for qx in range(WW // 8):
                 c = (slice(qy * 8, qy * 8 + 8), slice(qx * 8, qx * 8 + 8))
                 car = cC[c][cB[c]]; ccol = (RD, CY)[int(car[0])] if car.size else WH
-                if mode == 'pix':
+                if mode in ('pix', 'pixcar'):
                     ink = (g[c] & ~hole[c] & ~cB[c]) | cI[c] | (white[c] & ~cB[c])
-                    icol = G if (g[c] & ~cB[c]).any() else (WH if white[c].any() else ccol); pcol = K
+                    icol = G if (g[c] & ~cB[c]).any() else (ccol if (mode == 'pixcar' and car.size) else WH if white[c].any() else ccol); pcol = K
                 else:
                     pcol = G if g[c].mean() >= 0.5 else K
                     ink = (white[c] & ~cB[c]) | cI[c]; icol = WH if white[c].any() else (K if pcol == G else ccol)
                 out[c] = np.where(ink[..., None], np.array(icol, np.uint8), np.array(pcol, np.uint8))
-        ox = 12 + (k % 3) * (WW * S + 12); oy = 8 + (k // 3) * (WHT * S + 30)
+        ox = 12 + (k % COLS) * (WW * S + 12); oy = 8 + (k // COLS) * (WHT * S + 30)
         d.text((ox, oy), tag + ': ' + what, fill=(236, 235, 230), font=fnt)
         sheet.paste(Image.fromarray(out).resize((WW * S, WHT * S), Image.NEAREST), (ox, oy + 16))
     return sheet
@@ -80,6 +86,7 @@ N = len(pts); frames = [frame(i) for i in range(0, N, 2)]
 out = os.path.join(ROOT, 'docs', 'design', 'racetrack'); os.makedirs(out, exist_ok=True)
 pal = frames[10].convert('P', palette=Image.ADAPTIVE, colors=16)
 fr = [f.quantize(palette=pal, dither=Image.NONE) for f in frames]
-fr[0].save(os.path.join(out, 'corner_options.gif'), save_all=True, append_images=fr[1:], duration=70, loop=0)
+NAME = 'line_car_wins' if TWO else 'corner_options'
+fr[0].save(os.path.join(out, NAME + '.gif'), save_all=True, append_images=fr[1:], duration=70, loop=0)
 best = max(range(len(frames)), key=lambda j: abs(at(j * 2 + 20)[2] - at(j * 2)[2]) % 3)
-frames[best].save(os.path.join(out, 'corner_options.png')); print('wrote', out, len(frames), 'lap px', N * 2)
+frames[best].save(os.path.join(out, NAME + '.png')); print('wrote', out, len(frames), 'lap px', N * 2)
