@@ -137,6 +137,11 @@ if BRIDGE:                        # BRIDGE: no O stands on either road at the cr
     OS = [(ox, oy) for ox, oy in OS if not _inner[ox + 4, oy + 4]]
     _l, _r = _td.CON_BOX
     OS = [(ox, oy) for ox, oy in OS if not (-_l <= ox + 4 - BRIDGE['cross'][0] <= _r and BRIDGE['ramp_up'][0] - 4 <= oy + 4 <= BRIDGE['ramp_down'][1] + 4)]
+    # ... but six go back where that left the road's edge bare (Grant, 16 Nov 2026: "the area on the inside track needs more boundary
+    # circles"; tools/make_bridge_fix_mock.py found the places: gaps wider than track 1 has, clear of both roads, the wings and the walls)
+    OS_ADDED = [(104, 280), (272, 368), (272, 296), (104, 256), (224, 440), (144, 440)]
+    assert all(math.hypot(a - c, b - d) >= 15 for a, b in OS_ADDED for c, d in OS)
+    OS += OS_ADDED
 for ox, oy in OS:
     for j, r in enumerate(O_RING):
         for i, c in enumerate(r):
@@ -145,18 +150,31 @@ if BRIDGE:                        # BRIDGE: its ink - look P4 (concrete wings, w
     # tunnel mouth dithered (D1). Plain tiles OR'd onto the cloth like the O's (no masks: the cloth's dots show through).
     _gw, _gi, _tw, _ti, _cells, _mb = _td.plan_parts(BRIDGE, os.environ.get('BRIDGE_LOOK', 'P4D1').replace('NONE', 'P4D1'))
     _xc, _yc = BRIDGE['cross']; _x0, _x1 = _xc - ROAD // 2, _xc + ROAD // 2
-    _ink = _gi | {(x, y) for (x, y) in _ti if not _x0 - 8 <= x < _x1 + 8}     # the concrete: wings, ramp walls, the dithered mouths
-    # The kerbs and the arrows are drawn again here, CHEAPER FOR THE GAME than the design's (a tile costs about 90 T for each of
-    # its lines that has ink, and with the design's the pictures near the bridge took 5 TV frames against 4 elsewhere):
-    #   kerb walls: an 8 x 8 blue block every other cell and nothing between (the design's pale blocks had a line each side:
-    #               twice the tiles to draw) - cyan only, no white paper
-    #   arrows:     24 px wide, one every 16 px on the tile grid, so each is 3 x 2 tiles and all six are the same six tiles
-    #               (the design's were 26 wide every 12 px: about 10 tiles each, all different)
-    for y in range(BRIDGE['ramp_up'][0], BRIDGE['ramp_down'][1]):
-        if ((y - BRIDGE['ramp_up'][0]) // 8) % 2 == 0:
-            for i in range(8): _ink.add((_x0 - 8 + i, y)); _ink.add((_x1 + i, y))
+    # THE CONCRETE (Grant's own picture, 16 Nov 2026): each wing ("leg") and the wall along the ramps are ONE clean shape - an
+    # outline round the outside of wall and wing together, nothing drawn where they join, and the cloth's dots wiped off inside
+    # (BR_WIPE: masked tiles, as the breakfast things have). The tunnel mouths' dither stays (a cloth dot always falls on its ink).
+    _m0, _m1 = _yc - ROAD // 2, _yc + ROAD // 2
+    _mouth = {(x, y) for (x, y) in _tw if _m0 <= y < _m1}
+    _conc = _gw | _tw
+    _edge = {(x, y) for (x, y) in _conc - _mouth if ((x - 1, y) not in _conc and x < _xc) or ((x + 1, y) not in _conc and x > _xc)
+             or ((x, y - 1) not in _conc) or ((x, y + 1) not in _conc)}
+    _ink = _edge | {(x, y) for (x, y) in _ti if (x, y) in _mouth}
+    BR_WIPE = set(_conc - _mouth)
+    # THE KERB WALLS (his picture; K2 of the mock-up): one wall the whole way - a blue line down both sides, 8 x 8 blocks blue and
+    # cyan in turn between them, the cyan ones clean paper (wiped). Cyan and blue only.
+    # THE GAME DRAWS THEM ITSELF (kerb_draw, bridge.asm: two bytes a pixel line, against 48 full tiles of which 12 masked), so they
+    # are NOT in the map's tiles - only the closing line across each kerb's foot is. KERB is the picture, for the tests and previews:
+    # 0 clean paper, 1 ink, by (x, y).
+    KERB = {}
+    for xa in (_x0 - 8, _x1):
+        for y in range(BRIDGE['ramp_up'][0], BRIDGE['ramp_down'][1]):
+            blue = ((y - BRIDGE['ramp_up'][0]) // 8) % 2 == 0
+            for i in range(8): KERB[(xa + i, y)] = int(blue or i in (0, 7))
+        for i in range(8): _ink.add((xa + i, BRIDGE['ramp_down'][1] - 1)); KERB[(xa + i, BRIDGE['ramp_down'][1] - 1)] = 1
+    if os.environ.get('KERB_TILES'):   # (to compare: the kerbs as map tiles, the way they were first built)
+        _ink |= {q for q, v in KERB.items() if v}; BR_WIPE |= {q for q, v in KERB.items() if not v}
     for a_, z_ in (BRIDGE['ramp_up'], BRIDGE['ramp_down']):
-        for y0 in range(a_ + 2, z_, 16):
+        for y0 in range(a_ + 2, z_, int(os.environ.get('BR_CHEV', 16))):
             for k in range(12):
                 for yy in (y0 + 11 - k, y0 + 10 - k): _ink.add((_xc - 1 - k, yy)); _ink.add((_xc + k, yy))
     for (x, y) in (_ink if os.environ.get('BRIDGE_LOOK') != 'NONE' else ()): px[x, y] = 1
@@ -371,7 +389,9 @@ if TRACK == 3:
     CANS = {'A': _can(156, SY), 'B': _can(288, 490), 'C': _can(116, 190)}
 if TRACK == 5:
     # A FRIDGE TOO FAR: A behind the grid; B on the top lane (half a lap on); C, the oil can, on the left-hand straight
-    CANS = {'A': _can(LX - 132, SY), 'B': _can(300, 68), 'C': _can(68, 200)}
+    # (16 Nov 2026: A and B moved a few pixels onto WHITE squares of the cloth, as C was - a can on a dotted square needs masked tiles,
+    # and this track's masks are the bridge's concrete now)
+    CANS = {'A': _can(LX - 132, SY - 14), 'B': _can(276, 72), 'C': _can(68, 200)}
 for k, (tx, ty, dy) in CANS.items():
     for y, row in enumerate(OIL_ART if k == 'C' else NOS_ART):
         for x, c in enumerate(row):
@@ -391,6 +411,7 @@ while q:
     if 0 <= y < PH and 0 <= x < PW and not seen[y, x] and not d[y, x]:
         seen[y, x] = True; q.extend(((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)))
 imask = d | ~seen
+if BRIDGE and not os.environ.get('BR_NOWIPE'): extra_mask += sorted(BR_WIPE)                    # (BRIDGE: the concrete and the kerbs' cyan blocks are clean)
 for (x, y) in extra_mask: imask[y, x] = True                # (a coloured object hides the cloth under all of it, margin too)
 # cut into tiles: plain ones first (ink only, OR'd onto the cloth), then the
 # masked ones (from TM_FIRST), each with an index into the de-duplicated masks
@@ -399,11 +420,15 @@ def tbytes(get, tx, ty):
 yy, xx = np.mgrid[0:PH, 0:PW]                         # the cloth's dithered pixels
 cloth_on = ((((xx >> 5) + (yy >> 5)) & 1) == 1) & ((yy & 1) == 0) & ((xx & 3) == (yy & 2))   # 1 in 8, staggered
 cells = {}
+_inkb = np.array(img, dtype=bool)
 for ty in range(H):
     for tx in range(W):
         ink = tbytes(lambda x, y: px[x, y], tx, ty)
         sl = (slice(ty * 8, ty * 8 + 8), slice(tx * 8, tx * 8 + 8))
-        if (imask[sl] & cloth_on[sl]).any():   # the mask hides some cloth: needed
+        if BRIDGE:                             # BRIDGE: a mask holds only the cloth dots it has to hide (not those under ink, nor pixels where the
+            _need = imask[sl] & cloth_on[sl] & ~_inkb[sl]   # cloth has no dot) - the same picture on the screen, and far fewer different masks
+            msk = bytes(np.packbits(_need, axis=1).ravel().tolist()) if _need.any() else bytes(8)
+        elif (imask[sl] & cloth_on[sl]).any():   # the mask hides some cloth: needed
             msk = tbytes(lambda x, y: imask[y, x], tx, ty)
         else:                                  # on white cloth: plain OR is the same
             msk = bytes(8)
@@ -464,6 +489,7 @@ with open(OUT, 'w') as f:
     # mini-map's 336 bytes freed there), the rest stay here; the index points at both
     TOP_ROWS = 320
     if TRACK == 3: TOP_ROWS = 388        # (its things have fewer masks up there: 68 bytes more of the rows fit, and the program needs them)
+    if TRACK == 5: TOP_ROWS = 290        # (BRIDGE: the concrete's masks are up there too)
     top_used, where = 0, {}
     toprows = open(os.path.join(SRC, 'toprows.asm'), 'w')
     toprows.write('; GENERATED by tools/make_world.py - map rows kept at the top of memory\n')
@@ -472,6 +498,8 @@ with open(OUT, 'w') as f:
     # holds the corner arrows' table first (a byte a waypoint) - and in the 49 bytes above the screen-copy routine.
     NWP_ = min(round(sum(math.dist(p, q) for p, q in zip(PATH, PATH[1:] + PATH[:1])) / 32), 61)
     BINS = [['s1', 90 - NWP_, 0, ' - s1_src + STRIP1', []], ['hi', 49, 0, ' - hi_src + HIMEM', []], ['s2', 32, 0, ' - s2_src + STRIP2', []], ['s3', 90, 0, ' - s3_src + STRIP3', []]]
+    if BRIDGE: BINS.append(['tk', 48, 0, ' - tk_src + BR_ROW2', []])    # BRIDGE: 48 bytes at the bottom of the stack's page (bridge.asm)
+    if BRIDGE: BINS.append(['ts', 54, 0, ' - ts_src + BR_ROWS', []])    # BRIDGE: and 54 bytes the title never uses (a_sav, 0x5B16: racer.asm BR_ROWS)
     for ty in range(H):
         ent = [(tx, mapb[ty * W + tx]) for tx in range(W) if mapb[ty * W + tx]]
         line = 'row_%d:  defb %d' % (ty, len(ent)) + ''.join(',%d,%d' % e for e in ent) + '\n'
@@ -491,7 +519,7 @@ with open(OUT, 'w') as f:
     toprows.close()
     with open(os.path.join(SRC, 'hirows.asm'), 'w') as hirows:
         hirows.write('; GENERATED by tools/make_world.py - map rows kept outside the program: after the arrows\' table on strip 1, above\n; the screen-copy routine (HIMEM), and on strips 2 and 3 of the back buffer\'s unused bottom rows - racer.asm, start_once\n')
-        for bn in BINS: hirows.write(''.join(bn[4]) + {'s1': 's1_end:\nhi_src:\n', 'hi': 'hi_end:\ns2_src:\n', 's2': 's2_end:\ns3_src:\n', 's3': 's3_end:\n'}[bn[0]])
+        for bn in BINS: hirows.write(''.join(bn[4]) + {'s1': 's1_end:\nhi_src:\n', 'hi': 'hi_end:\ns2_src:\n', 's2': 's2_end:\ns3_src:\n', 's3': 's3_end:\n' + ('tk_src:\n' if BRIDGE else ''), 'tk': 'tk_end:\nts_src:\n', 'ts': 'ts_end:\n'}[bn[0]])
     print('row lists: %d bytes at TOPMEM, %s outside the program' % (top_used, ' + '.join(str(bn[2]) for bn in BINS)))
     # (the index of the row lists is kept in the buffer's bottom rows: src/rowidx.asm)
     with open(os.path.join(SRC, 'rowidx.asm'), 'w') as g:

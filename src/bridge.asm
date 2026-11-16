@@ -19,6 +19,7 @@
 ; =====================================================================
 LVL     equ 0x5E00              ; the cars' levels, 5 bytes; and
 RMP     equ LVL+8               ; and whether each is on a ramp: 1 the ramp up, 0xFF the ramp down, 0 neither; and
+                                ; (0x5E58: BR_ROW2, 48 bytes of the map's row lists - racer.asm; then the stack, to 0x5F00: 120 bytes)
 BR_SAVE equ 0x5E10              ; 72 bytes: the buffer under a half-hidden car (the bottom of the stack's
                                 ; page: the stack, from 0x5F00 down, has been seen 56 bytes deep)
 RAMP_SHIFT equ 3                ; THE RAMPS: on the ramp up a car's push and top speed are less by 1 / 2^RAMP_SHIFT (3: an eighth,
@@ -450,6 +451,7 @@ dcb_down:                       ; HL one pixel row down the buffer (screen layou
         ld a,h
         and 7
         ret nz
+dcb_cell:                       ; (HL has just left a character row's last line)
         ld a,l
         add a,32
         ld l,a
@@ -457,4 +459,202 @@ dcb_down:                       ; HL one pixel row down the buffer (screen layou
         ld a,h
         sub 8
         ld h,a
+        ret
+
+; KERB_DRAW: the bridge's two kerb walls, straight into the back buffer after the cloth and BEFORE the map's tiles
+; (16 Nov 2026). Each is 8 px wide from BR_Y0 to BR_Y3: 8 x 8 blocks, blue and cyan in turn, the cyan ones with a
+; blue line down each side and clean paper between (the cloth's dots wiped). As map tiles they were 48 full tiles,
+; 12 of them masked - about 50,000 T a picture with the whole bridge in view; this is two bytes a pixel line.
+; (The closing line across each kerb's foot is a map tile, drawn over this.)
+KERB_INK equ 0x81               ; a cyan block's line: the two edge pixels
+kerb_draw:
+        ld hl,BR_X0-8+16        ; buffer x = world x - camx + 16
+        call kd_one
+        ld hl,BR_X1+16
+kd_one:
+        ld de,(camx)
+        or a
+        sbc hl,de
+        ld a,h
+        or a
+        ret nz
+        ld a,l
+        cp 8
+        ret c
+        cp 209
+        ret nc                  ; not in the window (nor its margins)
+        ld (kd_x+1),a
+        and 7                   ; the shift: the kerb's 8 pixels lie over two buffer bytes
+        ld b,a
+        inc b
+        ld hl,KERB_INK*256
+        ld a,0xFF
+        jr kd_s2
+kd_s1:
+        srl h
+        rr l
+        srl a
+kd_s2:
+        djnz kd_s1
+        ld e,a                  ; E = the right byte's pixels that are NOT the kerb's, D = the left byte's
+        cpl
+        ld d,a
+        ld a,h
+        ld (kd_pl+1),a          ; a cyan block's line, as it falls in the two bytes
+        ld a,l
+        ld (kd_pr+1),a
+        ld hl,(camy)            ; which of its lines are in the window
+        ld bc,BR_Y0
+        or a
+        sbc hl,bc               ; HL = camy - BR_Y0
+        bit 7,h
+        jr z,kd_low
+        ld a,h                  ; the kerb starts part-way down the window
+        inc a
+        ret nz
+        ld a,l
+        neg
+        ret z
+        cp WIN_H
+        ret nc
+        ld c,a
+        add a,BUF_TOP
+        ld b,a                  ; B = the buffer row of its first line
+        ld a,WIN_H
+        sub c                   ; A = lines to draw
+        ld c,0                  ; C = the kerb's line, 0 .. BR_Y3 - BR_Y0 - 1
+        jr kd_go
+kd_low:
+        ld a,h                  ; the window's top line is part-way down the kerb
+        or a
+        ret nz
+        ld a,l
+        cp BR_Y3-BR_Y0
+        ret nc
+        ld c,a
+        ld b,BUF_TOP
+        ld a,BR_Y3-BR_Y0
+        sub c
+        cp WIN_H
+        jr c,kd_go
+        ld a,WIN_H
+kd_go:
+        ld ixl,a                ; IXL = lines to go
+        push bc
+kd_x:
+        ld c,0
+        call buf_addr
+        pop bc
+kd_run:                         ; a run of lines: to the end of this block, of this character row of the buffer
+        ld a,c                  ; (so the next line down is just INC H), or of the kerb in view
+        and 7
+        neg
+        add a,8
+        ld b,a
+        ld a,h
+        and 7
+        neg
+        add a,8
+        cp b
+        jr nc,kd_r0
+        ld b,a
+kd_r0:
+        ld a,ixl
+        cp b
+        jr nc,kd_r1
+        ld b,a
+kd_r1:
+        sub b
+        ld ixl,a
+        bit 3,c
+        ld a,c
+        jr nz,kd_cy
+        add a,b
+        ld c,a
+kd_bl:                          ; a blue block: all 8 pixels on
+        ld a,d
+        cpl
+        or (hl)
+        ld (hl),a
+        inc l
+        ld a,e
+        cpl
+        or (hl)
+        ld (hl),a
+        dec l
+        inc h
+        djnz kd_bl
+        jr kd_nx
+kd_cy:
+        add a,b
+        ld c,a
+kd_c1:                          ; a cyan block: its 8 pixels cleared, the two edge lines put in
+        ld a,(hl)
+        and d
+kd_pl:
+        or 0
+        ld (hl),a
+        inc l
+        ld a,(hl)
+        and e
+kd_pr:
+        or 0
+        ld (hl),a
+        dec l
+        inc h
+        djnz kd_c1
+kd_nx:
+        ld a,h
+        and 7
+        call z,dcb_cell
+        ld a,ixl
+        or a
+        jr nz,kd_run
+        ret
+
+; TDRAW_MB: tdraw_m for this track (IX = mask, DE = picture, HL = top-left byte, B = shift page). The bridge's masks
+; hold only the cloth dots to be hidden - most of their lines are empty - so a line's mask and its picture are each
+; done only if they have something in them, and the mask is read once a line (tdraw_m reads it three times).
+tdraw_mb:
+        ld a,(ix+0)
+        or a
+        jr z,tmb_ink
+        ld c,a
+        ld a,(bc)
+        cpl
+        and (hl)
+        ld (hl),a
+        inc b
+        inc l
+        ld a,(bc)
+        cpl
+        and (hl)
+        ld (hl),a
+        dec b
+        dec l
+tmb_ink:
+        ld a,(de)
+        or a
+        jr z,tmb_next
+        ld c,a
+        ld a,(bc)
+        or (hl)
+        ld (hl),a
+        inc b
+        inc l
+        ld a,(bc)
+        or (hl)
+        ld (hl),a
+        dec b
+        dec l
+tmb_next:
+        inc ix
+        inc h
+        ld a,h
+        and 7
+        call z,dcb_cell
+        inc e                   ; (a tile's 8 bytes start on a multiple of 8)
+        ld a,e
+        and 7
+        jr nz,tdraw_mb
         ret

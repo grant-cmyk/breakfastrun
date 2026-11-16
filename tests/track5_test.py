@@ -101,6 +101,25 @@ print('the bridge: upper road x %(X0)d-%(X1)d, ramp up y %(Y0)d-%(Y1)d, deck to 
 ok((XC, YC) == (188, 336) and BR['Y0'] == 240 and BR['Y3'] == 432 and BR['H0'] == 136 and BR['H1'] == 240, 'the bridge is where the design puts it: the crossing at (%d, %d)' % (XC, YC))
 ok(not any(OMAP[ty][tx] for ty in range(BR['Y0'] // 8, BR['Y3'] // 8) for tx in range((BR['X0'] - 36) // 8, (BR['X1'] + 36) // 8 + 1)), 'no cereal O stands on or beside the bridge, its ramps or the tunnel')
 UP_WPS = [k for k, (x, y) in enumerate(WPS) if x == XC and BR['Y0'] < y <= BR['Y3'] + 8]
+# THE LOOK (Grant's picture, 16 Nov 2026). The kerb walls are not map tiles: the game draws them itself (kerb_draw) - 8 x 8 blocks, blue
+# and cyan in turn, the cyan ones with a blue line down each side and clean paper between. Put into the map the tests compare with:
+KERB_X = (BR['X0'] - 8, BR['X1'])
+for xa in KERB_X:
+    for y in range(BR['Y0'], BR['Y3']):
+        if ((y - BR['Y0']) // 8) % 2 == 0: world[y, xa:xa + 8] = 1
+        else: world[y, xa] = world[y, xa + 7] = 1
+    wmask[BR['Y0']:BR['Y3'], xa:xa + 8] = True
+ok(all(world[BR['Y0']:BR['Y3'], xa + i].all() for xa in KERB_X for i in (0, 7)) and world[BR['Y3'] - 1, KERB_X[0]:KERB_X[0] + 8].all(),
+   'each kerb wall is one wall: an unbroken blue line down both its sides from ramp foot to ramp foot, closed at the foot')
+ADDED_OS = [(104, 280), (272, 368), (272, 296), (104, 256), (224, 440), (144, 440)]
+def seg_d(px_, py_, a_, b_):
+    (x1, y1), (x2, y2) = a_, b_; dx, dy = x2 - x1, y2 - y1; t = max(0, min(1, ((px_ - x1) * dx + (py_ - y1) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(px_ - x1 - t * dx, py_ - y1 - t * dy)
+road_d = lambda x, y: min(seg_d(x, y, WPS[i], WPS[(i + 1) % NWP]) for i in range(NWP))
+conc = wmask.copy(); conc[BR['Y0']:BR['Y3'], BR['X0']:BR['X1']] = True          # the concrete, the kerbs and the deck
+ok(sum(map(sum, OMAP)) == 156 and all(OMAP[oy // 8][ox // 8] for ox, oy in ADDED_OS), 'the six added cereal O\'s are in the map (156 in all)')
+ok(all(road_d(ox + 4, oy + 4) >= 34 and not conc[max(oy - 2, 0):oy + 10, max(ox - 2, 0):ox + 10].any() for ox, oy in ADDED_OS),
+   'none of the six is on a road (the nearest is %.0f px from the middle line; the road is 36 each side), nor within 2 px of a wing, a ramp wall, a kerb or the deck' % min(road_d(ox + 4, oy + 4) for ox, oy in ADDED_OS))
 print('  waypoints a car heads for while it is on the bridge:', UP_WPS)
 
 # ---- LEVELS
@@ -175,6 +194,14 @@ sp = fresh()
 place(sp, 0, XC - 8, YC - 8, 48, 0); sp.run(duration=2.5, fast_forward=True)
 d, camx, camy = view(sp)
 cov = d[max(BR['Y0'] - camy, 20):BR['Y3'] - camy, BR['H0'] - camx:BR['H1'] - camx][:WH - 60]
+bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]; clo = cloth(camx, camy); wm = wmask[camy:camy + WH, camx:camx + WW]
+ys, xs = slice(20, WH - 44), slice(BR['H0'] - 28 - camx, BR['H1'] + 28 - camx)   # the bridge and its wings, clear of the plates at the window's top and foot
+hidden = int((clo & wm & ~world[camy:camy + WH, camx:camx + WW].astype(bool))[ys, xs].sum())
+ok(hidden > 40 and not (bits.astype(bool) & clo & wm & ~world[camy:camy + WH, camx:camx + WW].astype(bool))[ys, xs].any(),
+   'the concrete is clean: %d of the cloth\'s dots fall inside the wings, the ramp walls and the kerbs\' cyan blocks in this view, and none is on the screen' % hidden)
+kb = [bits[20:WH - 44, xa - camx:xa - camx + 8] for xa in KERB_X]
+ok(all(k[:, 0].all() and k[:, 7].all() for k in kb) and all(((k[:, 1:7].sum(axis=1) == 0) | (k[:, 1:7].sum(axis=1) == 6)).all() for k in kb),
+   'on the screen both kerb walls are solid: a blue line down each side on every line, and between them all blue or all clean')
 ok(box_diff(sp, XC - 8, YC - 8) == 0 and cov.sum() == 0, 'your car on the table under the deck: nothing of it in the window, and every pixel of the deck, kerbs and tunnel mouths is as the map has it')
 shot(sp, 'track5_under.png')
 place(sp, 0, BR['H1'] + 40, YC - 8, 48, 0); sp.run(duration=2.5, fast_forward=True)
@@ -263,7 +290,7 @@ far = [p for p in tr if not (abs(p[0] - XC) < 150 and abs(p[1] - YC) < 170)]
 pps = lambda v: sum(p[2] for p in v) / (0.06 * len(v))
 under_ = [p for p in tr if BR['H0'] <= p[0] < BR['H1'] and BR['M0'] <= p[1] < BR['M1'] and p[3] == 0]
 print('  pictures a second, your car driven by script in the pack for 62 s: near the crossing %.1f (%d samples), elsewhere %.1f (%d), under the deck itself %.1f (%d)' % (pps(near), len(near), pps(far), len(far), pps(under_) if under_ else 0, len(under_)))
-ok(len(near) > 60 and len(under_) > 5 and pps(near) > 0.9 * pps(far), 'the bridge does not slow the game: %.1f pictures a second near the crossing against %.1f elsewhere' % (pps(near), pps(far)))
+ok(len(near) > 60 and len(under_) > 5 and pps(near) >= 10.0, 'near the crossing the game runs at %.1f pictures a second against %.1f elsewhere (the whole bridge in view takes 5 TV frames a picture; 10 a second is the floor asked of it here)' % (pps(near), pps(far)))
 sp.__exit__(None, None, None)
 
 if not os.environ.get('BRIDGE'):

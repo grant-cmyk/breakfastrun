@@ -49,6 +49,8 @@ MAPDAT  equ BUF+0x10A0          ; D0: the mini-map's ink, 3 bytes a line (the ca
 STRIP1  equ BUF+0x11A0          ; D1: the corner arrows' table (a byte a waypoint), then some of the map's row lists
 STRIP2  equ BUF+0x12A0          ; D2: row lists (32 bytes)
 STRIP3  equ BUF+0x13A0          ; D3: row lists
+BR_ROW2 equ 0x5E58              ; (track 5 only: 48 more bytes of row lists, at the bottom of the stack's page - bridge.asm)
+BR_ROWS equ 0x5B16              ; (track 5 only: row lists where title.asm's a_sav was declared - 54 bytes nothing reads or writes)
 ARROW_F equ BUF+0x14A0          ; D4-D7: the corner arrows' frames, 8 x 44 bytes, two a page
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
@@ -201,6 +203,9 @@ cpu_move:
         call hud_update         ; the panel, message bar and lap strip
         call camera
         call cloth_fill         ; the tablecloth, as the camera sees it
+        if OPT_BRIDGE
+        call kerb_draw          ; BRIDGE: the bridge's kerb walls, under the map's tiles (bridge.asm)
+        endif
         call draw_tiles
         ld ix,cars+(NCARS-1)*C_SIZE ; computer cars first, yours last (on top)
         ld b,NCARS
@@ -1993,7 +1998,11 @@ dt_mask:                        ; IX = its mask, DE = its picture, HL = where
         ld hl,(tr_base)
         add a,l
         ld l,a
+        if OPT_BRIDGE
+        call tdraw_mb           ; BRIDGE: the same, quicker for its sparse masks (bridge.asm)
+        else
         call tdraw_m
+        endif
         jr dt_back
 dt_row_done:
         exx
@@ -2016,6 +2025,7 @@ dt_nt:
 ; IX = its mask, DE = its picture, HL = top-left byte, B = shift page.
 ;   buffer = (buffer AND NOT mask) OR picture, both shifted, 8 lines
 ; Not unrolled like tdraw_0..7: only a few are ever in view.
+        if 1-OPT_BRIDGE         ; (BRIDGE: tdraw_mb, bridge.asm, takes its place)
 tdraw_m:
         ld a,8
 tdm_line:
@@ -2069,6 +2079,7 @@ tdm_ok:
         dec a
         jr nz,tdm_line
         ret
+        endif
 
 ; ---------------------------------------------------------------------
 ; DRAW_CAR (IX = car): masked, into the back buffer, if it is in view.
@@ -4116,6 +4127,14 @@ start_once:                     ; (start, from the start-up area)
         ld de,STRIP3
         ld bc,s3_end-s3_src
         call so_blk
+        if OPT_BRIDGE           ; BRIDGE: a few more row lists, in 54 bytes the title never uses (they follow strip 3's in hirows.asm)
+        ld de,BR_ROW2           ; (and 48 bytes at the bottom of the stack's page)
+        ld bc,tk_end-tk_src
+        call so_blk
+        ld de,BR_ROWS
+        ld bc,ts_end-ts_src
+        call so_blk
+        endif
         ld hl,arrow_src         ; the arrows' frames, two to a strip: D4-D7
         ld de,ARROW_F
         ld a,4
