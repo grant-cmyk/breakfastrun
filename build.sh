@@ -43,6 +43,9 @@ if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"
   BDIR="${BDIR:-map40_t${TRACK:-1}}"; OUT="${OUT:-$T40}"
 fi
+# CHOOSE=1: the choose screen between the title and the race - track, driver, car, extra (src/choose.asm). Only with the
+# several-tracks build: use tools/build_choose.sh -> build/racer_choose.tap
+printf 'OPT_CHOOSE equ %s               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)\n' "${CHOOSE:-0}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as

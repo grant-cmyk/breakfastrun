@@ -63,9 +63,9 @@ with Racer(headless=True) as sp:
     ok(sb[24:56, 40:72].sum() > 500 and [attr(sp, r, c) for r in (4, 5) for c in (6, 7)] == [0x7E] * 4 and attr(sp, 3, 5) == 0x67 and attr(sp, 6, 8) == 0x67 and 80 <= sb[32:48, 48:64].sum() <= 110 and not sb[32:34, 48:64].any(),
        'the big egg left of the words: white on the green, its yolk small and round - yellow on white in four cells of its own')
     ok(screen_text(sp, 8, 10, 12) == "TODAY'S MENU" and all(attr(sp, 8, c) == 0x7A for c in range(10, 22))
-       and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 11, 6, 14) == '2  TWO PLAYERS' and screen_text(sp, 12, 6, 21) == '3  CHOOSE YOUR PLAYER' and screen_text(sp, 13, 6, 14) == 'K  CHOOSE KEYS'
+       and screen_text(sp, 10, 6, 13) == '1  ONE PLAYER' and screen_text(sp, 11, 6, 14) == '2  TWO PLAYERS' and (screen_text(sp, 12, 6, 14) == 'K  CHOOSE KEYS' if CHOOSE else screen_text(sp, 12, 6, 21) == '3  CHOOSE YOUR PLAYER' and screen_text(sp, 13, 6, 14) == 'K  CHOOSE KEYS')
        and all(attr(sp, r, c) == 0x78 for r in range(9, 16) for c in range(3, 29)),
-       "TODAY'S MENU in red; the choices black on the white card, on four rows: 1 ONE PLAYER, 2 TWO PLAYERS, 3 CHOOSE YOUR PLAYER, K CHOOSE KEYS")
+       "TODAY'S MENU in red; the choices black on the white card, " + ("on three rows: 1 ONE PLAYER, 2 TWO PLAYERS, K CHOOSE KEYS (the tape with the choose screen)" if CHOOSE else "on four rows: 1 ONE PLAYER, 2 TWO PLAYERS, 3 CHOOSE YOUR PLAYER, K CHOOSE KEYS"))
     ok([attr(sp, 16, 7 + 4 * i) for i in range(5)] == [0x57, 0x68, 0x60, 0x58, 0x38] and all(sb[128:144, 56 + 32 * i:72 + 32 * i].any() for i in range(5))
        and all(sb[146:151, 48 + 32 * i:80 + 32 * i].sum() >= 12 for i in range(5)) and not sb[152:, 24:232].any() + 0 > 99,
        'the five drivers\' faces in a row, each on its car\'s colour (the white driver\'s on plain white, so it shows on the card), each with the name under it in the small letters')
@@ -97,11 +97,12 @@ with Racer(headless=True) as sp:
     ok(g(sp, 'renders') == 0 and sp.read8(SYM['race_on']) == 0, 'no race runs behind the title')
     # 2: not built yet
     title_up(sp)
-    tap(sp, '2', 0.2, 0.3)
-    soon = screen_text(sp, 14, 6, 20)
-    sp.run(duration=2.5, fast_forward=True)
-    ok(soon.strip() == '2UP COMING SOON' and screen_text(sp, 14, 6, 20).strip() == '' and g(sp, 'renders') == 0,
-       '2 says 2UP COMING SOON under the choices, then it goes (%r)' % soon.strip())
+    if not CHOOSE:                                  # (the tape with the choose screen: 2 goes to that screen - tests/choose_test.py)
+        tap(sp, '2', 0.2, 0.3)
+        soon = screen_text(sp, 14, 6, 20)
+        sp.run(duration=2.5, fast_forward=True)
+        ok(soon.strip() == '2UP COMING SOON' and screen_text(sp, 14, 6, 20).strip() == '' and g(sp, 'renders') == 0,
+           '2 says 2UP COMING SOON under the choices, then it goes (%r)' % soon.strip())
 
     # ---------------------------------------------------------------- 2: K - the keys
     tap(sp, 'K', 0.2, 0.5)
@@ -122,7 +123,10 @@ with Racer(headless=True) as sp:
     tap(sp, 'L'); tap(sp, 'M'); tap(sp, 'N', 0.2, 1.0)
     ok(title_up(sp, 5.0) < 5.0 and bytes(sp.read(TDV('key_ch'), 5)) == b'ZXLMN', 'after the fifth key: back to the title (keys %r)' % bytes(sp.read(TDV('key_ch'), 5)))
     sp.write(SYM['jin_on'], bytes([0xFF]))          # (the start jingle and its automatic countdown held off from here on: the keys are what is tested - tests/finish_test.py has the jingle)
-    tap(sp, '1', 0.2, 2.0)
+    tap(sp, '1', 0.2, 0.3 if CHOOSE else 2.0)
+    if CHOOSE:                                      # (the choose screen answers to the new keys too: L, the new accelerate, through its four steps)
+        for _ in range(4): tap(sp, 'L', 0.15, 0.3)
+        sp.run(duration=2.0, fast_forward=True)
     ok(g(sp, 'renders') > 0 and frame_ok(sp), '1: the race screen, whole')
     hold(sp, ['Q'], 1.0); hold(sp, ['O', 'P', 'A'], 0.5)
     ok(sp.read8(SYM['start_go']) == 0 and sp.read8(SYM['cars'] + 11) == 0, 'the old keys (Q O P A) do nothing now')
@@ -145,13 +149,18 @@ with Racer(headless=True) as sp:
 with Racer(headless=True) as sp:
     load(sp)
     sp.write(SYM['jin_on'], bytes([0xFF]))          # (the start jingle held off: tests/finish_test.py has it)
-    tap(sp, '1', 0.3, 2.0)
+    tap(sp, '1', 0.3, 0.0 if CHOOSE else 2.0)
+    if CHOOSE: through_choose(sp); sp.run(duration=2.0, fast_forward=True)
     ok(g(sp, 'renders') > 0 and frame_ok(sp) and car(sp, 0)['vx'] == 0,
        '1 at the title: the race screen, your car on the grid')
     scr0 = screen_bits(sp)
-    ok(list(sp.read(SYM['su_lv'], 4)) == [1, 1, 1, 2], 'the 1 that left the title did not spend a set-up point (%s)' % list(sp.read(SYM['su_lv'], 4)))
-    tap(sp, '1', 0.2, 0.3); tap(sp, '3', 0.2, 0.3)
-    ok(list(sp.read(SYM['su_lv'], 4)) == [2, 1, 2, 0], 'the set-up keys still work before the start: 1 and 3 give GRIP 2, ACCEL 2 (%s)' % list(sp.read(SYM['su_lv'], 4)))
+    if CHOOSE:                                      # (the tape with the choose screen: the extra is chosen there, the set-up keys are gone)
+        tap(sp, '1', 0.2, 0.3); tap(sp, '3', 0.2, 0.3)
+        ok(list(sp.read(SYM['su_lv'], 4)) == [1, 1, 2, 0], 'the extra chosen on the choose screen (ACCELERATION, as it stood) is the car\'s set-up; keys 1 and 3 before the start change nothing (%s)' % list(sp.read(SYM['su_lv'], 4)))
+    else:
+        ok(list(sp.read(SYM['su_lv'], 4)) == [1, 1, 1, 2], 'the 1 that left the title did not spend a set-up point (%s)' % list(sp.read(SYM['su_lv'], 4)))
+        tap(sp, '1', 0.2, 0.3); tap(sp, '3', 0.2, 0.3)
+        ok(list(sp.read(SYM['su_lv'], 4)) == [2, 1, 2, 0], 'the set-up keys still work before the start: 1 and 3 give GRIP 2, ACCEL 2 (%s)' % list(sp.read(SYM['su_lv'], 4)))
     t = go_green(sp)
     sp.run(duration=1.0, fast_forward=True); press(sp, 'Q', False)
     ok(t < 4.0 and car(sp, 0)['vx'] > 1.0, 'Q: the lights, green after %.1f s, and away' % t)
@@ -168,13 +177,14 @@ with Racer(headless=True) as sp:
     r0 = g(sp, 'renders'); sp.run(duration=3.0, fast_forward=True)
     ok(g(sp, 'renders') == r0 and len({(sp.read8(SYM['a_x'] + 1), sp.read8(SYM['a_y'] + 1)) for _ in range(20) if sp.run(duration=0.1, fast_forward=True) is None}) > 10,
        'the attract sequence runs again, no race behind it')
-    tap(sp, '1', 0.3, 2.0)
+    tap(sp, '1', 0.3, 0.0 if CHOOSE else 2.0)
+    if CHOOSE: through_choose(sp); sp.run(duration=2.0, fast_forward=True)
     sb = screen_bits(sp)
     same = all((sb[y0:y1, x0:x1] == scr0[y0:y1, x0:x1]).all() for (y0, y1, x0, x1) in ((0, 8, 0, 256), (0, 48, 208, 256), (8, 160, 0, 8), (8, 160, 200, 208), (160, 168, 0, 208), (168, 184, 72, 128)))
     ok(frame_ok(sp) and same and sp.read8(SYM['race_on']) == 0 and car(sp, 0)['vx'] == 0,
        '1: a new race on the grid; the race screen put back whole (frame, mini-map, the logo under the window)')
     t = go_green(sp); sp.run(duration=1.0, fast_forward=True); press(sp, 'Q', False)
-    ok(t < 4.0 and car(sp, 0)['vx'] > 1.0 and list(sp.read(SYM['su_lv'], 3)) == [2, 1, 2], 'and it races: green after %.1f s, the set-up kept' % t)
+    ok(t < 4.0 and car(sp, 0)['vx'] > 1.0 and list(sp.read(SYM['su_lv'], 3)) == ([1, 1, 2] if CHOOSE else [2, 1, 2]), 'and it races: green after %.1f s, the set-up kept' % t)
     bad = window_bad(sp)
     ok(bad == 0, 'the play window still matches the world map pixel for pixel, cars excluded (%d wrong)' % bad)
 

@@ -23,6 +23,7 @@ with Racer(headless=True) as sp:
     while attr(sp, 8, 10) != 0x7A and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
     sp.run(duration=0.5, fast_forward=True)
     press(sp, '1', True); sp.run(duration=0.2, fast_forward=True); press(sp, '1', False)
+    through_choose(sp)
     sp.run(duration=1.0, fast_forward=True)             # a second into the jingle
     w = screen_bits(sp)[8:160, 8:200]
     ok(g(sp, 'renders') >= 1 and w.sum() > 2000 and sp.read8(SYM['start_go']) == 0 and all(attr(sp, r, c) == 0x78 for r in (17, 18) for c in (7, 16)) and screen_bits(sp)[138:143, 72:136].any(),
@@ -81,13 +82,13 @@ with Racer(headless=True) as sp:
     # a second race, straight from that title (Grant's screenshots, 15 Nov 2026: the podium's colours and the
     # title's own picture were left in the window)
     sp.run(duration=1.0, fast_forward=True)
-    press(sp, '1', True); sp.run(duration=0.2, fast_forward=True); press(sp, '1', False); sp.run(duration=1.5, fast_forward=True)
+    press(sp, '1', True); sp.run(duration=0.2, fast_forward=True); press(sp, '1', False); through_choose(sp); sp.run(duration=1.5, fast_forward=True)
     A = np.array([[attr(sp, r, c) for c in range(32)] for r in range(24)]); w = screen_bits(sp).astype(bool)[8:160, 8:200]
     cars_ink = w[60:110, 20:140].sum()
     ok((A[4:17, 1:25] == 0x29).all() and (A[17:20, 1:7] == 0x29).all() and (A[17:20, 17:21] == 0x29).all() and minimap_diff(sp)[0] == 0,
        'the second race: every cell of the window is the cloth\'s blue on cyan again - nothing of the podium\'s colours - and the mini-map whole, the last race\'s dots out of it')
     AF = [int(v, 16) for l in open(os.path.join(ROOT, 'src', 'arrows.asm')) if 'defb' in l for v in l.split('defb')[1].split(',')]
-    _h = open(os.path.join(ROOT, 'src', 'hirows.asm')).read(); S3 = [int(v) for l in _h[_h.index('s3_src:'):_h.index('s3_end:')].splitlines() if 'defb' in l for v in l.split('defb')[1].split(',')]
+    _h = open(os.path.join(os.environ.get('TSRC') or os.path.join(ROOT, 'src'), 'hirows.asm')).read(); S3 = [int(v) for l in _h[_h.index('s3_src:'):_h.index('s3_end:')].splitlines() if 'defb' in l for v in l.split('defb')[1].split(',')]
     ok(all(bytes(sp.read(SYM['arrow_f'] + 0x100 * i, 90)) == bytes(AF[90 * i:90 * i + 90]) for i in range(5)) and len(AF) == 450 and len(S3) > 20 and sum(a != b for a, b in zip(S3, sp.read(SYM['strip3'], len(S3)))) <= 6,
        'after a race, the podium and the title, the arrows\' five pictures are still whole where they are kept (the back buffer\'s unused bottom rows), and so are the %d bytes of row lists kept in the title\'s unused a_sav (but for the cans\' tiles, which come and go)' % len(S3))
     ok(not w[36:44, 60:150].all(axis=1).any() and cars_ink > 150 and screen_text(sp, 8, 10, 12) != "TODAY'S MENU",

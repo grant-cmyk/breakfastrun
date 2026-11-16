@@ -418,6 +418,9 @@ pd_big:
         call pd_cc
         jp print_big
 pd_face:                        ; car A's everyday face into cells B, C (2 x 2)
+        if OPT_CHOOSE
+        call who_a              ; CHOOSE: the driver in this car today
+        endif
         ld hl,faces
 pd_f2:                          ; (... or its face from the set at HL)
         push bc
@@ -435,6 +438,9 @@ pd_f2:                          ; (... or its face from the set at HL)
         inc b
         jp tr_face_c
 pd_name:                        ; car A's name, small, centred on x C at line B
+        if OPT_CHOOSE
+        call who_a
+        endif
         push bc
         ld hl,pd_names
         call str_skip
@@ -445,6 +451,9 @@ sm_ctr:                         ; the text at HL in the small letters (4 pixels 
         jr nz,sc_0
         push bc
         ld a,(ms_car)
+        if OPT_CHOOSE
+        call who_a
+        endif
         ld hl,pd_names
         call str_skip
         pop bc

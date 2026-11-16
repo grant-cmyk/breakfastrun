@@ -171,6 +171,9 @@ t_f1:
         ld de,0x0202
         call set_attrs
         ld a,(t_tmp)
+        if OPT_CHOOSE
+        call who_a              ; CHOOSE: the driver in this car today
+        endif
         rrca
         rrca
         rrca
@@ -200,6 +203,19 @@ t_loop:
         call t_anim             ; the faces (plate_slow.asm)
         call tc_step            ; the cars, straight after the interrupt (five masked cars take more than
                                 ; one TV frame, so there is no second HALT: a step every other frame, 25 a second)
+        if OPT_CHOOSE           ; CHOOSE: 1 or 2 -> the choose screen (choose.asm), and from there the race
+        call k_scan
+        jr z,t_loop
+        ld a,l
+        sub 15                  ; (1 is key 15, 2 is key 16)
+        cp 2
+        jr nc,t_k0
+        inc a
+        ld (ch_np),a            ; how many are playing
+        jp choose
+t_k0:
+        ld a,l
+        else
         ld hl,t_msg             ; the 2UP message: the choice again after 1.5 s
         ld a,(hl)
         or a
@@ -224,6 +240,7 @@ t_keys:
         ld hl,t_soon
         call t_prompt
         jr t_loop
+        endif                   ; (CHOOSE)
 t_k:
         cp 32                   ; K: the keys
         jr nz,t_loop
@@ -570,16 +587,25 @@ t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "
         db 0x88,10,1,12,0x7A
         db 8,10,"TODAY'S MENU",0
         db 9,6,"--------------------",0
+        if OPT_CHOOSE           ; CHOOSE: three choices; 1 or 2 goes on to the choose screen (Grant, 16 Nov 2026: "you can remove
+        db 10,6,"1  ONE PLAYER",0   ; option 3 from the title screen")
+        db 11,6,"2  TWO PLAYERS",0
+        db 12,6,"K  CHOOSE KEYS",0
+        db 13,6,"--------------------",0
+        else
         db 10,6,"1  ONE PLAYER",0   ; the four choices on four rows (Grant, 15 Nov 2026: "condense the menu, add a menu
         db 11,6,"2  TWO PLAYERS",0  ; option 'choose your player' ... we will build that later but you can show the
         db 12,6,"3  CHOOSE YOUR PLAYER",0   ; menu option for now": 3 does nothing yet)
         db 13,6,"K  CHOOSE KEYS",0
         db 15,6,"--------------------",0
+        endif
         db 0x94,6,1,20,0x79
         db 0xFF
 t_lrec: db "LAP RECORD",0
+        if 1-OPT_CHOOSE
 t_press: db "                    ",0
 t_soon: db "  2UP COMING SOON   ",0
+        endif
 ; the title's egg (logo C of docs/design/logo_options.png), 16 x 16, drawn twice the size: the white, and in its
 ; middle 8 x 8 (the four cells with colours of their own) the yolk - small and round (Grant, 15 Nov 2026):
 ; 12 pixels across on the screen, white all round it

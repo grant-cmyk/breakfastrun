@@ -222,8 +222,10 @@ pd_t5:  db "LAP ",0
 pd_d1:  db "1",0
 pd_d2:  db "2",0
 pd_d3:  db "3",0
+        if 1-OPT_CHOOSE         ; (CHOOSE: seven names, in choose.asm)
 pd_names:                       ; by car: you, cyan, green, pink, white (Grant, 15 Nov 2026: "each player needs a name")
         db "YOU",0,"FRANK",0,"SPIKE",0,"BRUNO",0,"JANE",0
+        endif
 sm_dig:                         ; the small figures 0-9 and the colon, as the letters: 15 bits, top row first
         db 0xF6,0xDE   ; 0
         db 0x59,0x2E   ; 1
@@ -242,7 +244,11 @@ pd_t7:  db "YOUR RACE",0
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both
         db G_GRIP, G_Q, G_SLIDE, G_QSLIDE       ; 1 (0.085 px a frame of sideways speed)
+        if OPT_CHOOSE
+        db 18, 9, 9, 6                           ; 2 (CHOOSE: the GRIP extra - about an eighth more)
+        else
         db 20, 11, 11, 7                         ; 2
+        endif
         db 25, 14, 14, 9                         ; 3
         db 30, 18, 18, 11                        ; 4
         db 36, 22, 22, 14                        ; 5

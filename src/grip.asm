@@ -133,6 +133,20 @@ yg_forces:
         ld (yg_s0),hl
         ; ---- the engine and drag: forwards only ----
         ld hl,(yg_pushv)        ; the push: by your car's set-up (su_apply)
+        if OPT_CHOOSE           ; CHOOSE: the SPEED extra's push (its higher top speed needs it), only from 1.5 px a frame
+        ld a,(yg_vf+1)          ; up - below that the car gets away exactly as it does without the extra
+        ld b,a
+        ld a,(yg_vf)
+        add a,a
+        ld a,b
+        adc a,a                 ; A = the high byte of twice the forward speed: 3..7 from 1.5 up to 4 (not going backwards)
+        sub 3
+        cp 5
+        jr nc,yg_p0
+yg_spush: ld de,0               ; (su_apply writes CH_SPUSH here, or 0)
+        add hl,de
+yg_p0:
+        endif
         ld a,(BOOST_T)          ; NOS: twice the push (and the top speed)
         or a
         jr z,yg_p1
