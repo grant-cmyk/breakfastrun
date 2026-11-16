@@ -279,7 +279,7 @@ if __name__ == '__main__':
                 dx, dy = round(64 * math.sin(th)), round(-64 * math.cos(th))
                 t.write('        dw 0x%04X,0x%04X\n' % (dx & 0xFFFF, dy & 0xFFFF))
         f.write('\n; the race order\'s car pictures: each car facing right (its heading 4) at 16 x 16,\n')
-        f.write('; 16 rows of mask left, ink left, mask right, ink right (64 bytes a car)\n        if 1-OPT_BRIDGE         ; (BRIDGE, track 5: drawn from the frames instead - tower_b, hud.asm)\ntower_cars:\n')
+        f.write('; 16 rows of mask left, ink left, mask right, ink right (64 bytes a car)\n        if 1-OPT_TOWERF         ; (BRIDGE, track 5: drawn from the frames instead - tower_b, hud.asm)\ntower_cars:\n')
         for k in range(len(KINDS)):
             g = all_frames[k][4]
             for (a, b), (ma, mb) in zip(rows_bytes(ink_of(g)), rows_bytes(mask_of(g))):

@@ -943,7 +943,7 @@ trp_2:
         ld c,26
         ld de,PNUM
         call tr_glyph16
-        if OPT_BRIDGE           ; BRIDGE: (memory) the car's picture comes from its frame, not from a second copy (tower_cars)
+        if OPT_TOWERF           ; BRIDGE: (memory) the car's picture comes from its frame, not from a second copy (tower_cars)
         call tower_b
         else
         ld a,(tr_car)           ; the car's own picture, facing right, at
@@ -1049,7 +1049,7 @@ tg_row:
         inc h
         djnz tg_row
         ret
-        if OPT_BRIDGE
+        if OPT_TOWERF
 ; TOWER_B: the race order's car picture, 16 x 16 at cell row tr_row, column 27, from the car's own frame
 ; facing right (heading 4: big_tab's address, first row, rows; a frame's row 6 is the car's top line) -
 ; the lines above and below the frame's rows are cleared. Uses the other BC (the count of each).

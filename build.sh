@@ -19,6 +19,11 @@ BR=0; [ "${TRACK:-1}" = "5" ] && BR=1
 printf 'OPT_BRIDGE equ %s               ; 1: the track has a bridge (TRACK=5 bash build.sh: levels, walls, ramps - bridge.asm)\n' "$BR" >> "$ROOT/src/options.asm"
 # LOOP=1: the looped screen-copy routine (about 430 bytes at COPIER, not 6,083 - docs/design/OPTIMISATION-PLAN.md)
 printf 'OPT_LOOP equ %s                 ; 1: the screen copy as a loop of one character row (LOOP=1 bash build.sh)\n' "${LOOP:-0}" >> "$ROOT/src/options.asm"
+# TOWER=1: the race order's car pictures drawn from the cars' own frames (tower_b, hud.asm) - 320 bytes of second copies go.
+# Always so on track 5; MULTI=1 turns it on too.
+MULTI="${MULTI:-0}"; TW="${TOWER:-0}"; [ "$BR" = "1" ] && TW=1; [ "$MULTI" != "0" ] && TW=1
+printf 'OPT_TOWERF equ %s               ; 1: the race order draws its cars from their frames (TOWER=1 bash build.sh)\n' "$TW" >> "$ROOT/src/options.asm"
+printf 'OPT_MULTI equ %s                ; 1: several tracks in one load (tools/make_multi.py sets it: not for build.sh alone)\n' "$MULTI" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as
@@ -26,15 +31,18 @@ B=${ZX_BUILD:-$B}
 # a copy of src/ is made in build/track2/src, tools/make_world.py writes that track's world, waypoints,
 # O map, mini-map and grid into the copy, and the game is assembled there. src/ is not touched.
 TRACK="${TRACK:-1}"
-if [ "$TRACK" = "1" ]; then
+# BDIR=<folder under build/>: build in a copy there (track 1 too) - tools/make_multi.py and the trial builds use it, so
+# that build/trackN and src/ are left alone. PREASM="command": run in the copy's src/ just before assembling.
+if [ "$TRACK" = "1" ] && [ -z "${BDIR:-}" ]; then
   cd "$ROOT/src"; OUTN=racer
 else
-  T="$ROOT/build/track$TRACK"
+  T="$ROOT/build/${BDIR:-track$TRACK}"
   rm -rf "$T"; mkdir -p "$T/src"; cp "$ROOT"/src/*.asm "$T/src/"
   TRACK="$TRACK" WORLD_OUT="$T/src" python3 "$ROOT/tools/make_world.py"
   cd "$T/src"; OUTN="racer_track$TRACK"
 fi
 OUTN="${OUT:-$OUTN}"
+[ -n "${PREASM:-}" ] && bash -c "$PREASM"
 bash "$B" asm racer.asm "$ROOT/build/$OUTN.tap" racer
 pasmo racer.asm "$ROOT/build/$OUTN.bin" "$ROOT/build/$OUTN.sym"
 grep -i -E "^(code_end|init_end)\s" "$ROOT/build/$OUTN.sym"

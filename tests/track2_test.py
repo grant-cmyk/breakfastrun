@@ -15,7 +15,7 @@ import os, sys, math, json
 HERE = os.path.dirname(os.path.abspath(__file__))
 TRACK = os.environ.get('TRACK', '2')
 ROOT_ = os.path.join(HERE, '..')
-TSRC = os.path.join(ROOT_, 'build', 'track' + TRACK, 'src')            # that build's own copy of src/, with its world
+TSRC = os.environ.get('TSRC') or os.path.join(ROOT_, 'build', 'track' + TRACK, 'src')            # that build's own copy of src/, with its world
 os.environ.setdefault('ZTAP', os.path.join(ROOT_, 'build', 'racer_track%s.tap' % TRACK))
 os.environ.setdefault('ZSYM', os.path.join(ROOT_, 'build', 'racer_track%s.sym' % TRACK))
 if not (os.path.exists(os.environ['ZTAP']) and os.path.exists(os.environ['ZSYM']) and os.path.isdir(TSRC)):

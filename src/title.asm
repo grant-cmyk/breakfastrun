@@ -208,7 +208,11 @@ t_loop:
         ld hl,t_press
         call z,t_prompt
 t_keys:
+        if OPT_MULTI
+        call HP                 ; MULTI: k_scan, and T picks the next track (src/hp.asm)
+        else
         call k_scan
+        endif
         jr z,t_loop
         ld a,l
         cp 15                   ; 1: play

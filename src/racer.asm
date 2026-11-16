@@ -53,6 +53,8 @@ ARROW_F equ BUF+0x13A0          ; D3-D7: the corner arrows' five pictures, 90 by
 BR_ROW2 equ 0x5E46              ; (track 5 only: 90 bytes of row lists at the bottom of the stack's page - bridge.asm)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
+        include "multi_pads.asm" ; MULTI (several tracks in one load - tools/make_multi.py, docs/design/OPTIMISATION-PLAN.md): the blocks' lengths
+HP      equ COPIER+0x200        ; MULTI: what lives above the looped copy routine - the tracks, packed, and the code that unpacks one
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
 WIN_W   equ 24                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
 WIN_H   equ 152                 ; "take the very top row of the display as well"; it was 120
@@ -3754,18 +3756,38 @@ gd_2:
         jp st_text
         ; (gap_draw, from hud.asm, also fills the gap)
         include "sq4.asm"
+mb_world:
         include "world.asm"
+me_world:
+        if OPT_MULTI*MP_ON
+        defs MP_WORLD-(me_world-mb_world)        ; (MULTI: every track's block is as long as the longest)
+        endif
         include "hud.asm"
         include "arrow.asm"     ; the corner arrow in front of your car (here, after the page-aligned tables: code put before sq4 moves them a page on)
         include "gen_tiles.asm"
         include "gen_bumps.asm"
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
+mb_wp:
         include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
+me_wp:
+        if OPT_MULTI*MP_ON
+        defs MP_WP-(me_wp-mb_wp)        ; (MULTI: every track's block is as long as the longest)
+        endif
         include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
         include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
+mb_ridx:
         include "rowidx.asm"    ; the map: each tile row's list
+me_ridx:
+        if OPT_MULTI*MP_ON
+        defs MP_RIDX-(me_ridx-mb_ridx)        ; (MULTI: every track's block is as long as the longest)
+        endif
         if 1-OPT_BRIDGE         ; (BRIDGE: no O map)
+mb_omap:
         include "omap.asm"      ; the cereal O's: one bit a tile
+me_omap:
+        if OPT_MULTI*MP_ON
+        defs MP_OMAP-(me_omap-mb_omap)        ; (MULTI: every track's block is as long as the longest)
+        endif
         endif
         include "faces.asm"     ; the drivers' faces for the race order
         if OPT_BRIDGE
@@ -4072,6 +4094,12 @@ code_end:
 ; START_ONCE: the data copied up out of the way, the tables, the copy routine,
 ; the screen, the interrupts - then the first race
 start_once:                     ; (start, from the start-up area)
+        if OPT_MULTI            ; MULTI: the packed tracks and their code go up above the copy routine first (they
+        ld hl,hp_src            ; load after the start-up area, across the strips and tables filled below)
+        ld de,HP
+        ld bc,hp_end-hp_src
+        ldir
+        endif
         ld hl,high_src          ; the data that lives at the top of memory,
         ld de,TOPMEM            ; out of the way: copied up there first,
         ld bc,high_end-high_src ; before the back buffer it loads into is used
@@ -4744,9 +4772,19 @@ jc_b    equ TD + jc_b_src - td_src
 ; data kept at the top of memory (TOPMEM, above the generated copy routine),
 ; loaded here and copied up by start; use the names below, not the _src ones
 high_src:
+mb_top:
         include "topdata.asm"   ; the breakfast things' masks, the O map, the mini-map
+me_top:
+        if OPT_MULTI*MP_ON
+        defs MP_TOP-(me_top-mb_top)        ; (MULTI: every track's block is as long as the longest)
+        endif
         include "hudtext.asm"   ; the HUD's fixed text
+mb_trow:
         include "toprows.asm"   ; some of the map's row lists
+me_trow:
+        if OPT_MULTI*MP_ON
+        defs MP_TROW-(me_trow-mb_trow)        ; (MULTI: every track's block is as long as the longest)
+        endif
         include "strip_t.asm"   ; a message or two
         if 1-OPT_TALL           ; (with the taller window the copy routine is longer and
         include "hudtext_flag.asm"   ; there is less room up here: these four go into the
@@ -4811,6 +4849,10 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
+        if OPT_MULTI
+hp_src: incbin "hp.bin"         ; (tools/make_multi.py assembles src/hp.asm for HP)
+hp_end:
+        endif
 TOPMEM      equ LOWTAB-0x26A      ; (under 0x8000 since the window grew a column: the copy routine, 152
                                   ; lines of 40 bytes from COPIER, now runs to 0xFFC3 - there is no top of memory left)
 BUFA      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
@@ -4925,4 +4967,9 @@ faces     equ faces_src
         .error the start-up routines run into the shift tables they build
         endif
 
+        if OPT_MULTI
+        if HP + hp_end - hp_src > HIMEM
+        .error MULTI: the packed tracks run into the row lists at HIMEM
+        endif
+        endif
         end start

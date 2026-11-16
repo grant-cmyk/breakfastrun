@@ -16,7 +16,7 @@ import os, sys, math
 HERE = os.path.dirname(os.path.abspath(__file__))
 TRACK = os.environ.get('TRACK', '1')
 ROOT_ = os.path.join(HERE, '..')
-TSRC = os.path.join(ROOT_, 'src') if TRACK == '1' else os.path.join(ROOT_, 'build', 'track' + TRACK, 'src')
+TSRC = os.environ.get('TSRC') or (os.path.join(ROOT_, 'src') if TRACK == '1' else os.path.join(ROOT_, 'build', 'track' + TRACK, 'src'))
 if TRACK != '1':
     os.environ.setdefault('ZTAP', os.path.join(ROOT_, 'build', 'racer_track%s.tap' % TRACK))
     os.environ.setdefault('ZSYM', os.path.join(ROOT_, 'build', 'racer_track%s.sym' % TRACK))

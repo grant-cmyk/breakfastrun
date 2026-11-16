@@ -147,6 +147,8 @@ class Racer(Spectrum):
         self.run(duration=0.5, fast_forward=True)                    # (the rest of the title is drawn after its prompt)
         self.write(SYM['jin_on'], bytes([0xFF]))                     # (the start jingle and its automatic countdown held off: Q starts
                                                                      # the lights, as these tests expect - tests/finish_test.py has the jingle)
+        for _ in range(int(os.environ.get('TSEL', '0'))):               # (a tape with several tracks, tools/make_multi.py: T at the title is the next track)
+            press(self, 'T', True); self.run(duration=0.3, fast_forward=True); press(self, 'T', False); self.run(duration=0.5, fast_forward=True)
         press(self, '1', True); self.run(duration=0.2, fast_forward=True); press(self, '1', False)
         self.run(duration=0.26, fast_forward=True)                   # (the race screen is drawn; from here the computer cars'
                                                                      # 90 s below run just as they did before there was a title:
