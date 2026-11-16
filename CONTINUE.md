@@ -20,6 +20,8 @@ frames / 225 at 4 / 5 at 5. Speed test 15 Nov 06:07: alone now 91 pictures at 3 
 
 **Track 5, the bridge (15 Nov late night, background agent - not yet playtested):** `TRACK=5 bash build.sh` -> build/racer_track5.tap, a one-track tape: under the bridge, round, up a ramp and over it. Levels, walls, the car hidden under the deck, ramp speeds, all behind OPT_BRIDGE (src/bridge.asm); tracks 1-3 tapes unchanged. Test: `python3 tests/track5_test.py`. Detail, figures and what was simplified: docs/design/tracks/built/BUILT.md (end); pictures docs/design/tracks/built/track5_*.
 
+**Track 5's bridge as Grant drew it (16 Nov, background agent - not playtested):** kerb walls solid (drawn by kerb_draw), concrete masked, wing and wall one shape, six more O's. 10.2 pictures a second at the crossing (was 11.7); program 2 bytes free on track 5. His choice wanted: docs/design/tracks/bridge_efficiency_options.png (E1-E4). Detail: BUILT.md's last section.
+
 **Tracks 2 and 3 (15 Nov evening, background agent - not yet playtested):** one track a build: `TRACK=2 bash build.sh` -> build/racer_track2.tap, `TRACK=3 bash build.sh` -> build/racer_track3.tap; racer.tap is track 1, unchanged. Test: `TRACK=2 python3 tests/track2_test.py`. Detail and figures: docs/design/tracks/built/BUILT.md.
 
 **Crew messages (15 Nov 11:48):** the chief's face and a white bubble at the foot of the play window (msg_say in src/strip.asm writes the lines; fl_draw in src/plateco.asm copies them in; the picture is kept invisibly on the screen under the window). Messages: tools/make_strip.py MSGS. **Main area: 17 bytes free.**

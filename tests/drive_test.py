@@ -58,6 +58,13 @@ for ty in range(MAPH):
             for i in range(8):
                 world[ty * 8 + j, tx * 8 + i] = (t[j] >> (7 - i)) & 1
                 wmask[ty * 8 + j, tx * 8 + i] = (m[j] >> (7 - i)) & 1
+_br = {k: int(v) for k, v in re.findall(r'BR_(X0|X1|Y0|Y3)\s+equ\s+(\d+)', src)}
+if _br:                                     # a track with the bridge (track 5): its two kerb walls are not map tiles - the game draws them
+    for _xa in (_br['X0'] - 8, _br['X1']):  # itself (kerb_draw, bridge.asm): 8 x 8 blocks, blue and cyan in turn, the cyan ones a blue line
+        for _y in range(_br['Y0'], _br['Y3']):   # each side with clean paper between
+            if ((_y - _br['Y0']) // 8) % 2 == 0: world[_y, _xa:_xa + 8] = 1
+            else: world[_y, _xa] = world[_y, _xa + 7] = 1
+        wmask[_br['Y0']:_br['Y3'], _xa:_xa + 8] = True
 
 def screen_bits(sp):
     scr = sp.read(0x4000, 6144)

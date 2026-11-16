@@ -155,3 +155,33 @@ The slower pictures near the crossing are the bridge's tiles (about 125 of them,
 elsewhere); hiding a car costs nothing. With no bridge pictures at all the same stretch ran at 15.9.
 
 Not verified: how any of it feels to drive (nobody has played it); real hardware; the stack's worst case.
+
+### 16 Nov 2026 - the bridge as Grant drew it (after his first drive; not playtested again)
+
+Grant: "bridge works well but the diagonals jutting out must be masked, and the area on the inside track needs
+more boundary circles. Also - the outside of the bridge are not solid", then his own picture
+(`docs/design/tracks/grant_bridge_picture.png`) with "notice the line removed in the bridge legs". Built into the
+track 5 tape; tracks 1-3 are byte for byte unchanged. Compare: `track5_fix_view.png` (the game beside his picture),
+`track5_whole_bridge.png`, `track5_cross.gif`.
+
+- **Kerb walls** (his picture; K2 of the mock-up): one wall the whole way - a blue line down both sides, blue and
+  cyan blocks in turn, the cyan ones clean paper. The game draws them itself now (`kerb_draw`, bridge.asm), two
+  bytes a pixel line, before the map's tiles; they are no longer map tiles.
+- **Concrete masked**: the cloth's dots are wiped off inside the wings and the walls along the ramps (18 masked
+  tiles, 17 masks that hold only the dots to hide; `tdraw_mb`). The deck is not wiped.
+- **Legs**: each wing and the wall beside it are one shape - one outline round both, nothing where they join (all
+  four). His picture keeps a stub of 2 or 3 pixels at the outer end of each join; the game has none.
+- **Six more cereal O's** (156): two on the left loop's inner edge beside the ramp up, two at the right-hand wing
+  tips, two at the foot of the ramp down.
+- Two cans moved onto white squares of the cloth (behind the grid: 14 px up the road; top lane: 24 px left).
+
+Measured: tests/track5_test.py 65 PASS (the look: kerbs solid on the screen, concrete clean, the six O's and where
+they stand; and all the earlier checks). **Speed: 10.2 pictures a second near the crossing** (it was 11.7 with the
+first tape's plainer bridge); 12.5 elsewhere. With your car parked and nothing else in view a picture's work is
+187,500 T on the start straight and 271,400 with the whole bridge in view; a picture goes up every 4 TV frames
+only under about 227,000. The masked tiles are the dearest part (without them: 10.7). Options that would win
+some back, none applied because each can be seen: `docs/design/tracks/bridge_efficiency_options.png`.
+
+Memory: program 2 bytes free, TOPMEM 11, start-up area 64. Found for this: the kerbs out of the map (96 bytes of
+row lists), row lists in 54 bytes the title never uses (0x5B16) and 48 at the bottom of the stack's page (0x5E58:
+the stack now has 120 bytes; seen 56 deep), the cans' masks.

@@ -26,6 +26,28 @@ sp.run(duration=2.0, fast_forward=True); shot(sp, 'track5_deck.png')
 park_cpus(sp); [setl(sp, n, 0) for n in CPUS]
 place(sp, 0, XC - 8, YC - 8, 48, 0); sp.run(duration=2.0, fast_forward=True); shot(sp, 'track5_under.png')
 place(sp, 0, BR['H0'] - 8, YC - 8, 48, 0); sp.run(duration=2.0, fast_forward=True); shot(sp, 'track5_half_under.png')
+# the view of Grant's own picture (16 Nov 2026: the left-hand tunnel mouth), from the game, 4x, beside his picture
+place(sp, 0, 120, 326, 48, 0); sp.run(duration=3.0, fast_forward=True); at_copy_done(sp)
+print('fix view: camera at', g(sp, 'camx'), g(sp, 'camy'), '(his picture: 32, 258)')
+bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]
+game = Image.fromarray(np.where(bits[..., None].astype(bool), np.array((0, 0, 215), dtype=np.uint8), np.array((0, 215, 215), dtype=np.uint8))).resize((WW * 4, WH * 4), Image.NEAREST)
+his = os.path.join(ROOT_, 'docs', 'design', 'tracks', 'grant_bridge_picture.png')
+sheet = Image.new('RGB', (WW * 8 + 72, WH * 4 + 90), (215, 215, 0)); sheet.paste(game, (24, 50))
+from PIL import ImageDraw, ImageFont
+dr = ImageDraw.Draw(sheet); f_ = ImageFont.load_default(size=22)
+dr.text((24, 14), 'FROM THE GAME (track 5 tape, 4x; your car is the one in the middle)', fill=(0, 0, 0), font=f_)
+if os.path.exists(his):
+    sheet.paste(Image.open(his).convert('RGB').resize((WW * 4, WH * 4), Image.NEAREST), (48 + WW * 4, 50)); dr.text((48 + WW * 4, 14), 'GRANT\'S PICTURE', fill=(0, 0, 0), font=f_)
+dr.text((24, WH * 4 + 58), 'The same view: the left-hand tunnel mouth. Classification: Internal.', fill=(0, 0, 0), font=ImageFont.load_default(size=16))
+sheet.save(os.path.join(DEST, 'track5_fix_view.png'))
+# the whole bridge, from two pictures of the game (the window is 152 lines, the bridge 192): your car on the deck near each end
+whole = Image.new('RGB', (WW * 4, 244 * 4), (0, 215, 215))
+for yy in (BR['Y0'] + 8, YC - 10, BR['Y3'] - 28):
+    place(sp, 0, XC - 8, yy, 32, 1); sp.run(duration=3.0, fast_forward=True); at_copy_done(sp)
+    b_ = screen_bits(sp)[WY:WY + WH, 8:8 + WW]; cy_ = g(sp, 'camy'); b_ = b_[20:WH - 44] if yy < YC else b_[20:WH - 44]
+    im_ = Image.fromarray(np.where(b_[..., None].astype(bool), np.array((0, 0, 215), dtype=np.uint8), np.array((0, 215, 215), dtype=np.uint8))).resize((WW * 4, b_.shape[0] * 4), Image.NEAREST)
+    whole.paste(im_, (0, (cy_ + 20 - (BR['Y0'] - 40)) * 4))
+whole.save(os.path.join(DEST, 'track5_whole_bridge.png'))
 # the GIF: you from above the ramp up, flat out down the screen; FRANK and JANE along the lower road, under you
 place(sp, 0, XC - 8, BR['Y0'] - 50, 32, 0)
 for n, x in ((1, XC + 150), (4, XC + 215)):
