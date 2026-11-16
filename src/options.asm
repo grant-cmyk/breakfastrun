@@ -10,3 +10,4 @@ OPT_LOOP equ 0                 ; 1: the screen copy as a loop of one character r
 OPT_TOWERF equ 0               ; 1: the race order draws its cars from their frames (TOWER=1 bash build.sh)
 OPT_MULTI equ 0                ; 1: several tracks in one load (tools/make_multi.py sets it: not for build.sh alone)
 OPT_FLIP equ 0                 ; 1: draw_car and the title car read such a frame last row first (FLIP=1 bash build.sh)
+OPT_TILE1 equ 1                ; 1: one tile routine (TILE1=1 bash build.sh)

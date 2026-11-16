@@ -1870,6 +1870,14 @@ draw_tiles:
         ld a,(camy)             ; pick the tile routine for this camy AND 7
         and 7
         ld l,a
+        if OPT_TILE1            ; TILE1: one tile routine - the step into the next character row is patched into it
+        push hl                 ; where this picture's camy AND 7 needs it (gen_tiles1.asm)
+        push bc
+        call td_patch
+        pop bc
+        pop hl
+        ld a,l
+        else
         add a,a
         add a,tdraw_table AND 255
         ld e,a
@@ -1881,6 +1889,7 @@ draw_tiles:
         inc de
         ld a,(de)
         ld (dt_call+2),a
+        endif
         ld a,BUF_TOP            ; first tile row starts at buffer row BUF_TOP - v
         sub l
         push bc
@@ -1957,7 +1966,11 @@ dt_tile:
         add a,l
         ld l,a
 dt_call:
+        if OPT_TILE1
+        call tdraw_one
+        else
         call 0                  ; (patched) tdraw_0 .. tdraw_7
+        endif
 dt_back:
         exx
         dec b
@@ -3802,7 +3815,11 @@ me_world:
         endif
         include "hud.asm"
         include "arrow.asm"     ; the corner arrow in front of your car (here, after the page-aligned tables: code put before sq4 moves them a page on)
+        if OPT_TILE1
+        include "gen_tiles1.asm" ; TILE1=1: one routine for every camy AND 7 (about 1 KB less)
+        else
         include "gen_tiles.asm"
+        endif
         include "gen_bumps.asm"
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
 mb_wp:
@@ -3834,7 +3851,9 @@ me_omap:
         include "plateco.asm"   ; the place plate in the window (pl_draw)
         if OPT_TALL
         include "hudtext_gfx.asm"
+        if 1-OPT_TILE1
         include "tdtab.asm"
+        endif
 txt_track_src:
         endif
 isr:
@@ -4828,7 +4847,9 @@ me_trow:
         include "hudtext_flag.asm"   ; there is less room up here: these four go into the
         include "hudtext_track.asm"  ; program instead - or, the track's name, nowhere)
         include "hudtext_gfx.asm"
+        if 1-OPT_TILE1
         include "tdtab.asm"     ; the tile routine for each camy AND 7
+        endif
         endif
 cars_init_src:
         db 0
@@ -4950,9 +4971,13 @@ car_colours equ TOPMEM + car_colours_src - high_src
 car_colours equ car_colours_src
         endif
         if 1-OPT_TALL
+        if 1-OPT_TILE1
 tdraw_table equ TOPMEM + tdraw_table_src - high_src
+        endif
         else
+        if 1-OPT_TILE1
 tdraw_table equ tdraw_table_src
+        endif
         endif
 tmask_idx equ TOPMEM + tmask_idx_src - high_src
 tmask     equ TOPMEM + tmask_src - high_src

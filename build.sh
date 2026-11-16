@@ -26,6 +26,8 @@ printf 'OPT_TOWERF equ %s               ; 1: the race order draws its cars from 
 printf 'OPT_MULTI equ %s                ; 1: several tracks in one load (tools/make_multi.py sets it: not for build.sh alone)\n' "$MULTI" >> "$ROOT/src/options.asm"
 # FLIP=1: the cars' headings that are another heading upside down are not kept (tools/make_data.py reads FLIP too): about 1.9 KB
 printf 'OPT_FLIP equ %s                 ; 1: draw_car and the title car read such a frame last row first (FLIP=1 bash build.sh)\n' "${FLIP:-0}" >> "$ROOT/src/options.asm"
+# TILE1=1: the eight unrolled tile routines as one, patched once a picture (src/gen_tiles1.asm): about 1 KB of program
+printf 'OPT_TILE1 equ %s                ; 1: one tile routine (TILE1=1 bash build.sh)\n' "${TILE1:-0}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as
