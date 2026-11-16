@@ -48,8 +48,8 @@ HIMEM   equ COPIER + 152*40 + 3 ; 0xFFC3 .. 0xFFF3: 49 bytes above the screen-co
 MAPDAT  equ BUF+0x10A0          ; D0: the mini-map's ink, 3 bytes a line (the cars' dots are XORed into it here: map_update)
 STRIP1  equ BUF+0x11A0          ; D1: the corner arrows' table (a byte a waypoint), then some of the map's row lists
 STRIP2  equ BUF+0x12A0          ; D2: row lists (32 bytes)
-STRIP3  equ BUF+0x13A0          ; D3: row lists
-ARROW_F equ BUF+0x14A0          ; D4-D7: the corner arrows' frames, 8 x 44 bytes, two a page
+STRIP3  equ 0x5B16              ; row lists (54 bytes: the title's a_sav, which nothing uses - RAM-SWEEP 5.1; D3 has an arrow now)
+ARROW_F equ BUF+0x13A0          ; D3-D7: the corner arrows' five pictures, 90 bytes each, one a page (arrow.asm)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
@@ -4090,11 +4090,11 @@ start_once:                     ; (start, from the start-up area)
         ld de,STRIP3
         ld bc,s3_end-s3_src
         call so_blk
-        ld hl,arrow_src         ; the arrows' frames, two to a strip: D4-D7
+        ld hl,arrow_src         ; the arrows' five pictures, one to a strip: D3-D7
         ld de,ARROW_F
-        ld a,4
+        ld a,5
 so_arr:
-        ld bc,2*ARROW_ROWS*4
+        ld bc,6*ARROW_ROWS
         ldir
         ld e,ARROW_F AND 255
         inc d
@@ -4738,7 +4738,7 @@ faces     equ faces_src
         if (thrust_tab + 63) / 256 - thrust_tab / 256
         .error arrow_draw: thrust_tab must be on one page
         endif
-        if (s1_end - s1_src - 1) / 90 + (s2_end - s2_src) / 33 + (s3_end - s3_src - 1) / 90 + (MAP_H * 3 - 1) / 90 + (WIN_H - 152)
+        if (s1_end - s1_src - 1) / 90 + (s2_end - s2_src) / 33 + (s3_end - s3_src) / 55 + (MAP_H * 3 - 1) / 90 + (WIN_H - 152)
         .error a block for the back buffer's unused strips is too long (90 bytes; 32 on D2), or the window is not 152 lines
         endif
         if init_end > MAPDAT
