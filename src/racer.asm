@@ -2149,7 +2149,19 @@ draw_car:
         ld b,(hl)               ; B = its first row
         inc hl
         ld a,(hl)
+        if OPT_FLIP             ; FLIP: bit 7 of the rows = this heading is another's frame upside down: DE is its last row,
+        ld c,a                  ; read upwards (dc_step, after each row; the rows skipped above the buffer, below)
+        and 0x7F
         ld (dc_count),a
+        xor c                   ; 0x80: upside down
+        ld (dc_flip),a
+        ld a,dc_fwd-dc_step-2
+        jr z,dc_fl0
+        xor a
+dc_fl0: ld (dc_step+1),a
+        else
+        ld (dc_count),a
+        endif
         ld a,(dc_row0)          ; buffer row of the first row, + 32
         add a,b
         sub 32
@@ -2168,6 +2180,20 @@ draw_car:
         else
         add a,b
         add a,a
+        endif
+        if OPT_FLIP
+        ld c,a
+        ld a,(dc_flip)
+        or a
+        ld a,c
+        jr z,dc_skf
+        ld a,e                  ; (upside down: the rows skipped are below DE)
+        sub c
+        ld e,a
+        jr nc,dc_sk
+        dec d
+        jr dc_sk
+dc_skf:
         endif
         add a,e
         ld e,a
@@ -2325,6 +2351,15 @@ dc_e2_x:
         sub 8
         ld h,a
 dc_same:
+        if OPT_FLIP
+dc_step: jr dc_fwd              ; (upside down: the JR's distance is 0 - DE back to the row above the one just drawn)
+        ld a,e
+        sub 2*4
+        ld e,a
+        jr nc,dc_fwd
+        dec d
+dc_fwd:
+        endif
         dec ixl
         jp nz,dc_loop
         pop ix
@@ -3482,6 +3517,9 @@ dc_row0:  db 0
 dc_count: db 0
 dist_cur: dw 0
 mc_y:     db 0
+        if OPT_FLIP
+dc_flip:  db 0                  ; 0x80: the car being drawn is a frame read upside down
+        endif
 mc_h:     db 0
 mc_n:     db 0
 dt_rows:  db 0

@@ -84,7 +84,15 @@ ad_draw:
         ld (a_oy),a             ; its first row
         inc hl
         ld a,(hl)
+        if OPT_FLIP             ; FLIP: bit 7 = the frame is read upside down (racer.asm, draw_car)
+        ld c,a
+        and 0x7F
+        ld (a_on),a
+        xor c
+        ld (a_flip),a
+        else
         ld (a_on),a             ; its rows
+        endif
         ld a,(a_x+1)
         push de
         exx
@@ -186,6 +194,19 @@ ad_done:
         ld de,(a_sde)
         exx
 ad_next:
+        if OPT_FLIP
+        ld a,(a_flip)
+        or a
+        jr z,ad_nf
+        exx
+        ld a,e                  ; (upside down: back to the row above the one just drawn)
+        sub 2*4
+        ld e,a
+        jr nc,ad_nf1
+        dec d
+ad_nf1: exx
+ad_nf:
+        endif
         pop af
         inc a
         pop bc
@@ -194,6 +215,9 @@ ad_next:
 
 a_sde:  dw 0                    ; the frame's next row, kept while the zeros are read
 a_zero: db 0,0
+        if OPT_FLIP
+a_flip: db 0
+        endif
 
 ; A_RADR: A = a row (+ 32). Carry: it is on the cloth - HL = the screen address
 ; of the car's first byte in it, C = that byte's column on the cloth (signed)
