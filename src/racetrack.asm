@@ -10,26 +10,31 @@
 ;
 ; HOW, WITH TWO COLOURS A SQUARE. The screen's colour squares are 8 x 8 and do not scroll; the
 ; picture scrolls a pixel at a time. So each picture every square of the window is decided afresh:
-;   ALL GRASS   green ink on green paper - whatever pixels it holds, it shows solid green. NOTHING
-;               is drawn there: most of the grass costs no time at all.
-;   NO GRASS    white ink on black paper: the limit line, the start line and the grid show white.
-;   SOME GRASS  green ink on black paper, and the grass is drawn there in pixels.
-; A square lies over four 8 x 8 tiles of the world (a 2 x 2 "block"); tools/make_world.py works
-; out for every block which of the three it is (src/rt_world.asm: runs along each row), and the
-; grass's pixels: a picture for each tile that is part grass, and for an all-grass tile only the
-; quarters of it that share a square with road. White never shares a square with green: the 10
-; pixels of run-off see to that (make_world.py checks it), so the line is never tinted.
+;   ALL GRASS    green ink on green paper - whatever pixels it holds, it shows solid green
+;   PLAIN ROAD   black ink on black paper - whatever pixels it holds, it shows solid black
+;   ROAD, WHITE  white ink on black paper: a bit of limit line, start line, grid or canister in it
+;   SOME GRASS   green ink on black paper, the grass in pixels
+; NOTHING IS DRAWN in the first two, and they are most of the window: their pixels are left as
+; they were, hidden by the colour (ink and paper the same - with the FLASH bit set to say so,
+; which shows nothing when both are one colour). So there is no clearing of the picture and no
+; copying of all of it to the screen (the speed pass of 16 Nov 2026 - PROJECT-LOG: the first
+; build cleared and copied every byte, and made 7 pictures a second).
+; A square lies over four 8 x 8 tiles of the world (a 2 x 2 "block"). tools/make_world.py works
+; out each block's kind (a map of them, two to a byte), keeps ONE map of the world's tiles, a byte each
+; (0 nothing, 1 all grass, then the part-grass pictures, then the white ones), and the pictures.
+; A square of the last two kinds is MADE UP from its four tiles' pictures, each line through the
+; shift tables (rt_sq) - written whole, straight onto the screen. White never shares a square
+; with green: the 10 pixels of run-off see to that (make_world.py checks it).
 ;
 ; EACH PICTURE (the main loop, racer.asm):
-;   rt_clear    the back buffer's window lines to nothing (the cloth's fill went: this is in its place)
 ;   rt_class    the 19 x 24 squares' colours into rt_sh, a copy of the screen's colour squares
-;   rt_grass    the grass's pixels into the buffer
-;   rt_resolve  the squares that may hold grass OR white: the pixels say which
-;   draw_tiles  the limit line, the start line, the grid, the canisters - as it always drew the map
-;   rt_car      each car, by THE CLASH RULE below
-;   rt_hud      the squares of the things that do not scroll (lights, map, plate, bubble)
-;   the screen copy   the colours go to the screen WITH the pixels: each row of squares' colours
-;               straight after its 8 lines (rt_attr_go; the looped copy routine in racer.asm)
+;   rt_car      each car, by THE CLASH RULE below - in the back buffer: a square a car is in is
+;               made up there first (or cleared, if nothing shows in it), then the car drawn
+;   rt_hud      the squares of the things that do not scroll (lights, map, plate, bubble) - in
+;               the buffer too
+;   rt_show     (when the TV frame comes) row by row down the window: the squares that are in
+;               the buffer copied to the screen, the others that show anything made up on the
+;               screen itself, then the row's 24 colours - a row's pixels and colours together
 ;
 ; THE CLASH RULE (rule 4 of tools/make_racetrack_clash_score.py, the one Grant chose), for each
 ; square a car is in:
@@ -41,17 +46,26 @@
 ;                      up, down, left and right before the car is drawn)
 ; The road never turns green and the grass never black because a car is near.
 ; =====================================================================
-RT_SH   equ COPIER+0x200 ; (0xEA00: above the looped copy routine)
-RT_AL   equ RT_SH+21*32     ; rt_al, below
-rt_bm   equ RT_AL+3*96      ; rt_car_sq: the car's picture, ORed, by row of squares - 6 bytes (on one page: 0xEDC0)
-RT_DATA equ RT_SH+0x400     ; the grass's rows and pictures (rt_world.asm, copied here by start_once): the rows' index,
-gtiles  equ RT_DATA         ; then the part-grass tiles' pictures from number 16 (so both are found from here)
+RT_SH   equ COPIER              ; (0xE800: where the screen-copy routine was - this build has none)
+rt_bm   equ RT_SH+21*32         ; rt_car_sq: the car's picture, ORed, by row of squares - 6 bytes (on one page: 0xEAA0)
+RT_B    equ RT_SH+21*32+8       ; rt_b, below: 2 bytes x 20 (on one page: 0xEAA8)
+RT_DATA equ RT_SH+0x300         ; the pictures, the blocks' kinds and the map (rt_world.asm, copied here by start_once)
+RT_PL   equ RT_DATA/256         ; the pictures' first page: line 0 of each, at its number; line 1 in the next page ...
 ;RT_SH_              ; rt_sh: the colour squares of screen rows 0-20, laid out as on the screen (32 a row). A square
                                 ; is at its screen address + RT_SH - 0x5800: the low byte is the same. The window is rows 1-19,
                                 ; columns 1-24; the rows and columns round it are margins for cars half out of view.
-RT_GRASS equ 0x24               ; all grass: green on green
-RT_ROAD  equ 0x07               ; no grass: white on black
+; A square's colour in rt_sh also says where its pixels are:
+;   bit 7 set (FLASH) alone   nothing in it shows: its pixels are not looked at
+;   bits 7 and 6 set          as rt_class left it: rt_show makes it up on the screen (and gives it its real colour)
+;   bit 7 not set             it is in the back buffer (a car, the arrow or a box is in it): rt_show copies it
+; (tools/make_world.py has the five that rt_class writes, in its two colour tables)
+RT_GRASS equ 0xA4               ; all grass: green on green
+RT_PLAIN equ 0x80               ; plain road: black on black
+RT_ROAD  equ 0x07               ; road: white on black
 RT_EDGE  equ 0x04               ; some grass: green on black
+RT_ROAD_D equ RT_ROAD+0xC0      ; ... those two as rt_class leaves them,
+RT_EDGE_D equ RT_EDGE+0xC0
+RT_EDGE4_D equ RT_EDGE_D+1      ; and a square that may hold grass OR white: the pixels say which (rt_sq4)
 ; GRASS IS SLOW. Two numbers to tune (measured: PROJECT-LOG, 16 Nov 2026). Each frame a car is pushed, then loses
 ; speed / 2^shift; it settles at push x (2^shift - 1): 7 pushes on the road (shift 3).
 RT_GRASS_FSH equ 2              ; the friction shift on grass: 2 (a quarter lost each frame; the old table's off-road value)
@@ -61,7 +75,7 @@ RT_GRASS_PUSH equ 1             ; ... and the push on grass is halved this many 
 ; the cars' colours (ink), by C_KIND: you red; then cyan, yellow, magenta, white
 rt_inks: db 2,5,6,3,7
 
-; RT_NEW: a new race. Every square of rt_sh black with white ink.
+; RT_NEW: a new race. Every square of rt_sh white on black, in the buffer (the margins stay so).
 rt_new:
         ld hl,RT_SH
         ld de,RT_SH+1
@@ -70,66 +84,42 @@ rt_new:
         ldir
         ret
 
-; RT_CLEAR: the buffer's window lines, bytes 0-25, to nothing - with the stack pointer, as the cloth was filled (an
-; interrupt's 6 bytes land in the margin of the line before: harmless). A row of squares that is all grass is left as it
-; is: nothing in it shows (rt_class notes those rows in rt_dead; a car or a box there clears its own squares).
-rt_clear:
-        ld (rt_sp),sp
-        ld ixh,BUF_HI
-        ld ixl,(BUF_TOP/8)*32+26
-        ld hl,0
-        ld de,rt_dead
-        ld b,WIN_H/8
-rtc_row:
-        ld a,(de)
-        inc de
-        or a
-        jr z,rtc_live
-        ld a,ixh                ; all grass: on to the next row
-        add a,8
-        ld ixh,a
-        jp rtc_next
-rtc_live:
-        rept 8
-        ld sp,ix
-        rept 13
-        push hl
-        endm
-        inc ixh
-        endm
-rtc_next:
-        ld a,ixl                ; the next character row: 32 bytes on, and back up its 8 lines -
-        add a,32                ; unless that was the last row of a third of the buffer
-        ld ixl,a
-        jr c,rtc_third
-        ld a,ixh
-        sub 8
-        ld ixh,a
-rtc_third:
-        dec b
-        jp nz,rtc_row
-        ld sp,(rt_sp)
-        ret
-
-; RT_CLASS: the window's squares for this picture's camera into rt_sh, from the runs of each row
-; of blocks (rt_world.asm). The squares that may hold grass or white are listed (rt_al) for
-; rt_resolve. Also: where the grass's rows start (rt_rowp), and the pixel shifts.
+; RT_CLASS: the window's squares for this picture's camera into rt_sh, from the map of the blocks' kinds (rt_world.asm:
+; two blocks to a byte, turned into the two colours by two tables). Also, once a picture: the shift tables' pages, how
+; many of a square's lines come from the upper pair of tiles and how many from the lower (rt_sq's entries), and for
+; each row of tiles in view where its row of the map is (rt_b).
 rt_class:
         ld hl,(camx)
         ld a,l
         and 7
-        ld b,a                  ; the left byte's share of a tile: its first (camx AND 7) pixels -
-        ld a,0                  ; E = those low bits, D = the right byte's (the rest)
-        jr z,rcl_m1
-rcl_m0:
-        scf
-        rla
-        djnz rcl_m0
-rcl_m1:
-        ld e,a
-        cpl
+        add a,a
+        add a,TAB_HI            ; the page of a tile's left-hand part (its first camx AND 7 pixels: the square to its left)
+        ld (sq_bl1+1),a
+        ld (sq_bl2+1),a
+        ld (sq_bl3+1),a
+        ld (sq_bl4+1),a
+        ld (sq_bl5+1),a
+        ld (sq_bl6+1),a
+        ld (s4_b2+1),a
+        ld (s4_b4+1),a
         ld d,a
-        ld (rt_mlr),de
+        ld e,0xFF
+        ld a,(de)               ; ... and that part of an all-grass tile
+        ld (sq_mb1+1),a
+        ld (sq_mb2+2),a
+        ld (sq_mb3+1),a
+        ld (sq_mb4+2),a
+        inc d                   ; the same for its right-hand part
+        ld a,d
+        ld (sq_br1+1),a
+        ld (sq_br2+1),a
+        ld (s4_b1+1),a
+        ld (s4_b3+1),a
+        ld a,(de)
+        ld (sq_ma1+1),a
+        ld (sq_ma2+2),a
+        ld (sq_ma3+1),a
+        ld (sq_ma4+2),a
         srl h
         rr l
         srl h
@@ -137,362 +127,698 @@ rcl_m1:
         srl h
         rr l
         ld a,l
-        ld (rt_c0),a            ; the first block column in view
-        ld hl,(camy)
-        ld a,l
+        ld (rt_c0),a            ; the first tile column in view
+        ld a,(camy)
         and 7
-        ld (rt_v),a
+        ld hl,rt_v
+        cp (hl)
+        jp z,rcl_same           ; (the fold is where it was: nothing to patch)
+        ld (hl),a
+        ld c,a                  ; C = the lines below the fold (from the lower pair of tiles: their lines 0 up)
+        ld (sq_sv+1),a
+        add a,RT_PL
+        ld (sq_dt1+1),a         ; the upper pair's first line used
+        ld (sq_dt2+1),a
+        ld (sq_dt3+1),a
+        ld (sq_dt4+1),a
+        ld (s4_d1+1),a
+        ld (s4_d2+1),a
+        ld a,8
+        sub c
+        ld b,a                  ; B = the lines above the fold
+        ld (sq_st+1),a
+        ld hl,rt_w1e            ; where to come into each run of 8 lines for that many
+        ld de,0x10000-6
+        call rt_ent
+        ld (sq_tw1+1),hl
+        ld (sq_tw2+1),hl
+        ld (sq_tw3+1),hl
+        ld a,c
+        ld hl,rt_w1e
+        call rt_ent
+        ld (sq_bw1+1),hl
+        ld (sq_bw2+1),hl
+        ld (sq_bw3+1),hl
+        ld a,c
+        ld hl,rt_o1e
+        ld de,0x10000-7
+        call rt_ent
+        ld (sq_bo1+1),hl
+        ld a,b
+        ld hl,rt_o1e
+        call rt_ent
+        ld (sq_to1+1),hl
+        ld a,b
+        ld hl,rt_wke
+        ld de,0x10000-8
+        call rt_ent
+        ld (sq_tk1+1),hl
+        ld (sq_tk2+1),hl
+        ld a,c
+        ld hl,rt_wke
+        call rt_ent
+        ld (sq_bk1+1),hl
+        ld (sq_bk2+1),hl
+        ld a,c
+        ld hl,rt_ze
+        ld de,0x10000-2
+        call rt_ent
+        ld (sq_bz1+1),hl
+        ld (sq_bz2+1),hl
+        ld a,c
+        ld hl,rt_ore
+        call rt_ent
+        ld (s4_c3+1),hl
+        ld (s4_c4+1),hl
+        ld a,b
+        ld hl,rt_ore
+        call rt_ent
+        ld (s4_c1+1),hl
+        ld (s4_c2+1),hl
+        ld a,b
+        ld hl,rt_ze
+        call rt_ent
+        ld (sq_tz1+1),hl
+        ld (sq_tz2+1),hl
+rcl_same:
+        ld hl,(camy)
         srl h
         rr l
         srl h
         rr l
         srl h
         rr l
+        push hl
         add hl,hl
-        ld de,gtiles            ; (the rows' index is in the first 128 bytes of the grass pictures' page)
+        ld de,RT_MAPR
+        add hl,de               ; rt_b: for each of the 20 rows of tiles in view, where the tile under screen column 0 is
+        ld a,(rt_c0)            ; in the map (the window's first column is screen column 1)
+        dec a
+        ld c,a
+        add a,a
+        sbc a,a
+        ld b,a                  ; BC = the first tile column in view - 1
+        ld de,RT_B
+        ld a,WIN_H/8+1
+rcl_b:
+        ex af,af'
+        ld a,(hl)
+        inc hl
+        push hl
+        ld h,(hl)
+        ld l,a
+        add hl,bc
+        ex de,hl
+        ld (hl),e
+        inc l
+        ld (hl),d
+        inc l
+        ex de,hl
+        pop hl
+        inc hl
+        ex af,af'
+        dec a
+        jr nz,rcl_b
+        pop hl                  ; the first row of blocks in view: its kinds are at RT_CLS + 36 x row
+        add hl,hl
+        add hl,hl
+        ld e,l
+        ld d,h
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,de               ; x 36
+        ld de,RT_CLS
         add hl,de
-        ld (rt_rowp),hl
-        ld ix,RT_AL
-        xor a
-        ld (rt_aln),a
-        ld hl,rt_dead
-        ld (rt_deadp),hl
+        ld a,(rt_c0)
+        srl a
+        ld e,a
+        ld d,0
+        ld a,d
+        adc a,a                 ; (the bit that fell off: an odd first column starts half-way through a byte -
+        ld (rt_odd),a           ; then 13 bytes are turned into screen columns 0-25, and the two margins put back)
+        add hl,de
+        ex de,hl                ; DE = the kinds
         ld hl,RT_SH+32+1        ; the window's first square
+        ld b,RT_CLT/256
         ld a,WIN_H/8
 rcl_row:
-        ld (rt_cnt),a
-        push hl
-        ex de,hl
-        ld hl,(rt_rowp)
-        ld a,(hl)
-        inc hl
-        ld h,(hl)
-        ld l,a                  ; HL = the row: the run that holds column 24, the column it starts at, how many runs; the runs
-        ld a,(rt_c0)
-        cp 24
-        jr c,rcl_f0
-        inc hl                  ; a window from column 24 on starts at that run
-        sub (hl)
-        ld c,a                  ; C = blocks still to pass over
-        dec hl
-        ld a,(hl)
-        add a,3
-        jr rcl_f1
-rcl_f0:
-        ld c,a
-        ld a,3
-rcl_f1:
-        add a,l
-        ld l,a
-        jr nc,rcl_f2
-        inc h
-rcl_f2:
-        ex de,hl                ; DE = the runs, HL = the row's first square
-        push hl
-        ld hl,(rt_deadp)        ; (the row's note for rt_clear: 0 unless one run of grass fills it)
-        ld (hl),0
-        pop hl
-        ld b,WIN_W              ; B = squares still to fill
-        inc c
-        dec c
-        jr z,rcl_next
-rcl_skip:
-        ld a,(de)
-        inc de
-        and 63
-        inc a                   ; the run's length
-        sub c
-        jr z,rcl_next           ; (it ends where the window starts)
-        jr nc,rcl_have          ; A = how much of it is in view
-        neg
-        ld c,a
-        jr rcl_skip
-rcl_next:
-        ld a,(de)
-        inc de
-        and 63
-        inc a
-rcl_have:
-        cp b                    ; no more than the squares left
-        jr c,rcl_h1
-        ld a,b
-rcl_h1:
-        ld c,a                  ; C = squares of this run
-        ld a,b
-        sub c
-        ld b,a                  ; B = squares left after it
-        dec de
-        ld a,(de)
-        inc de
-        and 0xC0                ; the kind: 0 all grass, 0x40 no grass, 0x80 some, 0xC0 some - or white
-        jr z,rcl_g
-        cp 0x80
-        jr c,rcl_r
-        jr z,rcl_e
-        ld (ix+0),l             ; grass or white: listed (where, how many)
-        ld (ix+1),h
-        ld (ix+2),c
-        inc ix
-        inc ix
-        inc ix
-        ld a,(rt_aln)
-        inc a
-        ld (rt_aln),a
-rcl_e:
-        ld a,RT_EDGE
-        jr rcl_fill
-rcl_r:
-        ld a,RT_ROAD
-        jr rcl_fill
-rcl_g:
-        ld a,c                  ; all 24 of the row grass: nothing in it will show - noted for rt_clear
-        cp WIN_W
-        ld a,RT_GRASS
-        jr nz,rcl_fill
-        push hl
-        ld hl,(rt_deadp)
-        ld (hl),1
-        pop hl
-rcl_fill:
-        ex af,af'               ; the colour: C squares of it, into the row of 24 "LD (HL),A, INC L" below
-        ld a,c
-        add a,a
-        neg
-        add a,rcl_blk_end AND 255
-        ld (rcl_j+1),a
         ex af,af'
-rcl_j:  jp rcl_blk_end
-rcl_blk:
-        rept WIN_W
+        ld a,(rt_odd)
+        or a
+        jr z,rcl_even
+        dec l
+        ld a,(de)
+        inc de
+        ld c,a
+        ld a,(bc)               ; the left block's colour
         ld (hl),a
         inc l
+        inc b
+        ld a,(bc)               ; the right one's
+        ld (hl),a
+        inc l
+        dec b
+rcl_even:
+        rept WIN_W/2
+        ld a,(de)
+        inc de
+        ld c,a
+        ld a,(bc)
+        ld (hl),a
+        inc l
+        inc b
+        ld a,(bc)
+        ld (hl),a
+        inc l
+        dec b
         endm
-rcl_blk_end:
-        ld a,b
+        ld a,(rt_odd)
         or a
-        jp nz,rcl_next
-        ld hl,(rt_deadp)
-        inc hl
-        ld (rt_deadp),hl
-        ld hl,(rt_rowp)
-        inc hl
-        inc hl
-        ld (rt_rowp),hl
-        pop hl
-        ld de,32
-        add hl,de
-        ld a,(rt_cnt)
+        jr z,rcl_e2
+        dec l                   ; an odd start: the margins (screen columns 0 and 25) are not the window's
+        ld (hl),RT_ROAD
+        ld a,l
+        sub WIN_W+1
+        ld l,a
+        ld (hl),RT_ROAD
+        add a,WIN_W+1
+        ld l,a
+        ld a,e                  ; (13 bytes read, 23 on to the next row's)
+        add a,36-WIN_W/2-1
+        ld e,a
+        jr nc,rcl_nx
+        inc d
+        jr rcl_nx
+rcl_e2:
+        ld a,e                  ; (12 bytes read)
+        add a,36-WIN_W/2
+        ld e,a
+        jr nc,rcl_nx
+        inc d
+rcl_nx:
+        ld a,l                  ; the next row's first square
+        add a,32-WIN_W
+        ld l,a
+        jr nc,rcl_n2
+        inc h
+rcl_n2:
+        ex af,af'
         dec a
         jp nz,rcl_row
         ret
-        if (rcl_blk / 256) - (rcl_blk_end / 256)
-        .error rt_class: the row of LD (HL),A must be on one page (rcl_j is given its low byte only)
+; RT_ENT: HL = HL + A x DE (A = 0 to 8 lines, DE = minus a line's bytes): where to come into a run of 8 lines. Keeps BC, DE.
+rt_ent:
+        or a
+        ret z
+ren_1:
+        add hl,de
+        dec a
+        jr nz,ren_1
+        ret
+
+; RT_SQ: one square made up from its four tiles, written whole. HL = where (its first line: in the buffer or on the
+; screen); the other HL = the upper-left tile in the map, the other DE = the lower-left (both are left one tile on).
+; The lines above the fold come from the upper pair of tiles, from their line camy AND 7 down; the rest from the lower
+; pair's first lines. In each pair the left-hand tile gives the square its right-hand part and the other way about. A
+; tile is nothing (0), all grass (1: its part is the same bits every line) or a picture, whose part of each line comes
+; through the shift tables - so a pair is one of nine cases, each done the quickest way. Uses IXL; the other BC too.
+rt_sq:
+        exx
+        ld a,(hl)               ; the upper-left tile
+        inc hl
+        ld b,(hl)               ; the upper-right
+        exx
+        cp 2
+        jr nc,sq_tp
+        or a
+        jr z,sq_tn
+        exx                     ; --- all grass on the left
+        ld a,b
+        exx
+        cp 2
+        jr nc,sq_tgp
+        or a
+sq_ma1: ld a,0                  ; (patched: an all-grass left-hand tile's part)
+        jr z,sq_tz1
+        ld a,0xFF
+sq_tz1: call rt_ze              ; (patched: the lines above the fold) the same byte down them
+        jp sq_bot
+sq_tgp:
+        ld e,a
+sq_dt4: ld d,RT_PL
+sq_bl5: ld b,TAB_HI
+sq_ma2: ld ixl,0
+sq_tk1: call rt_wke             ; the picture's part, with the grass's
+        jp sq_bot
+sq_tn:
+        exx                     ; --- nothing on the left
+        ld a,b
+        exx
+        cp 2
+        jr nc,sq_tnp
+        or a
+        jr z,sq_tz2
+sq_mb1: ld a,0                  ; (patched: an all-grass right-hand tile's part)
+sq_tz2: call rt_ze
+        jp sq_bot
+sq_tnp:
+        ld e,a
+sq_dt3: ld d,RT_PL
+sq_bl2: ld b,TAB_HI
+sq_tw1: call rt_w1e
+        jp sq_bot
+sq_tp:
+        ld e,a                  ; --- a picture on the left
+sq_dt1: ld d,RT_PL              ; (patched: its line at the square's top)
+sq_br1: ld b,TAB_HI+1           ; (patched)
+        exx
+        ld a,b
+        exx
+        cp 2
+        jr nc,sq_tpp
+        or a
+        jr z,sq_tw2
+sq_mb2: ld ixl,0
+sq_tk2: call rt_wke
+        jp sq_bot
+sq_tw2: call rt_w1e
+        jp sq_bot
+sq_tpp:
+sq_tw3: call rt_w1e             ; two pictures: the left one's part written,
+        exx
+        ld a,b
+        exx
+        ld e,a
+sq_dt2: ld d,RT_PL
+sq_bl1: ld b,TAB_HI
+        ld a,h                  ; (back up to the square's first line)
+sq_st:  sub 8
+        ld h,a
+sq_to1: call rt_o1e             ; the right one's ORed in
+sq_bot:                         ; HL is at the fold
+        exx
+        ex de,hl
+        ld a,(hl)               ; the lower-left tile
+        inc hl
+        ld b,(hl)               ; the lower-right
+        ex de,hl
+        exx
+        cp 2
+        jr nc,sq_bp
+        or a
+        jr z,sq_bn
+        exx
+        ld a,b
+        exx
+        cp 2
+        jr nc,sq_bgp
+        or a
+sq_ma3: ld a,0
+        jr z,sq_bz1
+        ld a,0xFF
+sq_bz1: jp rt_ze
+sq_bgp:
+        ld e,a
+        ld d,RT_PL
+sq_bl6: ld b,TAB_HI
+sq_ma4: ld ixl,0
+sq_bk1: jp rt_wke
+sq_bn:
+        exx
+        ld a,b
+        exx
+        cp 2
+        jr nc,sq_bnp
+        or a
+        jr z,sq_bz2
+sq_mb3: ld a,0
+sq_bz2: jp rt_ze
+sq_bnp:
+        ld e,a
+        ld d,RT_PL
+sq_bl4: ld b,TAB_HI
+sq_bw1: jp rt_w1e
+sq_bp:
+        ld e,a
+        ld d,RT_PL
+sq_br2: ld b,TAB_HI+1
+        exx
+        ld a,b
+        exx
+        cp 2
+        jr nc,sq_bpp
+        or a
+        jr z,sq_bw2
+sq_mb4: ld ixl,0
+sq_bk2: jp rt_wke
+sq_bw2: jp rt_w1e
+sq_bpp:
+sq_bw3: call rt_w1e
+        exx
+        ld a,b
+        exx
+        ld e,a
+        ld d,RT_PL
+sq_bl3: ld b,TAB_HI
+        ld a,h
+sq_sv:  sub 0
+        ld h,a
+sq_bo1: jp rt_o1e
+; a tile's part, 8 lines of it (come in part-way for fewer): DE = the tile's line in the pictures (a page a line),
+; B = the shift table's page, HL = where. RT_W1 writes; RT_WK writes it ORed with IXL; RT_O1 ORs it into what is
+; there; RT_Z writes A
+rt_w1:
+        rept 8
+        ld a,(de)
+        inc d
+        ld c,a
+        ld a,(bc)
+        ld (hl),a
+        inc h
+        endm
+rt_w1e: ret
+rt_wk:
+        rept 8
+        ld a,(de)
+        inc d
+        ld c,a
+        ld a,(bc)
+        or ixl
+        ld (hl),a
+        inc h
+        endm
+rt_wke: ret
+rt_o1:
+        rept 8
+        ld a,(de)
+        inc d
+        ld c,a
+        ld a,(bc)
+        or (hl)
+        ld (hl),a
+        inc h
+        endm
+rt_o1e: ret
+rt_z:
+        rept 8
+        ld (hl),a
+        inc h
+        endm
+rt_ze:  ret
+; RT_OR: A = up to 8 lines of a picture ORed together (HL = its line in the pictures; come in with A = 0)
+rt_or:
+        rept 8
+        or (hl)
+        inc h
+        endm
+rt_ore: ret
+
+; RT_SQ4: a square that may hold grass or something white (never both): made up like any other, and A = its colour -
+; white on black if a white tile's part in it has a pixel, green on black if not. (A white tile's number is RT_W0 or more;
+; its part of the square is the same lines and the same shift as rt_sq uses, ORed together and looked up once.)
+rt_sq4:
+        call rt_sq
+        exx
+        dec hl
+        ld a,(hl)               ; the upper-left tile
+        inc hl
+        exx
+        cp RT_W0
+        jr c,s4_1
+        ld l,a
+s4_d1:  ld h,RT_PL              ; (patched, as sq_dt1)
+s4_b1:  ld b,TAB_HI+1
+        xor a
+s4_c1:  call rt_ore             ; (patched: the lines above the fold)
+        ld c,a
+        ld a,(bc)
+        or a
+        jr nz,s4_w
+s4_1:
+        exx
+        ld a,(hl)               ; the upper-right
+        exx
+        cp RT_W0
+        jr c,s4_2
+        ld l,a
+s4_d2:  ld h,RT_PL
+s4_b2:  ld b,TAB_HI
+        xor a
+s4_c2:  call rt_ore
+        ld c,a
+        ld a,(bc)
+        or a
+        jr nz,s4_w
+s4_2:
+        exx
+        dec de
+        ld a,(de)               ; the lower-left
+        inc de
+        exx
+        cp RT_W0
+        jr c,s4_3
+        ld l,a
+        ld h,RT_PL
+s4_b3:  ld b,TAB_HI+1
+        xor a
+s4_c3:  call rt_ore
+        ld c,a
+        ld a,(bc)
+        or a
+        jr nz,s4_w
+s4_3:
+        exx
+        ld a,(de)               ; the lower-right
+        exx
+        cp RT_W0
+        jr c,s4_g
+        ld l,a
+        ld h,RT_PL
+s4_b4:  ld b,TAB_HI
+        xor a
+s4_c4:  call rt_ore
+        ld c,a
+        ld a,(bc)
+        or a
+        jr nz,s4_w
+s4_g:
+        ld a,RT_EDGE
+        ret
+s4_w:
+        ld a,RT_ROAD
+        ret
+
+; RT_SQ_BUF: HL = a square of rt_sh as rt_class left it: made up in the back buffer, and its colour then says so
+; (RT_ROAD or RT_EDGE). For the squares a car, its rim or the arrow is in. Keeps HL, BC, IX.
+rt_sq_buf:
+        push ix
+        push bc
+        push hl
+        ld a,l
+        rlca
+        rlca
+        rlca
+        and 7
+        ld c,a
+        ld a,h
+        sub RT_SH/256
+        add a,a
+        add a,a
+        add a,a
+        ld b,a                  ; B = the third of the screen x 8
+        or c                    ; A = the screen row (1-19)
+        add a,a
+        add a,(RT_B-2) AND 255
+        exx
+        ld l,a
+        ld h,RT_B/256
+        ld e,(hl)
+        inc l
+        ld d,(hl)
+        inc l
+        ld a,(hl)
+        inc l
+        ld h,(hl)
+        ld l,a                  ; the row of tiles under the square's top, and the one below it
+        exx
+        ld a,l
+        and 31
+        exx
+        ld c,a
+        ld b,0
+        add hl,bc
+        ex de,hl
+        add hl,bc               ; the other HL = the upper-left tile, the other DE = the lower-left
+        exx
+        ld a,b
+        add a,BUF_HI
+        ld b,(hl)               ; B = the colour it has
+        ld h,a
+        inc l                   ; HL = the square in the buffer
+        ld a,b
+        cp RT_EDGE4_D
+        jr z,sb_4
+        and 0x3F
+        push af
+        call rt_sq
+        pop af
+        jr sb_e
+sb_4:
+        call rt_sq4
+sb_e:
+        pop hl
+        ld (hl),a
+        pop bc
+        pop ix
+        ret
+        if (RT_B / 256) - ((RT_B + 39) / 256)
+        .error rt_b must be on one page
         endif
 
-; RT_GRASS: the grass's pixels - draw_tiles' loop over the rows' grass lists. A number from 16 up
-; is a part-grass tile's picture (drawn like any tile: tdraw_one, gen_tiles1.asm); 1-15 is an
-; all-grass tile's quarters (rt_rim).
-rt_grass:
-        ld a,(camx)
-        and 7
+; RT_SHOW: the picture to the screen (the main loop calls it when the TV frame has come). Row by row down the window:
+; each square that shows anything - copied from the back buffer if it is there, made up on the screen if not - and then
+; the row's 24 colours. So a row's pixels and its colours always change together, and a square whose colour hides it is
+; never touched. Interrupts stay on (nothing here moves the stack pointer).
+; Along a row the other HL and DE are at the map's tiles for the square whose low byte is the other C (rt_dir moves
+; them on to the square it is given).
+rt_show:
+        ld hl,RT_B
+        ld (rt_bp),hl
+        ld hl,RT_SH+32+1
+        ld a,WIN_H/8
+sh_row:
+        ld (rt_cnt),a
+        ld a,h                  ; the row's pages: of rt_sh, of the screen, of the buffer
+        ld (sd_hh+1),a
+        ld (sd_hh2+1),a
+        ld (cp_hh+1),a
+        sub RT_SH/256
         add a,a
-        add a,TAB_HI
-        ld b,a                  ; B = the shift tables' page, kept all the way
-        ld (rt_tab),a
-        ld a,(camy)
-        and 7
-        ld l,a
-        push hl
-        push bc
-        call td_patch           ; (the tile routine's step into the next character row, for this picture)
-        pop bc
-        pop hl
-        ld a,BUF_TOP
-        sub l
-        push bc
-        ld b,a
-        ld c,8
-        call buf_addr
-        pop bc
-        ld (tr_base),hl
-        ld a,(rt_c0)
-        exx
-        ld c,a                  ; C' = the first tile column in view
-        exx
-        ld hl,(rt_rowp)         ; (rt_class left it WIN_H/8 rows on)
-        ld de,0x10000-2*(WIN_H/8)
-        add hl,de
-        ld (dt_rowp),hl
-        ld a,WIN_H/8+1
-rg_row:
-        ld (dt_rows),a
-        ld hl,(dt_rowp)
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        inc hl
-        ld (dt_rowp),hl
-        ex de,hl
-        inc hl
-        inc hl
-        ld e,(hl)               ; past the runs, to the grass list
-        ld d,0
-        inc hl
-        add hl,de
-        push hl
-        exx
-        pop hl                  ; HL' = the list
-        ld b,(hl)               ; B' = how many tiles in it
-        inc hl
-        ld a,c
-        cp 24
-        ld a,(hl)               ; (how many of them are left of column 24: a window from there on passes over them at once)
-        inc hl
-        jr c,rg_all
-        ld e,a
-        ld a,b
-        sub e
-        ld b,a
-        ld d,0
-        add hl,de
-        add hl,de
-rg_all:
-        ld a,b
-        or a
-        jr z,rg_row_done
-rg_tile:
-        ld a,(hl)               ; column
-        inc hl
-        sub c
-        jr c,rg_skip            ; left of the window
-        cp WIN_W+1
-        jr nc,rg_row_done       ; right of it: the rest of the list is too
-        ex af,af'
-        ld a,(hl)               ; number
-        inc hl
-        exx
-        cp 16
-        jr c,rg_rim
-        rlca                    ; DE = gtiles + number * 8
-        rlca
-        rlca
-        ld d,a
-        and 0xF8
-        ld e,a
-        ld a,d
-        and 7
-        add a,gtiles/256
-        ld d,a
-        ex af,af'
-        ld hl,(tr_base)
-        add a,l
-        ld l,a
-        call tdraw_one
-rg_back:
-        exx
-        dec b
-        jr nz,rg_tile
-        jr rg_row_done
-rg_skip:
-        inc hl
-        dec b
-        jr nz,rg_tile
-rg_row_done:
-        exx
-        ld hl,(tr_base)         ; the next tile row: 32 bytes on, or the next third
+        add a,a
+        add a,a
+        add a,0x40
+        ld (sd_sh+1),a
+        ld (sd_sh2+1),a
+        ld (cp_sh+1),a
+        add a,BUF_HI-0x40
+        ld (cp_bh+1),a
         ld a,l
-        add a,32
+        exx
+        ld c,a
+        ld hl,(rt_bp)           ; the row's two rows of tiles in the map
+        ld e,(hl)
+        inc l
+        ld d,(hl)
+        inc l
+        ld (rt_bp),hl
+        ld a,(hl)
+        inc l
+        ld h,(hl)
         ld l,a
-        jr nc,rg_nt
+        inc hl                  ; (rt_b is for screen column 0)
+        inc de
+        ex de,hl
+        exx
+        rept WIN_W
+        ld a,(hl)
+        add a,a
+        call nc,rt_cp           ; (bit 7 not set: it is in the buffer)
+        call m,rt_dir           ; (bits 7 and 6: rt_class's own. Bit 7 alone: nothing in it shows)
+        inc l
+        endm
+        ld a,l                  ; the row's colours
+        sub WIN_W
+        ld l,a
+        ld e,a
         ld a,h
-        add a,8
-        ld h,a
-rg_nt:
-        ld (tr_base),hl
-        ld a,(dt_rows)
+        sub (RT_SH-0x5800)/256
+        ld d,a
+        rept WIN_W
+        ldi
+        endm
+        ld de,32-WIN_W
+        add hl,de
+        ld a,(rt_cnt)
         dec a
-        jp nz,rg_row
+        jp nz,sh_row
         ret
-rg_rim:
-        ld c,a                  ; C = the quarters
+; RT_DIR: a square to make up on the screen (HL = it in rt_sh, A = its colour x 2). Keeps HL.
+rt_dir:
+        cp (RT_EDGE4_D*2) AND 255
+        jr z,sd_4
+        rrca
+        and 0x3F
+        ld (hl),a               ; the colour it shows in
+        ld a,l
+        exx
+        ld b,a
+        sub c
+        jr z,sd_1
+        ld c,a                  ; (not the square the map's pointers are at: that many tiles on)
+        ld a,b
+        ld b,0
+        add hl,bc
+        ex de,hl
+        add hl,bc
+        ex de,hl
+        ld b,a
+sd_1:
+        ld c,b
+        inc c
+        exx
+sd_sh:  ld h,0x40               ; (patched: this row's page of the screen)
+        call rt_sq
+sd_hh:  ld h,RT_SH/256          ; (patched: this row's page of rt_sh)
+        xor a
+        ret
+sd_4:
+        ld a,l
+        exx
+        ld b,a
+        sub c
+        jr z,sd_5
+        ld c,a
+        ld a,b
+        ld b,0
+        add hl,bc
+        ex de,hl
+        add hl,bc
+        ex de,hl
+        ld b,a
+sd_5:
+        ld c,b
+        inc c
+        exx
+sd_sh2: ld h,0x40
+        call rt_sq4
+        ex af,af'               ; (rt_sq4 used L: the square's low byte is the other C, less one)
+        exx
+        ld a,c
+        exx
+        dec a
+        ld l,a
         ex af,af'
-        ld hl,(tr_base)
-        add a,l
-        ld l,a
-        call rt_rim
-        ld a,(rt_tab)
-        ld b,a
-        jr rg_back
-
-; RT_RIM: an all-grass tile's quarters (C: 1 top-left, 2 top-right, 4 bottom-left, 8 bottom-right)
-; ORed into the buffer; HL = the tile's first line, its left byte. The tile's first (camy AND 7)
-; lines are in one character row, the rest in the next; its first (camx AND 7) pixels in the
-; left byte, the rest in the right.
-rt_rim:
-        ld a,(rt_v)
-        or a
-        jr z,rr_bot
-        ld b,a
-        ld a,c
-        and 3
-        jr z,rr_skip
-        call rr_part
-        jr rr_cross
-rr_skip:
-        ld a,h
-        add a,b
-        ld h,a
-rr_cross:
-        ld a,l                  ; into the next character row
-        add a,32
-        ld l,a
-        jr c,rr_bot             ; (carry: the next third - H is already right)
-        ld a,h
-        sub 8
-        ld h,a
-rr_bot:
-        ld a,(rt_v)
-        neg
-        add a,8
-        ld b,a
-        ld a,c
-        rrca
-        rrca
-        and 3
-        ret z
-rr_part:                        ; B lines from HL: A = 1 the left byte, 2 the right, 3 both
-        ld de,(rt_mlr)
-        cp 2
-        jr z,rr_r
-        jr nc,rr_lr
-rr_l:
-        ld a,(hl)
-        or e
+sd_hh2: ld h,RT_SH/256
         ld (hl),a
-        inc h
-        djnz rr_l
+        xor a
         ret
-rr_r:
-        inc l
-rr_r1:
-        ld a,(hl)
-        or d
+; RT_CP: the square's 8 lines from the buffer to the screen (and the sign flag off: it is not for rt_dir)
+rt_cp:
+        ld e,l
+        inc e
+cp_bh:  ld d,BUF_HI             ; (patched)
+cp_sh:  ld h,0x40               ; (patched)
+        rept 7
+        ld a,(de)
         ld (hl),a
+        inc d
         inc h
-        djnz rr_r1
-        dec l
-        ret
-rr_lr:
-        ld a,(hl)
-        or e
+        endm
+        ld a,(de)
         ld (hl),a
-        inc l
-        ld a,(hl)
-        or d
-        ld (hl),a
-        dec l
-        inc h
-        djnz rr_lr
+cp_hh:  ld h,RT_SH/256          ; (patched)
+        xor a
         ret
 
 ; RT_BUFSQ: DE = the buffer's first byte of the square whose colour is at HL in rt_sh.
@@ -506,39 +832,6 @@ rt_bufsq:
         ld d,a
         ld e,l
         inc e
-        ret
-
-; RT_RESOLVE: after the grass, before anything white is drawn: each listed square with no grass
-; pixel in it is a road square - white ink.
-rt_resolve:
-        ld a,(rt_aln)
-        or a
-        ret z
-        ld b,a
-        ld ix,RT_AL
-rs_e:
-        ld l,(ix+0)
-        ld h,(ix+1)
-        ld c,(ix+2)
-rs_c:
-        call rt_bufsq
-        ex de,hl
-        ld a,(hl)
-        rept 7
-        inc h
-        or (hl)
-        endm
-        ex de,hl
-        jr nz,rs_n
-        ld (hl),RT_ROAD
-rs_n:
-        inc l
-        dec c
-        jr nz,rs_c
-        inc ix
-        inc ix
-        inc ix
-        djnz rs_e
         ret
 
 ; RT_CAR (IX = a car): the car by the clash rule. draw_car is first run as far as knowing where
@@ -564,6 +857,7 @@ rt_car:
         ld a,(rt_mixed)
         or a
         jp z,draw_car
+        call rq_ring            ; (the squares the rim may reach: into the buffer)
         ld a,0x7E               ; "OR (HL)" becomes "LD A,(HL)" at the four places draw_car puts the ink in: mask only
         call rtc_patch
         ld l,(ix+C_X)
@@ -703,6 +997,7 @@ rq_k1:
         add a,e
         dec a
         ld l,a
+        ld (rq_tl),hl           ; (the 3 x 3's first square: rq_ring)
         ld a,3
         ld (rt_cnt),a
         ld de,rt_bm
@@ -754,29 +1049,36 @@ rq_s2:
         ld (rt_cnt),a
         jr nz,rq_band
         ret
+; RQ_CELL (HL = a square in rt_sh, rt_ink = the colour): the rule for one square. First the square is brought into the
+; back buffer if it is not there: cleared if nothing in it showed, made up (rt_sq_buf) if rt_class left it for rt_show.
+; Keeps HL, C.
 rq_cell:
         ld a,(hl)
-        cp RT_EDGE
+        add a,a
+        jr nc,rq_inb            ; in the buffer already (another car has it, or the arrow)
+        jp p,rq_hid             ; nothing in it shows
+        call rt_sq_buf
+        ld a,(hl)
+        add a,a
+rq_inb:
+        cp RT_EDGE*2
         jr z,rq_amb
-        and 0x38
+        and 0x70                ; (its paper)
         jr z,rq_road
-rq_grass:                       ; all grass: nothing but the car in it, the car's colour on green (unless another car has it
-        ld a,(hl)               ; already: that car's pixels stay)
-        cp RT_GRASS
-        jr nz,rq_gset
-rq_grass_c:
-        call rt_bufsq
-        xor a
-        rept 7
-        ld (de),a
-        inc d
-        endm
-        ld (de),a
-rq_gset:
+        jr rq_gset              ; a car on the grass has it: that car's pixels stay
+rq_hid:
+        push af
+        call rq_clr
+        pop af
+        jr z,rq_road            ; (it was plain road)
+rq_gset:                        ; all grass: the car's colour on green
         ld a,(rt_ink)
         or 0x20
         ld (hl),a
         ret
+rq_grass_c:                     ; all grass by its pixels: nothing but the car in it
+        call rq_clr
+        jr rq_gset
 rq_road:                        ; no grass: the car's colour on black
         ld a,(rt_ink)
         ld (hl),a
@@ -808,6 +1110,58 @@ rq_z1:
 rq_mix:
         ld a,1                  ; grass and road: the square stays as it is, and the car gets its rim
         ld (rt_mixed),a
+        ret
+rq_clr:                         ; the square at HL in rt_sh: its 8 lines in the buffer cleared
+        call rt_bufsq
+        xor a
+        rept 7
+        ld (de),a
+        inc d
+        endm
+        ld (de),a
+        ret
+
+; RQ_RING (a car that gets its rim): the rim's black pixels may fall in a square the car itself has no pixel in. So every
+; square within one of the car's 3 x 3 that rt_class left for rt_show is made up in the buffer first, where the rim is cut.
+rq_ring:
+        ld hl,(rq_tl)
+        inc l                   ; (the 3 x 3's middle column: always a real column of its row)
+        ld de,0x10000-32
+        add hl,de               ; from the row above
+        ld b,5
+rr_row:
+        push bc
+        push hl
+        ld de,0x10000-(RT_SH+32)
+        add hl,de
+        jr nc,rr_nx             ; above the window
+        ld de,0x10000-(WIN_H/8)*32
+        add hl,de
+        jr c,rr_nx              ; below it
+        pop hl
+        push hl
+        dec l
+        dec l
+        ld b,5
+rr_sq:
+        ld a,l
+        and 31
+        jr z,rr_n1              ; left of the window
+        cp WIN_W+1
+        jr nc,rr_n1             ; right of it
+        ld a,(hl)
+        add a,a
+        jr nc,rr_n1             ; in the buffer already
+        call m,rt_sq_buf        ; (not if nothing in it shows)
+rr_n1:
+        inc l
+        djnz rr_sq
+rr_nx:
+        pop hl
+        ld de,32
+        add hl,de
+        pop bc
+        djnz rr_row
         ret
 
 ; RT_HUD: the squares of the things that do not scroll, after the cars and before those things
@@ -948,51 +1302,14 @@ ra_1:
         jr nz,ra_r
         ret
 
-; RT_ATTR_GO: before the screen copy - where the looped copy routine (make_copier, racer.asm) takes each row of squares'
-; colours from and puts them: for the window's first RT_WITH rows it copies a row's 24 straight after that row's 8 lines
-; of pixels. The copy is slower than the TV's beam and is overtaken by it at row 8 or 9 of the window's 19: the rows above
-; change in this TV frame, the rows below in the next - but each row's colours and pixels always together.
-rt_attr_go:
-        ld hl,RT_SH+32+1
-        ld (rt_asrc),hl
-        ld hl,0x5800+32+1
-        ld (rt_adst),hl
-        ret
-; RT_ATTR_REST: after the copy - the colours of the rows the copy routine did not send (the window's rows from RT_WITH
-; down). The beam had passed those rows before their pixels were copied, and it does not come back to them until the
-; next TV frame: by then their colours are up too.
-RT_WITH equ 9                   ; the rows whose colours go with their pixels (the beam overtakes the copy at row 8 or 9)
-rt_attr_rest:
-        ld hl,(rt_asrc)
-        ld de,(rt_adst)
-        ld a,WIN_H/8-RT_WITH
-rar_row:
-        rept WIN_W
-        ldi
-        endm
-        ld bc,32-WIN_W
-        add hl,bc
-        ex de,hl
-        add hl,bc
-        ex de,hl
-        dec a
-        jr nz,rar_row
-        ret
-
-rt_asrc:  dw 0
-rt_adst:  dw 0
-rt_sp:    dw 0
 rq_col0:  db 0
-rt_deadp: dw 0
-rt_dead:  defs WIN_H/8          ; each row of squares: 1 - all grass (nothing in it shows: rt_clear leaves it)
-rt_rowp:  dw 0                  ; the grass rows' index, as rt_class walks it
-rt_mlr:   dw 0                  ; low byte: the left byte's bits of a tile (its first camx AND 7 pixels); high: the right's
-rt_c0:    db 0                  ; the first block column in view
-rt_v:     db 0                  ; camy AND 7
+rq_tl:    dw 0                  ; rt_car_sq: the first of the car's 3 x 3 squares in rt_sh
+rt_bp:    dw 0                  ; rt_show: where it is in rt_b
+rt_c0:    db 0                  ; the first tile column in view
+rt_odd:   db 0                  ; ... 1 if that is odd
+rt_v:     db 0xFF               ; camy AND 7 as rt_sq's entries were last set for (0xFF: not yet)
 rt_cnt:   db 0
-rt_tab:   db 0                  ; the shift tables' page for this picture
 rt_ink:   db 0                  ; the colour of the car being drawn
 rt_probe: db 0                  ; 1: draw_car goes to rt_car_sq once it knows where the picture falls
 rt_mixed: db 0                  ; 1: a grass-and-road square is under the car
-rt_aln:   db 0                  ; rt_al: how many entries
-; RT_AL: 3 bytes x up to 96 - the squares that may hold grass or white: address in rt_sh, how many in a row
+; RT_B (above the colours): for each of the 20 rows of tiles in view, where the tile under screen column 0 is in the map

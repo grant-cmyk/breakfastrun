@@ -134,7 +134,7 @@ rt_code_end:
         if OPT_MULTI
 lp_src: incbin "lp.bin"         ; MULTI: packed tracks that do not fit above the copy routine (tools/make_multi.py) - read once, at the title
         endif
-        if $ > LOWTAB-0x26A
+        if $ > LOWTAB-0x26A+OPT_RT*0x182
         .error the room under 0x8000 runs into the data kept at its top (TOPMEM, LOWTAB)
         endif
         org 32768
@@ -242,11 +242,8 @@ cpu_move:
         call race_progress      ; your waypoints and laps, everyone's progress
         call hud_update         ; the panel, message bar and lap strip
         call camera
-        if OPT_RT               ; RACETRACK (racetrack.asm): no cloth - the buffer cleared, the squares' colours decided,
-        call rt_clear           ; the grass drawn; then draw_tiles draws the limit line and the grid as it drew the map
-        call rt_class
-        call rt_grass
-        call rt_resolve
+        if OPT_RT               ; RACETRACK (racetrack.asm): no cloth and no map tiles drawn here - the squares' colours are
+        call rt_class           ; decided; rt_show makes the grass and the white things up on the screen, square by square
         else
         call cloth_fill         ; the tablecloth, as the camera sees it
         endif
@@ -256,7 +253,9 @@ cpu_move:
         if OPT_BRIDGE
         call kerb_draw          ; BRIDGE: the bridge's kerb walls, under the map's tiles (bridge.asm)
         endif
+        if OPT_RT = 0
         call draw_tiles
+        endif
         ld ix,cars+(NCARS-1)*C_SIZE ; computer cars first, yours last (on top)
         ld b,NCARS
 draw_all:
@@ -324,11 +323,9 @@ wait_show:
         ld a,(FRAMES)
         ld (last_shown),a
         if OPT_RT
-        call rt_attr_go         ; RACETRACK: each row's colours go up with its pixels (racetrack.asm; the looped copy routine)
-        endif
+        call rt_show            ; RACETRACK: only the squares that show anything, each row's colours with its pixels (racetrack.asm)
+        else
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
-        if OPT_RT
-        call rt_attr_rest       ; RACETRACK: the lower rows' colours
         endif
         if OPT_ROADW
         call rw_attrs           ; ROADW: the road's squares white, the table's cyan (roadwhite.asm)
@@ -1953,6 +1950,7 @@ clamp_hl:
 ; DRAW_TILES: the non-blank tiles in view (from each map row's list) into
 ; the back buffer, shifted by the camera. Blank table costs nothing.
 ; ---------------------------------------------------------------------
+        if OPT_RT = 0           ; (RACETRACK draws no tiles: draw_tiles and the tile routines are left out - racetrack.asm, rt_sq)
 draw_tiles:
         ld a,(camx)
         and 7
@@ -2132,6 +2130,7 @@ dt_nt:
         dec a
         jp nz,dt_row
         ret
+        endif                   ; (RACETRACK: no draw_tiles)
 
 ; TDRAW_M: one masked tile - a breakfast thing on the tablecloth.
 ; IX = its mask, DE = its picture, HL = top-left byte, B = shift page.
@@ -3918,10 +3917,12 @@ me_world:
         endif
         include "hud.asm"
         include "arrow.asm"     ; the corner arrow in front of your car (here, after the page-aligned tables: code put before sq4 moves them a page on)
+        if OPT_RT = 0           ; (RACETRACK draws no tiles)
         if OPT_TILE1
         include "gen_tiles1.asm" ; TILE1=1: one routine for every camy AND 7 (about 1 KB less)
         else
         include "gen_tiles.asm"
+        endif
         endif
         include "gen_bumps.asm"
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
@@ -4262,6 +4263,9 @@ isr_x:
         if OPT_MAP40
 MAPDAT:                         ; MAPW40: the mini-map's ink lives here, 5 bytes a line (the cars' dots are XORed into it: map_update)
         include "minimap.asm"
+        endif
+        if OPT_RT
+        include "rt_low.asm"    ; RACETRACK: the rows of the track's map that do not fit above the squares' colours (tools/make_world.py)
         endif
 code_end:
 
@@ -4671,6 +4675,9 @@ mt_l_done:
 ; the tape for nothing, and every address in it is worked out here.
 ; ---------------------------------------------------------------------
 make_copier:
+        if OPT_RT               ; RACETRACK: no copy routine - rt_show sends the squares that show anything (racetrack.asm), and
+        ret                     ; the room at COPIER holds the squares' colours, the pictures and the map
+        else
         if OPT_LOOP
 ; THE LOOPED COPIER (LOOP=1 bash build.sh; docs/design/OPTIMISATION-PLAN.md): one character row's 8 lines of
 ; POP/PUSH code, run 19 times - about 430 bytes at COPIER instead of 6,083. A line is two halves of 12 bytes:
@@ -4931,6 +4938,7 @@ mc_ldsp:                        ; write "ld sp,HL"
 mc_pops:   db 0xF1,0xC1,0xD1,0xE1,0xD9,0xC1,0xD1,0xE1   ; pop af,bc,de,hl; exx; pop bc,de,hl
 mc_pushes: db 0xE5,0xD5,0xC5,0xD9,0xE5,0xD5,0xC5,0xF5   ; push hl,de,bc; exx; push hl,de,bc,af
         endif
+        endif
 
 im2_on:
         di
@@ -5088,8 +5096,12 @@ init_end:
 hp_src: incbin "hp.bin"         ; (tools/make_multi.py assembles src/hp.asm for HP)
 hp_end:
         endif
+        if OPT_RT               ; (RACETRACK: no row lists and no masks are kept there - 0xE8 bytes are enough, and the room
+TOPMEM      equ LOWTAB-0xE8       ; under 0x8000 that frees is racetrack.asm's)
+        else
 TOPMEM      equ LOWTAB-0x26A      ; (under 0x8000 since the window grew a column: the copy routine, 152
                                   ; lines of 40 bytes from COPIER, now runs to 0xFFC3 - there is no top of memory left)
+        endif
 BUFA      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 BUFB      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
 BUFD      equ LOWTAB+0        ; a table block of up to 128 bytes, at the top of the room under 0x8000 (they were strips of the buffer's bottom rows)
@@ -5224,11 +5236,8 @@ faces     equ faces_src
         if OPT_TILE1 * OPT_FLIP * OPT_LOOP = 0
         .error RACETRACK needs TILE1=1, FLIP=1 and LOOP=1 (build.sh sets them)
         endif
-        if COPIER + (lc_rows-lc_head) + 4*(lc_tail-lc_rows) + (lc_end-lc_tail) > LC_CNT
-        .error RACETRACK: the looped copy routine runs into its count (LC_CNT)
-        endif
         if RT_DATA + rt_src_end - rt_src > HIMEM
-        .error RACETRACK: the grass's pictures run into the row lists at HIMEM
+        .error RACETRACK: the pictures and the map run into the row lists at HIMEM
         endif
         endif
         end start

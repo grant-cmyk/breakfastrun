@@ -84,4 +84,9 @@ wait = sum(t for n, t in tot.items() if n in WAIT or n.startswith('snd_w') or n.
 print('%s %s: %d TV frames, %d pictures = %.2f pictures a second (%.2f TV frames a picture)' % (os.path.basename(TAP), SCEN, N, pics, pics * 50.0 / N, N / max(pics, 1)))
 print('  T-states a picture: %d in all; %d of it waiting for the TV (with the engine note); so %d of work' % (all_t // pics, wait // pics, (all_t - wait) // pics))
 print('  by part:', ', '.join('%s %d' % (g, t // pics) for g, t in sorted(grp.items(), key=lambda kv: -kv[1])))
+if os.environ.get('DUMP'):                                # DUMP=file: every label's T a picture, in address order
+    with open(os.environ['DUMP'], 'w') as f:
+        for a, n in names:
+            if tot.get(n): f.write('%04X %-16s %7d\n' % (a, n, tot[n] // pics))
+        f.write('     %-16s %7d\n' % ('(ROM: the interrupt)', tot.get('(ROM: the interrupt)', 0) // pics))
 print('  by routine:', ', '.join('%s %d' % (n, t // pics) for n, t in sorted(tot.items(), key=lambda kv: -kv[1])[:int(os.environ.get('TOP', '22'))]))

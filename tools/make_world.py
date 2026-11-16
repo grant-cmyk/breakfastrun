@@ -514,8 +514,8 @@ with open(OUT, 'w') as f:
         f.write('BR_X0   equ %d\nBR_X1   equ %d\nBR_Y0   equ %d\nBR_Y1   equ %d\nBR_Y2   equ %d\nBR_Y3   equ %d\nBR_M0   equ %d\nBR_M1   equ %d\nBR_H0   equ %d\nBR_H1   equ %d\n'
                 % (_xc - ROAD // 2, _xc + ROAD // 2, u0, d0, d1, r1, _yc - ROAD // 2, _yc + ROAD // 2, BRIDGE['hidden'][1], BRIDGE['hidden'][0]))
     f.write('; tile pictures, 8 bytes each (tile 0 = blank). Page aligned so a\n; tile never crosses a 256-byte page.\n        defs (256 - ($ & 255)) & 255\ntiles:\n')
-    for i, t in enumerate(order):
-        f.write('        defb ' + ','.join('0x%02X' % b for b in t) + '   ; %d\n' % i)
+    for i, t in enumerate(order):         # (RACETRACK: the game makes its squares up from rt_world.asm's pictures and map, and draws no
+        f.write(('; ' if RT and i else '') + '        defb ' + ','.join('0x%02X' % b for b in t) + '   ; %d\n' % i)   # tiles: these and the lists are kept as comments, for tests/racetrack_test.py to read)
     # the map, stored as a LIST of the non-blank tiles in each row: most of the
     # table is blank, and the renderer then only looks at tiles it must draw
     nosq = []
@@ -538,6 +538,7 @@ with open(OUT, 'w') as f:
         ent = [(tx, mapb[ty * W + tx]) for tx in range(W) if mapb[ty * W + tx]]
         line = 'row_%d:  defb %d' % (ty, len(ent)) + ''.join(',%d,%d' % e for e in ent) + '\n'
         n = 1 + 2 * len(ent)
+        if RT: line = '; ' + line + 'row_%d:  defb 0\n' % ty; n = 1
         if top_used + n <= TOP_ROWS:
             toprows.write(line); top_used += n; where[ty] = ' - high_src + TOPMEM'
         elif any(bn[2] + n <= bn[1] for bn in BINS):
@@ -546,7 +547,7 @@ with open(OUT, 'w') as f:
             f.write(line); where[ty] = ''
         for k, (ctx, cty, dy) in CANS.items():
             for j in (0, 1):
-                if ty == cty + j:
+                if ty == cty + j and not RT:
                     i = [e[0] for e in ent].index(ctx)
                     nosq.append('NOS_%s_T%d equ row_%d%s + %d   ; its tile in the list\nNOS_%s_V%d equ %d\n'
                                 % (k, j, ty, where[ty], 2 + 2 * i, k, j, ent[i][1]))
@@ -562,7 +563,7 @@ with open(OUT, 'w') as f:
         for ty in range(H):
             g.write('        dw row_%d%s\n' % (ty, where[ty]))
     f.write('; each list: how many tiles, then (column, tile number) pairs, left to right\n')
-    f.write('\n; the NOS canisters: where their tiles sit in the row lists, and their numbers\n' + ''.join(nosq))
+    f.write('\n; the NOS canisters: where their tiles sit in the row lists, and their numbers\n' + ('' if RT else ''.join(nosq)))   # (RACETRACK: in its own map - rt_world.asm)
     for k, (ctx, cty, dy) in CANS.items():
         f.write('NOS_%s_X equ %d\nNOS_%s_Y equ %d   ; its centre\n' % (k, ctx * 8 + 4, k, cty * 8 + dy + 6))
     f.write('\n; surface: one BIT per tile, 1 = off-road (slower); %d bytes a row,\n' % (W // 8))
@@ -715,60 +716,105 @@ big.save(os.path.join(BLD, 'world_preview.png'))
 print('tiles:', len(order), ' road tiles:', surf.count(0))
 
 if RT:
-    # RACETRACK: THE GRASS, for src/racetrack.asm. The window scrolls a pixel at a time and colour squares cannot, so:
-    #  - a square of the screen that is ALL grass is simply green paper and green ink (no pixels needed);
-    #  - a square with grass and road in it is green ink on black paper, and its grass is drawn in pixels;
-    #  - a square with no grass is black paper (white ink: the limit line).
-    # A square lies over four tiles of the world (2 x 2: a BLOCK, named by its top-left tile). For each block, from its
-    # four tiles: 0 all grass; 1 no grass; 2 some of each; 3 some of each AND something white in one of its tiles (the game
-    # then looks at the pixels to see which the square really holds - never both, see above).
-    # The grass's pixels: a tile that is part grass has a picture (gtiles, from 16 up). A tile that is ALL grass is drawn only
-    # where it shares a square with road - its four quarters (top-left 1, top-right 2, bottom-left 4, bottom-right 8: tile
-    # numbers 1-15) - and not at all deep in the grass.
+    # RACETRACK: THE TRACK'S SQUARES, for src/racetrack.asm. The window scrolls a pixel at a time and colour squares cannot.
+    # A square of the screen lies over four tiles of the world (2 x 2: a BLOCK, named by its top-left tile). For each block,
+    # from its four tiles, its KIND:
+    #   0 all grass           green ink on green paper: whatever pixels the square holds, it shows solid green - nothing drawn
+    #   1 plain road          black ink on black paper: nothing drawn either
+    #   2 road, with white    something white in one of its tiles (limit line, start line, grid, canister)
+    #   3 grass and road      green ink on black paper, the grass in pixels
+    #   4 grass, road, white  the game looks at the grass's pixels to see which the square really holds - never both (above)
+    # and the game makes up a square of kinds 2-4 from its four tiles' pictures (rt_sq). So here: the kinds as runs along each
+    # row of blocks; ONE map of the world's tiles, a byte each (0 nothing, 1 all grass, then the part-grass pictures, then the
+    # white ones - RT_W0 is the first white one); and the pictures, line by line (all the pictures' first lines in one page of
+    # 256, their second lines in the next ...: a picture's next line is then one page on).
     assert not (_inkb & _near).any(), 'something white is within a colour square of the grass'
     _gt = rt_grass.reshape(H, 8, W, 8)
     g_all = _np.pad(_gt.all(axis=(1, 3)), 1, constant_values=True); g_any = _np.pad(_gt.any(axis=(1, 3)), 1, constant_values=True)
     w_any = _np.pad(_inkb.reshape(H, 8, W, 8).any(axis=(1, 3)), 1, constant_values=False)
+    assert not (g_any & w_any).any(), 'a tile holds grass and something white'
     def _blk(a, tx, ty): return a[ty + 1:ty + 3, tx + 1:tx + 3]          # the block's four tiles (the world's border counts as grass)
+    _bk = {}
     def bclass(tx, ty):
         if not (-1 <= tx < W and -1 <= ty < H): return 0
-        if _blk(g_all, tx, ty).all(): return 0
-        if not _blk(g_any, tx, ty).any(): return 1
-        return 3 if _blk(w_any, tx, ty).any() else 2
-    gpics = sorted({bytes(_np.packbits(rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8], axis=1).ravel().tolist())
-                    for ty in range(H) for tx in range(W) if g_any[ty + 1, tx + 1] and not g_all[ty + 1, tx + 1]})
-    assert len(gpics) <= 240, 'too many grass-edge tiles: %d' % len(gpics)
-    gnum = {b: 16 + i for i, b in enumerate(gpics)}
-    nb = 0; rows = []
+        if (tx, ty) not in _bk:
+            w = bool(_blk(w_any, tx, ty).any())
+            _bk[(tx, ty)] = 0 if _blk(g_all, tx, ty).all() else ((2 if w else 1) if not _blk(g_any, tx, ty).any() else (4 if w else 3))
+        return _bk[(tx, ty)]
+    def _gpic(tx, ty): return bytes(_np.packbits(rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8], axis=1).ravel().tolist())
+    def _in4(tx, ty): return any(bclass(bx, by) == 4 for bx in (tx - 1, tx) for by in (ty - 1, ty))   # the tile is in a block of kind 4
+    _g = {}; _w = {}                 # each picture: is it ever a tile of a kind-4 block (where the game must tell grass from white)?
     for ty in range(H):
-        runs = []; tx = 0
-        while tx < W:
-            c = bclass(tx, ty); n = 1
-            while tx + n < W and bclass(tx + n, ty) == c and n < 64: n += 1
-            runs.append((c << 6) | (n - 1)); tx += n
-        ent = []
         for tx in range(W):
-            if g_all[ty + 1, tx + 1]:
-                q = (bclass(tx - 1, ty - 1) >= 2) | (bclass(tx, ty - 1) >= 2) << 1 | (bclass(tx - 1, ty) >= 2) << 2 | (bclass(tx, ty) >= 2) << 3
-                if q: ent.append((tx, q))
-            elif g_any[ty + 1, tx + 1]:
-                ent.append((tx, gnum[bytes(_np.packbits(rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8], axis=1).ravel().tolist())]))
-        # (a window that starts at column 24 or beyond begins part-way along: at run _mid, which starts at column _mc - and
-        # past the first _nb grass tiles)
-        _ends = [sum((r & 63) + 1 for r in runs[:i + 1]) for i in range(len(runs))]
-        _mid = next(i for i, e in enumerate(_ends) if e > 24); _mc = _ends[_mid - 1] if _mid else 0
-        _nb = sum(1 for e in ent if e[0] < 24)
-        rows.append(('        defb %d,%d,%d,%s   ; row %d\n        defb %d,%d%s\n' % (_mid, _mc, len(runs), ','.join(str(v) for v in runs), ty, len(ent), _nb, ''.join(',%d,%d' % e for e in ent)), 5 + len(runs) + 2 * len(ent)))
-        nb += rows[-1][1]
-    # One block, loaded after the start-up area and copied by start_once to RT_DATA, a page boundary above the looped copy
-    # routine: the rows' index (2 bytes a row, in the room of the 16 numbers that are quarters), the pictures, the rows.
+            if g_all[ty + 1, tx + 1]: continue
+            if g_any[ty + 1, tx + 1]: b = _gpic(tx, ty); _g[b] = _g.get(b, False) or _in4(tx, ty)
+            elif w_any[ty + 1, tx + 1]: b = cells[(tx, ty)][0]; _w[b] = _w.get(b, False) or _in4(tx, ty)
+    # a picture that is both a grass tile and a white tile somewhere has ONE number where the game never needs to tell which
+    # it is (there are only 256 numbers): counted as grass if no white tile like it is in a kind-4 block, as white if no grass one is
+    _both = sorted(set(_g) & set(_w))
+    _asg = [b for b in _both if not _w[b]]; _asw = [b for b in _both if _w[b] and not _g[b]]; _two = [b for b in _both if _w[b] and _g[b]]
+    gl = sorted(b for b in _g if b not in _both or b in _two) + _asg
+    wl = _asw + sorted(b for b in _w if b not in _both or b in _two)
+    RT_W0 = 2 + len(gl)
+    assert RT_W0 + len(wl) <= 256, 'too many pictures for one map: %d' % (RT_W0 + len(wl))
+    gnum = {b: 2 + i for i, b in enumerate(gl)}; wnum = {b: RT_W0 + i for i, b in enumerate(wl)}
+    for b in _asw: gnum[b] = wnum[b]
+    for b in _asg: wnum[b] = gnum[b]
+    pics = [bytes(8), bytes([255] * 8)] + gl + wl
+    tid = _np.zeros((H, W), int)
+    for ty in range(H):
+        for tx in range(W):
+            if g_all[ty + 1, tx + 1]: tid[ty, tx] = 1
+            elif g_any[ty + 1, tx + 1]: tid[ty, tx] = gnum[_gpic(tx, ty)]
+            elif w_any[ty + 1, tx + 1]: tid[ty, tx] = wnum[cells[(tx, ty)][0]]
+    # the map, each row cut down to the tiles some block of kinds 2-4 lies over (the game reads no others)
+    span = []
+    for ty in range(H):
+        need = [tx for tx in range(W) if any(bclass(bx, by) >= 2 for bx in (tx - 1, tx) for by in (ty - 1, ty))]
+        span.append((min(need), max(need)) if need else None)
+    # the kinds: a map of the blocks, two to a byte (the even column's kind in the high four bits), 36 bytes a row; and two
+    # tables that turn such a byte into the left and the right block's colour as the game keeps it (racetrack.asm: RT_GRASS,
+    # RT_PLAIN, RT_ROAD_D, RT_EDGE_D, RT_EDGE4_D)
+    _col = [0xA4, 0x80, 0xC7, 0xC4, 0xC5]
+    cls = [[(bclass(tx, ty) << 4) | bclass(tx + 1, ty) for tx in range(0, W, 2)] for ty in range(H)]
+    cltl = [_col[b >> 4] if (b >> 4) < 5 and (b & 15) < 5 else 0 for b in range(0x45)]
+    cltr = [_col[b & 15] if (b >> 4) < 5 and (b & 15) < 5 else 0 for b in range(0x45)]
+    # One block, loaded after the start-up area and copied by start_once to RT_DATA (a page boundary, above the squares'
+    # colours where the screen-copy routine was), RT_HIGH bytes at most: the pictures' eight pages; a page that starts with
+    # the first colour table, and one that starts with the second; the blocks' kinds; where each row of the map is (2 bytes a
+    # row). The map's rows go wherever there is room: after the tables in their pages, at the end of the block - and the rest
+    # stay in the program (src/rt_low.asm).
+    RT_HIGH = 0xFFC3 - 0xEB00
+    O_CLT, O_CLS = 2048, 2560; O_MAPR = O_CLS + 36 * H; O_END = O_MAPR + 2 * H
+    holes = [[O_CLT + 0x45, O_CLT + 256, []], [O_CLT + 256 + 0x45, O_CLS, []], [O_END, RT_HIGH, []]]
+    mwhere = []; low = 0
+    for ty in range(H):
+        n = span[ty][1] - span[ty][0] + 1 if span[ty] else 0
+        h = next((h for h in holes if h[0] + n <= h[1]), None)
+        if not n: mwhere.append(('RT_DATA', 0))
+        elif h: mwhere.append(('RT_DATA', h[0] - span[ty][0])); h[2].append(ty); h[0] += n
+        else: mwhere.append(('rt_low', low - span[ty][0])); low += n
+    def _mrow(ty): return '        defb ' + ','.join(str(int(v)) for v in tid[ty, span[ty][0]:span[ty][1] + 1]) + '   ; row %d from column %d\n' % (ty, span[ty][0])
+    def _db(v): return ''.join('        defb ' + ','.join(str(x) for x in v[i:i + 32]) + '\n' for i in range(0, len(v), 32))
     with open(os.path.join(SRC, 'rt_world.asm'), 'w') as f:
-        f.write('; GENERATED by tools/make_world.py (RACETRACK=1) - do not edit by hand\n; the grass (racetrack.asm): start_once copies this block to RT_DATA\nrt_src:\n; where each row of the world is\n')
-        assert H * 2 <= 128
-        off = 128 + 8 * len(gpics)
-        for ty in range(H): f.write('        dw RT_DATA + %d\n' % off); off += rows[ty][1]
-        f.write('        defs rt_src + 128 - $\n; the part-grass tiles\' pictures, 8 bytes each (1 = grass), numbers 16 up\n')
-        for b in gpics: f.write('        defb ' + ','.join('0x%02X' % v for v in b) + '\n')
-        f.write('; each row: the run that holds column 24, the column that run starts at, how many runs; the runs along its row of blocks\n; (kind * 64 + length - 1); then its grass tiles - how many, how many of them left of column 24, then (column, number)\n; pairs: 1-15 the quarters of an all-grass tile, 16 up a picture\n')
-        f.write(''.join(t for t, n in rows) + 'rt_src_end:\n')
-    print('racetrack: %d grass-edge pictures (%d bytes), rows %d bytes' % (len(gpics), 128 + 8 * len(gpics), nb))
+        f.write('; GENERATED by tools/make_world.py (RACETRACK=1) - do not edit by hand\n; the track\'s squares (racetrack.asm): start_once copies this block to RT_DATA\n')
+        f.write('RT_W0   equ %d      ; the map\'s numbers from here up are white things (below: 0 nothing, 1 all grass, then grass pictures)\n' % RT_W0)
+        f.write('RT_CLT  equ RT_DATA + %d        ; the two colour tables (each at the start of its page)\nRT_CLS  equ RT_DATA + %d        ; the blocks\' kinds, 36 bytes a row\nRT_MAPR equ RT_DATA + %d      ; where each row of the map is, less its first column kept (2 bytes a row)\n' % (O_CLT, O_CLS, O_MAPR))
+        for k, (ctx, cty, dy) in CANS.items():
+            for j in (0, 1):
+                f.write('NOS_%s_T%d equ %s + %d   ; its tile in the map\nNOS_%s_V%d equ %d\n' % (k, j, mwhere[cty + j][0], mwhere[cty + j][1] + ctx, k, j, tid[cty + j, ctx]))
+        f.write('rt_src:\n; the pictures: line 0 of every picture, then line 1 ... (256 bytes each)\n')
+        for k in range(8): f.write(_db([p[k] for p in pics] + [0] * (256 - len(pics))))
+        for t, h in ((cltl, holes[0]), (cltr, holes[1])):
+            f.write('; a colour table, then rows of the map\n' + _db(t) + ''.join(_mrow(ty) for ty in h[2]) + '        defs %d\n' % (h[1] - h[0]))
+        f.write('; the blocks\' kinds: 0 all grass, 1 plain road, 2 road with white, 3 grass and road, 4 grass, road and white\n')
+        for ty in range(H): f.write(_db(cls[ty]))
+        f.write('; where each row of the map is (less the column it starts at)\n')
+        for ty in range(H): f.write('        dw %s + %d\n' % mwhere[ty] if mwhere[ty][1] >= 0 else '        dw %s - %d\n' % (mwhere[ty][0], -mwhere[ty][1]))
+        f.write('; rows of the map: each from its first column kept to its last\n' + ''.join(_mrow(ty) for ty in holes[2][2]) + 'rt_src_end:\n')
+    with open(os.path.join(SRC, 'rt_low.asm'), 'w') as f:
+        f.write('; GENERATED by tools/make_world.py (RACETRACK=1) - do not edit by hand\n; the rows of the track\'s map that do not fit above the squares\' colours (rt_world.asm has the rest)\nrt_low:\n')
+        for ty in range(H):
+            if span[ty] and mwhere[ty][0] == 'rt_low': f.write(_mrow(ty))
+    print('racetrack: %d pictures (%d grass, %d white, %d of them both), kinds %d bytes, map %d bytes (%d of it in the program)'
+          % (len(pics), len(gl), len(wl), len(_asg) + len(_asw), 36 * H, sum(s[1] - s[0] + 1 for s in span if s), low))
