@@ -44,7 +44,7 @@ def window_bad_t(sp):
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
     bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
-    want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:24] |= map_now(sp)   # (the mini-map over the picture: as window_bad)
+    want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:MM_W] |= map_now(sp)   # (the mini-map over the picture: as window_bad)
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False; mask[WH - 16:WH, WW - 48:WW] = False
     mask[2:20, WW - 40:WW] = False; mask[136 - WY:152 - WY, 56 - 8:136 - 8] = False     # (the lights, spoons and mug, map, plate, bubble: as window_bad)
@@ -102,7 +102,7 @@ bad, _ = window_bad_t(sp)
 ok(bad == 0, 'on the grid the window matches the world map pixel for pixel, cars excluded (%d wrong)' % bad)
 md, dots, ink = minimap_diff(sp)
 sb = screen_bits(sp)
-ok(md == 0 and ink > 60 and MM_ROWS.shape[1] == 24 and all(sp.read8(0x5800 + r * 32 + c) == 0x29 for r in range(15, 20) for c in range(1, 7)), 'the mini-map in the window\'s bottom left corner is this track\'s road, line for line, 24 x %d in the window\'s own colours (%d pixels of ribbon, %d wrong outside the cars\' dots)' % (MM_H, ink, md))
+ok(md == 0 and ink > 60 and MM_ROWS.shape[1] == MM_W and all(sp.read8(0x5800 + r * 32 + c) == 0x29 for r in range(15, 20) for c in range(1, 7)), 'the mini-map in the window\'s bottom left corner is this track\'s road, line for line, %d x %d in the window\'s own colours (%d pixels of ribbon, %d wrong outside the cars\' dots)' % (MM_W, MM_H, ink, md))
 ok(all(d is None or (0 <= d[1] <= MM_H - 1 and 0 <= d[0] <= 23) for d in dots) and sum(d is not None for d in dots) >= N - 1 and not sb[0:40, 208:256].any() and sp.read8(0x5800 + 5 * 32 + 26) == 0x4F,
    'the cars\' dots are inside the map; the panel\'s top right, where the map was, is plain above the RACE heading (dots at %s)' % dots)
 shot(sp, 'track%s_grid.png' % TRACK)

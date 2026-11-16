@@ -176,20 +176,22 @@ def cloth(camx, camy):
 # mini-map is 24 pixels wide, a solid ribbon of the window's own ink ORed over the picture in its bottom left
 # corner (its last line 3 above the window's foot); the spoons are screen columns 19-21 and the mug 22-24 of rows
 # 18-19; and the corner arrow flashes at a fixed spot.
-_mm = open(os.path.join(ROOT, 'src', 'minimap.asm')).read()
+_mm = open(os.environ.get('ZMAP') or os.path.join(ROOT, 'src', 'minimap.asm')).read()   # (ZMAP: another build's minimap.asm, as ZTAP and ZSYM)
 MM_SC = int(re.search(r'\* (\d+) / 256', _mm).group(1)); MM_X0 = int(re.search(r'MMX0\s+equ\s+(-?\d+)', _mm).group(1)); MM_Y0 = int(re.search(r'MMY0\s+equ\s+(-?\d+)', _mm).group(1))
 MM_ROWS = np.array([[int(c) for b in l.split('defb')[1].split(',') for c in b.strip().lstrip('%')] for l in _mm.splitlines() if 'defb' in l], dtype=np.uint8)
 MM_H = MM_ROWS.shape[0]; MM_TOP = WH - 3 - MM_H           # its lines, and its first line in the window (x: 0-23)
+MM_W = 40 if SYM.get('opt_map40') else 24                # (a MAPW40=1 build: 40 wide, 5 bytes a line, at 19/256)
+assert MM_ROWS.shape[1] == MM_W and MM_SC == (19 if MM_W == 40 else 11), 'the mini-map file is not this build\'s'
 def map_dots(sp):
     """where the game puts each car's dot on the map: (x, y), its top-left"""
     out = []
     for n in range(N):
         c = car(sp, n)
-        out.append((min((c['x'] + 8 - MM_X0) * MM_SC // 256, 22), min((c['y'] + 8 - MM_Y0) * MM_SC // 256, MM_H - 2)))
+        out.append((min((c['x'] + 8 - MM_X0) * MM_SC // 256, MM_W - 2), min((c['y'] + 8 - MM_Y0) * MM_SC // 256, MM_H - 2)))
     return out
 def map_now(sp):
-    """the map's ink as the game holds it now (MAPDAT: 3 bytes a line, the dots XORed in)"""
-    return np.unpackbits(np.frombuffer(bytes(sp.read(SYM['mapdat'], 3 * MM_H)), dtype=np.uint8)).reshape(MM_H, 24)
+    """the map's ink as the game holds it now (MAPDAT: 3 bytes a line - 5 in a MAPW40 build - the dots XORed in)"""
+    return np.unpackbits(np.frombuffer(bytes(sp.read(SYM['mapdat'], MM_W // 8 * MM_H)), dtype=np.uint8)).reshape(MM_H, MM_W)
 def minimap_diff(sp):
     """The map the game holds against the generated one with the dots the game says are in it (shown_dot: 2 x 2
     yours, a pixel each the others, XORed - a hole on the ribbon, ink off it; a dot is up to four pictures behind
@@ -215,7 +217,7 @@ def window_bad(sp, stop=True):
     camx, camy = g(sp, 'camx'), g(sp, 'camy')
     bits = screen_bits(sp)[WY:WY + WH, 8:8 + WW]     # the window
     want = world[camy:camy + WH, camx:camx + WW] | (cloth(camx, camy) & ~wmask[camy:camy + WH, camx:camx + WW])
-    want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:24] |= map_now(sp)   # the mini-map: its ribbon solid, the picture showing everywhere else
+    want = want.copy(); want[MM_TOP:MM_TOP + MM_H, 0:MM_W] |= map_now(sp)   # the mini-map: its ribbon solid, the picture showing everywhere else
     mask = np.ones_like(want, dtype=bool)
     mask[8 - WY:32 - WY, 56 - 8:136 - 8] = False     # the start lights (row 1's rail, rows 2-3's lamps)
     mask[WH - 16:WH, WW - 48:WW] = False     # the spoons and the mug gauge, bottom right

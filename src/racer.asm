@@ -45,14 +45,24 @@ HIMEM   equ COPIER + 152*40 + 3 ; 0xFFC3 .. 0xFFF3: 49 bytes above the screen-co
 ; What was never used of the back buffer's bottom rows (docs/design/RAM-SWEEP.md, 4.4): rows 168-191, bytes 0-25
 ; of each (the last 6 can take an interrupt's pushes) - 90 bytes on each of pages D0-D7 from xxA0, less D2's
 ; (cloth_pat is at D2C0: 32 bytes there). start_once fills them.
+        include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
+; MAPW40=1 (a build option; Grant, 16 Nov 2026, of the widths mocked up: "C wide please"): the mini-map 40 pixels wide, 5 bytes
+; a line. Its ink is then too long for the D0 strip (145 to 220 bytes against 90), so it stays in the program itself (MAPDAT is
+; a label there, at the program's end) - which needs room: build it with the savings on (TILE1=1 FLIP=1 TOWER=1).
+        if OPT_MAP40
+MAP_W   equ 40
+MAP_STRIP equ BUF+0x10A0        ; (the D0 strip: not used in this build)
+        else
+MAP_W   equ 24
 MAPDAT  equ BUF+0x10A0          ; D0: the mini-map's ink, 3 bytes a line (the cars' dots are XORed into it here: map_update)
+MAP_STRIP equ MAPDAT
+        endif
 STRIP1  equ BUF+0x11A0          ; D1: the corner arrows' table (a byte a waypoint), then some of the map's row lists
 STRIP2  equ BUF+0x12A0          ; D2: row lists (32 bytes)
 STRIP3  equ 0x5B16              ; row lists (54 bytes: the title's a_sav, which nothing uses - RAM-SWEEP 5.1; D3 has an arrow now)
 ARROW_F equ BUF+0x13A0          ; D3-D7: the corner arrows' five pictures, 90 bytes each, one a page (arrow.asm)
 BR_ROW2 equ 0x5E46              ; (track 5 only: 90 bytes of row lists at the bottom of the stack's page - bridge.asm)
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
-        include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
         include "multi_pads.asm" ; MULTI (several tracks in one load - tools/make_multi.py, docs/design/OPTIMISATION-PLAN.md): the blocks' lengths
 HP      equ COPIER+0x200        ; MULTI: what lives above the looped copy routine - the tracks, packed, and the code that unpacks one
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
@@ -4161,6 +4171,10 @@ isr_x:
         include "roadwhite.asm" ; ROADW (a trial): the road on white paper, by colour square
         endif
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
+        if OPT_MAP40
+MAPDAT:                         ; MAPW40: the mini-map's ink lives here, 5 bytes a line (the cars' dots are XORed into it: map_update)
+        include "minimap.asm"
+        endif
 code_end:
 
 ; ---------------------------------------------------------------------
@@ -4206,10 +4220,12 @@ start_once:                     ; (start, from the start-up area)
         call so_blk
         call make_tables
         call make_copier        ; the program writes its own copy routine
+        if OPT_MAP40 = 0
         ld hl,minimap_src       ; the mini-map's ink
         ld de,MAPDAT
         ld bc,MAP_H*3
         ldir
+        endif
         ld hl,s1_src            ; the arrows' table and the row lists kept outside the program: the four
         ld de,STRIP1            ; blocks sit back to back (hirows.asm), so HL runs on from one into the next
         ld bc,s1_end-s1_src
@@ -4497,7 +4513,9 @@ dl_attr:
 
         include "strip_img.asm" ; the driver strip's fixed picture and colours
         include "logo.asm"      ; the logo (drawn once, from here)
+        if OPT_MAP40 = 0
         include "minimap.asm"   ; the mini-map's ink (start_once copies it to MAPDAT)
+        endif
 MAP_ROW equ BUF_TOP+WIN_H-3-MAP_H       ; its first line in the back buffer: its last is 3 lines above the window's foot
 MAP_BUF equ BUF + (MAP_ROW AND 0xC0)*32 + (MAP_ROW AND 7)*256 + (MAP_ROW AND 0x38)*4 + 2    ; ... and that line's address, the window's first byte
         include "arrows.asm"    ; the corner arrows' frames (tools/make_arrows.py; start_once copies them to ARROW_F)
@@ -5040,10 +5058,13 @@ faces     equ faces_src
         if (thrust_tab + 63) / 256 - thrust_tab / 256
         .error arrow_draw: thrust_tab must be on one page
         endif
-        if (s1_end - s1_src - 1) / 90 + (s2_end - s2_src) / 33 + (s3_end - s3_src) / 55 + (MAP_H * 3 - 1) / 90 + (WIN_H - 152)
+        if (s1_end - s1_src - 1) / 90 + (s2_end - s2_src) / 33 + (s3_end - s3_src) / 55 + (1 - OPT_MAP40) * ((MAP_H * 3 - 1) / 90) + (WIN_H - 152)
         .error a block for the back buffer's unused strips is too long (90 bytes; 32 on D2), or the window is not 152 lines
         endif
-        if init_end > MAPDAT
+        if OPT_MAP40 * ((MAP_H * 5 - 1) / 256)
+        .error MAPW40: the mini-map is over 256 bytes (map_dot adds a byte to its start)
+        endif
+        if init_end > MAP_STRIP
         .error the start-up area runs into the strips start_once fills (MAPDAT, 0xD0A0)
         endif
         if init_end > TAB_HI*256

@@ -95,10 +95,10 @@ sp.run(duration=0.6, fast_forward=True); at_copy_done(sp)
 ok(bytes(sp.read(SYM['arrow_tab'], NWP)) == bytes(ATAB), 'the game holds that table (in the back buffer\'s unused bottom rows, at %04X)' % SYM['arrow_tab'])
 md, dots, ink = minimap_diff(sp); sb = screen_bits(sp)
 thin = min(min(len(run) for run in ''.join(map(str, r)).split('0') if run) for r in MM_ROWS)
-ok(md == 0 and ink > 60 and MM_ROWS.shape[1] == 24 and thin >= 2 and not MM_ROWS[:, :2].any() and 2 <= WH - (MM_TOP + MM_H) <= 3,
-   'the mini-map: 24 x %d, this track line for line (%d pixels of ribbon, %d wrong), the ribbon solid and never under 2 pixels across (%d at its thinnest along a line), 2 pixels clear of the window\'s left edge and %d of its foot' % (MM_H, ink, md, thin, WH - (MM_TOP + MM_H)))
+ok(md == 0 and ink > 60 and MM_ROWS.shape[1] == MM_W and thin >= 2 and not MM_ROWS[:, :2].any() and 2 <= WH - (MM_TOP + MM_H) <= 3,
+   'the mini-map: %d x %d, this track line for line (%d pixels of ribbon, %d wrong), the ribbon solid and never under 2 pixels across (%d at its thinnest along a line), 2 pixels clear of the window\'s left edge and %d of its foot' % (MM_W, MM_H, ink, md, thin, WH - (MM_TOP + MM_H)))
 at_copy_done(sp); w = screen_bits(sp)[WY:WY + WH, 8:8 + WW].astype(bool); mnow = map_now(sp).astype(bool)
-ok(all(attr(sp, r, c) == 0x29 for r in range(4, 20) for c in range(1, 7)) and w[MM_TOP:MM_TOP + MM_H, 0:24][mnow].all() and window_bad(sp, False) == 0,
+ok(all(attr(sp, r, c) == 0x29 for r in range(4, 20) for c in range(1, 7)) and w[MM_TOP:MM_TOP + MM_H, 0:MM_W][mnow].all() and window_bad(sp, False) == 0,
    'it is in the window\'s own blue on cyan, no cells of its own; every pixel of the ribbon is ink on the screen, and everywhere else in its rectangle - outside the track and inside it - the scrolling picture shows, pixel for pixel against the world map')
 ok(not sb[0:40, 208:256].any() and all(attr(sp, r, c) == 0x30 for r in range(5) for c in range(26, 32)), 'the panel\'s top right, where it was, is plain')
 ok(all(attr(sp, r, c) == 0x78 for r in (17, 18) for c in range(7, 17)) and all(attr(sp, r, c) == 0x29 for r in (15, 16) for c in range(7, 25)) and all(attr(sp, 19, c) == 0x29 for c in range(7, 19)),
@@ -116,12 +116,12 @@ spoons = all(A(r, c) == 0x2A for r in (18, 19) for c in (19, 20, 21)) and all(sb
 mug = all(A(r, c) == 0x2B for r in (18, 19) for c in (22, 23, 24)) and sb[144:160, 176:200].sum() > 40
 bub = all(A(r, c) == 0x78 for r in (17, 18) for c in range(7, 17)) and sb[138:150, 72:136].sum() > 60
 gap = all(A(r, c) == 0x29 for r in (17, 18, 19) for c in (17, 18)) and all(A(19, c) == 0x29 for c in range(7, 17)) and all(A(r, c) == 0x29 for r in (15, 16, 17) for c in range(19, 25))
-mbx = all(A(r, c) == 0x29 for r in range(15, 20) for c in range(1, 7)) and minimap_diff(sp)[0] == 0 and MM_TOP * 0 + 24 <= 48
+mbx = all(A(r, c) == 0x29 for r in range(15, 20) for c in range(1, 7)) and minimap_diff(sp)[0] == 0 and MM_TOP * 0 + MM_W <= 48
 ok(spoons, 'three spoons held: red, each in its own cell column - screen columns 19, 20, 21, just left of the mug')
 ok(mug, 'the mug gauge in the bottom right corner (columns 22-24), magenta, at full damage')
 dm = bytes(sp.read(SYM['dmg_bmp'], 48)); on_scr = bytes(sp.read8(0x4000 | ((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | (22 + i)) for y in range(144, 160) for i in range(3))
 ok(dm == on_scr, 'its three columns hold the mug and nothing else (as composed, byte for byte)')
-ok(bub and gap and mbx, 'a message up at the same time: the bubble white between them (columns 7-16), the map whole and its 24 pixels clear of the bubble (which starts at 48), and plain cloth colours in the cells between and above - nothing overlaps')
+ok(bub and gap and mbx, 'a message up at the same time: the bubble white between them (columns 7-16), the map whole and its %d pixels clear of the bubble (which starts at 48), and plain cloth colours in the cells between and above - nothing overlaps' % MM_W)
 shot(sp, 'arrow_strip_t%s.png' % TRACK)
 sp.write(SYM['inv'], bytes([1, 0, 1])); sp.run(duration=0.3, fast_forward=True); at_copy_done(sp)
 ok([A(18, c) for c in (19, 20, 21)] == [0x2A, 0x29, 0x2A], 'a spoon used: its cell is the cloth\'s again, the others stay')
@@ -191,7 +191,7 @@ ok(s in ('110011001100', '100110011001', '001100110011', '011001100110'), 'it fl
 # ---------------------------------------------------------------- clear of the map, the mug, the spoons, the bubble, the plate, the lights
 # (it has one fixed spot now, so this is a matter of where that is)
 box = np.zeros((WH, WW), dtype=bool); box[AY - 7:AY + 8, AX - 12:AX + 12] = True
-hud = np.zeros((WH, WW), dtype=bool); hud[MM_TOP:MM_TOP + MM_H, 0:24] = True; hud[WH - 16:WH, WW - 48:WW] = True; hud[136 - WY:152 - WY, 56 - 8:136 - 8] = True
+hud = np.zeros((WH, WW), dtype=bool); hud[MM_TOP:MM_TOP + MM_H, 0:MM_W] = True; hud[WH - 16:WH, WW - 48:WW] = True; hud[136 - WY:152 - WY, 56 - 8:136 - 8] = True
 hud[2:20, WW - 40:WW] = True; hud[8 - WY:32 - WY, 56 - 8:136 - 8] = True
 ok(box.sum() == 360 and not (box & hud).any() and box[111].any() and box[125].any() and not box[126:].any(), 'the arrow\'s spot is clear of the mini-map, the crew chief\'s bubble, the spoons, the mug, your place\'s plate and the start lights')
 sp.__exit__(None, None, None)

@@ -35,6 +35,14 @@ printf 'OPT_PACEFIX equ %s              ; 1: pace_gate counts pictures (PACEFIX=
 printf 'OPT_ROADCOL equ %s              ; the trial road paper: 7 white, 6 yellow (ROADCOL=6 ROADW=1 bash build.sh)\n' "${ROADCOL:-7}" >> "$ROOT/src/options.asm"
 printf 'OPT_ROADBR equ %s               ; 1: the trial road paper bright (ROADCOL=5 ROADBR=1 ROADW=1 bash build.sh: bright cyan)\n' "${ROADBR:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_ROADW equ %s                ; 1: the road white (ROADW=1 bash build.sh); 2: and plain, no dots (ROADW=2) - a trial\n' "${ROADW:-0}" >> "$ROOT/src/options.asm"
+# MAPW40=1: the mini-map 40 pixels wide, not 24 (Grant, 16 Nov 2026: "C wide please"). Its ink no longer fits the spare strip it
+# lives in, so it needs room in the program: build it with TILE1=1 FLIP=1 TOWER=1. It builds in its own folder (build/map40_tN)
+# -> build/racer_map40.tap (track 1) or build/racer_map40_trackN.tap; tools/make_world.py reads MAPW40 too.
+printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
+if [ "${MAPW40:-0}" = "1" ]; then
+  T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"
+  BDIR="${BDIR:-map40_t${TRACK:-1}}"; OUT="${OUT:-$T40}"
+fi
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as

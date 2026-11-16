@@ -1174,6 +1174,8 @@ tc_row:
 ; MAP_H lines, the road a solid ribbon of ink. Its ink is kept at MAPDAT, 3 bytes a line, and map_blit ORs it
 ; into the back buffer each picture. The dots are XORed into MAPDAT itself: on the ribbon a dot is a HOLE the
 ; picture shows through (yours 2 x 2 and blinking, the others a single pixel); off the road it is ink.
+; MAPW40=1 (a build option, 16 Nov 2026 - Grant: "C wide please"): 40 pixels wide, 5 bytes a line, the ribbon 4 to 5 across,
+; at 19/256 - the same corner and the same dots. Its ink is then in the program itself (racer.asm, at MAPDAT).
 map_init:                       ; a new race: the last race's dots out of the map
         jp map_off
 ; MAP_BLIT: the mini-map over the picture, each picture after the cars and the arrow (about 130 T a line)
@@ -1182,6 +1184,34 @@ map_blit:
         ld de,MAP_BUF
         ld b,MAP_H
 mb_1:
+        if OPT_MAP40            ; MAPW40: 5 bytes a line (about 200 T a line), the ink anywhere in the program (so INC HL)
+        ld c,e
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(de)
+        or (hl)
+        ld (de),a
+        inc hl
+        ld e,c
+        else
         ld a,(de)
         or (hl)
         ld (de),a
@@ -1198,6 +1228,7 @@ mb_1:
         inc l
         dec e
         dec e
+        endif
         inc d                   ; the next line down (the buffer is laid out like the screen)
         ld a,d
         and 7
@@ -1226,9 +1257,9 @@ mu_new:
         ld de,8-MMX0
         add hl,de
         call map_c3
-        cp 23
+        cp MAP_W-1
         jr c,mu_x
-        ld a,22
+        ld a,MAP_W-2
 mu_x:
         push af                 ; (x kept: map_c3 uses DE)
         ld l,(ix+C_Y)           ; map y = (y + 8 - MMY0) * 3 / 32, 0..45
@@ -1321,6 +1352,16 @@ mo_3:
 map_c3:                         ; HL (0..~700) * 11 / 256 -> A (every track: the map is 24 wide)
         ld d,h
         ld e,l
+        if OPT_MAP40            ; MAPW40: * 19 / 256 (the map is 40 wide)
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,de               ; * 9
+        add hl,hl
+        add hl,de               ; * 19
+        ld a,h
+        ret
+        endif
         add hl,hl
         add hl,hl
         add hl,de               ; * 5
@@ -1349,6 +1390,23 @@ md_s0:
 md_row:
         push bc
         push de
+        if OPT_MAP40            ; MAPW40: MAPDAT + 5 * the line + the byte across (under 256 in all: racer.asm checks)
+        ld a,d
+        add a,a
+        add a,a
+        add a,d
+        ld l,a
+        ld a,e
+        rrca
+        rrca
+        rrca
+        and 7
+        add a,l
+        ld l,a
+        ld h,0
+        ld bc,MAPDAT
+        add hl,bc
+        else
         ld a,d                  ; MAPDAT + 3 * the line + the byte across
         add a,a
         add a,d
@@ -1362,15 +1420,20 @@ md_row:
         add a,MAPDAT AND 255
         ld l,a
         ld h,MAPDAT/256
+        endif
         ld bc,(md_pat)
         ld a,(hl)
         xor c
         ld (hl),a
         ld a,e
         and 0xF8
-        cp 16                   ; the map's last byte: nothing to the right
+        cp MAP_W-8              ; the map's last byte: nothing to the right
         jr nc,md_one
+        if OPT_MAP40
+        inc hl
+        else
         inc l
+        endif
         ld a,(hl)
         xor b
         ld (hl),a
