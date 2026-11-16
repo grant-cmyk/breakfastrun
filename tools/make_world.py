@@ -31,7 +31,7 @@ PW, PH = W * 8, H * 8             # pixels
 # is a dashed white limit line; the grass starts RT_RUNOFF pixels beyond it. Everything for it is in the "if RT" blocks here
 # (and the last one writes src/rt_world.asm, the grass); without RACETRACK=1 not one byte of any output changes.
 RT = os.environ.get('RACETRACK') == '1'
-RT_RUNOFF = int(os.environ.get('RT_RUNOFF', 10))   # black run-off between the road's edge and the grass, pixels (RT_RUNOFF=n: a trial - with a limit line it must stay 10)
+RT_RUNOFF = 10                    # black run-off between the road's edge and the grass, pixels
 ROAD = 72                         # road width in pixels (48, 52, 56, 64, then 72 for the big cars - Grant, 10 Nov 2026)
 
 # THE CORNER ARROWS' LOOK-AHEAD (the rest is further down: "THE CORNER ARROWS"). Change these to make the

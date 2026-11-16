@@ -683,6 +683,7 @@ sb_e:
 ; Along a row the other HL and DE are at the map's tiles for the square whose low byte is the other C (rt_dir moves
 ; them on to the square it is given).
 rt_show:
+        ld (save_sp),sp         ; (it ends through copy_done, as the copy routine it stands in for does: the tests wait there)
         ld hl,RT_B
         ld (rt_bp),hl
         ld hl,RT_SH+32+1
@@ -739,7 +740,7 @@ sh_row:
         ld a,(rt_cnt)
         dec a
         jp nz,sh_row
-        ret
+        jp copy_done
 ; RT_DIR: a square to make up on the screen (HL = it in rt_sh, A = its colour x 2). Keeps HL.
 rt_dir:
         cp (RT_EDGE4_D*2) AND 255
