@@ -23,6 +23,8 @@ grass_area = ~plain(ROAD + 20)                               # the grass starts 
 yy, xx = np.mgrid[0:grass_area.shape[0], 0:grass_area.shape[1]]
 shoulder = plain(ROAD + 36) & grass_area                     # its first 8 px: a half-tone shoulder
 GREEN = grass_area & (~shoulder | ((xx + yy) % 2 == 0))      # the pixels that are green
+PLAIN = os.environ.get('PLAIN') == '1'                       # PLAIN=1: no shoulder, the grass solid to its edge (Grant: "show those
+if PLAIN: GREEN = grass_area                                 # but without dithering on the outside") -> clash_score_plain.gif
 WHITE = plain(ROAD) & ~plain(ROAD - 4) & (((xx + yy) // 8) % 2 == 0)   # the dashed white limit line
 K, G, WH, CY = (0, 0, 0), (0, 200, 0), (215, 215, 215), (0, 215, 215)
 ca = open(os.path.join(HERE, 'car_art.txt')).read()
@@ -110,8 +112,9 @@ for n, (x, y, h) in enumerate(track):
 out = os.path.join(ROOT, 'docs', 'design', 'racetrack')
 pal = frames[still].convert('P', palette=Image.ADAPTIVE, colors=16)
 fr = [f.quantize(palette=pal, dither=Image.NONE) for f in frames]
-fr[0].save(os.path.join(out, 'clash_score.gif'), save_all=True, append_images=fr[1:] + [fr[-1]] * 25, duration=70, loop=0)
-frames[still].save(os.path.join(out, 'clash_score.png'))
+NAME = 'clash_score_plain' if PLAIN else 'clash_score'
+fr[0].save(os.path.join(out, NAME + '.gif'), save_all=True, append_images=fr[1:] + [fr[-1]] * 25, duration=70, loop=0)
+frames[still].save(os.path.join(out, NAME + '.png'))
 print('%d pictures in the drive, %d of them with the car off the black' % (len(track), tot['1'][4]))
 print('rule | background: total, worst picture | car: total, worst picture')
 for r, what in RULES: print('%s | %6d %4d | %6d %4d | %s' % (r, tot[r][0], tot[r][1], tot[r][2], tot[r][3], what))
