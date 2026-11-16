@@ -26,7 +26,7 @@ def looks(tap, tsel):
             sp.run(duration=w, fast_forward=True); out.append(bytes(sp.read(0, 65536)))
         text = ''.join(chr(c) if 32 <= c < 127 else '?' for c in [next((32 + k for k in range(96) if bytes(sp.read(0x3D00 + 8 * k, 8)) == bytes(sp.read8(0x4000 | ((14 & 0x18) << 8) | ((14 & 7) << 5) | col | (r << 8)) for r in range(8))), 63) for col in range(6, 26)])
     return out, text
-AREAS = [(0x5B00, 0x5E00), (0x5F00, SYM['code_end'])] + [(0xD0A0 + 256 * k, 0xD0FA + 256 * k) for k in range(8)] + [(0xE800, SYM['hp']), (SYM['himem'], 0xFFF4)]
+AREAS = [(0x5B00, 0x5E00), (0x5F00, SYM['lp_src']), (SYM['topmem'], SYM['code_end'])] + [(0xD0A0 + 256 * k, 0xD0FA + 256 * k) for k in range(8)] + [(0xE800, SYM['hp']), (SYM['himem'], 0xFFF4)]
 fails = 0
 for i, t in enumerate(info['tracks']):
     (a1, a2), text = looks(os.path.join(ROOT, 'build', NAME + '.tap'), i if i else len(info['tracks']))    # (the first track: all the way round and back to it)

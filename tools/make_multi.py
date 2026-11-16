@@ -47,8 +47,8 @@ def hp(data_asm, sy, name):
     return open(os.path.join(d, name), 'rb').read(), syms(os.path.join(d, name + '.sym'))
 
 # ---- 1. each track by itself, no padding: how long is each block? ----
-put('multi_pads.asm', 'MP_ON   equ 0\n'); put('hp.bin', '', 'w')
-pre = 'cp %s/multi_pads.asm %s/hp.bin .' % (M, M)
+put('multi_pads.asm', 'MP_ON   equ 0\n'); put('hp.bin', '', 'w'); put('lp.bin', '', 'w')
+pre = 'cp %s/multi_pads.asm %s/hp.bin %s/lp.bin .' % (M, M, M)
 size = {b: 0 for b in BLOCKS}; first = {}
 for t in TRACKS:
     sy = build(t, 'measure', pre); first[t] = sy
@@ -57,6 +57,7 @@ for t in TRACKS:
 put('multi_pads.asm', 'MP_ON   equ 1\n' + ''.join('MP_%s equ %d\n' % (b.upper(), size[b]) for b in BLOCKS))
 # ---- 2. padded, with a stand-in at HP (JP k_scan): the same layout for every track? ----
 stub, _ = hp('NTRK equ 1\ntrk_names:\ntrk_tab:\n', first[TRACKS[0]], 'stub.bin')
+stub_code = stub
 stub = bytes([0xC3, first[TRACKS[0]]['k_scan'] & 255, first[TRACKS[0]]['k_scan'] >> 8])
 open(os.path.join(M, 'hp.bin'), 'wb').write(stub)
 S = {t: build(t, 'pad', pre) for t in TRACKS}
@@ -109,20 +110,32 @@ print('   short ones at: ' + ', '.join(sorted({near(lo).split('+')[0] for lo, hi
 # ---- 4. pack ----
 data = 'NTRK equ %d\ntrk_names:\n' % len(TRACKS) + ''.join('        db "%s",0\n' % NAMES[t].replace('"', "'")[:20].ljust(20) for t in TRACKS)
 data += 'trk_tab:\n' + ''.join('        dw trk_%d\n' % t for t in TRACKS)
-report = []
+report = []; lists = {}
 for t in TRACKS:
-    img = DU[t][0]; tot = 0; data += 'trk_%d:\n' % t
+    img = DU[t][0]; b = b''
     for i, (lo, hi) in enumerate(packed):
         f = os.path.join(M, 'hp', 't%d_%d' % (t, i)); open(f, 'wb').write(img[lo:hi])
         if os.path.exists(f + '.zx0'): os.remove(f + '.zx0')
-        subprocess.run([ZX0, '-q', f, f + '.zx0'] if False else [ZX0, f, f + '.zx0'], capture_output=True, check=True)
-        z = open(f + '.zx0', 'rb').read(); tot += len(z) + 2
-        data += '        dw 0x%04X\n        incbin "t%d_%d.zx0"\n' % (lo, t, i)
-    data += '        dw 0\n'
-    for lo, hi in raw:
-        data += '        dw 0x%04X\n        db %d,%s\n' % (lo, hi - lo, ','.join(str(b) for b in img[lo:hi])); tot += 3 + hi - lo
-    data += '        dw 0\n'; tot += 4
-    report.append((t, sum(h - l for l, h in packed) + sum(h - l for l, h in raw), tot))
+        subprocess.run([ZX0, f, f + '.zx0'], capture_output=True, check=True)
+        b += bytes([lo & 255, lo >> 8]) + open(f + '.zx0', 'rb').read()
+    b += bytes(2)
+    for lo, hi in raw: b += bytes([lo & 255, lo >> 8, hi - lo]) + img[lo:hi]
+    lists[t] = b + bytes(2)
+    report.append((t, sum(h - l for l, h in packed) + sum(h - l for l, h in raw), len(lists[t])))
+# where each track's packed list goes: above the copy routine while there is room, the rest under 0x8000 (lp.bin, at lp_src)
+room_hi = base['HIMEM'] - base['HP'] - (len(stub_code) + 23 * len(TRACKS)); room_lo = base['TOPMEM'] - base['lp_src']
+low = b''; where_t = {}
+for t in sorted(TRACKS, key=lambda t: -len(lists[t])):
+    if len(lists[t]) <= room_hi: room_hi -= len(lists[t]); where_t[t] = 'hi'
+    else:
+        assert len(low) + len(lists[t]) <= room_lo, 'track %d: %d bytes packed, and no room for them: %d left above the copy routine, %d under 0x8000' % (t, len(lists[t]), room_hi, room_lo - len(low))
+        where_t[t] = base['lp_src'] + len(low); low += lists[t]
+data = 'NTRK equ %d\ntrk_names:\n' % len(TRACKS) + ''.join('        db "%s",0\n' % NAMES[t].replace('"', "'")[:20].ljust(20) for t in TRACKS)
+data += 'trk_tab:\n' + ''.join('        dw %s\n' % ('trk_%d' % t if where_t[t] == 'hi' else '0x%04X' % where_t[t]) for t in TRACKS)
+for t in TRACKS:
+    if where_t[t] == 'hi':
+        open(os.path.join(M, 'hp', 'list_%d.bin' % t), 'wb').write(lists[t]); data += 'trk_%d:\n        incbin "list_%d.bin"\n' % (t, t)
+open(os.path.join(M, 'lp.bin'), 'wb').write(low)
 blob, hs = hp(data, base, 'hp.bin')
 shutil.copy(os.path.join(M, 'hp', 'hp.bin'), os.path.join(M, 'hp.bin'))
 code = hs['hp_code_end'] - base['HP']
@@ -130,9 +143,10 @@ print('above the copy routine, from %04X: %d bytes of code and unpacker, then th
 for t, rawn, pk in report: print('   track %d: %d bytes of its own -> %d packed' % (t, rawn, pk))
 room = base['HIMEM'] - base['HP']
 print('   in all %d of %d bytes: %d free up there' % (len(blob), room, room - len(blob)))
+print('   under 0x8000 (at %04X): %d bytes of packed tracks %s; %d free there' % (base['lp_src'], len(low), [t for t in TRACKS if where_t[t] != 'hi'], base['TOPMEM'] - base['lp_src'] - len(low)))
 # ---- 5. the tape: the first track's game with the lot ----
 fin = build(TRACKS[0], 'final', pre)
-bad = [k for k in base if k not in ('hp_end',) and fin.get(k) != base[k]]
+bad = [k for k in base if k not in ('hp_end',) and fin.get(k) != base[k] and not (base['lp_src'] < base[k] < 0x8000)]
 assert not bad, 'the final build moved %s' % bad[:8]
 for ext in ('tap', 'bin', 'sym'): shutil.copy(os.path.join(M, 'final_t%d.%s' % (TRACKS[0], ext)), os.path.join(ROOT, 'build', OUTN + '.' + ext))
 import json

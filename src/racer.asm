@@ -107,6 +107,9 @@ PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a 
 PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
+        if OPT_MULTI
+lp_src: incbin "lp.bin"         ; MULTI: packed tracks that do not fit above the copy routine (tools/make_multi.py) - read once, at the title
+        endif
         if $ > LOWTAB-0x26A
         .error the room under 0x8000 runs into the data kept at its top (TOPMEM, LOWTAB)
         endif
@@ -5036,6 +5039,9 @@ faces     equ faces_src
         endif
 
         if OPT_MULTI
+        if (hp_end - hp_src) / 256 > (HIMEM - HP) / 256
+        .error MULTI: the packed tracks are far too long for the room above the copy routine
+        endif
         if HP + hp_end - hp_src > HIMEM
         .error MULTI: the packed tracks run into the row lists at HIMEM
         endif
