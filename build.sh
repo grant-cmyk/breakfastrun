@@ -17,6 +17,9 @@ if [ "${RACETRACK:-0}" = "1" ]; then
   RTN=""; [ "${RT_NOLINE:-0}" = "1" ] && RTN="${RTN}_noline"
   # RT_DASH=sparse with it: the limit line's dashes 8 on, 24 off (quicker too) -> build/racer_racetrack_sparse.tap
   [ "${RT_DASH:-}" = "sparse" ] && RTN="${RTN}_sparse"
+  # RT_PIN=solid or dash with RT_NOLINE=1: the limit as a thin green line just inside the grass's edge -> ..._noline_pin.tap, _pindash.tap
+  [ "${RT_PIN:-}" = "solid" ] && RTN="${RTN}_pin"
+  [ "${RT_PIN:-}" = "dash" ] && RTN="${RTN}_pindash"
   BDIR="${BDIR:-racetrack$RTN}"; OUT="${OUT:-racer_racetrack$RTN}"
 fi
 CARS="$CARSOPT" python3 "$ROOT/tools/make_data.py" | grep -i "cars:"

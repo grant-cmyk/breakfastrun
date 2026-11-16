@@ -730,6 +730,21 @@ if RT:
     # row of blocks; ONE map of the world's tiles, a byte each (0 nothing, 1 all grass, then the part-grass pictures, then the
     # white ones - RT_W0 is the first white one); and the pictures, line by line (all the pictures' first lines in one page of
     # 256, their second lines in the next ...: a picture's next line is then one page on).
+    # RT_PIN=solid or dash (a trial of a trial, with RT_NOLINE=1): the track limit as a thin GREEN line on the black, just inside the
+    # grass's edge - green and black only, so it is drawn in the squares the grass's edge already has, or their neighbours.
+    # RT_PIN_GAP pixels of black between it and the grass, RT_PIN_W wide. It is left out within a colour square of anything white.
+    if os.environ.get('RT_PIN'):
+        _pg, _pw = int(os.environ.get('RT_PIN_GAP', 2)), int(os.environ.get('RT_PIN_W', 2))
+        _pin = _np.array(road_mask(ROAD + 2 * (RT_RUNOFF - _pg)), dtype=bool) & ~_np.array(road_mask(ROAD + 2 * (RT_RUNOFF - _pg - _pw)), dtype=bool)
+        if os.environ['RT_PIN'] == 'dash': _pin &= _dash
+        _wn = _np.zeros_like(_pin); _wp = _np.pad(_inkb, 7, constant_values=False)
+        for _dy in range(15):
+            for _dx in range(15): _wn |= _wp[_dy:_dy + PH, _dx:_dx + PW]
+        print('racetrack: the green limit line, %d pixels (%d more left out near white things)' % ((_pin & ~_wn).sum(), (_pin & _wn).sum()))
+        rt_grass = rt_grass | (_pin & ~_wn)
+        _near = _np.zeros_like(rt_grass); _gp = _np.pad(rt_grass, 7, constant_values=True)
+        for _dy in range(15):
+            for _dx in range(15): _near |= _gp[_dy:_dy + PH, _dx:_dx + PW]
     assert not (_inkb & _near).any(), 'something white is within a colour square of the grass'
     _gt = rt_grass.reshape(H, 8, W, 8)
     g_all = _np.pad(_gt.all(axis=(1, 3)), 1, constant_values=True); g_any = _np.pad(_gt.any(axis=(1, 3)), 1, constant_values=True)

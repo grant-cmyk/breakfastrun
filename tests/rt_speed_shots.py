@@ -6,7 +6,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rt_lib import Game, ROOT
 OUT = os.path.join(ROOT, 'docs', 'design', 'racetrack', 'built')
-TAPES = {'full': ('racer_racetrack', 'racetrack'), 'sparse': ('racer_racetrack_sparse', 'racetrack_sparse'), 'noline': ('racer_racetrack_noline', 'racetrack_noline')}
+TAPES = {'pin1': ('racer_racetrack_noline_pin1', 'racetrack_noline_pin1'), 'pin': ('racer_racetrack_noline_pin', 'racetrack_noline_pin'), 'pindash': ('racer_racetrack_noline_pindash', 'racetrack_noline_pindash'), 'full': ('racer_racetrack', 'racetrack'), 'sparse': ('racer_racetrack_sparse', 'racetrack_sparse'), 'noline': ('racer_racetrack_noline', 'racetrack_noline')}
 def grab(g):
     tmp = os.path.join(OUT, '_tmp_%s.png' % g.tag); g.rpc('screenshot', path=tmp)
     im = Image.open(tmp).convert('RGB'); os.remove(tmp)
