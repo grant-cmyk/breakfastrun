@@ -627,7 +627,9 @@ hud_update:
         ld a,(race_on)          ; until green: keys 1, 2, 3 set your car up (the lights' 2.6 s, now that the
                                 ; jingle and the countdown come by themselves)
         or a
+        if 1-OPT_CHOOSE         ; (CHOOSE: the extra is picked on the choose screen instead)
         call z,su_keys
+        endif
         call start_lights       ; Q pressed: the lights, red, red, red, green
         ld a,(race_on)          ; the start: lights -> GO!
         ld hl,shown_on
@@ -730,6 +732,36 @@ ho_down:
 ; The HUD's bottom row (row 23) shows it: for each part its key (before the
 ; start), its letter and 5 pips, a filled one for each level.
 ; ---------------------------------------------------------------------
+        if OPT_CHOOSE
+; CHOOSE (Grant, 16 Nov 2026: "on the car you choose one extra of acceleration, grip and speed (you have one of each by
+; default)"): each part is at level 1 or 2 - choose.asm sets su_lv - and one step is worth about a tenth:
+;   SPEED:  top speed 448 -> 492 (1.75 -> 1.92 px a frame, +9.8%; CH_TOP), with the extra push that speed needs
+;           (CH_SPUSH), given only above 1.5 px a frame so that it does not also get the car away quicker (grip.asm)
+;   ACCEL:  push 64 -> 71 (+10.9%; CH_PUSH)
+;   GRIP:   the tyres hold 18, 9, 9, 6 where they held 16, 8, 8, 5 (+12.5%, the last +20%: whole numbers; su_gtab's row 2)
+CH_TOP  equ 44
+CH_SPUSH equ 7
+CH_PUSH equ 7
+su_apply:
+        ld hl,G_TOP
+        ld b,0
+        ld a,(su_lv+1)
+        dec a
+        jr z,sa_c1
+        ld hl,G_TOP+CH_TOP
+        ld b,CH_SPUSH
+sa_c1:
+        ld (yg_topv),hl
+        ld a,b
+        ld (yg_spush+1),a
+        ld hl,G_PUSH
+        ld a,(su_lv+2)
+        dec a
+        jr z,sa_c2
+        ld l,G_PUSH+CH_PUSH
+sa_c2:
+        ld (yg_pushv),hl
+        else
 su_keys:
         ld a,0xEF               ; 0: start again (keys 6-0: 0 is bit 0)
         in a,(0xFE)
@@ -800,6 +832,7 @@ su_apply:
         ld l,a
         ld h,0
         ld (yg_pushv),hl
+        endif                   ; (CHOOSE)
         ld a,(su_lv)            ; GRIP g: its row of the grip table
         dec a
         add a,a
@@ -971,6 +1004,9 @@ trp_2:
         or a
         jp nz,tr_race
         ld a,(tr_car)           ; the driver's face, beside the car:
+        if OPT_CHOOSE
+        call who_a              ; CHOOSE: the driver in this car today
+        endif
         add a,a                 ; faces + car * 32
         add a,a
         add a,a

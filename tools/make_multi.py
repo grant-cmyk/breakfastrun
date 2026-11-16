@@ -14,6 +14,7 @@ ZX0: the packer (github.com/einar-saukas/ZX0) is in tools/zx0 and is built with 
 import os, sys, subprocess, shutil, re
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.join(HERE, '..')
 TRACKS = [int(v) for v in (sys.argv[1] if len(sys.argv) > 1 else '1 2').split()]
+FULL = {1: "BREAKFAST AT TIFFANY'S", 2: 'THE BREAKFAST CLUB', 3: 'GREEN EGGS AND HAM', 5: 'A FRIDGE TOO FAR'}    # (CHOOSE: the choose screen shows these)
 NAMES = {1: "TRACK 1  TIFFANY'S  ", 2: 'TRACK 2  THE CLUB   ', 3: 'TRACK 3  GREEN EGGS ', 5: 'TRACK 5  THE FRIDGE '}
 OUTN = os.environ.get('OUT', 'racer_%dtracks' % len(TRACKS))
 ZX0 = os.environ.get('ZX0') or shutil.which('zx0')
@@ -25,6 +26,10 @@ if not ZX0:                                     # the packer's own source is in 
 M = os.path.join(ROOT, 'build', 'multi'); os.makedirs(M, exist_ok=True)
 BLOCKS = ['world', 'wp', 'ridx', 'omap', 'top', 'trow']
 EXTRA = [v for v in os.environ.get('MULTI_ENV', '').split() if '=' in v]      # more build options, e.g. "FLIP=1"
+CHOOSE = 'CHOOSE=1' in EXTRA                    # the choose screen (src/choose.asm; tools/build_choose.sh)
+def names_asm():
+    if CHOOSE: return ''.join('        db "%s",0\n' % FULL[t] for t in TRACKS)
+    return ''.join('        db "%s",0\n' % NAMES[t].replace('"', "'")[:20].ljust(20) for t in TRACKS)
 
 def syms(path):
     d = {}
@@ -44,8 +49,8 @@ def put(name, text, mode='w'):
 def hp(data_asm, sy, name):
     """assemble src/hp.asm for HP with this data; -> its bytes"""
     d = os.path.join(M, 'hp'); os.makedirs(d, exist_ok=True)
-    shutil.copy(os.path.join(ROOT, 'src', 'hp.asm'), d)
-    open(os.path.join(d, 'hp_syms.asm'), 'w').write(''.join('%s equ 0x%04X\n' % (k, sy[v]) for k, v in (('HP', 'HP'), ('K_SCAN', 'k_scan'), ('K_UP', 'k_up'), ('T_PROMPT', 't_prompt'))))
+    for f in ['hp.asm'] + (['faces_mood7.asm', 'cars_hp.asm'] if CHOOSE else []): shutil.copy(os.path.join(ROOT, 'src', f), d)
+    open(os.path.join(d, 'hp_syms.asm'), 'w').write('CHOOSE equ %d\n' % CHOOSE + ''.join('%s equ 0x%04X\n' % (k, sy[v]) for k, v in (('HP', 'HP'), ('K_SCAN', 'k_scan'), ('K_UP', 'k_up'), ('T_PROMPT', 't_prompt'))))
     open(os.path.join(d, 'hp_data.asm'), 'w').write(data_asm)
     r = subprocess.run(['pasmo', 'hp.asm', name, name + '.sym'], cwd=d, capture_output=True, text=True)
     if 'ERROR' in r.stdout + r.stderr: raise SystemExit('hp.asm: ' + r.stdout + r.stderr)
@@ -87,7 +92,7 @@ def dumps(t):
     return out
 DU = {t: dumps(t) for t in TRACKS}
 def stable(a): return all(DU[t][0][a] == DU[t][1][a] == DU[t][2][a] for t in TRACKS)
-AREAS = [(0x5B00, 0x5E00), (0x5F00, 0xC000)] + [(0xD0A0 + 256 * k, 0xD0FA + 256 * k) for k in range(8)] + [(base['HIMEM'], 0xFFF4)]
+AREAS = [(0x5B00, 0x5B4C + base['td_end2'] - base['td_src'] if CHOOSE else 0x5E00), (0x5F00, 0xC000)] + [(0xD0A0 + 256 * k, 0xD0FA + 256 * k) for k in range(8)] + [(base['HIMEM'], 0xFFF4)]
 if any(t == 5 for t in TRACKS): AREAS.append((0x5E46, 0x5E46 + 90))
 D = [a for lo, hi in AREAS for a in range(lo, hi) if len({DU[t][0][a] for t in TRACKS}) > 1]
 unst = [a for a in D if not stable(a)]
@@ -113,7 +118,7 @@ print('%d packed stretches (%d bytes), %d short ones (%d bytes):' % (len(packed)
 for lo, hi in packed: print('   %04X-%04X %5d  %s' % (lo, hi - 1, hi - lo, near(lo)))
 print('   short ones at: ' + ', '.join(sorted({near(lo).split('+')[0] for lo, hi in raw}))[:1500])
 # ---- 4. pack ----
-data = 'NTRK equ %d\ntrk_names:\n' % len(TRACKS) + ''.join('        db "%s",0\n' % NAMES[t].replace('"', "'")[:20].ljust(20) for t in TRACKS)
+data = 'NTRK equ %d\ntrk_names:\n' % len(TRACKS) + names_asm()
 data += 'trk_tab:\n' + ''.join('        dw trk_%d\n' % t for t in TRACKS)
 report = []; lists = {}
 for t in TRACKS:
@@ -135,7 +140,7 @@ for t in sorted(TRACKS, key=lambda t: -len(lists[t])):
     else:
         assert len(low) + len(lists[t]) <= room_lo, 'track %d: %d bytes packed, and no room for them: %d left above the copy routine, %d under 0x8000' % (t, len(lists[t]), room_hi, room_lo - len(low))
         where_t[t] = base['lp_src'] + len(low); low += lists[t]
-data = 'NTRK equ %d\ntrk_names:\n' % len(TRACKS) + ''.join('        db "%s",0\n' % NAMES[t].replace('"', "'")[:20].ljust(20) for t in TRACKS)
+data = 'NTRK equ %d\ntrk_names:\n' % len(TRACKS) + names_asm()
 data += 'trk_tab:\n' + ''.join('        dw %s\n' % ('trk_%d' % t if where_t[t] == 'hi' else '0x%04X' % where_t[t]) for t in TRACKS)
 for t in TRACKS:
     if where_t[t] == 'hi':

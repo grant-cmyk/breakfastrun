@@ -54,7 +54,16 @@ BR_ROW2 equ 0x5E46              ; (track 5 only: 90 bytes of row lists at the bo
 WIN_COL equ 1           ; window on screen: columns 1..22 (22 bytes wide)
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
         include "multi_pads.asm" ; MULTI (several tracks in one load - tools/make_multi.py, docs/design/OPTIMISATION-PLAN.md): the blocks' lengths
+        if OPT_CHOOSE
+HP      equ COPIER+0x196        ; (CHOOSE: straight after the looped copy routine's 404 bytes and its count - 106 bytes more room)
+        else
 HP      equ COPIER+0x200        ; MULTI: what lives above the looped copy routine - the tracks, packed, and the code that unpacks one
+        endif
+HP_CARS equ HP+7                ; CHOOSE: where hp.asm keeps the address of the two extra cars' part of the cars' table ...
+HP_MOOD equ HP+9                ; ... of the seven drivers' eyes, happy and sad lists ...
+HP_NAMES equ HP+11              ; ... of the tracks' names ...
+HP_CNAMES equ HP+13             ; ... and of the cars' names; then
+HP_NCAR equ HP+15               ; how many cars there are to choose from (5 to 10: tools/choose_cars.txt)
 WIN_Y   equ 8                   ; the window: 176 x 144, pixel rows 8..151 - everything above
 WIN_W   equ 24                  ; the driver strip but the frame's top band (Grant, 14 Nov 2026:
 WIN_H   equ 152                 ; "take the very top row of the display as well"; it was 120
@@ -3852,11 +3861,19 @@ me_omap:
         defs MP_OMAP-(me_omap-mb_omap)        ; (MULTI: every track's block is as long as the longest)
         endif
         endif
+        if OPT_CHOOSE           ; (CHOOSE: seven faces to choose from - tools/make_faces.py)
+        include "faces7.asm"
+faces_src equ faces7
+        else
         include "faces.asm"     ; the drivers' faces for the race order
+        endif
         if OPT_BRIDGE
         include "bridge.asm"    ; BRIDGE: track 5's crossover - levels, walls, ramps, the hidden car
         endif
         include "plateco.asm"   ; the place plate in the window (pl_draw)
+        if OPT_CHOOSE
+        include "choose.asm"    ; CHOOSE: the choose screen - track, driver, car, extra
+        endif
         if OPT_TALL
         include "hudtext_gfx.asm"
         if 1-OPT_TILE1
@@ -4567,7 +4584,7 @@ mc_l4:  ld hl,lc_rows
         ldir
         ret
 LC_LOOP equ COPIER+lc_rows-lc_head
-LC_CNT  equ COPIER+0x1FF        ; the character rows left
+LC_CNT  equ HP-1                ; the character rows left (HP: COPIER + 0x200)
 lc_head:
         if OPT_LOOP/2           ; LOOP=2, an EXPERIMENT (OPTIMISATION-PLAN.md): the copy starts once the beam is past the
         ld bc,615               ; window's top line and follows it down - it is slower than the beam, so it never catches
@@ -4817,18 +4834,42 @@ mu_ptab equ TD + mu_ptab_src - td_src
         else
 mu_tune equ 0
 mu_ptab equ 0
+        if 1-OPT_CHOOSE         ; (CHOOSE: seven drivers' lists, kept above the copy routine - hp.asm)
         include "faces_mood.asm" ; each driver's eyes, happy and sad frames for the podium, as differences from the
+        endif
                                 ; everyday face (tools/make_faces.py, from Grant's drawings)
         endif
 JIN_PART defl 0
         include "jingle.asm"    ; the start jingle's notes (tools/make_music_ay.py; the flag's: title3.asm)
+        if OPT_CHOOSE
+        include "choose_td.asm" ; CHOOSE: the choose screen's records, card and texts
+        endif
 td_end2:
+        if TD + td_end2 - td_src > 0x5E00
+        .error the table block at TD runs into the stack's page
+        endif
 t_name  equ TD + t_name_src - td_src
+        if 1-OPT_CHOOSE
 faces_mood equ TD + faces_mood_src - td_src
+        endif
 pod_anim equ TD + pod_anim_src - td_src
 pa_one  equ TD + pa_one_src - td_src
 pa_car  equ TD + pa_car_src - td_src
 pa_face equ TD + pa_face_src - td_src
+        if OPT_CHOOSE           ; (the choose screen's records, card and texts: choose_td.asm)
+ch_r_trk equ TD + ch_r_trk_src - td_src
+ch_r_who equ TD + ch_r_who_src - td_src
+ch_r_car equ TD + ch_r_car_src - td_src
+ch_r_ex equ TD + ch_r_ex_src - td_src
+ch_script equ TD + ch_script_src - td_src
+ch_t_trk equ TD + ch_t_trk_src - td_src
+ch_t_who equ TD + ch_t_who_src - td_src
+ch_t_car equ TD + ch_t_car_src - td_src
+ch_t_x  equ TD + ch_t_x_src - td_src
+ch_t_pl equ TD + ch_t_pl_src - td_src
+ch_t_ex equ TD + ch_t_ex_src - td_src
+pd_names equ TD + pd_names_src - td_src
+        endif
 jc_a    equ TD + jc_a_src - td_src
 jc_b    equ TD + jc_b_src - td_src
         if td_end2 - td_src > 0x5E00 - TD
@@ -5039,6 +5080,9 @@ faces     equ faces_src
         endif
 
         if OPT_MULTI
+        if COPIER + (lc_rows-lc_head) + 4*(lc_tail-lc_rows) + (lc_end-lc_tail) > LC_CNT
+        .error the looped copy routine runs into its count and what lives above it (HP)
+        endif
         if (hp_end - hp_src) / 256 > (HIMEM - HP) / 256
         .error MULTI: the packed tracks are far too long for the room above the copy routine
         endif

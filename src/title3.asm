@@ -52,6 +52,9 @@ pa_car_src:                     ; car A's face in cells B, C for step E (mood fr
         pop de
         bit 0,e
         ret z                   ; (steps 0 and 2: as every day)
+        if OPT_CHOOSE
+        call who_a              ; CHOOSE: the driver in this car today
+        endif
         ld l,a
         add a,a
         add a,l                 ; the car's three lists: eyes, happy, sad
@@ -64,7 +67,11 @@ po_0:
         pop de
         ret
 pa_face_src:                    ; list A of faces_mood laid over the face in cells B, C
+        if OPT_CHOOSE
+        ld hl,(HP_MOOD)         ; (CHOOSE: seven drivers' lists, above the copy routine)
+        else
         ld hl,faces_mood
+        endif
 pf_s0:
         or a
         jr z,pf_a

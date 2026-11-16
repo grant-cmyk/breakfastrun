@@ -12,3 +12,4 @@ OPT_MULTI equ 0                ; 1: several tracks in one load (tools/make_multi
 OPT_FLIP equ 0                 ; 1: draw_car and the title car read such a frame last row first (FLIP=1 bash build.sh)
 OPT_TILE1 equ 0                ; 1: one tile routine (TILE1=1 bash build.sh)
 OPT_PACEFIX equ 0              ; 1: pace_gate counts pictures (PACEFIX=1 bash build.sh)
+OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)

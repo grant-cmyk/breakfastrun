@@ -3,7 +3,7 @@ ones into tools/face_art.txt, happy and sad into tools/face_moods.txt. Then run 
 Usage: python3 tools/import_faces.py pasted.txt   (blocks: NAME now|happy|sad, then 16 rows of # and .)"""
 import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-KEY = {'YOU': 'YOU', 'CYAN': 'CYAN', 'SLIM': 'WHITE', 'PINK': 'PINK', 'GREEN': 'GREEN'}
+KEY = {'YOU': 'YOU', 'CYAN': 'CYAN', 'SLIM': 'WHITE', 'PINK': 'PINK', 'GREEN': 'GREEN', 'SPECS': 'SPECS', 'DOT': 'DOT'}
 d = {}
 for m in re.finditer(r'(\w+) (now|eyes|happy|sad)\n((?:[#.]{16}\n?){16})', open(sys.argv[1]).read()):
     rows = m.group(3).split(); assert len(rows) == 16, m.group(0)[:20]

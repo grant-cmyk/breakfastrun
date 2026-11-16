@@ -1,0 +1,18 @@
+THE CHOOSE SCREEN'S CARS (tools/build_choose.sh). One line a car: the name its drawing has, then the name the
+choose screen shows (up to 12 letters). The first five are the cars in the race today and must stay first, in this
+order. After them, up to FIVE more to choose from.
+
+To add a car: (1) put its drawing in tools/choose_car_art.txt, as tools/car_art.txt has them -
+"== NAME heading 0 ==" and 16 rows of 16: X ink, o the car's white body, . empty. Heading 0 (nose up) is enough: the
+22.5 and 45 degree drawings are drafted from it if they are not there ("== NAME heading 22.5 ==", "== NAME heading 45 ==").
+(2) add its line below. (3) bash tools/build_choose.sh. No code changes.
+A car that is the same left and right costs about 630 bytes; one that is not, up to about 1,100 (its upside-down
+headings cannot be drawn from the others and are kept as well). The build stops and says so if the memory is full.
+
+car: YOU    RACER
+car: CYAN   COUPE
+car: GREEN  CLOWN CAR
+car: PINK   TANK
+car: WHITE  DRAGSTER
+car: SPECS  SALOON
+car: TRUCK  TRUCK

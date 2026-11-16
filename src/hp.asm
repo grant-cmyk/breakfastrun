@@ -10,9 +10,19 @@
 ; TRK_SET unpacks one track straight onto its working places. The title calls TRK_HOOK for its keys.
         include "hp_syms.asm"
         org HP
+        if CHOOSE               ; CHOOSE (the choose screen, src/choose.asm): no T key - the choose screen calls trk_set
+        ret
+        nop
+        nop
+        else
         jp trk_hook             ; HP + 0: the title's key scan (title.asm, t_keys)
+        endif
 trk_cur: db 0                   ; HP + 3: the track in its working places now (0 = the first)
         jp trk_set              ; HP + 4: A = track -> unpacked (for tests and for a menu)
+        if CHOOSE               ; HP + 7: where the choose screen's own data is (racer.asm: HP_CARS, HP_MOOD, HP_NAMES, HP_CNAMES, HP_NCAR)
+        dw car_tab2, faces_mood7, trk_names, car_names
+        db NCAR
+        else
 trk_hook:
         call K_SCAN
         ret z
@@ -46,6 +56,7 @@ th_1:
         call K_UP               ; (the key let go)
         xor a                   ; Z: no key for the title
         ret
+        endif                   ; (CHOOSE)
 
 ; TRK_SET (A = track): its data onto the working places. A list of packed stretches (where to, then the ZX0
 ; stream - the unpacker leaves HL after it), a zero, then the short ones (where to, how many, the bytes), a zero.
@@ -142,5 +153,9 @@ dzx0s_elias_backtrack:
         rl      b
         jr      dzx0s_elias_loop
 hp_code_end:
+        if CHOOSE
+        include "faces_mood7.asm" ; the seven drivers' eyes, happy and sad lists (tools/make_faces.py) ...
+        include "cars_hp.asm"   ; ... and the two extra cars: their table and frames (tools/make_data.py, CHOOSE=1)
+        endif
         include "hp_data.asm"   ; NTRK, trk_names (21 bytes a track), trk_tab and the tracks
 hp_end:
