@@ -124,20 +124,35 @@ pf_3:
 ; (and are the window's own colour again when you do not).
 HP_AT   equ 0x5800 + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL   ; the window's last two cell rows on the screen
 HP_NB   equ BUF + 0x800*2 + 2*32 + 2 + WIN_W - 1            ; the first canister's upper cell in the buffer (its last byte)
+        if OPT_ROADW            ; ROADW (roadwhite.asm): a square here keeps the paper it has - the road's white
+HP_PUT  macro                   ; or the table's cyan - and takes C's ink
+        ld a,(hl)
+        and 0x10
+        or c
+        ld (hl),a
+        endm
+        else
+HP_PUT  macro
+        ld (hl),a
+        endm
+        endif
 hud_pre:
         ld a,0x2B               ; the gauge: magenta on the table's cyan
+        if OPT_ROADW
+        ld c,a
+        endif
         ld hl,HP_AT + WIN_W - 3 ; (at the window's right edge since 15 Nov 2026; the canisters at its left)
-        ld (hl),a
+        HP_PUT
         inc l
-        ld (hl),a
+        HP_PUT
         inc l
-        ld (hl),a
+        HP_PUT
         ld l,(HP_AT + 32 + WIN_W - 3) AND 255
-        ld (hl),a
+        HP_PUT
         inc l
-        ld (hl),a
+        HP_PUT
         inc l
-        ld (hl),a
+        HP_PUT
         ld a,(INV)              ; the spoons: red - beside the gauge, then leftwards (NOS_COL, racer.asm)
         ld hl,HP_AT + WIN_W - 4
         ld de,HP_NB - 3
@@ -175,10 +190,18 @@ hp_1:
         ex de,hl
         ld a,0x2A
 hp_2:
+        if OPT_ROADW
+        ld c,a
+        HP_PUT
+        ld de,32
+        add hl,de
+        HP_PUT
+        else
         ld (hl),a
         ld bc,32
         add hl,bc
         ld (hl),a
+        endif
         ret
 WIN_ATTR2 equ 0x29              ; the window's own colours: blue on cyan
 pl_key:  dw 0                   ; the place and lap pl_bmp was composed for
