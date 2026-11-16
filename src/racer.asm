@@ -130,6 +130,13 @@ PL_H    equ 18                  ; rows
 rt_code:
         include "racetrack.asm" ; RACETRACK (a trial): the black track, the green grass, the clash rule
 rt_code_end:
+        ; ... and things that run rarely, moved down here to make room in the program for racetrack_hot.asm (code
+        ; under 0x8000 runs slower while the TV picture is drawn - racetrack_hot.asm's top)
+        include "strip.asm"     ; the driver strip: inventory, the radio, the flag
+        include "faces.asm"     ; the drivers' faces for the race order
+        include "hudtext_gfx.asm" ; the small letters' pictures (copied up at the start)
+        include "plateco.asm"   ; the place plate in the window (pl_draw)
+        include "title2.asm"    ; the title screen's car
         endif
         if OPT_MULTI
 lp_src: incbin "lp.bin"         ; MULTI: packed tracks that do not fit above the copy routine (tools/make_multi.py) - read once, at the title
@@ -3925,7 +3932,11 @@ me_world:
         endif
         endif
         include "gen_bumps.asm"
+        if OPT_RT               ; (RACETRACK: the strip is under 0x8000, and the squares' code is here)
+        include "racetrack_hot.asm"
+        else
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
+        endif
 mb_wp:
         include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
 me_wp:
@@ -3956,17 +3967,23 @@ me_omap:
         include "faces7.asm"
 faces_src equ faces7
         else
+        if OPT_RT = 0           ; (RACETRACK: under 0x8000)
         include "faces.asm"     ; the drivers' faces for the race order
+        endif
         endif
         if OPT_BRIDGE
         include "bridge.asm"    ; BRIDGE: track 5's crossover - levels, walls, ramps, the hidden car
         endif
+        if OPT_RT = 0           ; (RACETRACK: under 0x8000)
         include "plateco.asm"   ; the place plate in the window (pl_draw)
+        endif
         if OPT_CHOOSE
         include "choose.asm"    ; CHOOSE: the choose screen - track, driver, car, extra
         endif
         if OPT_TALL
+        if OPT_RT = 0           ; (RACETRACK: under 0x8000)
         include "hudtext_gfx.asm"
+        endif
         if 1-OPT_TILE1
         include "tdtab.asm"
         endif
@@ -4259,7 +4276,9 @@ isr_x:
         if OPT_ROADW
         include "roadwhite.asm" ; ROADW (a trial): the road on white paper, by colour square
         endif
+        if OPT_RT = 0           ; (RACETRACK: under 0x8000)
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
+        endif
         if OPT_MAP40
 MAPDAT:                         ; MAPW40: the mini-map's ink lives here, 5 bytes a line (the cars' dots are XORed into it: map_update)
         include "minimap.asm"
