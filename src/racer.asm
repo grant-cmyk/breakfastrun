@@ -137,6 +137,7 @@ rt_code_end:
         include "hudtext_gfx.asm" ; the small letters' pictures (copied up at the start)
         include "plateco.asm"   ; the place plate in the window (pl_draw)
         include "title2.asm"    ; the title screen's car
+low_end:                        ; (the end of what is kept under 0x8000: the room left is LOWTAB-0xE8 less this)
         endif
         if OPT_MULTI
 lp_src: incbin "lp.bin"         ; MULTI: packed tracks that do not fit above the copy routine (tools/make_multi.py) - read once, at the title
@@ -284,7 +285,16 @@ draw_all:
         call rt_hud             ; RACETRACK: the squares of the things that do not scroll
         endif
         call arrow_draw         ; the corner arrow, at its fixed spot (over the cars; the gauge, spoons, bubble and plate are drawn after it)
+        if OPT_RT               ; RACETRACK: the mini-map only when its dots have moved (rt_hud, racetrack.asm)
+        ld hl,rt_fx
+        bit 0,(hl)
+        jr z,rt_nomap
+        res 0,(hl)
+        call map_blit
+rt_nomap:
+        else
         call map_blit           ; the mini-map, ORed over the bottom left corner (hud.asm)
+        endif
         ld a,(lt_on)            ; the start lights, while they are up
         or a
         call nz,lights_draw

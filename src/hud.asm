@@ -1293,6 +1293,10 @@ mb_2:
         ret
 
 map_update:
+        if OPT_RT               ; (RACETRACK: the map has changed - it goes to the screen afresh. rt_hud, racetrack.asm)
+        ld hl,rt_fx
+        set 0,(hl)
+        endif
         ld hl,blink             ; your dot blinks: on 2 updates, off 2
         inc (hl)
         call map_off            ; 1. every old dot off (XOR it again)

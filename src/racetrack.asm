@@ -63,6 +63,8 @@ RT_GRASS equ 0xA4               ; all grass: green on green
 RT_PLAIN equ 0x80               ; plain road: black on black
 RT_ROAD  equ 0x07               ; road: white on black
 RT_EDGE  equ 0x04               ; some grass: green on black
+RT_LEAVE equ 0x09               ; a fixed box's square that is on the screen already and has not changed (blue on blue: a
+                                ; colour nothing has): rt_show leaves its pixels and its colour as they are
 RT_ROAD_D equ RT_ROAD+0xC0      ; ... those two as rt_class leaves them,
 RT_EDGE_D equ RT_EDGE+0xC0
 RT_EDGE4_D equ RT_EDGE_D+1      ; and a square that may hold grass OR white: the pixels say which (rt_sq4)
@@ -82,34 +84,45 @@ rt_new:
         ld bc,21*32-1
         ld (hl),RT_ROAD
         ldir
+        ld a,0xFF               ; and every fixed box is to be drawn afresh
+        ld (rt_fx),a
         ret
 
 ; RT_HUD: the squares of the things that do not scroll, after the cars and before those things
 ; are drawn. The mini-map and the place plate stand on black boxes of their own (white ink); the
 ; start lights and the crew chief's bubble keep their colours (their own routines, writing to
 ; rt_sh instead of the screen for once: attr_addr's page is switched).
+; ONLY WHAT HAS CHANGED (17 Nov 2026). A box that is on the screen already and has not changed since is not drawn again:
+; its squares are marked RT_LEAVE and rt_show passes over them. rt_fx says which boxes have changed. The mini-map: when
+; its dots have been moved (map_update: one picture in four). The mug: when its steam moves or the damage changes
+; (hud_pre). The plate: pl_draw decides (rt_plate, racetrack_hot.asm) - all of it, or just the time's figures that changed.
 rt_hud:
         ld hl,RT_SH+(WIN_Y/8+16)*32+WIN_COL     ; the mini-map: the window's rows 16-18, columns 0-2
         ld bc,0x0303
+        ld a,(rt_fx)
+        rra
+        ld a,RT_LEAVE
+        jr nc,rh_m
+        ld a,RT_ROAD
         call rt_attrs
-        ld hl,BUF+0x1000+1*32+2 ; ... their 24 lines of 3 bytes cleared (buffer rows 136-159)
+        ld hl,BUF+0x1000+1*32+2 ; ... their 24 lines of 3 bytes cleared (buffer rows 136-159); the main loop then calls map_blit
         ld bc,0x0303
         call rt_wipe
+        jr rh_p
+rh_m:
+        call rt_attrs
+rh_p:
         ld a,(lt_on)
         or a
         jr nz,rh_lights
-        ld hl,RT_SH+(WIN_Y/8)*32+WIN_COL+19     ; the place plate: rows 0-2, columns 19-23
+        ld hl,RPL_SQ            ; the place plate: rows 0-2, columns 19-23 - left alone, but for what rt_plate finds changed
         ld bc,0x0305
+        ld a,RT_LEAVE
         call rt_attrs
-        ld hl,BUF+1*32+21       ; ... the 2 lines above the plate's picture and the 4 below it (pl_draw writes the 18 between
-        ld de,0                 ; whole): buffer rows 8-9 and 28-31
-        ld b,2
-        call rw_lines
-        ld hl,BUF+3*32+4*256+21
-        ld b,4
-        call rw_lines
         jr rh_1
 rh_lights:
+        ld hl,rt_fx             ; (the lights hang where the plate is: all of the plate afresh once they have gone)
+        set 3,(hl)
         call rh_on
         call lights_attr
         call rh_off
@@ -128,14 +141,15 @@ rh_on:
 rh_set:
         ld (aa_hi+1),a
         ret
-; RT_ATTRS: B rows x C columns of rt_sh from HL: white on black.
+; RT_ATTRS: B rows x C columns of rt_sh from HL: A (RT_ROAD, white on black; or RT_LEAVE).
 rt_attrs:
+        ld (rat_c+1),a
         ld de,32
 rat_r:
         push hl
         ld a,c
 rat_c:
-        ld (hl),RT_ROAD
+        ld (hl),RT_ROAD         ; (patched)
         inc l
         dec a
         jr nz,rat_c

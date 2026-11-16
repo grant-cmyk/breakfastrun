@@ -53,6 +53,10 @@ pd_2b:
         sbc hl,bc
         jr z,pd_same
         call pl_static
+        if OPT_RT               ; (RACETRACK: all of the plate to the screen afresh - rt_plate, racetrack_hot.asm)
+        ld hl,rt_fx
+        set 3,(hl)
+        endif
         jr pd_time
 pd_same:                        ; the figures are cut afresh only once the time has moved on a tenth
         ld hl,(race_time)       ; of a second (5 frames) since they last were - about every other
@@ -87,6 +91,9 @@ pd_3:
         sbc hl,de
         ld (pl_tl),hl
         call time_fmt
+        if OPT_RT
+        call rt_ptime           ; (RACETRACK: which of its figures have changed)
+        endif
         ld a,(time_txt)
         call pd_d
         ld c,10                 ; m and :
@@ -106,9 +113,13 @@ pd_3:
         ld hl,pl_bmp+10*PL_W+3
         call pl_pair
 pd_blit:
+        if OPT_RT               ; RACETRACK: only as much of it as has changed (rt_plate, racetrack_hot.asm: it comes to pd_4)
+        jp rt_plate
+        else
         ld hl,pl_bmp            ; and the plate into the buffer
         ld de,PL_B
         ld b,PL_H
+        endif
 pd_4:
         ld c,255                ; (so the LDIs leave B, the row count, alone)
         ldi

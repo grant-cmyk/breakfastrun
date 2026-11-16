@@ -142,7 +142,26 @@ HP_PUT  macro
         endm
         endif
 hud_pre:
-        ld a,0x2B-OPT_RT*0x28   ; the gauge: magenta on the table's cyan
+        if OPT_RT               ; RACETRACK: the mug goes to the screen afresh only when it has changed - its steam (every 8th
+        ld hl,rt_fx             ; picture: dmg_anim), the damage, a new race. If not, its squares are left as they are on the
+        ld a,(renders)          ; screen (RT_LEAVE: rt_hud, racetrack.asm)
+        and 7
+        jr z,hpr_d
+        ld a,(dmg)
+        ld b,a
+        ld a,(dmg_sh)
+        cp b
+        jr nz,hpr_d
+        bit 1,(hl)
+        ld a,RT_LEAVE
+        jr z,hpr_g
+hpr_d:
+        set 1,(hl)
+        ld a,0x03               ; magenta on black
+hpr_g:
+        else
+        ld a,0x2B               ; the gauge: magenta on the table's cyan
+        endif
         if OPT_ROADW
         ld c,a
         endif
@@ -267,6 +286,12 @@ da_1:
         inc hl
         djnz da_1
 da_2:
+        if OPT_RT               ; (RACETRACK: only when it has changed - hud_pre)
+        ld hl,rt_fx
+        bit 1,(hl)
+        ret z
+        res 1,(hl)
+        endif
         jp dmg_draw
 dmg_sh:  db 0xFF                 ; the damage dmg_bmp shows (0xFF: none yet)
 dmg_bmp: defs 3*DMG_ROWS

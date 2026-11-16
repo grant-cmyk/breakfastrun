@@ -729,6 +729,8 @@ sd_at2: ld d,0x58
         ret
 ; RT_CP: the square's 8 lines from the buffer to the screen (and the sign flag off: it is not for rt_dir)
 rt_cp:
+        cp RT_LEAVE*2
+        jr z,cp_lv
         ld e,l
         inc e
 cp_bh:  ld d,BUF_HI             ; (patched)
@@ -744,6 +746,11 @@ cp_sh:  ld h,0x40               ; (patched)
 cp_hh:  ld h,RT_SH/256          ; (patched)
         ld e,l
 cp_at:  ld d,0x58               ; (patched)
+        xor a
+        ret
+cp_lv:                          ; a fixed box's square that has not changed (RT_LEAVE): its pixels stay as they are on the
+        ld a,(de)               ; screen, and so does its colour (DE is at it: the colour is read back, for the LDI that follows)
+        ld (hl),a
         xor a
         ret
 
@@ -1090,6 +1097,106 @@ rr_nx:
         djnz rr_row
         ret
 
+; RT_PTIME (from pl_draw, the lap time's figures about to be cut afresh): which of the time's three columns of the plate
+; (m: | ss | .t - bytes 1, 2, 3 of its 5) show a different character from the last time: bits 1, 2, 3 of rt_pch.
+rt_ptime:
+        ld hl,time_txt
+        ld de,rt_pt
+        ld c,0
+        call rpt_1              ; m
+        jr z,rpt_a
+        set 1,c
+rpt_a:
+        inc hl                  ; (the colon)
+        call rpt_1              ; s, tens
+        jr z,rpt_b
+        set 2,c
+rpt_b:
+        call rpt_1              ; s, units
+        jr z,rpt_c
+        set 2,c
+rpt_c:
+        inc hl                  ; (the point)
+        call rpt_1              ; tenths
+        jr z,rpt_d
+        set 3,c
+rpt_d:
+        ld a,(rt_pch)
+        or c
+        ld (rt_pch),a
+        ret
+rpt_1:
+        ld a,(de)
+        cp (hl)
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc de
+        ret                     ; (Z: the same character as before)
+; RT_PLATE (pl_draw's last step): the plate from pl_bmp into the buffer - only as much of it as has changed since it last
+; went to the screen. All of it (rt_fx bit 3: a new race, the start lights just gone, your place or lap changed); or the
+; squares of the time's columns that changed (their two rows of squares); or nothing - rt_hud has marked all 15 squares
+; RT_LEAVE, and the ones that are to go to the screen are made RT_ROAD (white on black, in the buffer) here.
+RPL_SQ  equ RT_SH+(WIN_Y/8)*32+WIN_COL+19       ; the plate's first square: the window's row 0, column 19
+rt_plate:
+        ld hl,rt_fx
+        bit 3,(hl)
+        jr nz,rpl_all
+        ld a,(rt_pch)
+        or a
+        ret z
+        rra
+        ld c,a
+        ld hl,RPL_SQ+32
+        ld b,3
+rpl_1:
+        inc l
+        srl c
+        jr nc,rpl_2
+        ld (hl),RT_ROAD         ; this column's square in the plate's second row, and the one under it
+        ld a,l
+        add a,32
+        ld l,a
+        ld (hl),RT_ROAD
+        sub 32
+        ld l,a
+rpl_2:
+        djnz rpl_1
+        xor a
+        ld (rt_pch),a
+        ld hl,pl_bmp+6*PL_W     ; the plate's rows 6-17: buffer rows 16-27 (the second and third rows of squares)
+        ld de,BUF+2*32+21
+        ld b,PL_H-6
+        call pd_4
+        jr rpl_w
+rpl_all:
+        res 3,(hl)
+        xor a
+        ld (rt_pch),a
+        ld hl,RPL_SQ
+        ld bc,0x0305
+        ld a,RT_ROAD
+        call rt_attrs
+        ld hl,BUF+1*32+21       ; the 2 lines above the plate's picture (buffer rows 8-9)
+        ld de,0
+        ld b,2
+        call rw_lines
+        ld hl,pl_bmp
+        ld de,PL_B
+        ld b,PL_H
+        call pd_4
+rpl_w:
+        ld hl,BUF+3*32+4*256+21 ; ... and the 4 below it (rows 28-31)
+        ld de,0
+        ld b,4
+        jp rw_lines
+        if ((RPL_SQ+32) / 256) - ((RPL_SQ+32+32+5) / 256)
+        .error the plate's second and third rows of squares must be on one page of rt_sh
+        endif
+rt_fx:    db 0xFF               ; the fixed boxes that must go to the screen afresh: bit 0 the mini-map (map_update sets
+                                ; it), bit 1 the mug (hud_pre), bit 3 all of the plate; rt_new sets them all
+rt_pch:   db 0                  ; the plate's time: its columns that have changed (rt_ptime)
+rt_pt:    db 0,0,0,0            ; ... and the four figures it shows
 rq_col0:  db 0
 rq_tl:    dw 0                  ; rt_car_sq: the first of the car's 3 x 3 squares in rt_sh
 rt_bp:    dw 0                  ; rt_show: where it is in rt_b
