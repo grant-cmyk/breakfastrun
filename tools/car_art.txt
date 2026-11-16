@@ -127,17 +127,17 @@ XXoXXXoooo..XXX.
 .......XX.......
 .......XX.......
 .......XX.......
-..XXX..XX..XXX..
+...XX..XX..XX...
 ..X.XXXXXXXX.X..
 ..XX.XXXXXX.XX..
-..X.XXXXXXXX.X..
-..XX.XXooXX.XX..
+..X.XXXooXXX.X..
+..XX.XooooX.XX..
 ..X.XXoXXoXX.X..
 ..XX.XoXXoX.XX..
 ..X.XXXooXXX.X..
 ..XX.XXXXXX.XX..
 ..X.XXXXXXXX.X..
-..XXX......XXX..
+...XX......XX...
 ................
 
 == PINK heading 22.5 ==
