@@ -327,6 +327,9 @@ wait_show:
         call rt_attr_go         ; RACETRACK: each row's colours go up with its pixels (racetrack.asm; the looped copy routine)
         endif
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
+        if OPT_RT
+        call rt_attr_rest       ; RACETRACK: the lower rows' colours
+        endif
         if OPT_ROADW
         call rw_attrs           ; ROADW: the road's squares white, the table's cyan (roadwhite.asm)
         endif
@@ -4801,7 +4804,10 @@ lc_tail:
 lc_third:
         exx
         if OPT_RT               ; RACETRACK: this row of squares' colours go up straight after its pixels (racetrack.asm: rt_sh) -
-        ld hl,(rt_asrc)         ; so a row's colours and pixels change in the same TV frame, wherever the beam is
+        ld a,(LC_CNT)           ; so a row's colours and pixels change in the same TV frame, wherever the beam is. Only the
+        cp WIN_H/8-RT_WITH+1    ; first RT_WITH rows: the beam has passed the rest by the time their pixels come, and their
+        jr c,lc_nocol           ; colours go up after the copy (rt_attr_rest) - so that the copy, which runs with interrupts
+        ld hl,(rt_asrc)         ; off, is over before the next interrupt (one missed is a TV frame the game loses)
         ld de,(rt_adst)
         rept WIN_W
         ldi
@@ -4812,6 +4818,7 @@ lc_third:
         ex de,hl
         add hl,bc
         ld (rt_adst),hl
+lc_nocol:
         endif
         ld hl,LC_CNT
         dec (hl)

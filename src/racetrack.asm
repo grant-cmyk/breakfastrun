@@ -949,14 +949,34 @@ ra_1:
         ret
 
 ; RT_ATTR_GO: before the screen copy - where the looped copy routine (make_copier, racer.asm) takes each row of squares'
-; colours from and puts them: it copies a row's 24 straight after that row's 8 lines of pixels. The copy is slower than
-; the TV's beam and is overtaken by it about row 8 of the window's 19: the rows above change in this TV frame, the rows
-; below in the next - but each row's colours and pixels always together.
+; colours from and puts them: for the window's first RT_WITH rows it copies a row's 24 straight after that row's 8 lines
+; of pixels. The copy is slower than the TV's beam and is overtaken by it at row 8 or 9 of the window's 19: the rows above
+; change in this TV frame, the rows below in the next - but each row's colours and pixels always together.
 rt_attr_go:
         ld hl,RT_SH+32+1
         ld (rt_asrc),hl
         ld hl,0x5800+32+1
         ld (rt_adst),hl
+        ret
+; RT_ATTR_REST: after the copy - the colours of the rows the copy routine did not send (the window's rows from RT_WITH
+; down). The beam had passed those rows before their pixels were copied, and it does not come back to them until the
+; next TV frame: by then their colours are up too.
+RT_WITH equ 9                   ; the rows whose colours go with their pixels (the beam overtakes the copy at row 8 or 9)
+rt_attr_rest:
+        ld hl,(rt_asrc)
+        ld de,(rt_adst)
+        ld a,WIN_H/8-RT_WITH
+rar_row:
+        rept WIN_W
+        ldi
+        endm
+        ld bc,32-WIN_W
+        add hl,bc
+        ex de,hl
+        add hl,bc
+        ex de,hl
+        dec a
+        jr nz,rar_row
         ret
 
 rt_asrc:  dw 0

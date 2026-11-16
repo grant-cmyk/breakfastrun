@@ -3,6 +3,16 @@
 **Stamped:** 2026-11-16 SAST (the choose screen added; the rest as of 2026-11-15 15:17) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
+**The race track trial (16 Nov 2026, branch worktree-agent-af8779cbaad3c1b51, not merged):** Grant scrapped the breakfast
+table for a traditional track - black road, solid green grass from 10 px beyond the road's edge, a dashed white limit
+line, each car its own colour, and clash rule 4. Built as a trial tape of track 1: `RACETRACK=1 bash build.sh` ->
+build/racer_racetrack.tap (off by default; the plain build and tracks 2, 3, 5 are byte for byte unchanged). The look is
+exact (tests/racetrack_test.py, 15 checks from the emulator's screen, all pass; pictures in docs/design/racetrack/built/)
+but it is TOO SLOW: 7.0-7.5 pictures a second against 12.4-12.6. The engine is src/racetrack.asm, the grass's data comes
+from tools/make_world.py. PROJECT-LOG's last entry has how it works, the measured tables, the grass's two speed numbers
+(RT_GRASS_FSH, RT_GRASS_PUSH), the clash scores, the memory, and what would make it quicker. Next for Grant: look at the
+tape and the pictures and say whether the look is right before anyone spends more on its speed.
+
 **Latest (14 Nov 2026, 22:16 SAST) - read this before the older status below:** the window is 192 x 152
 (24 columns, 19 rows); the right panel is 6 columns: the mini-map at its top, RACE and the order under it
 (flag and best-lap clock share column 31); the BREAKFAST RUN logo is under the window, centred (rows 21-22);
