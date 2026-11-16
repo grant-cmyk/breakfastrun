@@ -56,6 +56,13 @@ aw_1:
         and 7
         add a,ARROW_F/256
         ld d,a
+        if OPT_RT
+        push de                 ; RACETRACK: its squares' ink yellow (racetrack.asm)
+        push bc
+        call rt_arrow
+        pop bc
+        pop de
+        endif
         ld hl,ARROW_BUF
         ld b,ARROW_ROWS
 aw_row:

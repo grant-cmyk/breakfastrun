@@ -16,4 +16,5 @@ OPT_ROADCOL equ 7              ; the trial road paper: 7 white, 6 yellow (ROADCO
 OPT_ROADBR equ 0               ; 1: the trial road paper bright (ROADCOL=5 ROADBR=1 ROADW=1 bash build.sh: bright cyan)
 OPT_ROADW equ 0                ; 1: the road white (ROADW=1 bash build.sh); 2: and plain, no dots (ROADW=2) - a trial
 OPT_MAP40 equ 0                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)
+OPT_RT equ 0                   ; 1: the race track trial - black road, green grass (RACETRACK=1 bash build.sh)
 OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)

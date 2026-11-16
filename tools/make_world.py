@@ -26,6 +26,12 @@ if TRACK != 1:                    # a later track's design (tools/make_track_des
 W, H = 72, (64 if TRACK == 1 else _t['H'])                     # tiles (64 rows: the bigger track, 10 Nov 2026) (a border wide enough that the
                                   # camera never has to stop at the world's edge)
 PW, PH = W * 8, H * 8             # pixels
+# RACETRACK=1 (a trial; Grant, 16 Nov 2026: "scrap the table idea, and make a traditional race track instead ... I want the
+# track to be black. The outside of the track will be green"): no cereal O's, no breakfast things, no cloth. The road's edge
+# is a dashed white limit line; the grass starts RT_RUNOFF pixels beyond it. Everything for it is in the "if RT" blocks here
+# (and the last one writes src/rt_world.asm, the grass); without RACETRACK=1 not one byte of any output changes.
+RT = os.environ.get('RACETRACK') == '1'
+RT_RUNOFF = 10                    # black run-off between the road's edge and the grass, pixels
 ROAD = 72                         # road width in pixels (48, 52, 56, 64, then 72 for the big cars - Grant, 10 Nov 2026)
 
 # THE CORNER ARROWS' LOOK-AHEAD (the rest is further down: "THE CORNER ARROWS"). Change these to make the
@@ -113,6 +119,19 @@ assert _thin >= 2, 'the mini-map\'s ribbon is under 2 pixels somewhere'
 print('mini-map: %d x %d at %d/256, from (%d, %d); the ribbon at least %d wide along a line' % (MW, MH, MSC, MMX0, MMY0, _thin))
 img = Image.new('1', (PW, PH), 0)        # 1 = ink
 px = img.load()
+if RT:                            # RACETRACK: the grass, and the dashed white limit line (2 px wide, 8 on / 8 off, just inside the road's edge)
+    import numpy as _np
+    rt_grass = ~_np.array(road_mask(ROAD + 2 * RT_RUNOFF), dtype=bool)
+    _yy, _xx = _np.mgrid[0:PH, 0:PW]
+    _line = _np.array(road_mask(ROAD), dtype=bool) & ~_np.array(road_mask(ROAD - 4), dtype=bool) & (((_xx + _yy) // 8) % 2 == 0)
+    # A colour square is 8 x 8 and holds two colours: black and green, or black and white. So no white pixel may ever be in a
+    # square with a green one - none within 7 pixels of the grass, across or down. (10 pixels of run-off make that so; this checks.)
+    _near = _np.zeros_like(rt_grass); _gp = _np.pad(rt_grass, 7, constant_values=True)
+    for _dy in range(15):
+        for _dx in range(15): _near |= _gp[_dy:_dy + PH, _dx:_dx + PW]
+    print('racetrack: %d limit-line pixels, %d of them dropped for being within a colour square of the grass' % (_line.sum(), (_line & _near).sum()))
+    _line &= ~_near
+    for _y, _x in zip(*_np.nonzero(_line)): px[int(_x), int(_y)] = 1
 # cereal O's mark both sides of the road (Grant, 9 Nov 2026), in place of kerbs.
 # Each O is 8x8, its top-left snapped to the 8-px tile grid: every O is exactly
 # one tile (one picture, drawn whole - the cheapest to draw). Walk the centre line; step out half a road plus 3 px.
@@ -137,6 +156,7 @@ def place_os():
                     got.append(p); last = p
     return got
 OS = place_os()
+if RT: OS = []                    # RACETRACK: no cereal O's
 if BRIDGE:                        # BRIDGE: no O stands on either road at the crossing, nor beside the bridge, its ramps or its concrete (as designed)
     _inner = road_mask(ROAD - 8).load()
     OS = [(ox, oy) for ox, oy in OS if not _inner[ox + 4, oy + 4]]
@@ -257,6 +277,7 @@ T3_THINGS = [('egg', 3, 25), ('egg', 67, 2), ('egg', 11, 80), ('toast', 21, 38),
 if TRACK == 2: wanted = T2_THINGS[:KEEP_OLD]
 if TRACK == 3: wanted = (T2_THINGS if os.environ.get('T2_THINGS') else T3_THINGS)[:KEEP_OLD]
 if TRACK == 5: wanted = []        # BRIDGE: no breakfast things on this track - their memory is the bridge's
+if RT: wanted = []                # RACETRACK: no breakfast things
 assert TRACK in (1, 2, 3, 5), 'tracks 1, 2, 3 and 5 only (4 does not fit in memory)'
 # Each thing is masked so it sits on the tablecloth, but a tile only needs its
 # mask (slower to draw) where the mask covers a dark, dithered check. So try
@@ -430,7 +451,8 @@ for ty in range(H):
     for tx in range(W):
         ink = tbytes(lambda x, y: px[x, y], tx, ty)
         sl = (slice(ty * 8, ty * 8 + 8), slice(tx * 8, tx * 8 + 8))
-        if BRIDGE:                             # BRIDGE: a mask holds only the cloth dots it has to hide (not those under ink, nor pixels where the
+        if RT: msk = bytes(8)                  # RACETRACK: there is no cloth to hide - no tile needs a mask
+        elif BRIDGE:                           # BRIDGE: a mask holds only the cloth dots it has to hide (not those under ink, nor pixels where the
             _need = imask[sl] & cloth_on[sl] & ~_inkb[sl]   # cloth has no dot) - the same picture on the screen, and far fewer different masks
             msk = bytes(np.packbits(_need, axis=1).ravel().tolist()) if _need.any() else bytes(8)
         elif (imask[sl] & cloth_on[sl]).any():   # the mask hides some cloth: needed
@@ -452,6 +474,7 @@ for ty in range(H):
         ink, m = cells[(tx, ty)]
         mapb.append(num[(ink, m)] if any(m) else num[(ink, bytes(8))])
         on = sum(road[tx * 8 + i, ty * 8 + j] for i in range(8) for j in range(8))
+        if RT: on = 64 - int(rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8].sum())   # RACETRACK: off-road is the GRASS (the tile is mostly green)
         surf.append(0 if on >= 32 else 1)
 print('masked tiles:', len(masked), ' different masks:', len(umasks))
 TOPDATA = os.path.join(SRC, 'topdata.asm')
@@ -686,3 +709,57 @@ open(os.path.join(BLD, 'minimap.txt'), 'w').write('\n'.join(''.join('#' if v els
 big = img.convert('L').point(lambda v: 0 if v else 255).resize((PW * 2, PH * 2), Image.NEAREST)
 big.save(os.path.join(BLD, 'world_preview.png'))
 print('tiles:', len(order), ' road tiles:', surf.count(0))
+
+if RT:
+    # RACETRACK: THE GRASS, for src/racetrack.asm. The window scrolls a pixel at a time and colour squares cannot, so:
+    #  - a square of the screen that is ALL grass is simply green paper and green ink (no pixels needed);
+    #  - a square with grass and road in it is green ink on black paper, and its grass is drawn in pixels;
+    #  - a square with no grass is black paper (white ink: the limit line).
+    # A square lies over four tiles of the world (2 x 2: a BLOCK, named by its top-left tile). For each block, from its
+    # four tiles: 0 all grass; 1 no grass; 2 some of each; 3 some of each AND something white in one of its tiles (the game
+    # then looks at the pixels to see which the square really holds - never both, see above).
+    # The grass's pixels: a tile that is part grass has a picture (gtiles, from 16 up). A tile that is ALL grass is drawn only
+    # where it shares a square with road - its four quarters (top-left 1, top-right 2, bottom-left 4, bottom-right 8: tile
+    # numbers 1-15) - and not at all deep in the grass.
+    assert not (_inkb & _near).any(), 'something white is within a colour square of the grass'
+    _gt = rt_grass.reshape(H, 8, W, 8)
+    g_all = _np.pad(_gt.all(axis=(1, 3)), 1, constant_values=True); g_any = _np.pad(_gt.any(axis=(1, 3)), 1, constant_values=True)
+    w_any = _np.pad(_inkb.reshape(H, 8, W, 8).any(axis=(1, 3)), 1, constant_values=False)
+    def _blk(a, tx, ty): return a[ty + 1:ty + 3, tx + 1:tx + 3]          # the block's four tiles (the world's border counts as grass)
+    def bclass(tx, ty):
+        if not (-1 <= tx < W and -1 <= ty < H): return 0
+        if _blk(g_all, tx, ty).all(): return 0
+        if not _blk(g_any, tx, ty).any(): return 1
+        return 3 if _blk(w_any, tx, ty).any() else 2
+    gpics = sorted({bytes(_np.packbits(rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8], axis=1).ravel().tolist())
+                    for ty in range(H) for tx in range(W) if g_any[ty + 1, tx + 1] and not g_all[ty + 1, tx + 1]})
+    assert len(gpics) <= 240, 'too many grass-edge tiles: %d' % len(gpics)
+    gnum = {b: 16 + i for i, b in enumerate(gpics)}
+    nb = 0; rows = []
+    for ty in range(H):
+        runs = []; tx = 0
+        while tx < W:
+            c = bclass(tx, ty); n = 1
+            while tx + n < W and bclass(tx + n, ty) == c and n < 64: n += 1
+            runs.append((c << 6) | (n - 1)); tx += n
+        ent = []
+        for tx in range(W):
+            if g_all[ty + 1, tx + 1]:
+                q = (bclass(tx - 1, ty - 1) >= 2) | (bclass(tx, ty - 1) >= 2) << 1 | (bclass(tx - 1, ty) >= 2) << 2 | (bclass(tx, ty) >= 2) << 3
+                if q: ent.append((tx, q))
+            elif g_any[ty + 1, tx + 1]:
+                ent.append((tx, gnum[bytes(_np.packbits(rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8], axis=1).ravel().tolist())]))
+        rows.append(('        defb %d,%s   ; row %d\n        defb %d%s\n' % (len(runs), ','.join(str(v) for v in runs), ty, len(ent), ''.join(',%d,%d' % e for e in ent)), 2 + len(runs) + 2 * len(ent)))
+        nb += rows[-1][1]
+    # One block, loaded after the start-up area and copied by start_once to RT_DATA, a page boundary above the looped copy
+    # routine: the rows' index (2 bytes a row, in the room of the 16 numbers that are quarters), the pictures, the rows.
+    with open(os.path.join(SRC, 'rt_world.asm'), 'w') as f:
+        f.write('; GENERATED by tools/make_world.py (RACETRACK=1) - do not edit by hand\n; the grass (racetrack.asm): start_once copies this block to RT_DATA\nrt_src:\n; where each row of the world is\n')
+        assert H * 2 <= 128
+        off = 128 + 8 * len(gpics)
+        for ty in range(H): f.write('        dw RT_DATA + %d\n' % off); off += rows[ty][1]
+        f.write('        defs rt_src + 128 - $\n; the part-grass tiles\' pictures, 8 bytes each (1 = grass), numbers 16 up\n')
+        for b in gpics: f.write('        defb ' + ','.join('0x%02X' % v for v in b) + '\n')
+        f.write('; each row: how many runs, the runs along its row of blocks (kind * 64 + length - 1), then its grass tiles - how many,\n; then (column, number) pairs: 1-15 the quarters of an all-grass tile, 16 up a picture\n')
+        f.write(''.join(t for t, n in rows) + 'rt_src_end:\n')
+    print('racetrack: %d grass-edge pictures (%d bytes), rows %d bytes' % (len(gpics), 128 + 8 * len(gpics), nb))

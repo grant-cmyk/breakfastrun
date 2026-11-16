@@ -122,7 +122,11 @@ pf_3:
 ; can have an ink of their own - as long as nothing else is in those cells: the gauge's 3 x 2
 ; cells are written whole by dmg_draw; a canister's 1 x 2 are cleared here when you hold it
 ; (and are the window's own colour again when you do not).
+        if OPT_RT               ; RACETRACK: the colours go to rt_sh, its copy of the colour squares (racetrack.asm) - magenta
+HP_AT   equ RT_SH + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL    ; and red on black; an empty slot's squares are left as they are
+        else
 HP_AT   equ 0x5800 + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL   ; the window's last two cell rows on the screen
+        endif
 HP_NB   equ BUF + 0x800*2 + 2*32 + 2 + WIN_W - 1            ; the first canister's upper cell in the buffer (its last byte)
         if OPT_ROADW            ; ROADW (roadwhite.asm): a square here keeps the paper it has - the road's white
 HP_PUT  macro                   ; or the table's cyan - and takes C's ink
@@ -138,7 +142,7 @@ HP_PUT  macro
         endm
         endif
 hud_pre:
-        ld a,0x2B               ; the gauge: magenta on the table's cyan
+        ld a,0x2B-OPT_RT*0x28   ; the gauge: magenta on the table's cyan
         if OPT_ROADW
         ld c,a
         endif
@@ -167,6 +171,9 @@ hud_pre:
         ld de,HP_NB - 5
 hp_slot:                        ; A = the slot (0: empty), HL = its upper cell on the screen, DE = in the buffer
         or a
+        if OPT_RT
+        ret z
+        endif
         ld a,WIN_ATTR2
         jr z,hp_2
         ex de,hl                ; held: its two cells cleared (16 lines of the one byte)
@@ -189,7 +196,7 @@ hp_1:
         inc h
         djnz hp_1
         ex de,hl
-        ld a,0x2A
+        ld a,0x2A-OPT_RT*0x28
 hp_2:
         if OPT_ROADW
         ld c,a
@@ -533,7 +540,7 @@ ms_car: db 0                    ; the driver a message with @ names
 win_cells:                      ; a new race, before anything is put up: the window's cells its own colours again
         ld bc,0x0101            ; (the title keeps the screen's colours from when the last race ended - the
         ld de,0x1318            ; podium's, which then came back over the next race: Grant's screenshots,
-        ld a,0x29               ; 15 Nov 2026)
+        ld a,0x29-OPT_RT*0x22   ; 15 Nov 2026) (RACETRACK: white on black)
         jp set_attrs
 jin_arm:                        ; a new race (unless the jingle is held off: 0xFF)
         ld a,(jin_on)

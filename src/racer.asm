@@ -126,6 +126,11 @@ PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a 
 PL_H    equ 18                  ; rows
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
+        if OPT_RT
+rt_code:
+        include "racetrack.asm" ; RACETRACK (a trial): the black track, the green grass, the clash rule
+rt_code_end:
+        endif
         if OPT_MULTI
 lp_src: incbin "lp.bin"         ; MULTI: packed tracks that do not fit above the copy routine (tools/make_multi.py) - read once, at the title
         endif
@@ -157,6 +162,9 @@ st_so:
         call win_cells          ; (plate_slow.asm)
         if OPT_ROADW
         call rw_new             ; ROADW: the road's white squares start afresh (roadwhite.asm)
+        endif
+        if OPT_RT
+        call rt_new             ; RACETRACK: the window's squares black (racetrack.asm)
         endif
         call hud_init
         ld hl,cars_init         ; copy the starting records into place
@@ -228,7 +236,14 @@ cpu_move:
         call race_progress      ; your waypoints and laps, everyone's progress
         call hud_update         ; the panel, message bar and lap strip
         call camera
+        if OPT_RT               ; RACETRACK (racetrack.asm): no cloth - the buffer cleared, the squares' colours decided,
+        call rt_clear           ; the grass drawn; then draw_tiles draws the limit line and the grid as it drew the map
+        call rt_class
+        call rt_grass
+        call rt_resolve
+        else
         call cloth_fill         ; the tablecloth, as the camera sees it
+        endif
         if OPT_ROADW
         call rw_masks           ; ROADW: which squares of the window are road (and, ROADW=2, no dots on them) - roadwhite.asm
         endif
@@ -243,12 +258,19 @@ draw_all:
         if OPT_BRIDGE
         call draw_car_b         ; BRIDGE: a car under the deck is hidden (bridge.asm)
         else
+        if OPT_RT
+        call rt_car             ; RACETRACK: the car by the clash rule (racetrack.asm)
+        else
         call draw_car
+        endif
         endif
         ld de,0x10000-C_SIZE
         add ix,de
         pop bc
         djnz draw_all
+        if OPT_RT
+        call rt_hud             ; RACETRACK: the squares of the things that do not scroll
+        endif
         call arrow_draw         ; the corner arrow, at its fixed spot (over the cars; the gauge, spoons, bubble and plate are drawn after it)
         call map_blit           ; the mini-map, ORed over the bottom left corner (hud.asm)
         ld a,(lt_on)            ; the start lights, while they are up
@@ -295,7 +317,13 @@ wait_show:
         jr c,wait_show
         ld a,(FRAMES)
         ld (last_shown),a
+        if OPT_RT
+        call rt_attr_a          ; RACETRACK: the top rows' colours, the pixels, the bottom rows' colours (racetrack.asm)
+        endif
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
+        if OPT_RT
+        call rt_attr_b
+        endif
         if OPT_ROADW
         call rw_attrs           ; ROADW: the road's squares white, the table's cyan (roadwhite.asm)
         endif
@@ -385,6 +413,9 @@ tk_rest:
 ; far enough in a picture to get through a car or an O untested - the speed
 ; pass of 14 Nov 2026): every pair of cars (gen_bumps.asm), then the O's
 bumps_o:
+        if OPT_RT
+        jp bump_all             ; RACETRACK: there are no O's (and o_check is left out)
+        else
         call bump_all
         ld ix,cars              ; and off the cereal O's
         ld b,NCARS
@@ -418,6 +449,7 @@ tk_o1:
         pop bc
         djnz tk_o
         ret
+        endif                   ; (RACETRACK)
 
 ; (the keys are 1UP's, as chosen on the title's KEYS screen - title.asm writes each
 ; key's half row and bit into the LD A and AND below; as loaded: O P Q A SPACE)
@@ -902,7 +934,11 @@ su_bit:
         djnz su_bit
         ld a,3
         ret nc                  ; 0 = road
+        if OPT_RT
+        ld a,RT_GRASS_FSH       ; RACETRACK: grass is slow (racetrack.asm)
+        else
         ld a,2
+        endif
         ret
 
 ; ---------------------------------------------------------------------
@@ -1425,6 +1461,7 @@ rnd:
 ; the first one close enough, kick the car away from it like a bump - along
 ; whichever way it is further off - with a crash if it is you.
 ; ---------------------------------------------------------------------
+        if OPT_RT = 0           ; (RACETRACK: no O's - o_check is left out)
 o_check:
         ld l,(ix+C_X)           ; HL = car centre x - 4
         ld h,(ix+C_X+1)
@@ -1674,6 +1711,7 @@ ocb_snd:
         call dmg_hit            ; and damage
         ld hl,5*256+2           ; and the border red, a moment
         jp flash
+        endif                   ; (RACETRACK)
 
 ; ---------------------------------------------------------------------
 ; BUMP (IX = car a, HL = car b): if they overlap, they bounce apart.
@@ -1985,8 +2023,10 @@ dt_tile:
         ld a,(hl)               ; tile number
         inc hl
         exx
+        if OPT_RT = 0           ; (RACETRACK: no tile has a mask - dt_mask and tdraw_m are left out)
         cp TM_FIRST             ; a breakfast thing: drawn with its mask
         jr nc,dt_mask
+        endif
         rlca                    ; DE = tiles + number * 8
         rlca
         rlca
@@ -2017,6 +2057,7 @@ dt_skip:
         dec b
         jr nz,dt_tile
         jr dt_row_done
+        if OPT_RT = 0
 dt_mask:                        ; IX = its mask, DE = its picture, HL = where
         ld l,a
         sub TM_FIRST
@@ -2056,6 +2097,7 @@ dt_mask:                        ; IX = its mask, DE = its picture, HL = where
         call tdraw_m
         endif
         jr dt_back
+        endif                   ; (RACETRACK)
 dt_row_done:
         exx
         ld hl,(tr_base)         ; next tile row: 8 pixel rows = 32 bytes on,
@@ -2077,7 +2119,7 @@ dt_nt:
 ; IX = its mask, DE = its picture, HL = top-left byte, B = shift page.
 ;   buffer = (buffer AND NOT mask) OR picture, both shifted, 8 lines
 ; Not unrolled like tdraw_0..7: only a few are ever in view.
-        if 1-OPT_BRIDGE         ; (BRIDGE: tdraw_mb, bridge.asm, takes its place)
+        if (1-OPT_BRIDGE)*(1-OPT_RT)    ; (BRIDGE: tdraw_mb, bridge.asm, takes its place)
 tdraw_m:
         ld a,8
 tdm_line:
@@ -2264,6 +2306,11 @@ dc_top:
         ld a,b
         ld (dc_count),a
 dc_cnt:
+        if OPT_RT               ; RACETRACK: the first time round, only the squares the car falls in are decided
+        ld a,(rt_probe)         ; (rt_car_sq, racetrack.asm - it does not come back here)
+        or a
+        call nz,rt_car_sq
+        endif
         ; shift table t = (15 - u) AND 7; first byte = u DIV 8
         ld a,(wxu)
         ld c,a
@@ -2304,12 +2351,12 @@ dc_loop:
         inc de
         ld c,a
         ld a,(bc)               ;   ink: column k+1 ...
-        or (hl)
+dc_ink0: or (hl)                 ; (RACETRACK patches these four: rt_car)
         ld (hl),a
         dec b
         dec l
         ld a,(bc)               ;   ... and column k
-        or (hl)
+dc_ink1: or (hl)
         ld (hl),a
         inc l                   ; on to the next byte
         jr dc_e0_x
@@ -2336,12 +2383,12 @@ dc_e0_x:
         inc de
         ld c,a
         ld a,(bc)               ;   ink: column k+1 ...
-        or (hl)
+dc_ink2: or (hl)
         ld (hl),a
         dec b
         dec l
         ld a,(bc)               ;   ... and column k
-        or (hl)
+dc_ink3: or (hl)
         ld (hl),a
         inc l                   ; on to the next byte
         jr dc_e1_x
@@ -2957,6 +3004,7 @@ CL_PUSH macro                     ; bytes 25..0 of a line from the pairs BC, DE,
         push iy
         endm
         endm
+        if OPT_RT = 0           ; (RACETRACK: no cloth - cloth_fill and cloth_pats are left out)
 cloth_fill:
         call cloth_pats
         ld a,(camy)             ; (buffer row 16 is the window's first line: world
@@ -3180,6 +3228,7 @@ cpt_k:
         inc l
         djnz cpt_k
         ret
+        endif                   ; (RACETRACK)
 
 ; lap_timed (IX = a car that just crossed the line): time its lap, and if
 ; it is the fastest so far by anyone, remember the time, the car, the lap
@@ -3874,7 +3923,11 @@ me_ridx:
         endif
         if 1-OPT_BRIDGE         ; (BRIDGE: no O map)
 mb_omap:
+        if OPT_RT = 0           ; (RACETRACK: there are no O's - o_check is never called; "omap" is then just an address)
         include "omap.asm"      ; the cereal O's: one bit a tile
+        else
+omap_src:
+        endif
 me_omap:
         if OPT_MULTI*MP_ON
         defs MP_OMAP-(me_omap-mb_omap)        ; (MULTI: every track's block is as long as the longest)
@@ -4202,6 +4255,12 @@ code_end:
 ; START_ONCE: the data copied up out of the way, the tables, the copy routine,
 ; the screen, the interrupts - then the first race
 start_once:                     ; (start, from the start-up area)
+        if OPT_RT               ; RACETRACK: the grass's rows and pictures go up above the looped copy routine first (they load
+        ld hl,rt_src_end-1      ; after the start-up area, across the strips and tables filled below). From the top down: the
+        ld de,RT_DATA+rt_src_end-rt_src-1       ; two may overlap
+        ld bc,rt_src_end-rt_src
+        lddr
+        endif
         if OPT_MULTI            ; MULTI: the packed tracks and their code go up above the copy routine first (they
         ld hl,hp_src            ; load after the start-up area, across the strips and tables filled below)
         ld de,HP
@@ -4987,6 +5046,9 @@ bufe_src:
         include "strip_e.asm"
 bufe_end:
 init_end:
+        if OPT_RT
+        include "rt_world.asm"  ; RACETRACK: the grass - rows and pictures (tools/make_world.py; start_once copies it to RT_DATA)
+        endif
         if OPT_MULTI
 hp_src: incbin "hp.bin"         ; (tools/make_multi.py assembles src/hp.asm for HP)
 hp_end:
@@ -5121,6 +5183,14 @@ faces     equ faces_src
         endif
         if HP + hp_end - hp_src > HIMEM
         .error MULTI: the packed tracks run into the row lists at HIMEM
+        endif
+        endif
+        if OPT_RT
+        if OPT_TILE1 * OPT_FLIP * OPT_LOOP = 0
+        .error RACETRACK needs TILE1=1, FLIP=1 and LOOP=1 (build.sh sets them)
+        endif
+        if RT_DATA + rt_src_end - rt_src > HIMEM
+        .error RACETRACK: the grass's pictures run into the row lists at HIMEM
         endif
         endif
         end start

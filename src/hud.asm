@@ -116,7 +116,7 @@ attr_addr:                      ; HL = 0x5800 + B*32 + C
         add hl,hl
         push de
         ld e,c
-        ld d,0x58
+aa_hi:  ld d,0x58               ; (RACETRACK switches this page to its copy of the colour squares: rt_hud)
         add hl,de
         pop de
         ret
@@ -257,7 +257,11 @@ mc_1:
 lights_attr:
         ld bc,0x0100+LT_COL     ; the rail: black on the window's cyan
         ld de,0x010A
+        if OPT_RT
+        ld a,0x05               ; (RACETRACK: cyan on black)
+        else
         ld a,0x28
+        endif
         call set_attrs
         ld c,LT_COL+1
         ld l,1                  ; L = lamp 1..3
@@ -290,6 +294,9 @@ la_2:
 lights_off:                     ; the lights go: their cells the window's colours again
         xor a
         ld (lt_on),a
+        if OPT_RT
+        ret                     ; (RACETRACK: every square is decided afresh each picture)
+        endif
         ld bc,0x0100+LT_COL
         ld de,0x030A
         ld a,0x29
@@ -351,6 +358,9 @@ msg_go:                         ; green: the lights stay 1.5 s more
 msg_final:                      ; FINAL LAP: the crew chief's bubble in the window for 3 s (plateco.asm copies it
         ld a,150                ; in each picture): its cells white
         ld (msg_timer),a
+        if OPT_RT
+        ret                     ; (RACETRACK: rt_hud colours the bubble's squares each picture)
+        endif
         ld a,0x78
 msg_cells:
         ld bc,0x1107
@@ -650,7 +660,9 @@ hu_mt:
         ld (msg_timer),a
         or a                    ; its time up: the bubble's cells the window's colours again
         ld a,0x29               ; (blue on cyan)
+        if OPT_RT = 0
         call z,msg_cells
+        endif
 hu_final:
         ld a,(lt_t)             ; the lights' last 1.5 s
         or a

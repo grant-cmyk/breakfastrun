@@ -8,6 +8,13 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 CARSOPT="${1:-small}"
+# RACETRACK=1: A TRIAL - a traditional race track: black road, green grass to the pixel, a dashed white limit line, each car
+# its own colour (src/racetrack.asm; Grant, 16 Nov 2026). Track 1 -> build/racer_racetrack.tap. It needs the room the savings
+# give, so it turns them on; it builds in its own folder (build/racetrack); tools/make_world.py reads RACETRACK too.
+if [ "${RACETRACK:-0}" = "1" ]; then
+  export RACETRACK TILE1=1 FLIP=1 TOWER=1 LOOP=1
+  BDIR="${BDIR:-racetrack}"; OUT="${OUT:-racer_racetrack}"
+fi
 CARS="$CARSOPT" python3 "$ROOT/tools/make_data.py" | grep -i "cars:"
 U=15; [ "$CARSOPT" = "big" ] && U=12
 MUS=0; [ "${MUSIC:-}" = "1" ] && MUS=1          # MUSIC=1 bash build.sh: the ditty in the race (off by default)
@@ -43,6 +50,7 @@ if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"
   BDIR="${BDIR:-map40_t${TRACK:-1}}"; OUT="${OUT:-$T40}"
 fi
+printf 'OPT_RT equ %s                   ; 1: the race track trial - black road, green grass (RACETRACK=1 bash build.sh)\n' "${RACETRACK:-0}" >> "$ROOT/src/options.asm"
 # CHOOSE=1: the choose screen between the title and the race - track, driver, car, extra (src/choose.asm). Only with the
 # several-tracks build: use tools/build_choose.sh -> build/racer_choose.tap
 printf 'OPT_CHOOSE equ %s               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)\n' "${CHOOSE:-0}" >> "$ROOT/src/options.asm"
