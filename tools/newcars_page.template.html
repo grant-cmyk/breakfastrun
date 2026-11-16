@@ -1,0 +1,62 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Breakfast Run New Cars</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600&family=IBM+Plex+Mono&display=swap">
+<style>
+/* layout: a tool bar, then a wrapping grid of small cards, one a new car: the editable 16 x 16 grid with previews beside it */
+:root{--bg:#f4f5f1;--panel:#fff;--fg:#1c2026;--muted:#5d6672;--line:#d5d9d2;--accent:#b3261e;--font:'Inter',system-ui,sans-serif;--head:'Space Grotesk','Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181c;--panel:#1e2228;--fg:#eceef0;--muted:#a0a8b3;--line:#343a43;--accent:#ff7a6e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15181c;--panel:#1e2228;--fg:#eceef0;--muted:#a0a8b3;--line:#343a43;--accent:#ff7a6e;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--head);font-size:26px;margin:0;text-wrap:balance}
+h2{font-family:var(--head);font-size:16px;margin:0}
+p{margin:0;color:var(--muted);max-width:65ch;line-height:1.5}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font:600 14px var(--font);padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:14px;align-items:flex-start}
+canvas{image-rendering:pixelated}
+canvas.grid{width:256px;height:256px;touch-action:none;cursor:crosshair;border:1px solid var(--line);flex:none}
+.pv{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.cap{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+canvas.p1{width:16px;height:16px}canvas.p3{width:48px;height:48px;border:1px solid var(--line)}
+textarea{width:100%;box-sizing:border-box;min-height:220px;font:12px/1.3 var(--mono);background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:10px}
+#said{color:var(--muted);font-size:13px}
+</style>
+<main>
+<h1>Breakfast Run: three new cars</h1>
+<p>Three empty slots for cars to choose from. Draw each car facing up, 16 pixels square, the same size as the cars in the race. Ink is the dark line, Body is the white inside, Rub out lets the road show. "Start from the red car" drops your own car in as a size guide. When you are done, copy the text and paste it back to Claude; Claude turns each car to its other headings.</p>
+<div class="bar"><span id="brushes" class="bar" role="group" aria-label="Brush"></span><button id="copy">Copy all as text</button><button id="reset">Empty all three</button><span id="said"></span></div>
+<div id="cards"></div>
+<label for="out" class="cap">The cars as text (X ink, o white body, . nothing)</label>
+<textarea id="out" readonly></textarea>
+</main>
+<script>
+const DATA=/*DATA*/{};const CYAN='#00d7d7',INK='#0000d7',BODY='#ffffff';
+let arts=JSON.parse(JSON.stringify(DATA.arts)),brush='X';
+try{const s=localStorage.getItem('br-newcars-1');if(s){const v=JSON.parse(s);if(v.length===arts.length)arts=v}}catch(e){}
+const cards=document.getElementById('cards'),out=document.getElementById('out');
+function paint(cv,art,n,rep,grid){const c=cv.getContext('2d');c.fillStyle=CYAN;c.fillRect(0,0,cv.width,cv.height);c.fillStyle=INK;
+ art.forEach((r,y)=>{for(let x=0;x<16;x++)if(r[x]!=='.'){c.fillStyle=r[x]==='X'?INK:BODY;c.fillRect(x*n,y*n,n,n)}});
+ if(grid){c.strokeStyle='rgba(0,0,0,.2)';c.lineWidth=1;for(let i=1;i<16;i++){c.beginPath();c.moveTo(i*n+.5,0);c.lineTo(i*n+.5,cv.height);c.stroke()}for(let i=1;i<16;i++){c.beginPath();c.moveTo(0,i*n+.5);c.lineTo(cv.width,i*n+.5);c.stroke()}}}
+function text(){return 'BREAKFAST RUN NEW CAR ART v1\nX = ink   o = paper (white body)   . = empty (road shows)\n\n'+DATA.names.map((nm,i)=>'== '+nm+' heading 0 ==\n'+arts[i].join('\n')).join('\n\n')+'\n'}
+function save(){out.value=text();try{localStorage.setItem('br-newcars-1',JSON.stringify(arts))}catch(e){}}
+function build(){cards.textContent='';
+ DATA.names.forEach((nm,i)=>{const card=document.createElement('section');card.className='card';const h=document.createElement('h2');h.textContent=nm;card.appendChild(h);
+  const row=document.createElement('div');row.className='row';const g=document.createElement('canvas');g.className='grid';g.width=256;g.height=256;g.setAttribute('aria-label',nm+', editable');
+  const pv=document.createElement('div');pv.className='pv';const c1=document.createElement('span');c1.className='cap';c1.textContent='Real size';const p1=document.createElement('canvas');p1.className='p1';p1.width=16;p1.height=16;
+  const c3=document.createElement('span');c3.className='cap';c3.textContent='3 times';const p3=document.createElement('canvas');p3.className='p3';p3.width=16;p3.height=16;
+  const re=()=>{paint(g,arts[i],16,1,true);paint(p1,arts[i],1,1,false);paint(p3,arts[i],1,1,false)};re();
+  let down=false;const put=e=>{const b=g.getBoundingClientRect(),x=Math.min(15,Math.max(0,Math.floor((e.clientX-b.left)/b.width*16))),y=Math.min(15,Math.max(0,Math.floor((e.clientY-b.top)/b.height*16)));
+   const r=arts[i][y];if(r[x]!==brush){arts[i][y]=r.slice(0,x)+brush+r.slice(x+1);re();save()}};
+  g.addEventListener('pointerdown',e=>{g.setPointerCapture(e.pointerId);down=true;put(e)});g.addEventListener('pointermove',e=>{if(down&&e.buttons)put(e)});g.addEventListener('pointerup',()=>{down=false});
+  pv.appendChild(c1);pv.appendChild(p1);pv.appendChild(c3);pv.appendChild(p3);row.appendChild(g);row.appendChild(pv);card.appendChild(row);const sb=document.createElement('button');sb.textContent='Start from the red car';sb.addEventListener('click',()=>{arts[i]=DATA.ref.slice();re();save()});card.appendChild(sb);cards.appendChild(card)});save()}
+const bb=document.getElementById('brushes');[['X','Ink'],['o','Body'],['.','Rub out']].forEach(([k,label])=>{const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-pressed',k===brush);
+ b.addEventListener('click',()=>{brush=k;bb.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true')});bb.appendChild(b)});
+document.getElementById('copy').addEventListener('click',()=>{const said=document.getElementById('said');navigator.clipboard.writeText(text()).then(()=>said.textContent='Copied.',()=>{out.focus();out.select();said.textContent='Select the text below and copy it.'})});
+document.getElementById('reset').addEventListener('click',()=>{arts=JSON.parse(JSON.stringify(DATA.arts));build();document.getElementById('said').textContent='All three emptied.'});
+build();
+</script>
