@@ -15,8 +15,8 @@
 ;   rw_masks  after the cloth is filled: when the view has moved on to other tiles, the window's
 ;             19 rows of 24 squares are worked out again - 3 bytes a row (rw_m), a bit a square,
 ;             1 = table. (ROADW=2: then rw_plain takes the cloth's dots off the road squares.)
-;   rw_attrs  straight after the picture has been copied to the screen: every row whose 3 bytes
-;             are not the ones last put up (rw_p) gets its colours written. On a straight almost
+;   rw_attrs  straight after the picture has been copied to the screen: every 8 squares whose
+;             byte has changed (rw_masks marks them) get their colours written. On a straight almost
 ;             nothing changes, and nothing is written.
 ;
 ; WHY AFTER THE COPY: the copy already runs a little behind the TV's beam at the foot of the
@@ -37,10 +37,16 @@ RW_AT   equ 0x5800 + (WIN_Y/8)*32 + WIN_COL     ; its first square's colour on t
 
 ; RW_NEW: a new race. win_cells has just made every square of the window cyan.
 rw_new:
-        ld hl,rw_p              ; "all table" is what is up
-        ld b,RW_ROWS*3
+        ld hl,rw_m              ; "all table" is what is up, and no row is waiting
+        ld b,RW_ROWS
 rn_1:
         ld (hl),0xFF
+        inc hl
+        ld (hl),0xFF
+        inc hl
+        ld (hl),0xFF
+        inc hl
+        ld (hl),0
         inc hl
         djnz rn_1
         ld hl,0xFFFF            ; and the squares are to be worked out afresh
@@ -49,7 +55,8 @@ rn_1:
         ld (rw_sig),a
         ret
 
-; RW_MASKS: the window's squares for this picture's camera, into rw_m.
+; RW_MASKS: the window's squares for this picture's camera, into rw_m; each 8 squares that are
+; not as they were are marked, for rw_attrs.
 rw_masks:
         ld hl,(camx)            ; E = the tile nearest the window's left edge
         call rm_near
@@ -66,8 +73,6 @@ rw_masks:
         ret z
         endif
         ld (rw_org),de
-        ld a,1
-        ld (rw_dirty),a
         ld l,d                  ; the surface map: 9 bytes a row, a bit a tile, the leftmost on the left
         ld h,0
         ld b,h
@@ -93,11 +98,11 @@ rw_masks:
         add a,TAB_HI+1
         ld h,a
         ld de,rw_m
-        ld ixl,RW_ROWS
 rm_row:
+        push de
+        pop ix                  ; IX = the row's 4 bytes
         ld a,(bc)
         ld l,a
-        rept 3                  ; three bytes out of four of the map's
         ld a,(hl)
         ex af,af'
         inc bc
@@ -107,16 +112,60 @@ rm_row:
         ex af,af'
         or (hl)
         inc h
-        ld (de),a
+        ex de,hl
+        cp (hl)                 ; as it was?
+        jr z,$+11
+        ld (hl),a
+        ld a,h                  ; no: its 8 squares are to be written
+        ld (rw_dirty),a
+        set 4,(ix+3)
+        inc hl
+        ex de,hl
+        ld a,(hl)
+        ex af,af'
+        inc bc
+        ld a,(bc)
+        ld l,a
+        dec h
+        ex af,af'
+        or (hl)
+        inc h
+        ex de,hl
+        cp (hl)                 ; as it was?
+        jr z,$+11
+        ld (hl),a
+        ld a,h                  ; no: its 8 squares are to be written
+        ld (rw_dirty),a
+        set 5,(ix+3)
+        inc hl
+        ex de,hl
+        ld a,(hl)
+        ex af,af'
+        inc bc
+        ld a,(bc)
+        ld l,a
+        dec h
+        ex af,af'
+        or (hl)
+        inc h
+        ex de,hl
+        cp (hl)                 ; as it was?
+        jr z,$+11
+        ld (hl),a
+        ld a,h                  ; no: its 8 squares are to be written
+        ld (rw_dirty),a
+        set 6,(ix+3)
+        inc hl
+        ex de,hl
         inc de
-        endm
         ld a,c                  ; the map's next row (9 bytes on; 3 are done)
         add a,6
         ld c,a
         jr nc,rm_1
         inc b
 rm_1:
-        dec ixl
+        ld a,e
+        cp (rw_m+RW_ROWS*4) AND 255
         jr nz,rm_row
         if OPT_ROADW = 2
         jp rw_plain
@@ -134,7 +183,7 @@ rm_near:                        ; HL = (HL + 4) / 8
         rr l
         ret
 
-; RW_ATTRS: the colours of the rows that have changed, to the screen.
+; RW_ATTRS: the colours of the squares that are marked, to the screen.
 rw_attrs:
         call rw_state
         ld hl,rw_dirty          ; nothing has changed since the last picture
@@ -142,94 +191,74 @@ rw_attrs:
         or a
         ret z
         ld (hl),0
-        ld de,rw_m
-        ld hl,rw_p
-        ld ix,rw_kt
-        exx
-        ld hl,RW_AT
+        ld hl,rw_m+3
+        ld de,4
         ld b,RW_ROWS
-        exx
 ra_row:
-        ld a,(de)               ; the row's 3 bytes against those that are up
-        cp (hl)
-        jr nz,ra_w0
-        inc de
-        inc hl
-        ld a,(de)
-        cp (hl)
-        jr nz,ra_w1
-        inc de
-        inc hl
-        ld a,(de)
-        cp (hl)
-        jr nz,ra_w2
-        inc de
-        inc hl
+        ld a,(hl)
+        and 0x70
+        jr nz,ra_w
 ra_next:
-        inc ix
-        exx
-        ld a,l
-        add a,32
-        ld l,a
-        jr nc,ra_n1
-        inc h
-ra_n1:
-        dec b
-        exx
-        jr nz,ra_row
+        add hl,de
+        djnz ra_row
         ret
-ra_w2:
-        dec de
-        dec hl
-ra_w1:
-        dec de
-        dec hl
-ra_w0:                          ; the row is to be written: they are the ones up from now on
-        ld a,(de)
-        ld (hl),a
-        inc de
-        inc hl
-        ld b,a
-        ld a,(de)
-        ld (hl),a
-        inc de
-        inc hl
-        ld c,a
-        push bc
-        ld a,(de)
-        ld (hl),a
-        inc de
-        inc hl
-        exx
-        pop de                  ; D, E, A = the three bytes; HL = the row's first square
+ra_w:
         push hl
         push bc
-        ld bc,0x1039            ; (B: the bit that is cyan paper and not white; C: blue on white)
+        ld a,(hl)               ; which of its three bytes (bits 4-6), and the row's kind (bits 0-1)
+        ld ixl,a
+        and 3
+        ld (hl),a
+        dec hl
+        ld a,(hl)
+        dec hl
+        ld e,(hl)
+        dec hl
+        ld d,(hl)               ; D, E, A = the three bytes
         push af
-        bit 0,(ix+0)            ; the row's kind: bit 0 - its first 16 squares the careful way
-        jr nz,ra_s
-        call rw_fast
+        ld a,RW_ROWS            ; HL = the row's first square on the screen
+        sub b
+        rrca
+        rrca
+        rrca
+        ld c,a
+        and 3
+        add a,RW_AT/256
+        ld h,a
+        ld a,c
+        and 0xE0
+        add a,RW_AT AND 255
+        ld l,a
+        jr nc,ra_1
+        inc h
+ra_1:
+        ld bc,0x1039            ; (B: the bit that is cyan paper and not white; C: blue on white)
+        ld a,ixl                ; the kind's bit 0: squares 0-15 the careful way
+        bit 4,a
+        call ra_put
         ld d,e
-        call rw_fast
-        jr ra_3
-ra_s:
-        call rw_safe
-        ld d,e
-        call rw_safe
-ra_3:
+        ld a,ixl
+        bit 5,a
+        call ra_put
         pop af
         ld d,a
-        bit 1,(ix+0)            ; bit 1 - its last 8 squares the careful way
-        jr nz,ra_s3
-        call rw_fast
-        jr ra_4
-ra_s3:
-        call rw_safe
-ra_4:
+        ld a,ixl                ; the kind's bit 1: squares 16-23 the careful way
+        rra
+        bit 5,a
+        call ra_put
         pop bc
         pop hl
-        exx
+        ld de,4
         jr ra_next
+ra_put:                         ; 8 squares from HL by D - if they have changed (NZ); A's bit 0: the careful way
+        jr nz,ra_p1
+        ld a,l
+        add a,8
+        ld l,a
+        ret
+ra_p1:
+        rra
+        jr c,rw_safe
 
 ; RW_FAST: 8 squares from HL, by D's bits from the left - 1: the table's blue on cyan, 0: the
 ; road's blue on white. (B = 0x10, C = 0x39.)
@@ -286,8 +315,8 @@ rs_n:
         ret
 
 ; RW_STATE: are the start lights up, is the crew chief's bubble up, what spoons are held? When any
-; of that changes, the rows they are in are marked - which are written the careful way (rw_kt) -
-; and written afresh at once (their squares may just have been given back the window's cyan).
+; of that changes, the rows they are in are marked: which are written the careful way, and to be
+; written afresh at once (their squares may just have been given back the window's cyan).
 rw_state:
         ld a,(msg_timer)
         or a
@@ -317,40 +346,27 @@ rt_2:
         rrca
         sbc a,a
         and 3
-        ld hl,rw_kt             ; the lights: the window's rows 0-2
+        or 0x70                 ; (bits 4-6: all of the row is to be written)
+        ld hl,rw_m+3            ; the lights: the window's rows 0-2
+        ld de,4
         ld (hl),a
-        inc hl
+        add hl,de
         ld (hl),a
-        inc hl
+        add hl,de
         ld (hl),a
         ld a,c
         and 2
         jr z,rt_3
         ld a,3
 rt_3:
-        ld hl,rw_kt+RW_ROWS-3   ; the bubble: the last row but one and the row above it; the gauge
-        ld (hl),a               ; and the spoons: the last two rows' last 8 squares, always
-        inc hl
+        or 0x70
+        ld hl,rw_m+(RW_ROWS-3)*4+3      ; the bubble: the last row but one and the row above it; the gauge
+        ld (hl),a                       ; and the spoons: the last two rows' last 8 squares, always
+        add hl,de
         or 2
         ld (hl),a
-        ld hl,rw_p              ; those six rows: "what is up" made unlike what is wanted
-        call rt_inv
-        ld hl,rw_p+(RW_ROWS-3)*3
-rt_inv:
-        ld b,3
-rt_i:
-        push hl
-        ld de,rw_m-rw_p
         add hl,de
-        ld a,(hl)
-        cpl
-        pop hl
-        ld (hl),a
-        inc hl
-        inc hl
-        inc hl
-        djnz rt_i
-        ld a,1
+        ld (hl),0x72
         ld (rw_dirty),a
         ret
 
@@ -386,34 +402,52 @@ rw_plain:
         ld h,a
         ld l,(BUF_TOP AND 0x38)*4+2
         ld ixl,RW_ROWS
-rp_row:
-        call rp_byte
-        call rp_byte
-        call rp_byte
+rwp_row:
+        call rwp_byte
+        call rwp_byte
+        call rwp_byte
+        inc de                  ; (the row's 4th byte is its mark)
         ld a,l                  ; the next row of squares (24 bytes are done of the 32)
         add a,8
         ld l,a
-        jr nc,rp_1
+        jr nc,rwp_1
         ld a,b                  ; ... in the buffer's next third
         add a,8
         ld b,a
         ld h,a
-rp_1:
+rwp_1:
         dec ixl
-        jr nz,rp_row
+        jr nz,rwp_row
         ret
-rp_byte:
+rwp_byte:
         ld a,(de)
         inc de
-        cpl                     ; 1: road
-        jr nz,rp_some
+        xor 0xFF                ; 1: road
+        jr nz,rwp_some
         ld a,l                  ; none of the 8
         add a,8
         ld l,a
         ret
-rp_some:
+rwp_some:
         inc a
-        jr z,rp_full
+        jr nz,rwp_mixed
+        ld c,l                  ; all 8 (A = 0): line by line
+        RP_LINE
+        ld l,c
+        inc h
+        inc h
+        RP_LINE
+        ld l,c
+        inc h
+        inc h
+        RP_LINE
+        ld l,c
+        inc h
+        inc h
+        RP_LINE
+        ld h,b
+        ret
+rwp_mixed:
         dec a
         ld c,a
         xor a
@@ -434,29 +468,11 @@ rp_some:
         inc l
         endm
         ret
-rp_full:                        ; all 8 (A = 0): line by line
-        ld c,l
-        RP_LINE
-        ld l,c
-        inc h
-        inc h
-        RP_LINE
-        ld l,c
-        inc h
-        inc h
-        RP_LINE
-        ld l,c
-        inc h
-        inc h
-        RP_LINE
-        ld h,b
-        ret
         endif
 
 rw_org:   dw 0xFFFF             ; the tiles rw_m was worked out for (low: across, high: down)
 rw_dirty: db 0                  ; 1: rw_m or the marked rows have changed since the colours were written
 rw_sig:   db 0xFF               ; the lights, the bubble and the spoons as rw_state last saw them
-rw_kt:    defs RW_ROWS-1,0      ; a row's kind: bit 0 - squares 0-15 the careful way, bit 1 - 16-23
-          db 2
-rw_m:     defs RW_ROWS*3,0xFF   ; the squares wanted, 3 bytes a row (1: table)
-rw_p:     defs RW_ROWS*3,0xFF   ; the squares that are up
+rw_m:     defs RW_ROWS*4,0xFF   ; the squares, 4 bytes a row: 3 of bits (1: table), then bits 4, 5, 6 - the 1st, 2nd,
+                                ; 3rd of them has changed, its 8 squares' colours are to be written;
+                                ; bit 0 - the row's squares 0-15 the careful way, bit 1 - 16-23
