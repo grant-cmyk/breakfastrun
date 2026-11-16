@@ -200,9 +200,15 @@ main_go:
         halt
         jr main
 have_dt:
+        if OPT_RT               ; RACETRACK: a picture takes 6 or 7 TV frames (not 4), and the game must not run slow for it:
+        cp 9                    ; up to 8 frames of moving a picture
+        jr c,dt_ok
+        ld a,8
+        else
         cp 5
         jr c,dt_ok
         ld a,4
+        endif
 dt_ok:
         ld (dt),a
         ld b,a
@@ -318,12 +324,9 @@ wait_show:
         ld a,(FRAMES)
         ld (last_shown),a
         if OPT_RT
-        call rt_attr_a          ; RACETRACK: the top rows' colours, the pixels, the bottom rows' colours (racetrack.asm)
+        call rt_attr_go         ; RACETRACK: each row's colours go up with its pixels (racetrack.asm; the looped copy routine)
         endif
         call copy_to_screen     ; straight after the interrupt, ahead of the beam
-        if OPT_RT
-        call rt_attr_b
-        endif
         if OPT_ROADW
         call rw_attrs           ; ROADW: the road's squares white, the table's cyan (roadwhite.asm)
         endif
@@ -603,6 +606,18 @@ ph_surf_kept:
         jr ph_nb
 ph_cpu:
         call skid               ; fast and turning: it slides (DE, BC, fshift)
+        if OPT_RT               ; RACETRACK: on the grass the push is halved RT_GRASS_PUSH times (racetrack.asm: grass is slow)
+        ld a,(ix+C_FSH)
+        cp 3
+        jr z,ph_road
+        rept RT_GRASS_PUSH
+        sra d
+        rr e
+        sra b
+        rr c
+        endm
+ph_road:
+        endif
         if OPT_BRIDGE
         call ramp_push          ; BRIDGE: less push up a ramp, more down it
         endif
@@ -4785,6 +4800,19 @@ lc_tail:
         ld iyh,a
 lc_third:
         exx
+        if OPT_RT               ; RACETRACK: this row of squares' colours go up straight after its pixels (racetrack.asm: rt_sh) -
+        ld hl,(rt_asrc)         ; so a row's colours and pixels change in the same TV frame, wherever the beam is
+        ld de,(rt_adst)
+        rept WIN_W
+        ldi
+        endm
+        ld bc,32-WIN_W
+        add hl,bc
+        ld (rt_asrc),hl
+        ex de,hl
+        add hl,bc
+        ld (rt_adst),hl
+        endif
         ld hl,LC_CNT
         dec (hl)
         jp nz,LC_LOOP
@@ -5188,6 +5216,9 @@ faces     equ faces_src
         if OPT_RT
         if OPT_TILE1 * OPT_FLIP * OPT_LOOP = 0
         .error RACETRACK needs TILE1=1, FLIP=1 and LOOP=1 (build.sh sets them)
+        endif
+        if COPIER + (lc_rows-lc_head) + 4*(lc_tail-lc_rows) + (lc_end-lc_tail) > LC_CNT
+        .error RACETRACK: the looped copy routine runs into its count (LC_CNT)
         endif
         if RT_DATA + rt_src_end - rt_src > HIMEM
         .error RACETRACK: the grass's pictures run into the row lists at HIMEM

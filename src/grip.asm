@@ -170,6 +170,16 @@ yg_p1:
         sbc hl,de
         jr yg_drag
 yg_padd:
+        if OPT_RT               ; RACETRACK: on the grass the push is halved RT_GRASS_PUSH times (racetrack.asm: grass is slow)
+        ld a,(ix+C_FSH)
+        cp 3
+        jr z,yg_road
+        rept RT_GRASS_PUSH
+        sra d
+        rr e
+        endm
+yg_road:
+        endif
         add hl,de
 yg_drag:
         ld d,h                  ; vf -= vf >> C_FSH (1/8 on the road, 1/4 off it)

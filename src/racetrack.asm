@@ -28,10 +28,8 @@
 ;   draw_tiles  the limit line, the start line, the grid, the canisters - as it always drew the map
 ;   rt_car      each car, by THE CLASH RULE below
 ;   rt_hud      the squares of the things that do not scroll (lights, map, plate, bubble)
-;   rt_attr_a, the screen copy, rt_attr_b   the colours go to the screen WITH the pixels: the top
-;               rows' colours just before their pixels are copied, the bottom rows' just after -
-;               the TV's beam overtakes the copy near the foot of the window, and this way each
-;               row's colours and pixels change in the same TV frame (see RT_SPLIT)
+;   the screen copy   the colours go to the screen WITH the pixels: each row of squares' colours
+;               straight after its 8 lines (rt_attr_go; the looped copy routine in racer.asm)
 ;
 ; THE CLASH RULE (rule 4 of tools/make_racetrack_clash_score.py, the one Grant chose), for each
 ; square a car is in:
@@ -45,6 +43,7 @@
 ; =====================================================================
 RT_SH   equ COPIER+0x200 ; (0xEA00: above the looped copy routine)
 RT_AL   equ RT_SH+21*32     ; rt_al, below
+rt_bm   equ RT_AL+3*96      ; rt_car_sq: the car's picture, ORed, by row of squares - 6 bytes (on one page: 0xEDC0)
 RT_DATA equ RT_SH+0x400     ; the grass's rows and pictures (rt_world.asm, copied here by start_once): the rows' index,
 gtiles  equ RT_DATA         ; then the part-grass tiles' pictures from number 16 (so both are found from here)
 ;RT_SH_              ; rt_sh: the colour squares of screen rows 0-20, laid out as on the screen (32 a row). A square
@@ -53,12 +52,11 @@ gtiles  equ RT_DATA         ; then the part-grass tiles' pictures from number 16
 RT_GRASS equ 0x24               ; all grass: green on green
 RT_ROAD  equ 0x07               ; no grass: white on black
 RT_EDGE  equ 0x04               ; some grass: green on black
-RT_SPLIT equ 13                 ; rows whose colours go up before the pixels are copied (the rest after): the copy runs
-                                ; 339 T a line against the beam's 224, from about 5,000 T after the interrupt - the
-                                ; beam passes it near row 13
-RT_GRASS_FSH equ 1              ; GRASS IS SLOW: the friction shift on grass. Each frame a car loses speed / 2^shift:
-                                ; 3 on the road (1/8), and here 1 (1/2) - so the same push gives a quarter of the road's
-                                ; top speed. 2 would be a half (the old table's off-road value).
+; GRASS IS SLOW. Two numbers to tune (measured: PROJECT-LOG, 16 Nov 2026). Each frame a car is pushed, then loses
+; speed / 2^shift; it settles at push x (2^shift - 1): 7 pushes on the road (shift 3).
+RT_GRASS_FSH equ 2              ; the friction shift on grass: 2 (a quarter lost each frame; the old table's off-road value)
+RT_GRASS_PUSH equ 1             ; ... and the push on grass is halved this many times. 2 and 1: top speed 3 x 1/2 = 1.5 pushes,
+                                ; 21% of the road's. (2 and 0: 43%; 1 and 0: 14%; 2 and 2: 11%.)
 
 ; the cars' colours (ink), by C_KIND: you red; then cyan, yellow, magenta, white
 rt_inks: db 2,5,6,3,7
@@ -612,56 +610,87 @@ rtc_patch:
         ld (dc_ink3),a
         ret
 
-; RT_CAR_SQ (from draw_car, once the picture's place is known: wxu, dc_row0, dc_count): the
-; squares the car's 16-wide picture falls in - 2 or 3 across, 1 to 3 down - each by the rule.
+; RT_CAR_SQ (from draw_car, once the picture's place is known: wxu, dc_row0, dc_count, DE = its rows): the squares the
+; car's picture really has pixels in - up to 3 across, 3 down - each by the rule. First the picture's rows are gathered
+; (mask and ink ORed) for each row of squares they fall in: 2 bytes for each of 3 (rt_bm). Then, with the picture's place
+; across (0-7 pixels into its first byte), each row's 16 pixels are looked at as the 3 squares they lie in.
 ; It does not go back into draw_car: its RET is draw_car's own.
 rt_car_sq:
         pop af                  ; (the way back into draw_car)
-        ld a,(wxu)              ; the picture's 16 pixels start at buffer x = wxu + 1
-        inc a
-        ld c,a
-        add a,15
-        rrca
-        rrca
-        rrca
-        and 0x1F
-        ld b,a                  ; B = its last byte column
-        ld a,c
-        rrca
-        rrca
-        rrca
-        and 0x1F                ; A = its first
-        jr nz,rq_c1
-        inc a                   ; (byte 0 has no square in rt_sh)
-rq_c1:
-        ld c,a                  ; C = first byte column (1 up)
-        ld a,b
-        sub c
-        ret c
-        inc a
-        ld e,a                  ; E = columns
+        ld hl,rt_bm
+        xor a
+        ld b,6
+rq_z0:
+        ld (hl),a
+        inc l
+        djnz rq_z0
         ld a,(dc_count)
         ld b,a
         ld a,(dc_row0)
-        ld d,a
-        add a,b
-        dec a
+        ld c,a                  ; C = the buffer line of the row in hand
+        and 0xF8
+        ld (rq_r0+1),a          ; (the first line of the first row of squares)
+rq_acc:
+        ld a,c
+rq_r0:  sub 0
         rrca
         rrca
-        rrca
-        and 0x1F
-        ld b,a                  ; B = the last character row (of the buffer: 0-19)
-        ld a,d
-        rrca
-        rrca
-        rrca
-        and 0x1F
-        ld d,a                  ; D = the first
-        ld a,b
-        sub d
+        and 6                   ; 2 x which row of squares (0-2)
+        add a,rt_bm AND 255
+        ld l,a
+        ld h,rt_bm/256
+        ld a,(de)               ; the row's left 8 pixels: mask, ink
+        inc de
+        or (hl)
+        ld (hl),a
+        ld a,(de)
+        inc de
+        or (hl)
+        ld (hl),a
+        inc l
+        ld a,(de)               ; and its right 8
+        inc de
+        or (hl)
+        ld (hl),a
+        ld a,(de)
+        inc de
+        or (hl)
+        ld (hl),a
+        ld a,(dc_flip)          ; (a picture read upside down: back two rows)
+        or a
+        jr z,rq_fw
+        ld a,e
+        sub 8
+        ld e,a
+        jr nc,rq_fw
+        dec d
+rq_fw:
+        inc c
+        djnz rq_acc
+        ld a,(wxu)              ; the picture's 16 pixels start at buffer x = wxu + 1
         inc a
-        ld b,a                  ; B = rows
-        ld a,d                  ; HL = the first square in rt_sh: row D, column C - 1
+        ld e,a
+        and 7
+        ld b,a
+        ld a,0xFF               ; C = the bits of a picture byte that stay in its own square
+        jr z,rq_k1
+rq_k0:
+        add a,a
+        djnz rq_k0
+rq_k1:
+        ld c,a
+        ld a,e
+        rrca
+        rrca
+        rrca
+        and 0x1F
+        ld (rq_col0),a          ; the picture's first byte column
+        ld e,a
+        ld a,(dc_row0)          ; HL = the square in rt_sh of its first line and that column (- 1: byte 2 is column 1)
+        rrca
+        rrca
+        rrca
+        and 0x1F
         rrca
         rrca
         rrca
@@ -671,26 +700,59 @@ rq_c1:
         ld h,a
         ld a,l
         and 0xE0
-        add a,c
+        add a,e
         dec a
         ld l,a
-rq_row:
-        push bc
-        push hl
-        ld b,e
-rq_col:
-        push bc
+        ld a,3
+        ld (rt_cnt),a
+        ld de,rt_bm
+rq_band:
+        push de
+        ld a,(de)
+        ld b,a
+        inc e
+        ld a,(de)
+        ld e,a
+        ld d,b                  ; D, E = this row of squares' left and right picture bytes
+        ld a,d
+        and c
+        jr z,rq_s1
+        ld a,(rq_col0)          ; (byte 0 has no square)
+        or a
+        jr z,rq_s1
         push de
         call rq_cell
         pop de
-        pop bc
+rq_s1:
         inc l
-        djnz rq_col
-        pop hl
-        ld bc,32
-        add hl,bc
-        pop bc
-        djnz rq_row
+        ld a,c
+        cpl
+        and d
+        ld b,a
+        ld a,e
+        and c
+        or b
+        jr z,rq_s2
+        push de
+        call rq_cell
+        pop de
+rq_s2:
+        inc l
+        ld a,c
+        cpl
+        and e
+        call nz,rq_cell
+        dec l
+        dec l
+        ld de,32
+        add hl,de
+        pop de
+        inc e
+        inc e
+        ld a,(rt_cnt)
+        dec a
+        ld (rt_cnt),a
+        jr nz,rq_band
         ret
 rq_cell:
         ld a,(hl)
@@ -886,30 +948,21 @@ ra_1:
         jr nz,ra_r
         ret
 
-; RT_ATTR_A, RT_ATTR_B: rt_sh's window squares to the screen - the first RT_SPLIT rows, the rest.
-rt_attr_a:
+; RT_ATTR_GO: before the screen copy - where the looped copy routine (make_copier, racer.asm) takes each row of squares'
+; colours from and puts them: it copies a row's 24 straight after that row's 8 lines of pixels. The copy is slower than
+; the TV's beam and is overtaken by it about row 8 of the window's 19: the rows above change in this TV frame, the rows
+; below in the next - but each row's colours and pixels always together.
+rt_attr_go:
         ld hl,RT_SH+32+1
-        ld de,0x5800+32+1
-        ld a,RT_SPLIT
-        jr rta_row
-rt_attr_b:
-        ld hl,RT_SH+32*(RT_SPLIT+1)+1
-        ld de,0x5800+32*(RT_SPLIT+1)+1
-        ld a,WIN_H/8-RT_SPLIT
-rta_row:
-        rept WIN_W
-        ldi
-        endm
-        ld bc,32-WIN_W
-        add hl,bc
-        ex de,hl
-        add hl,bc
-        ex de,hl
-        dec a
-        jr nz,rta_row
+        ld (rt_asrc),hl
+        ld hl,0x5800+32+1
+        ld (rt_adst),hl
         ret
 
+rt_asrc:  dw 0
+rt_adst:  dw 0
 rt_sp:    dw 0
+rq_col0:  db 0
 rt_deadp: dw 0
 rt_dead:  defs WIN_H/8          ; each row of squares: 1 - all grass (nothing in it shows: rt_clear leaves it)
 rt_rowp:  dw 0                  ; the grass rows' index, as rt_class walks it
