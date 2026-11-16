@@ -18,7 +18,11 @@
 ARROW_ROWS equ 15
 ARROW_W equ 24
 ARROW_COL equ 10                ; the window's byte column of its first byte
+        if OPT_RT               ; (RACETRACK with a smaller play window, RT_ROWS: your car sits 4 lines higher for each row less - so does this)
+ARROW_TOP equ 111-(19-OPT_RTROWS)*4
+        else
 ARROW_TOP equ 111               ; the window's line of its first row
+        endif
 ARROW_X equ ARROW_COL*8+ARROW_W/2       ; its middle, in window pixels: (92, 118)
 ARROW_Y equ ARROW_TOP+ARROW_ROWS/2
 ARROW_BR equ BUF_TOP+ARROW_TOP  ; ... and in the back buffer: the row, and the address of its first byte

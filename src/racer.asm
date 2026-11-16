@@ -1978,14 +1978,22 @@ cx_pos:
         sbc a,a
         ld d,a
         add hl,de
+        if OPT_RT               ; (RACETRACK with a smaller play window, RT_ROWS: the middle of the rows that scroll)
+        ld de,OPT_RTROWS*4-8
+        else
         ld de,WIN_H/2-8         ; the car in the middle, top to bottom, less the lead
+        endif
         or a
         sbc hl,de
         bit 7,h
         jr z,cy_pos
         ld hl,0
 cy_pos:
+        if OPT_RT
+        ld de,MAPH*8-OPT_RTROWS*8-8
+        else
         ld de,MAPH*8-WIN_H-8
+        endif
         call clamp_hl
         ld (camy),hl
         ret

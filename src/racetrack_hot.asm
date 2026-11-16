@@ -141,7 +141,7 @@ rcl_same:
         sbc a,a
         ld b,a                  ; BC = the first tile column in view - 1
         ld de,RT_B
-        ld a,WIN_H/8+1
+        ld a,OPT_RTROWS+1
 rcl_b:
         ex af,af'
         ld a,(hl)
@@ -183,7 +183,7 @@ rcl_b:
         ex de,hl                ; DE = the kinds
         ld hl,RT_SH+32+1        ; the window's first square
         ld b,RT_CLT/256
-        ld a,WIN_H/8
+        ld a,OPT_RTROWS
 rcl_row:
         ex af,af'
         ld a,(rt_odd)
@@ -248,6 +248,22 @@ rcl_n2:
         ex af,af'
         dec a
         jp nz,rcl_row
+        if OPT_RTROWS < WIN_H/8 ; A SMALLER PLAY WINDOW (RT_ROWS): the window's rows below the ones that scroll are a black band.
+        ld b,WIN_H/8-OPT_RTROWS ; Each picture its squares start as plain black (nothing in them shows); the mini-map, the mug,
+rcl_band:                       ; the spoons and the crew chief's bubble then mark their own, as ever (rt_hud). The cars never
+        ld a,RT_PLAIN           ; mark them (rq_cell), so a car goes out of sight under the band.
+        rept WIN_W
+        ld (hl),a
+        inc l
+        endm
+        ld a,l
+        add a,32-WIN_W
+        ld l,a
+        jr nc,rcl_bn
+        inc h
+rcl_bn:
+        djnz rcl_band
+        endif
         ret
 ; RT_ENT: HL = HL + A x DE (A = 0 to 8 lines, DE = minus a line's bytes): where to come into a run of 8 lines. Keeps BC, DE.
 rt_ent:
@@ -986,6 +1002,16 @@ rq_s2:
 ; back buffer if it is not there: cleared if nothing in it showed, made up (rt_sq_buf) if rt_class left it for rt_show.
 ; Keeps HL, C.
 rq_cell:
+        if OPT_RTROWS < WIN_H/8 ; (a smaller play window, RT_ROWS: a square in the band, or below it, is not the car's)
+        ld a,h
+        cp (RT_SH+32+OPT_RTROWS*32)/256
+        jr c,rq_c0
+        ret nz
+        ld a,l
+        cp (RT_SH+32+OPT_RTROWS*32) AND 255
+        ret nc
+rq_c0:
+        endif
         ld a,(hl)
         add a,a
         jr nc,rq_inb            ; in the buffer already (another car has it, or the arrow)
@@ -1068,7 +1094,7 @@ rr_row:
         ld de,0x10000-(RT_SH+32)
         add hl,de
         jr nc,rr_nx             ; above the window
-        ld de,0x10000-(WIN_H/8)*32
+        ld de,0x10000-OPT_RTROWS*32
         add hl,de
         jr c,rr_nx              ; below it
         pop hl
