@@ -677,9 +677,9 @@ sb_e:
         endif
 
 ; RT_SHOW: the picture to the screen (the main loop calls it when the TV frame has come). Row by row down the window:
-; each square that shows anything - copied from the back buffer if it is there, made up on the screen if not - and then
-; the row's 24 colours. So a row's pixels and its colours always change together, and a square whose colour hides it is
-; never touched. Interrupts stay on (nothing here moves the stack pointer).
+; each square that shows anything - copied from the back buffer if it is there, made up on the screen if not - and
+; straight after it that square's colour. So a square's pixels and its colour always change together (within a few
+; T-states: the TV's beam all but never sees one without the other), and a square whose colour hides it is never touched. Interrupts stay on (nothing here moves the stack pointer).
 ; Along a row the other HL and DE are at the map's tiles for the square whose low byte is the other C (rt_dir moves
 ; them on to the square it is given).
 rt_show:
@@ -703,6 +703,13 @@ sh_row:
         ld (cp_sh+1),a
         add a,BUF_HI-0x40
         ld (cp_bh+1),a
+        ld e,l                  ; DE = the row's colours on the screen: each square's goes up as soon as its pixels are there
+        ld a,h
+        sub (RT_SH-0x5800)/256
+        ld d,a
+        ld (sd_at+1),a
+        ld (sd_at2+1),a
+        ld (cp_at+1),a
         ld a,l
         exx
         ld c,a
@@ -725,17 +732,7 @@ sh_row:
         add a,a
         call nc,rt_cp           ; (bit 7 not set: it is in the buffer)
         call m,rt_dir           ; (bits 7 and 6: rt_class's own. Bit 7 alone: nothing in it shows)
-        inc l
-        endm
-        ld a,l                  ; the row's colours
-        sub WIN_W
-        ld l,a
-        ld e,a
-        ld a,h
-        sub (RT_SH-0x5800)/256
-        ld d,a
-        rept WIN_W
-        ldi
+        ldi                     ; its colour, and on to the next
         endm
         ld de,32-WIN_W
         add hl,de
@@ -770,6 +767,8 @@ sd_1:
 sd_sh:  ld h,0x40               ; (patched: this row's page of the screen)
         call rt_sq
 sd_hh:  ld h,RT_SH/256          ; (patched: this row's page of rt_sh)
+        ld e,l
+sd_at:  ld d,0x58               ; (patched: ... and of the screen's colours)
         xor a
         ret
 sd_4:
@@ -801,6 +800,8 @@ sd_sh2: ld h,0x40
         ex af,af'
 sd_hh2: ld h,RT_SH/256
         ld (hl),a
+        ld e,l
+sd_at2: ld d,0x58
         xor a
         ret
 ; RT_CP: the square's 8 lines from the buffer to the screen (and the sign flag off: it is not for rt_dir)
@@ -818,6 +819,8 @@ cp_sh:  ld h,0x40               ; (patched)
         ld a,(de)
         ld (hl),a
 cp_hh:  ld h,RT_SH/256          ; (patched)
+        ld e,l
+cp_at:  ld d,0x58               ; (patched)
         xor a
         ret
 

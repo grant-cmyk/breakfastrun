@@ -31,7 +31,7 @@ PW, PH = W * 8, H * 8             # pixels
 # is a dashed white limit line; the grass starts RT_RUNOFF pixels beyond it. Everything for it is in the "if RT" blocks here
 # (and the last one writes src/rt_world.asm, the grass); without RACETRACK=1 not one byte of any output changes.
 RT = os.environ.get('RACETRACK') == '1'
-RT_RUNOFF = 10                    # black run-off between the road's edge and the grass, pixels
+RT_RUNOFF = int(os.environ.get('RT_RUNOFF', 10))   # black run-off between the road's edge and the grass, pixels (RT_RUNOFF=n: a trial - with a limit line it must stay 10)
 ROAD = 72                         # road width in pixels (48, 52, 56, 64, then 72 for the big cars - Grant, 10 Nov 2026)
 
 # THE CORNER ARROWS' LOOK-AHEAD (the rest is further down: "THE CORNER ARROWS"). Change these to make the
@@ -127,7 +127,9 @@ if RT:                            # RACETRACK: the grass, and the dashed white l
     # tiles, a chequerboard of them - the same 8 on / 8 off along a straight, and a tile then holds a whole dash or none, which
     # nearly halves the tiles the game draws for the line (396 -> 223; measured: PROJECT-LOG, 16 Nov 2026)
     _dash = (((_xx + _yy) // 8) % 2 == 0) if os.environ.get('RT_DASH') == 'diag' else (((_xx // 8) + (_yy // 8)) % 2 == 0)
+    if os.environ.get('RT_DASH') == 'sparse': _dash = (((_xx // 8) + (_yy // 8)) % 4 == 0)   # RT_DASH=sparse (a trial of a trial): 8 on, 24 off - half the dashes to draw
     _line = _np.array(road_mask(ROAD), dtype=bool) & ~_np.array(road_mask(ROAD - 4), dtype=bool) & _dash
+    if os.environ.get('RT_NOLINE') == '1': _line[:] = False       # RT_NOLINE=1 (a trial of a trial): no limit line - the quickest to draw (PROJECT-LOG, 16 Nov 2026)
     # A colour square is 8 x 8 and holds two colours: black and green, or black and white. So no white pixel may ever be in a
     # square with a green one - none within 7 pixels of the grass, across or down. (10 pixels of run-off make that so; this checks.)
     _near = _np.zeros_like(rt_grass); _gp = _np.pad(rt_grass, 7, constant_values=True)

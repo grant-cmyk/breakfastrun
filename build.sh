@@ -13,7 +13,13 @@ CARSOPT="${1:-small}"
 # give, so it turns them on; it builds in its own folder (build/racetrack); tools/make_world.py reads RACETRACK too.
 if [ "${RACETRACK:-0}" = "1" ]; then
   export RACETRACK TILE1=1 FLIP=1 TOWER=1 LOOP=1
-  BDIR="${BDIR:-racetrack}"; OUT="${OUT:-racer_racetrack}"
+  # RT_NOLINE=1 with it: no limit line (quicker: a concession for Grant to judge) -> build/racer_racetrack_noline.tap
+  RTN=""; [ "${RT_NOLINE:-0}" = "1" ] && RTN="${RTN}_noline"
+  # RT_DASH=sparse: the limit line's dashes 8 on, 24 off -> ..._sparse.tap. RT_RUNOFF=n (with RT_NOLINE=1): the grass n pixels
+  # from the road's edge, not 10 -> ..._runoffN.tap
+  [ "${RT_DASH:-}" = "sparse" ] && RTN="${RTN}_sparse"
+  [ -n "${RT_RUNOFF:-}" ] && RTN="${RTN}_runoff${RT_RUNOFF}"
+  BDIR="${BDIR:-racetrack$RTN}"; OUT="${OUT:-racer_racetrack$RTN}"
 fi
 CARS="$CARSOPT" python3 "$ROOT/tools/make_data.py" | grep -i "cars:"
 U=15; [ "$CARSOPT" = "big" ] && U=12
