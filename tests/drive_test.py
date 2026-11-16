@@ -386,6 +386,7 @@ with Racer(headless=True) as sp:
     check(max(d) > 40, 'the computer cars drive differently (they spread out)')
 
     # ---- your top speed on a clear road (computer cars sent far away) ----
+    at_copy_done(sp)                               # (16 Nov 2026: a place written while the game is part-way through moving that car is LOST - the game writes its old one back: the 'latent fault'. Write between pictures - tests/put_race_probe.py)
     for i in CPUS: put(sp, i, 4 + 40 * i, SY + 58)   # (parked apart: they bump nothing)
     put(sp, 0, 180, SY - 8, 16)
     hold(sp, ['Q'], 1.5)
@@ -393,6 +394,7 @@ with Racer(headless=True) as sp:
     check(1.6 < math.hypot(pv['vx'], pv['vy']) <= 1.8, 'your top speed on a clear road is 1.75 px/frame (%.2f)' % math.hypot(pv['vx'], pv['vy']))
 
     # ---- bump: drop a computer car just in front of you, drive into it ----
+    at_copy_done(sp)
     put(sp, 0, 200, SY - 8, 16); put(sp, 1, 230, SY - 8, 16)
     sp.write(CARS + CS + 16, bytes([60, 2]))      # CPU A: 60 frames of 'lift' so it sits still-ish
     b0n = g(sp, 'bumps')
