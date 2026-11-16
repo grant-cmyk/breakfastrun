@@ -3,15 +3,19 @@
 **Stamped:** 2026-11-16 SAST (the choose screen added; the rest as of 2026-11-15 15:17) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
-**The race track trial (16 Nov 2026, branch worktree-agent-af8779cbaad3c1b51, not merged):** Grant scrapped the breakfast
-table for a traditional track - black road, solid green grass from 10 px beyond the road's edge, a dashed white limit
-line, each car its own colour, and clash rule 4. Built as a trial tape of track 1: `RACETRACK=1 bash build.sh` ->
-build/racer_racetrack.tap (off by default; the plain build and tracks 2, 3, 5 are byte for byte unchanged). The look is
-exact (tests/racetrack_test.py, 15 checks from the emulator's screen, all pass; pictures in docs/design/racetrack/built/)
-but it is TOO SLOW: 7.0-7.5 pictures a second against 12.4-12.6. The engine is src/racetrack.asm, the grass's data comes
-from tools/make_world.py. PROJECT-LOG's last entry has how it works, the measured tables, the grass's two speed numbers
-(RT_GRASS_FSH, RT_GRASS_PUSH), the clash scores, the memory, and what would make it quicker. Next for Grant: look at the
-tape and the pictures and say whether the look is right before anyone spends more on its speed.
+**The race track trial (16 Nov 2026, branches worktree-agent-af8779cbaad3c1b51 then worktree-agent-ab8bf2b0bee0348cf, not
+merged):** Grant scrapped the breakfast table for a traditional track - black road, solid green grass from 10 px beyond
+the road's edge, a dashed white limit line, each car its own colour, and clash rule 4. Built as a trial tape of track 1:
+`RACETRACK=1 bash build.sh` -> build/racer_racetrack.tap (off by default; the plain build and tracks 2, 3, 5 are byte for
+byte unchanged). He drove it: "the look is right ... it is just not smooth". The speed pass (PROJECT-LOG's last entry)
+took it from 7.0-7.5 pictures a second to 7.6-8.5 with no change to the look - today's tape makes 12.4-12.6 - by hiding
+all-grass and plain-road squares by their colour and making up only the squares that show something, straight onto the
+screen (src/racetrack.asm; the data from tools/make_world.py). Two concessions are built for him to try:
+`RT_DASH=sparse RACETRACK=1 bash build.sh` (dashes 8 on 24 off: 8.5-9.6) and `RT_NOLINE=1 RACETRACK=1 bash build.sh` (no
+limit line: 9.6-10.6); pictures and real-speed GIFs of all three in docs/design/racetrack/built/speed_*. Getting back to
+12.5 takes the limit line and about a quarter of the play window, or the line and three savings costed in the log and
+not built. About 1,200 bytes are free in these builds. Next for Grant: drive the three tapes and choose from the log's
+menu (or say the trial stops here).
 
 **Latest (14 Nov 2026, 22:16 SAST) - read this before the older status below:** the window is 192 x 152
 (24 columns, 19 rows); the right panel is 6 columns: the mini-map at its top, RACE and the order under it
