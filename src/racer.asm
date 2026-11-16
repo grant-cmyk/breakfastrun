@@ -4454,6 +4454,149 @@ mt_l_done:
 ; the tape for nothing, and every address in it is worked out here.
 ; ---------------------------------------------------------------------
 make_copier:
+        if OPT_LOOP
+; THE LOOPED COPIER (LOOP=1 bash build.sh; docs/design/OPTIMISATION-PLAN.md): one character row's 8 lines of
+; POP/PUSH code, run 19 times - about 430 bytes at COPIER instead of 6,083. A line is two halves of 12 bytes:
+; six pairs (AF BC DE HL and the other BC DE); IX and IY are the buffer's two halves, the other HL the screen's
+; (its low byte is flipped between the halves: +13 and +25 differ by two bits). Lines go half 1, half 2, then
+; half 2, half 1 in turn, so the screen pointer is flipped once a line.
+        ld hl,lc_head
+        ld de,COPIER
+        ld bc,lc_rows-lc_head
+        ldir
+        ld a,4
+mc_l4:  ld hl,lc_rows
+        ld bc,lc_tail-lc_rows
+        ldir
+        dec a
+        jr nz,mc_l4
+        ld bc,lc_end-lc_tail    ; (HL = lc_tail)
+        ldir
+        ret
+LC_LOOP equ COPIER+lc_rows-lc_head
+LC_CNT  equ COPIER+0x1FF        ; the character rows left
+lc_head:
+        if OPT_LOOP/2           ; LOOP=2, an EXPERIMENT (OPTIMISATION-PLAN.md): the copy starts once the beam is past the
+        ld bc,615               ; window's top line and follows it down - it is slower than the beam, so it never catches
+lc_w:   dec bc                  ; it: the whole picture changes between two TV frames and nothing is shown torn. (This
+        ld a,b                  ; wait is 16,000 T thrown away: the real thing would do the next picture's sums here.) The
+        or c                    ; copy then runs over the next interrupt with interrupts off: it is taken by hand after.
+        jr nz,lc_w
+        endif
+        ld ix,BUF+0x22          ; line 8 of the buffer, byte 2 (the window's first)
+        ld iy,BUF+0x2E          ; ... and byte 14
+        exx
+        ld hl,0x4020+13         ; the screen: line 8, column 1, + 12 (PUSH works downwards)
+        exx
+        ld a,WIN_H/8
+        ld (LC_CNT),a
+lc_rows:
+        ld sp,ix                ; ---- a line, half 1 then half 2 ----
+        pop bc
+        pop de
+        pop hl
+        exx
+        pop bc
+        pop de
+        pop af                  ; (AF last in, first out: the flags are picture, and INC H below changes them)
+        ld sp,hl
+        push af
+        push de
+        push bc
+        set 4,l                 ; +13 -> +25
+        res 2,l
+        exx
+        push hl
+        push de
+        push bc
+        ld sp,iy
+        pop bc
+        pop de
+        pop hl
+        exx
+        pop bc
+        pop de
+        pop af                  ; (AF last in, first out: the flags are picture, and INC H below changes them)
+        ld sp,hl
+        push af
+        push de
+        push bc
+        inc h                   ; the next line down
+        exx
+        push hl
+        push de
+        push bc
+        inc ixh
+        inc iyh
+        ld sp,iy                ; ---- the next line, half 2 then half 1 ----
+        pop bc
+        pop de
+        pop hl
+        exx
+        pop bc
+        pop de
+        pop af                  ; (AF last in, first out: the flags are picture, and INC H below changes them)
+        ld sp,hl
+        push af
+        push de
+        push bc
+        res 4,l                 ; +25 -> +13
+        set 2,l
+        exx
+        push hl
+        push de
+        push bc
+        ld sp,ix
+        pop bc
+        pop de
+        pop hl
+        exx
+        pop bc
+        pop de
+        pop af                  ; (AF last in, first out: the flags are picture, and INC H below changes them)
+        ld sp,hl
+        push af
+        push de
+        push bc
+        inc h
+        exx
+        push hl
+        push de
+        push bc
+        inc ixh
+        inc iyh
+lc_tail:
+        ld a,ixl                ; the next character row: 32 bytes on, and back up 8 lines - unless that
+        add a,32                ; crossed into the next third of the screen, where the 8 lines on are right
+        ld ixl,a
+        ld a,iyl
+        add a,32
+        ld iyl,a
+        exx
+        ld a,l
+        add a,32
+        ld l,a
+        jr c,lc_third
+        ld a,h
+        sub 8
+        ld h,a
+        ld a,ixh
+        sub 8
+        ld ixh,a
+        ld iyh,a
+lc_third:
+        exx
+        ld hl,LC_CNT
+        dec (hl)
+        jp nz,LC_LOOP
+        if OPT_LOOP/2
+        ld sp,(save_sp)
+        jp isr                  ; (it ends EI, RET)
+        else
+        jp copy_done
+        endif
+lc_end:
+        else
         ld de,COPIER
         xor a
 mc_row:
@@ -4553,6 +4696,7 @@ mc_ldsp:                        ; write "ld sp,HL"
         ret
 mc_pops:   db 0xF1,0xC1,0xD1,0xE1,0xD9,0xC1,0xD1,0xE1   ; pop af,bc,de,hl; exx; pop bc,de,hl
 mc_pushes: db 0xE5,0xD5,0xC5,0xD9,0xE5,0xD5,0xC5,0xF5   ; push hl,de,bc; exx; push hl,de,bc,af
+        endif
 
 im2_on:
         di

@@ -17,6 +17,8 @@ printf '; Build options (written by build.sh)\nOPT_TALL equ 1                  ;
 # with 0 not one byte of tracks 1-3 changes
 BR=0; [ "${TRACK:-1}" = "5" ] && BR=1
 printf 'OPT_BRIDGE equ %s               ; 1: the track has a bridge (TRACK=5 bash build.sh: levels, walls, ramps - bridge.asm)\n' "$BR" >> "$ROOT/src/options.asm"
+# LOOP=1: the looped screen-copy routine (about 430 bytes at COPIER, not 6,083 - docs/design/OPTIMISATION-PLAN.md)
+printf 'OPT_LOOP equ %s                 ; 1: the screen copy as a loop of one character row (LOOP=1 bash build.sh)\n' "${LOOP:-0}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as
@@ -32,6 +34,7 @@ else
   TRACK="$TRACK" WORLD_OUT="$T/src" python3 "$ROOT/tools/make_world.py"
   cd "$T/src"; OUTN="racer_track$TRACK"
 fi
+OUTN="${OUT:-$OUTN}"
 bash "$B" asm racer.asm "$ROOT/build/$OUTN.tap" racer
 pasmo racer.asm "$ROOT/build/$OUTN.bin" "$ROOT/build/$OUTN.sym"
 grep -i -E "^(code_end|init_end)\s" "$ROOT/build/$OUTN.sym"
