@@ -15,7 +15,7 @@ pool = open(os.path.join(HERE, 'pool_art.txt')).read()
 C = {(m.group(1), m.group(2)): m.group(3).split() for m in re.finditer(r'== (\w+) heading ([\d.]+) ==\n((?:[Xo.]{16}\n){16})', pool)}
 for n in ('SPECS', 'TRUCK'): C[(n, '90')] = [''.join(C[(n, '0')][15 - c][r] for c in range(16)) for r in range(16)]
 with open(os.path.join(D, 'new_faces.txt'), 'w') as f:
-    f.write("The choose screen's two new drivers, as tools/import_faces.py reads them (python3 tools/import_faces.py this-file, then\npython3 tools/make_faces.py and bash tools/build_choose.sh). # is ink.\n\n")
+    f.write("Classification: Internal\n\nThe choose screen's two new drivers, as tools/import_faces.py reads them (python3 tools/import_faces.py this-file, then\npython3 tools/make_faces.py and bash tools/build_choose.sh). # is ink.\n\n")
     for n in ('SPECS', 'DOT'):
         for mood in ('now', 'eyes', 'happy', 'sad'): f.write('%s %s\n%s\n\n' % (n, mood, '\n'.join(r.replace('X', '#') for r in F[(n, mood)])))
 S = 6; PAD = 14; CW = 16 * S + 16 + PAD * 2 + 8

@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-15 15:17 SAST · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
+**Stamped:** 2026-11-16 SAST (the choose screen added; the rest as of 2026-11-15 15:17) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
 **Latest (14 Nov 2026, 22:16 SAST) - read this before the older status below:** the window is 192 x 152
@@ -13,6 +13,8 @@ The VIEW LEADS THE CAR: up to 20 px ahead across, 16 up/down, 2 px a picture (ha
 LEAD_X / LEAD_Y / LEAD_STEP to tune). In-race music is on the AY SOUND CHIP (OPT_AY, tools/make_music_ay.py; needs a 128K or
 the 48K with the AY option on - a plain 48K is silent); coloured objects OFF (OBJECTS=1; too slow). Speed alone: 40 pictures at 3 TV
 frames / 225 at 4 / 5 at 5. Speed test 15 Nov 06:07: alone now 91 pictures at 3 frames / 193 / 3; the pack is ~30,000 T a picture over the faster rate (see the log's last entry for what was tried and what is left). Detail: PROJECT-LOG.md, end.
+
+**The choose screen (16 Nov, background agent, branch worktree-agent-a31f6549f20d471a9 - not merged, not playtested):** `bash tools/build_choose.sh` -> build/racer_choose.tap: tracks 1-3 in one load; at the title 1 or 2 goes to a choose screen - TRACK, DRIVER (seven: two new faces, SPECS and DOT), CAR (seven: SALOON and TRUCK from the pool as placeholders), EXTRA (one of ACCELERATION +10.9% push, GRIP +12.5%, SPEED +9.8% top) - steer left / right, accelerate to select (src/choose.asm; OPT_CHOOSE, off by default: the other tapes are byte-identical). New cars are data: tools/choose_cars.txt + a drawing in tools/choose_car_art.txt. Memory on that tape: 375 bytes free in three pieces - none of Grant's three new cars fits beside the two placeholders; two fit in their place. Two players: the choosing works (player 2: 6, 7, 9), the race does not exist - the computer drives the second car. Test: `python3 tests/choose_test.py`; `bash tests/choose_suites.sh`. Pictures: docs/design/choose/. Detail: PROJECT-LOG.md, end.
 
 **Optimisation investigation (16 Nov, background agent, branch worktree-agent-af7c58c90304a2ad1 - not merged, not playtested):** docs/design/OPTIMISATION-PLAN.md. 8.9 KB found by four build options (LOOP, FLIP, TILE1, TOWER - all off by default); build/racer_3tracks.tap is tracks 1, 2, 3 in one tape (T at the title, then 1); the "latent fault" was the test writing a car's place mid-move (fixed in tests/drive_test.py); the computer cars' pace depends on the picture rate (PACEFIX=1 is the fix, Grant's call). Steps to approve one at a time: the plan's section 4.
 
