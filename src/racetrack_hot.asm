@@ -800,12 +800,104 @@ rt_car:
         ld (rt_mixed),a
         inc a
         ld (rt_probe),a
+        ld (rt_slow),a          ; (a car out of sight never gets to rt_car_sq)
         call draw_car
         xor a
         ld (rt_probe),a
         ld a,(rt_mixed)
         or a
-        jp z,draw_car
+        jr nz,rtc_rim
+        ld a,(rt_slow)
+        or a
+        jp nz,draw_car
+; RT_CAR_INK: THE SHORT CUT (17 Nov 2026) for a car alone on plain squares - nearly every car. Every square it has a
+; pixel in was cleared for it a moment ago (rq_cell), so there is nothing under it to cut a hole in: only its ink is
+; put in, from the rows rt_car_sq was given, without going through draw_car's working-out a second time. The buffer
+; ends up exactly as draw_car would leave it (a pair of bytes is passed over when its MASK is empty, as there).
+rt_car_ink:
+        ld a,(wxu)
+        ld c,a
+        cpl                     ; the shift table: (15 - u) AND 7, as draw_car
+        and 7
+        add a,a
+        add a,TAB_HI
+        ex af,af'
+        ld a,c
+        and 0xF8
+        ld c,a
+        ld a,(dc_row0)
+        ld b,a
+        call buf_addr
+        ex af,af'
+        ld b,a
+rci_rows: ld de,0               ; (patched by rt_car_sq: the picture's rows)
+        ld a,(dc_count)
+rci_row:
+        ex af,af'
+        ld a,(de)               ; the mask: only to see if this pair of bytes is empty
+        inc de
+        or a
+        jr z,rci_a
+        ld a,(de)
+        ld c,a
+        ld a,(bc)               ; the ink: column k ...
+        or (hl)
+        ld (hl),a
+        inc b
+        inc l
+        ld a,(bc)               ; ... and column k+1
+        or (hl)
+        ld (hl),a
+        dec b
+        dec l
+rci_a:
+        inc de
+        inc l
+        ld a,(de)
+        inc de
+        or a
+        jr z,rci_b
+        ld a,(de)
+        ld c,a
+        ld a,(bc)
+        or (hl)
+        ld (hl),a
+        inc b
+        inc l
+        ld a,(bc)
+        or (hl)
+        ld (hl),a
+        dec b
+        dec l
+rci_b:
+        inc de
+        dec l
+        inc h                   ; the next line down (screen layout)
+        ld a,h
+        and 7
+        jr nz,rci_s
+        ld a,l
+        add a,32
+        ld l,a
+        jr c,rci_s
+        ld a,h
+        sub 8
+        ld h,a
+rci_s:
+        ld a,(dc_flip)          ; (a picture read upside down: back two rows)
+        or a
+        jr z,rci_f
+        ld a,e
+        sub 8
+        ld e,a
+        jr nc,rci_f
+        dec d
+rci_f:
+        ex af,af'
+        dec a
+        jp nz,rci_row
+        ret
+rtc_rim:
         call rq_ring            ; (the squares the rim may reach: into the buffer)
         ld a,0x7E               ; "OR (HL)" becomes "LD A,(HL)" at the four places draw_car puts the ink in: mask only
         call rtc_patch
@@ -960,56 +1052,83 @@ rtc_patch:
 ; It does not go back into draw_car: its RET is draw_car's own.
 rt_car_sq:
         pop af                  ; (the way back into draw_car)
-        ld hl,rt_bm
+        ld (rci_rows+1),de      ; (the picture's rows: rt_car_ink draws from them)
         xor a
-        ld b,6
-rq_z0:
-        ld (hl),a
-        inc l
-        djnz rq_z0
-        ld a,(dc_count)
-        ld b,a
-        ld a,(dc_row0)
-        ld c,a                  ; C = the buffer line of the row in hand
-        and 0xF8
-        ld (rq_r0+1),a          ; (the first line of the first row of squares)
-rq_acc:
-        ld a,c
-rq_r0:  sub 0
-        rrca
-        rrca
-        and 6                   ; 2 x which row of squares (0-2)
-        add a,rt_bm AND 255
-        ld l,a
-        ld h,rt_bm/256
-        ld a,(de)               ; the row's left 8 pixels: mask, ink
-        inc de
-        or (hl)
-        ld (hl),a
-        ld a,(de)
-        inc de
-        or (hl)
-        ld (hl),a
-        inc l
-        ld a,(de)               ; and its right 8
-        inc de
-        or (hl)
-        ld (hl),a
-        ld a,(de)
-        inc de
-        or (hl)
-        ld (hl),a
-        ld a,(dc_flip)          ; (a picture read upside down: back two rows)
+        ld (rt_slow),a          ; (so far a car alone on plain squares: rq_cell says if not)
+        ex de,hl                ; HL = the picture's rows
+        ld de,rq_gf
+        ld a,(dc_flip)          ; (a picture read upside down: its rows are read last byte first, upwards)
         or a
-        jr z,rq_fw
-        ld a,e
-        sub 8
-        ld e,a
-        jr nc,rq_fw
+        jr z,rq_g0
+        inc hl
+        inc hl
+        inc hl
+        ld de,rq_gb
+rq_g0:
+        ld (rq_gc+1),de
+        ld a,(dc_count)
+        ld d,a                  ; D = the picture's rows to go
+        ld a,(dc_row0)
+        cpl
+        and 7
+        inc a                   ; the first row of squares has 8 - (its first line AND 7) of them
+        call rq_g1
+        ld (rt_bm),bc
+        ld a,8
+        call rq_g1
+        ld (rt_bm+2),bc
+        ld a,8
+        call rq_g1
+        ld (rt_bm+4),bc
+        jr rq_gx
+; RQ_G1: up to A of the picture's rows (D = how many are left) ORed together: C = their left 8 pixels (mask and ink), B = their right 8
+rq_g1:
+        ld bc,0
+        inc d
         dec d
-rq_fw:
-        inc c
-        djnz rq_acc
+        ret z
+        cp d
+        jr c,rq_g2
+        ld a,d
+rq_g2:
+        ld e,a
+        ld a,d
+        sub e
+        ld d,a
+rq_gc:  jp rq_gf                ; (patched: rq_gf or rq_gb)
+rq_gf:
+        ld a,(hl)
+        inc hl
+        or (hl)
+        inc hl
+        or c
+        ld c,a
+        ld a,(hl)
+        inc hl
+        or (hl)
+        inc hl
+        or b
+        ld b,a
+        dec e
+        jr nz,rq_gf
+        ret
+rq_gb:
+        ld a,(hl)
+        dec hl
+        or (hl)
+        dec hl
+        or b
+        ld b,a
+        ld a,(hl)
+        dec hl
+        or (hl)
+        dec hl
+        or c
+        ld c,a
+        dec e
+        jr nz,rq_gb
+        ret
+rq_gx:
         ld a,(wxu)              ; the picture's 16 pixels start at buffer x = wxu + 1
         inc a
         ld e,a
@@ -1063,10 +1182,14 @@ rq_band:
         jr z,rq_s1
         ld a,(rq_col0)          ; (byte 0 has no square)
         or a
-        jr z,rq_s1
+        jr z,rq_s0
         push de
         call rq_cell
         pop de
+        jr rq_s1
+rq_s0:
+        ld a,h                  ; (pixels in the margin, which is never cleared: no short cut)
+        ld (rt_slow),a
 rq_s1:
         inc l
         ld a,c
@@ -1106,20 +1229,26 @@ rq_cell:
         ld a,h
         cp (RT_SH+32+OPT_RTROWS*32)/256
         jr c,rq_c0
-        ret nz
+        jr nz,rq_cs
         ld a,l
         cp (RT_SH+32+OPT_RTROWS*32) AND 255
-        ret nc
+        jr c,rq_c0
+rq_cs:
+        ld a,h
+        ld (rt_slow),a
+        ret
 rq_c0:
         endif
         ld a,(hl)
         add a,a
-        jr nc,rq_inb            ; in the buffer already (another car has it, or the arrow)
+        jr nc,rq_slow           ; in the buffer already (another car has it, or the arrow)
         jp p,rq_hid             ; nothing in it shows
         call rt_sq_buf
+rq_slow:
+        ld a,h                  ; (not a plain square cleared for this car alone: no short cut for it - rt_car_ink)
+        ld (rt_slow),a
         ld a,(hl)
         add a,a
-rq_inb:
         cp RT_EDGE*2
         jr z,rq_amb
         and 0x70                ; (its paper)
@@ -1171,7 +1300,15 @@ rq_mix:
         ld (rt_mixed),a
         ret
 rq_clr:                         ; the square at HL in rt_sh: its 8 lines in the buffer cleared
-        call rt_bufsq
+        ld a,h
+        sub RT_SH/256
+        add a,a
+        add a,a
+        add a,a
+        add a,BUF_HI
+        ld d,a
+        ld e,l
+        inc e
         xor a
         rept 7
         ld (de),a
@@ -1333,6 +1470,7 @@ rt_cnt:   db 0
 rt_ink:   db 0                  ; the colour of the car being drawn
 rt_probe: db 0                  ; 1: draw_car goes to rt_car_sq once it knows where the picture falls
 rt_mixed: db 0                  ; 1: a grass-and-road square is under the car
+rt_slow:  db 0                  ; not 0: the car is not alone on plain squares cleared for it (no short cut: rt_car_ink)
 rt_u:     db 0                  ; rt_car: the car's place across (wxu) before the rim's passes
 rt_keep:  defs 28               ; rt_car: the pixels of the window's edge kept through a pass of the rim (a byte a line of the car, 27 at most)
 ; RT_B (above the colours): for each of the 20 rows of tiles in view, where the tile under screen column 0 is in the map
