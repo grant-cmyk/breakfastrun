@@ -32,6 +32,9 @@ srs_1:
         ld (NOS_SHOW),a
         ld (BOOST_T),a
         call nos_place
+        if OPT_ARMOUR
+        call arm_new            ; ARMOUR: every car's armour whole (armour.asm)
+        endif
         xor a                   ; no damage, no oil can yet: the first comes 8 seconds in
         ld (dmg),a
         ld b,a
@@ -661,6 +664,9 @@ ot_out:
         ret nc
         xor a
         ld (dmg),a              ; mended
+        if OPT_ARMOUR
+        call arm_mend           ; (ARMOUR: your armour whole again - armour.asm)
+        endif
         ld b,a
         call ot_set             ; and the can is gone
         call rnd

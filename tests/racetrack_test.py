@@ -133,6 +133,9 @@ def scroll(alone):
         cars = np.zeros((152, 192), bool)
         for body, ink in car_masks(g, cx, cy): cars |= body
         ok = free_area() & ~spread(squares(grow(cars, 1))) & (want != 255)
+        for wx, wy, _ in g.weapon_dots():                                  # (ARMOUR tapes: the tank's shell and the clown's wheels are not scenery either -
+            wx -= cx; wy -= cy                                             #  the one square each of their dots is in is left out, as the cars' squares are)
+            if 0 <= wx < 192 and 0 <= wy < 152: ok[wy & ~7:(wy & ~7) + 8, wx & ~7:(wx & ~7) + 8] = False
         d = int(((px != want) & ok).sum())
         gsq = squares(want == 4) & squares(want != 4)
         edge += int((gsq & squares(ok)).sum())

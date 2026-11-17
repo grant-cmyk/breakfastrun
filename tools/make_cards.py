@@ -16,6 +16,11 @@ THE SCALE. A rating of 5 for speed and acceleration is the car as it has always 
          you hold Q, while it is sliding, and both (16, 8, 8, 5 was the car as it was: about a rating of 7 to 8 now).
          SLIDE_AT[g]: for a COMPUTER car, the speed (256 = 1 px a frame) above which it slides when it steers, and which
          its driver brakes down to for a corner (plus the driver's own margin - AI_x_SLIP in src/ai_tune.asm).
+  ARMOUR (only the ARMOUR=1 build uses it - src/armour.asm, tools/build_armour.sh; a card without "armour N" gets 5)
+         every car has six pieces of armour. ARMOUR_PIECE[r]: the points of damage ONE PIECE takes before it is lost. A
+         bump does both cars the same damage - a sixteenth of how fast they were closing, plus 2: a FIRM BUMP (closing
+         at half a pixel a TV frame, the usual knock in the pack) is 10 points, a RAM at a whole pixel a frame 18, a rub
+         3 or 4; the tank's shell is 20 and the clown's wheel 14 (those numbers: src/armour_tune.asm).
 """
 import os, re, sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -26,6 +31,9 @@ ACCEL_STEP = 5          # 64ths of the push a point of acceleration: 5 is 7.8% a
 #        what YOUR car's tyres hold at each rating: gripping, while you hold Q, while sliding, both (16, 8, 8, 5 was the car as it was)
 TYRES    = [None, (6, 3, 3, 2), (7, 4, 3, 2), (9, 4, 4, 3), (10, 5, 5, 3), (12, 6, 5, 4), (13, 7, 6, 4), (15, 7, 7, 5), (17, 9, 8, 5), (19, 10, 9, 6), (21, 11, 10, 7)]
 SLIDE_AT = [None, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
+#        ARMOUR: the damage one of a car's six pieces takes (a firm bump is 10 - FIRM_BUMP, for the table only)
+ARMOUR_PIECE = [None, 22, 26, 30, 34, 38, 46, 55, 65, 77, 92]
+FIRM_BUMP = 10
 # ---- who drives what in the race today (the others are on the choose screen only) ----
 PLAYER = 'MAX'
 CPU = [('FRANK', 'C', 'CYAN'), ('SPIKE', 'G', 'GREEN'), ('BRUNO', 'P', 'PINK'), ('JANE', 'W', 'WHITE')]
@@ -35,12 +43,12 @@ def read_cards(path=None):
     for line in open(path or os.path.join(ROOT, 'tools', 'driver_cards.txt')):
         m = re.match(r'==\s*(\w+)\s*/\s*(.+?)\s*==', line)
         if m: name = m.group(1).upper(); car = m.group(2); continue
-        m = re.match(r'acceleration\s+(\d+),\s*speed\s+(\d+),\s*grip\s+(\d+)', line)
+        m = re.match(r'acceleration\s+(\d+),\s*speed\s+(\d+),\s*grip\s+(\d+)(?:,\s*armour\s+(\d+))?', line)
         if m and name:
-            a, s, g = (int(v) for v in m.groups())
-            for what, v in (('acceleration', a), ('speed', s), ('grip', g)):
+            a, s, g = (int(v) for v in m.groups()[:3]); r = int(m.group(4) or 5)       # (a card with no armour rating: 5)
+            for what, v in (('acceleration', a), ('speed', s), ('grip', g), ('armour', r)):
                 if not 1 <= v <= 10: raise SystemExit('driver_cards.txt: %s has %s %d - ratings are 1 to 10' % (name, what, v))
-            cards.append(dict(name=name, car=car, a=a, s=s, g=g)); name = None
+            cards.append(dict(name=name, car=car, a=a, s=s, g=g, r=r)); name = None
     return cards
 def top(s): return 448 + 7 * SPEED_K[s]
 def k_speed(s): return SPEED_K[s]
@@ -69,11 +77,17 @@ def table(cards):
            '         px a TV frame       from rest to 1.4 px a frame          the tyres hold    brakes for a corner) above ... px a frame']
     for r in range(1, 11):
         out.append('  %2d         %.2f                 %3d      %2d                         %2d                 %.2f' % (r, top(r) / 256, 64 + k_accel(r), frames_to_speed(r), TYRES[r][0], SLIDE_AT[r] / 256))
+    out.append('ARMOUR (the ARMOUR=1 build): every car has 6 pieces; what ONE piece takes, and so how many knocks the car takes in all')
+    out.append('rating   a piece takes   firm bumps a piece   firm bumps for all six   rams (twice as fast)   shells   wheel hits')
+    for r in range(1, 11):
+        p = ARMOUR_PIECE[r]
+        out.append('  %2d         %2d               %4.1f                 %3d                  %3d              %2d        %2d' % (
+            r, p, p / FIRM_BUMP, -(-6 * p // FIRM_BUMP), -(-6 * p // 18), -(-6 * p // 20), -(-6 * p // 14)))
     out.append('THE CARS')
     for c in cards:
         n = numbers(c)
-        out.append('  %-6s %-10s acceleration %d, speed %d, grip %d -> top speed %.2f px a frame, push %d, tyres %s, slides above %.2f' % (
-            c['name'], c['car'], c['a'], c['s'], c['g'], n['top'] / 256, 64 + n['ka'], ','.join(str(v) for v in n['tyres']), n['slide'] / 256))
+        out.append('  %-6s %-10s acceleration %d, speed %d, grip %d, armour %d -> top speed %.2f px a frame, push %d, tyres %s, slides above %.2f, a piece of armour takes %d' % (
+            c['name'], c['car'], c['a'], c['s'], c['g'], c['r'], n['top'] / 256, 64 + n['ka'], ','.join(str(v) for v in n['tyres']), n['slide'] / 256, ARMOUR_PIECE[c['r']]))
     return '\n'.join(out)
 def asm(cards):
     by = {c['name']: numbers(c) for c in cards}
@@ -92,7 +106,9 @@ def asm(cards):
     L += ['; ---- every driver\'s card, as numbers (for the choose screen to come: nothing is stored for these) ----']
     for c in cards:
         n = numbers(c)
-        L += ['CD_%s_A equ %d' % (c['name'], c['a']), 'CD_%s_S equ %d' % (c['name'], c['s']), 'CD_%s_G equ %d' % (c['name'], c['g'])]
+        L += ['CD_%s_A equ %d' % (c['name'], c['a']), 'CD_%s_S equ %d' % (c['name'], c['s']), 'CD_%s_G equ %d' % (c['name'], c['g']), 'CD_%s_R equ %d' % (c['name'], c['r'])]
+    L += ['; ---- ARMOUR (the ARMOUR=1 build, src/armour.asm): the damage one piece of armour takes - your car, then the computer cars in the order of their kinds ----']
+    L += ['CD_ARM_%d equ %d      ; %s, armour %d' % (i, ARMOUR_PIECE[by[who]['r']], who, by[who]['r']) for i, who in enumerate([PLAYER] + [c[0] for c in CPU])]
     L += ['; ---- the computer cars, in the order of their kinds: where it slides (a word), where it brakes to for a corner,',
           ';      where its ACCEL push gives way to its SPEED push (both / 4), its ACCEL push and its SPEED push (64ths more or less than the plain 64),',
           ';      1 while it is braking (the game writes it), and a byte to make the row 8 ----',

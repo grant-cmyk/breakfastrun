@@ -613,6 +613,11 @@ st_put:
         ld a,b
         add a,c
         ld b,a
+        if OPT_ARMOUR           ; ARMOUR: the race order's gap time goes 3 pixels further left (armour.asm)
+        ld a,(arm_gapf)
+        or a
+        jp nz,arm_gap_put
+        endif
         ld a,(ST_COL)
         add a,a
         add a,a
@@ -623,6 +628,7 @@ st_put:
         ld (hl),d
         inc l
         ld (hl),e
+st_nx:
         pop bc
         inc c
         ld a,c
@@ -1043,6 +1049,9 @@ tr_race:                        ; the gap (columns 28-29); once it is in, a flag
         sub TOWER_Y             ; 10 Nov 2026)
         srl a
         call gap_draw           ; A = place
+        if OPT_ARMOUR           ; ARMOUR: the flag and the clock 5 pixels further left, then the row's armour bar (armour.asm)
+        jp arm_flag
+        endif
         ld a,(tr_key)           ; column 31: the flag once it is in, the clock if it has the best
         and 0x18                ; lap; both: the flag above the small clock (Grant, 14 Nov 2026:
         ret z                   ; "the flag and the fastest time icons are in the same column")

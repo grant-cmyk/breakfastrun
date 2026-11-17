@@ -122,6 +122,9 @@ CT_BRK  equ 8
         org 0x5F00              ; big-car frames, below the program (8.25 KB, loaded
         include "bigcars.asm"   ; with it in one block; the loader's CLEAR goes below)
         include "title.asm"     ; the title / attract screen, in the room the small cars leave
+        if OPT_ARMOUR
+        include "armour_tune.asm" ; ARMOUR: what it is, and every number to tune
+        endif
 DMG_ROWS equ 16                 ; the gauge: 2 colour cells high - a clear row, the icon's 13, two clear (dmgicon.asm)
 PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a row,
 PL_H    equ 18                  ; rows
@@ -142,6 +145,9 @@ rt_code_end:
         include "title2.asm"    ; the title screen's car
         if OPT_2P
         include "twoplayer_low.asm" ; TWOP: its parts that run rarely
+        endif
+        if OPT_ARMOUR
+        include "armour_low.asm" ; ARMOUR: its parts that run rarely (the bars on the race order, a new race, firing a shell)
         endif
 low_end:                        ; (the end of what is kept under 0x8000: the room left is LOWTAB-0xE8 less this)
         endif
@@ -265,6 +271,9 @@ cpu_move:
         pop bc
         djnz cpu_move
         call bumps_o
+        if OPT_ARMOUR
+        call arm_tick           ; ARMOUR: the cool-downs, the bars that flash, the tank's gun and the clown's wheels (armour.asm)
+        endif
         if OPT_BRIDGE
         call lv_all             ; BRIDGE: each car's level, the bridge's walls, which ramp it is on (bridge.asm) - last, so
         endif                   ; that no car is ever drawn beyond a wall            ; cars that touch, and the cereal O's
@@ -316,6 +325,9 @@ da_next:
         add ix,de
         pop bc
         djnz draw_all
+        if OPT_ARMOUR
+        call arm_draw           ; ARMOUR: the shell and the clown's wheels, by the cars' rule for the colours (armour.asm)
+        endif
         if OPT_RT
         call rt_hud             ; RACETRACK: the squares of the things that do not scroll
         endif
@@ -442,6 +454,14 @@ tk_on:
         xor a
         ld (cars+C_CTRL),a
 tk_you:
+        if OPT_ARMOUR           ; ARMOUR: spinning - no buttons
+        ld a,(arm_tab+1+A_SPIN)
+        or a
+        jr z,tk_nsp
+        xor a
+        ld (cars+C_CTRL),a
+tk_nsp:
+        endif
         if OPT_2P               ; TWOP: just put back by the leash - held still for a moment
         ld a,(lsh_car)
         dec a
@@ -609,6 +629,10 @@ rk_spup:
 ; PHYSICS (IX = car): buttons -> steering and push -> friction -> move
 ; ---------------------------------------------------------------------
 physics:
+        if OPT_ARMOUR           ; ARMOUR: a car that a shell or a wheel has hit spins where it is, and nothing else (armour.asm)
+        call arm_phys
+        ret nz
+        endif
         ld e,(ix+C_CTRL)
         ld a,(ph_steps)         ; steering: one heading step per frame
         ld d,a
@@ -712,6 +736,9 @@ ph_cpu:
         call nc,skid            ; (braking: the tyres are not asked to turn it as well - no slide)
         else
         call skid               ; fast and turning: it slides (DE, BC, fshift)
+        endif
+        if OPT_ARMOUR
+        call arm_limp           ; ARMOUR: no armour left - it limps (armour.asm)
         endif
         if OPT_RT               ; RACETRACK: on the grass the push is halved RT_GRASS_PUSH times (racetrack.asm: grass is slow)
         ld a,(ix+C_FSH)
@@ -2054,6 +2081,9 @@ bump:
         ld hl,(bumps)           ; touching: count it (the tests read this)
         inc hl
         ld (bumps),hl
+        if OPT_ARMOUR
+        call arm_bump           ; ARMOUR: both cars lose armour, by how fast they met and each one's rating (armour.asm)
+        endif
         push ix                 ; your car in it?  a crunch
         pop hl
         ld de,cars
@@ -2068,12 +2098,14 @@ bp_you:
         ld (snd_bump),a
         ld hl,10*256+2          ; a crash: the border red for a fifth of a second
         call flash
+        if OPT_ARMOUR = 0       ; (ARMOUR: your damage is your car's armour, lost like every car's - arm_bump, above)
         if OPT_2P               ; TWOP: no damage in a two-player race - player 2's car has no gauge, and it would not be fair
         ld a,(two_p)
         or a
         call z,dmg_hit
         else
         call dmg_hit            ; and damage
+        endif
         endif
 bp_snd:
         ; touching: bounce apart. Along whichever way they are further
@@ -4098,6 +4130,27 @@ gd_y:        db 0               ; Q has been let go since this race was set up
 bar_shown:   defs 7             ; the message bar: the 6 big letters shown (0: none),
                                 ; then 1: LAP and the time are shown
 ; (bar_next, which nothing read, went on 16 Nov 2026)
+        if OPT_ARMOUR           ; ARMOUR (armour.asm): the shell - where it is, as a car's record begins (6 bytes),
+sh_rec:   defs 6                ; its speed across and down, the TV frames it has left to fly (0: there is none),
+sh_vx:    dw 0                  ; whose it is, the car the tank looks at next, pictures until he may fire again;
+sh_vy:    dw 0
+sh_life:  db 0
+sh_own:   db 0
+sh_tg:    db 0
+sh_cool:  db 0
+wh_out:   db 0                  ; the clown's wheels: pictures they stay out (0: they are in), pictures until they may come
+wh_cool:  db 0                  ; out again (the byte after), the car he looks at next;
+wh_tg:    db 0
+sh_fired: db 0                  ; counts for the tests and the race reports: shells fired, shells that hit a car,
+sh_hits:  db 0                  ; times the wheels came out, cars a wheel hit;
+wh_outs:  db 0
+wh_hits:  db 0
+arl_dx:   db 0                  ; arm_rel's sums (in this order)
+arl_hx:   db 0
+arl_dy:   db 0
+arl_hy:   db 0
+arm_gapf: db 0                  ; 1 while the race order's gap time is being written (st_put, hud.asm)
+        endif
 race_vars_end:
 shown_dot:   defs 2*NCARS       ; each car's dot on the mini-map (0xFF x: none) - not reset
 last_shown: db 0
@@ -4198,8 +4251,18 @@ gd_1:
 gd_2:
         ld a,(gd_y)
         ld b,a
+        if OPT_ARMOUR           ; ARMOUR: the gap 3 pixels further left, to make room for the armour bar (arm_gap_put, armour.asm)
+        ld c,28
+        ld a,1
+        ld (arm_gapf),a
+        call st_text
+        xor a
+        ld (arm_gapf),a
+        ret
+        else
         ld c,29
         jp st_text
+        endif
         ; (gap_draw, from hud.asm, also fills the gap)
         include "sq4.asm"
 mb_world:
@@ -4212,6 +4275,9 @@ me_world:
         include "arrow.asm"     ; the corner arrow in front of your car (here, after the page-aligned tables: code put before sq4 moves them a page on)
         if OPT_CARDS
         include "cards_code.asm" ; CARDS: the driver cards - each car its own speed, acceleration and grip (and cards.asm, the numbers)
+        endif
+        if OPT_ARMOUR
+        include "armour.asm"    ; ARMOUR: every car's armour, the bar on the HUD, the tank's gun and the clown's wheels
         endif
         if OPT_RT = 0           ; (RACETRACK draws no tiles)
         if OPT_TILE1

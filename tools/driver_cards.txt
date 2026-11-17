@@ -1,37 +1,38 @@
 BREAKFAST RUN DRIVER CARDS v1
-(Grant's ratings and notes, pasted 17 Nov 2026 from the driver cards page, as he typed them. Ratings are out of 10.)
+(Grant's ratings and notes, pasted 17 Nov 2026 from the driver cards page, as he typed them. Ratings are out of 10.
+ The ARMOUR ratings are starting values put in for the armour trial, 17 Nov 2026 - not yet Grant's: change them freely.)
 
 == MAX / RACER ==
-acceleration 5, speed 5, grip 4
+acceleration 5, speed 5, grip 4, armour 5
 behaviour: The all-rounder. Nothing stands out and nothing lets it down. Slides in a way you can read and catch.
 note: Our racer - an all rounder, although grip is probably its weakenss
 
 == FRANK / COUPE ==
-acceleration 5, speed 5, grip 4
+acceleration 5, speed 5, grip 4, armour 5
 behaviour: The racer. Keeps a tidy line and brakes late. A little more top speed than Max, and the best of the low-grip bunch through a bend.
 note: very similar to Max
 
 == JANE / DRAGSTER ==
-acceleration 7, speed 8, grip 1
+acceleration 7, speed 8, grip 1, armour 2
 behaviour: Fastest in a straight line by a distance. Brakes early because she has to: the long car hates a tight corner and skids wide if pushed.
 note: A dragster but terrible on turns, should shoot ahead of Max on the straights but really battle on the corners
 
 == BRUNO / TANK ==
-acceleration 4, speed 2, grip 8
+acceleration 4, speed 2, grip 8, armour 9
 behaviour: Heavy and slow, likes to get in the way. Cuts corners so minimise track time to save
 note: A tank. Really slow but excellent grip
 
 == SPIKE / CLOWN CAR ==
-acceleration 6, speed 2, grip 3
+acceleration 6, speed 2, grip 3, armour 4
 behaviour: Erratic. A real clown. unpredictable. Almost seems to want to hit other cars
 note: Great acceleration but not much speed - reasonable grip
 
 == SPECS / SALOON ==
-acceleration 4, speed 5, grip 3
+acceleration 4, speed 5, grip 3, armour 5
 behaviour: A decently fast car - good acceleration, good speed  and reasonable grip - a real challenger
 note: -
 
 == DOT / TRUCK ==
-acceleration 3, speed 3, grip 8
+acceleration 3, speed 3, grip 8, armour 8
 behaviour: The six-wheeler. Slow away from the lights, strong once it is rolling, and needs the whole road to turn. (Choose-screen driver; placeholder car.)
 note: -

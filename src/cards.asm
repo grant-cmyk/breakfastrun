@@ -15,14 +15,26 @@
 ;    8         1.91                  79       8                         17                 1.64
 ;    9         1.97                  84       8                         19                 1.76
 ;   10         2.02                  89       7                         21                 1.88
+; ARMOUR (the ARMOUR=1 build): every car has 6 pieces; what ONE piece takes, and so how many knocks the car takes in all
+; rating   a piece takes   firm bumps a piece   firm bumps for all six   rams (twice as fast)   shells   wheel hits
+;    1         22                2.2                  14                    8               7        10
+;    2         26                2.6                  16                    9               8        12
+;    3         30                3.0                  18                   10               9        13
+;    4         34                3.4                  21                   12              11        15
+;    5         38                3.8                  23                   13              12        17
+;    6         46                4.6                  28                   16              14        20
+;    7         55                5.5                  33                   19              17        24
+;    8         65                6.5                  39                   22              20        28
+;    9         77                7.7                  47                   26              24        33
+;   10         92                9.2                  56                   31              28        40
 ; THE CARS
-;   MAX    RACER      acceleration 5, speed 5, grip 4 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17
-;   FRANK  COUPE      acceleration 5, speed 5, grip 4 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17
-;   JANE   DRAGSTER   acceleration 7, speed 8, grip 1 -> top speed 1.91 px a frame, push 74, tyres 6,3,3,2, slides above 0.82
-;   BRUNO  TANK       acceleration 4, speed 2, grip 8 -> top speed 1.64 px a frame, push 59, tyres 17,9,8,5, slides above 1.64
-;   SPIKE  CLOWN CAR  acceleration 6, speed 2, grip 3 -> top speed 1.64 px a frame, push 69, tyres 9,4,4,3, slides above 1.05
-;   SPECS  SALOON     acceleration 4, speed 5, grip 3 -> top speed 1.75 px a frame, push 59, tyres 9,4,4,3, slides above 1.05
-;   DOT    TRUCK      acceleration 3, speed 3, grip 8 -> top speed 1.67 px a frame, push 54, tyres 17,9,8,5, slides above 1.64
+;   MAX    RACER      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17, a piece of armour takes 38
+;   FRANK  COUPE      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17, a piece of armour takes 38
+;   JANE   DRAGSTER   acceleration 7, speed 8, grip 1, armour 2 -> top speed 1.91 px a frame, push 74, tyres 6,3,3,2, slides above 0.82, a piece of armour takes 26
+;   BRUNO  TANK       acceleration 4, speed 2, grip 8, armour 9 -> top speed 1.64 px a frame, push 59, tyres 17,9,8,5, slides above 1.64, a piece of armour takes 77
+;   SPIKE  CLOWN CAR  acceleration 6, speed 2, grip 3, armour 4 -> top speed 1.64 px a frame, push 69, tyres 9,4,4,3, slides above 1.05, a piece of armour takes 34
+;   SPECS  SALOON     acceleration 4, speed 5, grip 3, armour 5 -> top speed 1.75 px a frame, push 59, tyres 9,4,4,3, slides above 1.05, a piece of armour takes 38
+;   DOT    TRUCK      acceleration 3, speed 3, grip 8, armour 8 -> top speed 1.67 px a frame, push 54, tyres 17,9,8,5, slides above 1.64, a piece of armour takes 65
 ; ---- your car (MAX): its top speed, its push, and its tyres at each level of grip you buy (a level = a point of grip) ----
 CD_TOP  equ 448
 CD_PUSH equ 64
@@ -50,24 +62,37 @@ CD_L5_B equ 5
 CD_MAX_A equ 5
 CD_MAX_S equ 5
 CD_MAX_G equ 4
+CD_MAX_R equ 5
 CD_FRANK_A equ 5
 CD_FRANK_S equ 5
 CD_FRANK_G equ 4
+CD_FRANK_R equ 5
 CD_JANE_A equ 7
 CD_JANE_S equ 8
 CD_JANE_G equ 1
+CD_JANE_R equ 2
 CD_BRUNO_A equ 4
 CD_BRUNO_S equ 2
 CD_BRUNO_G equ 8
+CD_BRUNO_R equ 9
 CD_SPIKE_A equ 6
 CD_SPIKE_S equ 2
 CD_SPIKE_G equ 3
+CD_SPIKE_R equ 4
 CD_SPECS_A equ 4
 CD_SPECS_S equ 5
 CD_SPECS_G equ 3
+CD_SPECS_R equ 5
 CD_DOT_A equ 3
 CD_DOT_S equ 3
 CD_DOT_G equ 8
+CD_DOT_R equ 8
+; ---- ARMOUR (the ARMOUR=1 build, src/armour.asm): the damage one piece of armour takes - your car, then the computer cars in the order of their kinds ----
+CD_ARM_0 equ 38      ; MAX, armour 5
+CD_ARM_1 equ 38      ; FRANK, armour 5
+CD_ARM_2 equ 34      ; SPIKE, armour 4
+CD_ARM_3 equ 77      ; BRUNO, armour 9
+CD_ARM_4 equ 26      ; JANE, armour 2
 ; ---- the computer cars, in the order of their kinds: where it slides (a word), where it brakes to for a corner,
 ;      where its ACCEL push gives way to its SPEED push (both / 4), its ACCEL push and its SPEED push (64ths more or less than the plain 64),
 ;      1 while it is braking (the game writes it), and a byte to make the row 8 ----

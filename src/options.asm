@@ -27,3 +27,4 @@ OPT_RTPUP equ 0                ; RACETRACK: 1 - the place plate is drawn from th
 OPT_RTBAND equ 0               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)
 OPT_RTROWS equ 19              ; the race track trial: how many of the window's 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)
 OPT_CARDS equ 0                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)
+OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)

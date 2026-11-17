@@ -99,4 +99,19 @@ class Game:
         self.rpc('screenshot', path=tmp)
         im = Image.open(tmp).convert('RGB'); os.remove(tmp)
         im.resize((im.width * scale, im.height * scale), Image.NEAREST).save(path)
+    def weapon_dots(self):
+        """ARMOUR tapes: where the tank's shell and the clown's wheels are drawn this picture - a list of (x, y, colour), each
+        the top-left pixel in the world of a dot 3 x 3 before the game holds it inside one colour square (the sums are
+        arm_draw's and arm_dot's own, src/armour.asm). Any other tape: nothing."""
+        S = self.sym
+        if 'sh_life' not in S: return []
+        out = []; v = self.mem(S['sh_rec'], 11)
+        if v[10]: out.append((v[1] + 256 * v[2] + 7, v[4] + 256 * v[5] + 7, 7))
+        if self.mem(S['wh_out'], 1)[0]:
+            k = S.get('arm_clown', 2); c = self.mem(S['cars'] + k * S['c_size'], 11); x, y = c[1] + 256 * c[2], c[4] + 256 * c[5]
+            t = self.mem(S['thrust_tab'] + 4 * (c[10] >> 2), 4); s8 = lambda b: b - 256 if b > 127 else b
+            sc = lambda a: (((a >> 1) * 3) >> 3); q = lambda a: a - (a >> 2)
+            d, e = -sc(s8(t[2])), sc(s8(t[0]))
+            for dx, dy in ((d, e), (-d, -e), (q(-d), q(-e)), (-q(-d), -q(-e))): out.append((x + dx + 7, y + dy + 7, 6))
+        return out
     def close(self): self.z.kill()

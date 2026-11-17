@@ -106,6 +106,12 @@ printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the w
 # src/cards.asm), and each computer driver has a personality (src/ai_tune.asm, the CARDS part). Grip is poor to start with.
 # For the race-track builds: tools/build_cards.sh -> build/racer_cards.tap
 printf 'OPT_CARDS equ %s                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)\n' "${CARDS:-0}" >> "$ROOT/src/options.asm"
+# ARMOUR=1 with CARDS=1 and RACETRACK=1: A TRIAL - ARMOUR AND WEAPONS (Grant, 17 Nov 2026): every car has six pieces of armour
+# (its card's "armour" rating says how much a piece takes), lost in bumps and shown as a bar on each row of the race order; a
+# car with none left limps; the computer's tank shoots and its clown car pushes its wheels out (src/armour_tune.asm has every
+# number). tools/build_armour.sh -> build/racer_armour.tap
+printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)\n' "${ARMOUR:-0}" >> "$ROOT/src/options.asm"
+[ "${ARMOUR:-0}" = "1" ] && [ "${CARDS:-0}${RACETRACK:-0}" != "11" ] && { echo "ARMOUR=1 needs CARDS=1 and RACETRACK=1 (tools/build_armour.sh)"; exit 1; }
 [ "${CARDS:-0}" = "1" ] && python3 "$ROOT/tools/make_cards.py"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
