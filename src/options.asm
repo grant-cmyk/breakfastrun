@@ -26,3 +26,4 @@ OPT_REACT1 equ 0               ; 1: the computer cars decide every 8th TV frame,
 OPT_RTPUP equ 0                ; RACETRACK: 1 - the place plate is drawn from the program, not from under 0x8000 (tracks 1 and 2)
 OPT_RTBAND equ 0               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)
 OPT_RTROWS equ 19              ; the race track trial: how many of the window's 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)
+OPT_CARDS equ 0                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)
