@@ -22,4 +22,5 @@ OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: no
 OPT_GRIP1 equ 0                ; 1: your car moved, and its grip worked out, once a picture (GRIP1=1 bash build.sh)
 OPT_2P equ 0                   ; 1: two players in one view (TWOP=1 RACETRACK=1 bash build.sh)
 OPT_2PPTS equ 0                ; two players, the POINTS rule: first to this many points (0: the LEASH rule; TWOP_PTS=3)
+OPT_REACT1 equ 0               ; 1: the computer cars decide every 8th TV frame, not every 4th (REACT1=1 bash build.sh)
 OPT_RTROWS equ 19              ; the race track trial: how many of the window's 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)

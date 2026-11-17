@@ -22,6 +22,7 @@ if [ "${RACETRACK:-0}" = "green" ]; then
   export RACETRACK=1 RT_NOLINE=1 RT_PIN=solid RT_PIN_GAP=1 RT_PIN_W=1
   GN=""; [ "${TRACK:-1}" != "1" ] && GN="_track${TRACK}"
   [ "${GRIP1:-0}" = "1" ] && GN="${GN}_grip1"
+  [ "${REACT1:-0}" = "1" ] && GN="${GN}_react1"      # (REACT1=1: the computer cars decide every 8th TV frame - below)
   BDIR="${BDIR:-track_green$GN}"; OUT="${OUT:-racer_track_green$GN}"
 fi
 if [ "${RACETRACK:-0}" = "1" ]; then
@@ -90,6 +91,9 @@ printf 'OPT_GRIP1 equ %s                ; 1: your car moved, and its grip worked
 # players would exist in the same screen"). With RACETRACK=1; it needs about 900 bytes. TWOP_PTS=N with it: the POINTS rule.
 printf 'OPT_2P equ %s                   ; 1: two players in one view (TWOP=1 RACETRACK=1 bash build.sh)\n' "${TWOP:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_2PPTS equ %s                ; two players, the POINTS rule: first to this many points (0: the LEASH rule; TWOP_PTS=3)\n' "${TWOP_PTS:-0}" >> "$ROOT/src/options.asm"
+# REACT1=1: A TRIAL SWITCH - each computer car decides how to steer every 8th TV frame, not every 4th (their REACT setting
+# one higher). Quicker in the pack, but they turn in a little later: off unless asked for (PROJECT-LOG, 17 Nov 2026).
+printf 'OPT_REACT1 equ %s               ; 1: the computer cars decide every 8th TV frame, not every 4th (REACT1=1 bash build.sh)\n' "${REACT1:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the window'"'"'s 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)\n' "${RT_ROWS:-19}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}

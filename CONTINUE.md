@@ -4,6 +4,18 @@
 **Lifecycle:** Active
 
 **Two players in one view (17 Nov 2026, branch worktree-agent-a32fda323d3c74788 - not merged):** Grant chose layout A, "two players would exist in the same screen". A trial on the race-track look, track 1, behind `TWOP=1` (off by default; defaults byte-identical): the title's 2 starts a two-player race - player 2 drives the cyan car (second grid place) on 6 / 7 / 0 / 5 brake / 8 NOS (not 9: keyboard ghosting with O, P and 0) with the same grip sums as player 1; the view sits between the cars; the LEASH puts a car left behind back on the road behind the leader (held 12 TV frames, flashing, a beep); a panel top right shows each player's place and lap. Tapes: build/racer_2p.tap (`TWOP=1 PACEFIX=1 AI=1 RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 RACETRACK=1 OUT=racer_2p BDIR=racer_2p bash build.sh`), racer_2p_grip1.tap (add `GRIP1=1`: the one to drive - 10.5 pictures a second with two players against 9.4), racer_2p_points.tap (add `TWOP_PTS=3`: a plain points rule). Code: src/twoplayer.asm (and _low, _pic); every number to tune is at its top. Test: python3 tests/two_player_test.py (19 pass). Pictures and a real-speed clip: docs/design/racetrack/two_player/. Memory is full (100 bytes free; 66 with GRIP1). No damage in two-player races; player 2 has no crash noise, arrow or messages; the K screen does not set player 2's keys. Waiting on Grant: drive it with a second person; choose leash or points; say whether the leash's distances and its quarter-second hold feel right. Details: PROJECT-LOG, 17 Nov 2026, last entry.
+**The race track's smoothness pass (17 Nov 2026, branch worktree-agent-aaccef13180d1b3bf - not merged):** three exact
+stages in src/racetrack_hot.asm (the cars' colour rule and a short cut for a car alone on plain squares; the grass-edge
+squares reached with less overhead; plain squares under a car) - nothing changed on the screen, every test as before.
+Track 1 green now makes 12.0 / 12.4 / 11.4 pictures a second (start alone / mid-lap alone / in the pack; it made
+11.6 / 12.0 / 10.0), with GRIP1 12.5 / 12.75 / 11.6; the tight NORMAL tape 11.75 / 12.1 / 10.4, with GRIP1 11.9 / 12.4 / 11.6;
+track 2 10.75 / 10.5 / 10.0; track 3 12.0 / 12.1 / 11.5. 12.5 in the pack is NOT reached without switches. New switch
+`REACT1=1` (the computer cars decide every 8th TV frame: 11,000-19,000 T, but their laps are about 1.5 s slower) -> ..._react1.tap.
+Track 2's deficit is 50 more grass-edge squares in view than track 1: only roads further apart cure it. Left to do, exact:
+the kinds a byte a block (8,700 T, needs 2,304 bytes) and a case number for each edge square (8,000-12,000 T, 275 bytes and
+the generator); track 3 has 10 bytes free with GRIP1. Every race-track tape was rebuilt (some tight tapes had been stale).
+Clip: docs/design/racetrack/built/smooth_tight_before_after.mp4. Next for Grant: drive racer_track_green.tap beside
+racer_track_green_grip1.tap (and the tight pair) - nobody has driven any of it. PROJECT-LOG has the table.
 
 **The tighter track and keener cars (17 Nov 2026, branch worktree-agent-acbbf0fac92b5a806 - not merged):** on the race track trial, track 1: `RT_ROADW=56 RT_CORNER=27` (road width, the big corners' radius; tools/make_world.py) and `AI=1` or `AI=2` (the computer cars NORMAL or HARD; every number in src/ai_tune.asm). Tapes build/racer_tight_*.tap - drive racer_tight_w56s_normal.tap first, then _hard. PROJECT-LOG's last entry has the tables. Nobody has driven them.
 
