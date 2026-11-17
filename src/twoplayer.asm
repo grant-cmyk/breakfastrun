@@ -327,6 +327,65 @@ lsh_2:
         cp LEASH_BACK
         jr c,lsh_1
 lsh_4:
+        ; ONE FURTHER BACK when that is the very waypoint the leader last passed (17 Nov 2026): a car put there aims at the
+        ; same waypoint as the leader, 30-odd pixels behind it - not "behind the leader" by the race order's count. So the
+        ; one before it is taken instead, if it is LEASH_BACK or more from the leader and both cars then fit in the window
+        ; (across and down, each no more than the window less a car and the leader's margin); if not, the choice stands.
+        ld a,(ix+C_WP)
+        inc a
+        cp NWP
+        jr nz,lsh_a
+        xor a
+lsh_a:
+        cp b
+        jr nz,lsh_5             ; (the search had already gone further back)
+        ld a,(ix+C_WP)
+        push af                 ; the choice as it stands,
+        push bc                 ; ... and its lap
+        cp WS                   ; (back over the start line: the lap before, as above)
+        jr nz,lsh_b
+        dec c
+lsh_b:
+        or a
+        jr nz,lsh_c
+        ld a,NWP
+lsh_c:
+        dec a
+        ld (ix+C_WP),a
+        push bc
+        call wp_delta
+        call manhattan
+        ld a,h
+        or a
+        jr nz,lsh_d
+        ld a,l
+        cp LEASH_BACK
+        jr c,lsh_no
+lsh_d:
+        call wp_delta           ; DE across, BC down: from the leader to it
+        push bc
+        ex de,hl
+        call abs_hl
+        ld de,WIN_W*8-16-P2_MX+1
+        or a
+        sbc hl,de
+        pop hl
+        jr nc,lsh_no
+        call abs_hl
+        ld de,OPT_RTROWS*8-16-P2_MY+1
+        or a
+        sbc hl,de
+        jr nc,lsh_no
+        pop bc                  ; taken: its lap,
+        pop hl                  ; (the first choice forgotten)
+        pop hl
+        jr lsh_5
+lsh_no:
+        pop bc
+        pop bc                  ; not taken: the first choice and its lap again
+        pop af
+        ld (ix+C_WP),a
+lsh_5:
         ld a,(ix+C_WP)
         ld (ix+C_WP),b          ; (the leader's own waypoint back as it was)
         ld ix,(c2_tr)           ; IX = the car left behind:
