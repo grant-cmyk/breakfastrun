@@ -734,6 +734,40 @@ ph_road:
         sla c
         rl b
 ph_nb:
+        if OPT_RT               ; RACETRACK (the smoothness pass, 17 Nov 2026): the same sums, step for step, in ph_run -
+        ld a,(fshift)           ; the friction's halvings are chosen once for the car, not asked about at every step
+        cp 7
+        jr c,ph_f1
+        ld a,6
+ph_f1:
+        add a,phr_tab AND 255
+        ld l,a
+        adc a,phr_tab/256
+        sub l
+        ld h,a
+        ld a,(hl)
+        ld (phr_fr+1),a
+        ld (ph_py),bc           ; (the push down the screen, for the second half)
+        ld b,d                  ; BC = the push across
+        ld c,e
+        ld l,(ix+C_VX)
+        ld h,(ix+C_VX+1)
+        exx
+        ld l,(ix+C_XF)          ; HL' = where it is: whole pixels' low byte and the fraction; C' = the high byte
+        ld h,(ix+C_X)
+        ld c,(ix+C_X+1)
+        ld a,(ph_steps)
+        ld b,a
+        exx
+        call ph_run
+        ld (ix+C_VX),l
+        ld (ix+C_VX+1),h
+        exx
+        ld (ix+C_XF),l
+        ld (ix+C_X),h
+        ld (ix+C_X+1),c
+        exx
+        else
         ld (ph_px),de           ; the pushes, kept for the second frame
         ld (ph_py),bc
         ; ---- x: speed += push, friction, position += speed; each value is
@@ -766,6 +800,7 @@ ph_xp:
         jr nz,phx_step
         ld (ix+C_VX),l
         ld (ix+C_VX+1),h
+        endif
         ld a,(ix+C_X+1)
         cp (MAPW*8-16)/256      ; keep inside the world (x 0..MAPW*8-17): a
         jr c,ph_xok             ; high byte below the limit's is fine (the
@@ -787,6 +822,26 @@ ph_xset:
         ld (ix+C_VX),a
         ld (ix+C_VX+1),a
 ph_xok:
+        if OPT_RT
+        ld bc,(ph_py)
+        ld l,(ix+C_VY)
+        ld h,(ix+C_VY+1)
+        exx
+        ld l,(ix+C_YF)
+        ld h,(ix+C_Y)
+        ld c,(ix+C_Y+1)
+        ld a,(ph_steps)
+        ld b,a
+        exx
+        call ph_run
+        ld (ix+C_VY),l
+        ld (ix+C_VY+1),h
+        exx
+        ld (ix+C_YF),l
+        ld (ix+C_Y),h
+        ld (ix+C_Y+1),c
+        exx
+        else
         ; ---- y: the same, with the y push in BC ----
         ld l,(ix+C_VY)
         ld h,(ix+C_VY+1)
@@ -815,6 +870,7 @@ ph_yp:
         jr nz,phy_step
         ld (ix+C_VY),l
         ld (ix+C_VY+1),h
+        endif
         ld a,(ix+C_Y+1)
         cp (MAPH*8-16)/256
         jr c,ph_yok
@@ -844,6 +900,63 @@ ph_yok:
 ; facing a direction it should stay true to the direction it is facing"). So when you let
 ; go of the steering, the heading carries on the way you were turning, a step a frame, to
 ; the next heading that has a picture, and stops there: the car goes where it points.
+        if OPT_RT
+; PH_RUN (RACETRACK): one direction of a car's move, all the picture's TV frames - at each, the speed HL gains the push BC,
+; loses its friction (HL / 4 ... / 64, and under 8/256 either way it is nothing: friction's own sums) and is added to where
+; the car is (HL' the low byte and fraction, C' the high byte), B' times. The jump at phr_fr is set by physics: into the
+; halvings for this car's ground and slide, or past the friction (you: the grip model has done it).
+ph_run:
+        add hl,bc
+        ld d,h
+        ld e,l
+phr_fr: jr phr_h6
+phr_h6:
+        sra d                   ; / 64 (the longest slide)
+        rr e
+        sra d                   ; / 32
+        rr e
+        sra d                   ; / 16
+        rr e
+        sra d                   ; / 8 (on the road)
+        rr e
+        sra d                   ; / 4 (off it)
+        rr e
+        sra d
+        rr e
+        or a
+        sbc hl,de
+        ld a,h
+        or a
+        jr nz,phr_neg
+        ld a,l
+        cp 8
+        jr nc,phr_go
+        ld l,h                  ; (H is 0)
+        jr phr_go
+phr_neg:
+        inc a
+        jr nz,phr_go
+        ld a,l
+        cp 0xF9
+        jr c,phr_go
+        ld hl,0
+phr_go:
+        push hl
+        exx
+        pop de                  ; DE' = the speed
+        ld a,d
+        add a,a
+        sbc a,a                 ; its sign as a byte: 0 or 0xFF
+        add hl,de
+        adc a,c
+        ld c,a
+        dec b
+        exx
+        jr nz,ph_run
+        ret
+phr_tab:                        ; fshift 0-6 -> the jump at phr_fr: none; / 4 twice (as friction has it); / 8 ... / 64
+        db phr_go-phr_h6, 16, 16, 12, 8, 4, 0
+        endif
 ph_snap:
         ld a,e
         and CT_L+CT_R
