@@ -23,13 +23,13 @@ note: A dragster but terrible on turns, should shoot ahead of Max on the straigh
 
 == BRUNO / TANK ==
 acceleration 4, speed 2, grip 8, armour 9
-weapon: The tank can shoot.
+weapon: Shoots a shell straight ahead. A hit spins the other car where it is.
 behaviour: Heavy and slow, likes to get in the way. Cuts corners so minimise track time to save
 note: A tank. Really slow but excellent grip
 
 == SPIKE / CLOWN CAR ==
 acceleration 6, speed 2, grip 3, armour 4
-weapon: Extends its wheels on the sides - if they hit you your car spins where it is.
+weapon: Extends its wheels out to both sides. A car they touch spins where it is.
 behaviour: Erratic. A real clown. unpredictable. Almost seems to want to hit other cars
 note: Great acceleration but not much speed - reasonable grip
 
