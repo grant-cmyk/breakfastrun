@@ -67,6 +67,7 @@ for _tx, _ty, _b in REDRAWN:
 assert not (WHITE & GREEN).any()
 CANS = [(int(m.group(1)), int(m.group(2))) for m in re.finditer(r'NOS_\w_X equ (\d+)\nNOS_\w_Y equ (\d+)', src)]
 SY = int(re.search(r'TRACK_SY\s+equ\s+(\d+)', src).group(1)); LX = 288
+MAP_R0 = (int(re.search(r'^MAP_ROW\s+EQU\s+0([0-9A-F]+)H', open(os.path.join(ROOT, 'build', TAPE + '.sym')).read(), re.M | re.I).group(1), 16) - 8) // 8   # the window's row of squares the mini-map starts in (16; track 3: 15)
 INKS = [2, 5, 6, 3, 7]                                                    # you red; cyan, yellow, magenta, white
 fails = []; passes = 0
 def check(ok, msg):
@@ -116,6 +117,7 @@ ROWS = slice(3 * 8, 16 * 8)                                               # the 
 def free_area():
     a = np.zeros((152, 192), bool); a[ROWS] = True
     a[13 * 8:16 * 8, 10 * 8:13 * 8] = False                               # ... but for the corner arrow's 3 x 3 squares
+    if MAP_R0 < 16: a[MAP_R0 * 8:16 * 8, 0:24] = False                    # ... and the mini-map's box where it is taller than 3 rows of squares (track 3: from row 15)
     return a
 
 def scroll(alone):

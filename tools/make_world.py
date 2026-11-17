@@ -757,8 +757,9 @@ if RT:
         for tx in range(W):
             _t = rt_grass[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8]
             if _t.any() and not _t.all(): _pt.setdefault(_t.tobytes(), []).append((tx, ty))
-    _nwh = len({cells[(tx, ty)][0] for ty in range(H) for tx in range(W) if _inkb[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8].any()})
-    _over = 2 + len(_pt) + _nwh - 256
+    _wh = {bytes(cells[(tx, ty)][0]) for ty in range(H) for tx in range(W) if _inkb[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8].any()}; _nwh = len(_wh)
+    _nsh = len(_wh & {_np.packbits(_np.frombuffer(k, dtype=bool)).tobytes() for k in _pt})   # (a picture that is a grass tile here and a white one there has one number: below)
+    _over = 2 + len(_pt) + _nwh - _nsh - 256
     if _over > 0:
         rt_grass = rt_grass.copy()
         _keys = [bytes(64), bytes([1] * 64)] + sorted(_pt)            # (nothing and all grass can be turned INTO, never away)

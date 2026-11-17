@@ -49,6 +49,7 @@
 RT_SH   equ COPIER              ; (0xE800: where the screen-copy routine was - this build has none)
 rt_bm   equ RT_SH+21*32         ; rt_car_sq: the car's picture, ORed, by row of squares - 6 bytes (on one page: 0xEAA0)
 RT_B    equ RT_SH+21*32+8       ; rt_b, below: 2 bytes x 20 (on one page: 0xEAA8)
+RT_MAP_R0 equ (MAP_ROW-BUF_TOP)/8 ; the window's row of squares the mini-map's first line is in (16; 15 on track 3, whose map is taller)
 RT_DATA equ RT_SH+0x300         ; the pictures, the blocks' kinds and the map (rt_world.asm, copied here by start_once)
 RT_PL   equ RT_DATA/256         ; the pictures' first page: line 0 of each, at its number; line 1 in the next page ...
 ;RT_SH_              ; rt_sh: the colour squares of screen rows 0-20, laid out as on the screen (32 a row). A square
@@ -97,16 +98,16 @@ rt_new:
 ; its dots have been moved (map_update: one picture in four). The mug: when its steam moves or the damage changes
 ; (hud_pre). The plate: pl_draw decides (rt_plate, racetrack_hot.asm) - all of it, or just the time's figures that changed.
 rt_hud:
-        ld hl,RT_SH+(WIN_Y/8+16)*32+WIN_COL     ; the mini-map: the window's rows 16-18, columns 0-2
-        ld bc,0x0303
+        ld hl,RT_SH+(WIN_Y/8+RT_MAP_R0)*32+WIN_COL      ; the mini-map: the window's rows 16-18, columns 0-2 (track 3's is 26 lines
+        ld bc,3+(19-RT_MAP_R0)*256                      ; high, not 17 or 20: it starts in row 15 - RT_MAP_R0, below)
         ld a,(rt_fx)
         rra
         ld a,RT_LEAVE
         jr nc,rh_m
         ld a,RT_ROAD
         call rt_attrs
-        ld hl,BUF+0x1000+1*32+2 ; ... their 24 lines of 3 bytes cleared (buffer rows 136-159); the main loop then calls map_blit
-        ld bc,0x0303
+        ld hl,BUF+((BUF_TOP+RT_MAP_R0*8) AND 0xC0)*32+((BUF_TOP+RT_MAP_R0*8) AND 0x38)*4+2 ; ... their 24 lines of 3 bytes cleared (buffer rows 136-159; track 3: 32 lines, from 128); the main loop then calls map_blit
+        ld bc,3+(19-RT_MAP_R0)*256
         call rt_wipe
         jr rh_p
 rh_m:
