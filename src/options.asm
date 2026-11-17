@@ -20,4 +20,6 @@ OPT_MAP40 equ 0                ; 1: the mini-map 40 wide, its ink in the program
 OPT_RT equ 0                   ; 1: the race track trial - black road, green grass (RACETRACK=1 bash build.sh)
 OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)
 OPT_GRIP1 equ 0                ; 1: your car moved, and its grip worked out, once a picture (GRIP1=1 bash build.sh)
+OPT_2P equ 0                   ; 1: two players in one view (TWOP=1 RACETRACK=1 bash build.sh)
+OPT_2PPTS equ 0                ; two players, the POINTS rule: first to this many points (0: the LEASH rule; TWOP_PTS=3)
 OPT_RTROWS equ 19              ; the race track trial: how many of the window's 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)

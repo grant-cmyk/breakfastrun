@@ -216,6 +216,7 @@ t_loop:
 t_k0:
         ld a,l
         else
+        if OPT_2P = 0           ; (TWOP: 2 plays, so there is no message)
         ld hl,t_msg             ; the 2UP message: the choice again after 1.5 s
         ld a,(hl)
         or a
@@ -223,6 +224,7 @@ t_k0:
         dec (hl)
         ld hl,t_press
         call z,t_prompt
+        endif
 t_keys:
         if OPT_MULTI
         call HP                 ; MULTI: k_scan, and T picks the next track (src/hp.asm)
@@ -235,20 +237,28 @@ t_keys:
         jp z,k_up
         cp 16                   ; 2: not yet
         jr nz,t_k
+        if OPT_2P               ; TWOP: 2 - a two-player race (twoplayer.asm)
+        ld a,1
+        ld (two_p),a
+        jp k_up
+        else
         ld a,40
         ld (t_msg),a
         ld hl,t_soon
         call t_prompt
         jr t_loop
+        endif
         endif                   ; (CHOOSE)
 t_k:
         cp 32                   ; K: the keys
         jr nz,t_loop
         call keys_screen
         jp t_redraw
+        if OPT_2P = 0
 t_prompt:
         ld bc,0x0E06            ; (row 14, under the choices: the lap record has row 20 now)
         jp print_at
+        endif
 
 t_cls:                          ; the whole screen: the bare table
         ld hl,0x4000
@@ -603,8 +613,12 @@ t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "
         db 0xFF
 t_lrec: db "LAP RECORD",0
         if 1-OPT_CHOOSE
+        if OPT_2P = 0
 t_press: db "                    ",0
+        endif
+        if OPT_2P = 0
 t_soon: db "  2UP COMING SOON   ",0
+        endif
         endif
 ; the title's egg (logo C of docs/design/logo_options.png), 16 x 16, drawn twice the size: the white, and in its
 ; middle 8 x 8 (the four cells with colours of their own) the yolk - small and round (Grant, 15 Nov 2026):

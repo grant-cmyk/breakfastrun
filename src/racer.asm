@@ -138,6 +138,9 @@ rt_code_end:
         include "hudtext_gfx.asm" ; the small letters' pictures (copied up at the start)
         include "plateco.asm"   ; the place plate in the window (pl_draw)
         include "title2.asm"    ; the title screen's car
+        if OPT_2P
+        include "twoplayer_low.asm" ; TWOP: its parts that run rarely
+        endif
 low_end:                        ; (the end of what is kept under 0x8000: the room left is LOWTAB-0xE8 less this)
         endif
         if OPT_MULTI
@@ -180,6 +183,9 @@ st_so:
         ld de,cars
         ld bc,NCARS*C_SIZE
         ldir
+        if OPT_2P
+        call p2_new             ; TWOP: player 2's things start afresh (twoplayer.asm)
+        endif
         ld a,(FRAMES)
         ld (last_frame),a
         call jin_arm            ; the start jingle is due: after the race's first picture (plate_slow.asm)
@@ -226,6 +232,9 @@ tick_loop:
         call tick               ; one TV frame of everything moving
         pop bc
         djnz tick_loop
+        if OPT_2P
+        call p2_ticked          ; TWOP: player 1's grip sums back in their place (twoplayer.asm)
+        endif
         ; the computer cars MOVE once a picture: all its TV frames in one call
         ; (physics steps the speed and position ph_steps times). They are only
         ; seen once a picture, so they look the same as when each was moved
@@ -243,7 +252,12 @@ tick_loop:
         endif
 cpu_move:
         push bc
+        if OPT_2P               ; TWOP: with two players the second car is player 2's - moved by the same sums as yours
+        call p2_move            ; (twoplayer.asm; Z: it has seen to this car)
+        call nz,physics
+        else
         call physics
+        endif
         ld de,C_SIZE
         add ix,de
         pop bc
@@ -255,6 +269,9 @@ cpu_move:
 
         call race_progress      ; your waypoints and laps, everyone's progress
         call hud_update         ; the panel, message bar and lap strip
+        if OPT_2P
+        call p2_panel           ; TWOP: both players' places and laps, top right (twoplayer.asm)
+        endif
         call camera
         if OPT_RT               ; RACETRACK (racetrack.asm): no cloth and no map tiles drawn here - the squares' colours are
         call rt_class           ; decided; rt_show makes the grass and the white things up on the screen, square by square
@@ -274,6 +291,15 @@ cpu_move:
         ld b,NCARS
 draw_all:
         push bc
+        if OPT_2P               ; TWOP: a car just put back by the leash flashes - it is left out of every other picture
+        ld a,(lsh_car)
+        cp b
+        jr nz,da_show
+        ld a,(renders)
+        rra
+        jr c,da_next
+da_show:
+        endif
         if OPT_BRIDGE
         call draw_car_b         ; BRIDGE: a car under the deck is hidden (bridge.asm)
         else
@@ -283,6 +309,7 @@ draw_all:
         call draw_car
         endif
         endif
+da_next:
         ld de,0x10000-C_SIZE
         add ix,de
         pop bc
@@ -391,6 +418,9 @@ tick:
         inc hl
         ld (race_time),hl
 tk_clock:
+        if OPT_2P
+        call p2_top             ; TWOP: the leash's count; and player 2 first, on the frames that their sums are in (twoplayer.asm)
+        endif
         ld hl,BOOST_T           ; the NOS burns down, a frame at a time
         ld a,(hl)
         or a
@@ -410,6 +440,13 @@ tk_on:
         xor a
         ld (cars+C_CTRL),a
 tk_you:
+        if OPT_2P               ; TWOP: just put back by the leash - held still for a moment
+        ld a,(lsh_car)
+        dec a
+        jr nz,tk_free
+        ld (cars+C_CTRL),a
+tk_free:
+        endif
         if OPT_GRIP1            ; GRIP1 (a trial switch): each TV frame your car only STEERS; it is moved once a picture, with
         ld a,(cars+C_CTRL)      ; the computer cars (main: cpu_move), and its grip sums are done once a picture (grip.asm)
         ld e,a
@@ -434,10 +471,22 @@ tk_yn:
         ld (ph_steps),a
         call physics
         endif
+        if OPT_2P
+        call p2_after           ; TWOP: then player 2's buttons and car, unless they went first (twoplayer.asm)
+        endif
         ld ix,cars+C_SIZE       ; the computer cars THINK on alternate frames
         ld b,NCARS-1            ; (cars 2 and 4 on one, 1 and 3 on the other);
 tk_ai:                          ; they are moved once a picture, a whole
         push bc                 ; picture's frames at a time (main: cpu_move).
+        if OPT_2P               ; TWOP: with two players nobody thinks for the second car
+        ld a,b
+        cp NCARS-1
+        jr nz,tk_cpu
+        ld a,(two_p)
+        or a
+        jr nz,tk_rest
+tk_cpu:
+        endif
         ld a,(ix+C_LAPS)        ;
         cp LAPS+1               ; A computer car that has finished rolls to a
         jr nc,tk_in             ; stop too, while the others come in
@@ -1954,6 +2003,11 @@ bu_write:
 ; CAMERA: put your car in the middle of the window
 ; ---------------------------------------------------------------------
 camera:
+        if OPT_2P               ; TWOP: with two players the view sits between their cars (twoplayer.asm)
+        ld a,(two_p)
+        or a
+        jp nz,camera2
+        endif
         call cam_lead           ; (plateco.asm) the view leads the car the way it is going
         ld hl,(cars+C_X)
         ld a,(lead_x)
@@ -3360,6 +3414,16 @@ race_progress:
         and 1                   ; plenty (40 px circles, 5 px a picture)
         jr nz,rp_pos
         ld ix,cars
+        if OPT_2P               ; TWOP: player 2's waypoints and laps the same way
+        call rp_human
+        ld a,(two_p)
+        or a
+        jr z,rp_pos
+        ld ix,cars+C_SIZE
+        call rp_human
+        jr rp_pos
+rp_human:
+        endif
         ld b,2                  ; you may pass up to 2 waypoints a picture
 rp_wp:
         push bc
@@ -3372,7 +3436,11 @@ rp_wp:
         call lap_and_inc
         pop bc
         djnz rp_wp
+        if OPT_2P
+        ret
+        else
         jr rp_pos
+        endif
 rp_try_next:                    ; went wide of it - or right off the track and back on further round? One of
         pop bc                  ; the next four waypoints after it, a different one each time, within 64: it
         ld hl,rp_k              ; and all those missed are counted, so a lap is still a lap. (It was only the
@@ -3398,13 +3466,20 @@ rp_k2:
         ld de,64
         or a
         sbc hl,de
+        if OPT_2P
+        ret nc
+        else
         jr nc,rp_pos
+        endif
         inc b                   ; the ones missed, then the one reached
 rp_k3:
         push bc
         call lap_and_inc
         pop bc
         djnz rp_k3
+        if OPT_2P
+        ret
+        endif
 rp_pos:
 rp_all:
         ld a,(race_over)
@@ -3431,9 +3506,19 @@ rp_all:
 rp_say:
         call msg_say
 rp_wait:                        ; the race is over when FOUR cars are in - you among them (Grant, 15 Nov 2026: "do
+        if OPT_2P               ; TWOP: ... and player 2 among them too (or the 30 s)
+        ld a,(two_p)
+        or a
+        jr z,rp_w1
+        ld a,(cars+C_SIZE+C_LAPS)
+        cp LAPS+1
+        jr c,rp_w2
+rp_w1:
+        endif
         ld a,(fin_count)        ; not wait for the last car to come in") - or 30 s after you, in case two are stuck
         cp NCARS-1
         jr nc,rp_end
+rp_w2:
         ld hl,(race_time)
         ld de,(you_time)
         or a
@@ -4332,6 +4417,9 @@ isr_x:
         if OPT_ROADW
         include "roadwhite.asm" ; ROADW (a trial): the road on white paper, by colour square
         endif
+        if OPT_2P
+        include "twoplayer.asm" ; TWOP (a trial): two players in one view (TWOP=1 bash build.sh)
+        endif
         if OPT_RT = 0           ; (RACETRACK: under 0x8000)
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
         endif
@@ -4362,6 +4450,12 @@ start_once:                     ; (start, from the start-up area)
         ld hl,hp_src            ; load after the start-up area, across the strips and tables filled below)
         ld de,HP
         ld bc,hp_end-hp_src
+        ldir
+        endif
+        if OPT_2P               ; TWOP: two of its routines, down to the free page under the stack (twoplayer_pic.asm)
+        ld hl,p2c_src
+        ld de,P2_LOWC
+        ld bc,p2c_end-p2c_src
         ldir
         endif
         ld hl,high_src          ; the data that lives at the top of memory,
@@ -5163,6 +5257,9 @@ bufg_end:
 bufe_src:
         include "strip_e.asm"
 bufe_end:
+        if OPT_2P
+        include "twoplayer_pic.asm" ; TWOP: two routines copied down under the stack
+        endif
 init_end:
         if OPT_RT
         include "rt_world.asm"  ; RACETRACK: the grass - rows and pictures (tools/make_world.py; start_once copies it to RT_DATA)
