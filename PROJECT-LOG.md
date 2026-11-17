@@ -2828,3 +2828,89 @@ WHERE THE RATINGS, GRANT'S WORDS AND A RACEABLE GAME PULL AGAINST EACH OTHER (sa
 NOT DONE / NOT VERIFIED: nobody has driven it; not tried on a real Spectrum. Whether a rating of 4 skids "enough" and 1 is "barely controllable" in the hand is not known - only what the autopilot does. Blocking and lunging were measured as numbers, not judged by eye. The two-player build with CARDS assembles (360 bytes free) but was not run; player 2 would get Max's card, not Frank's. Tracks 1 (wide), 2 and 3 were not built with CARDS (track 3 has not the 393 bytes). Autopilot lap times swing by half a second with the smallest change; treat differences under that as nothing. The acceleration column's frame counts are from the game's sums, not measured (a computer car is moved once a picture, so its time to speed can only be read to the nearest 4 TV frames); the first-second distances are measured. Speed and acceleration levels bought on the start line still add what they always did (6% and 16%), not one rating point.
 
 COMBINING WITH THE CHOOSE SCREEN (not attempted, as asked): (1) the chosen driver's card must set your car - today CD_TOP, CD_PUSH and the tyre rows are fixed numbers for MAX at build time; they need to become a seven-row table that su_apply (hud.asm) reads by the chosen driver; (2) the "extra" pip becomes +1 on that card's rating - for grip that is already how the tyre table is laid out (the next row is the next rating); for speed and acceleration CH_TOP, CH_SPUSH and CH_PUSH go and the next rating's numbers are read instead; (3) a card whose acceleration push is less than its top speed needs (DOT 3 / 3, SPECS 4 / 5) wants the choose build's "extra push only above a set speed" (yg_spush, grip.asm) with the speed taken from the card - today your car's push is simply raised to what its top speed needs, which for MAX changes nothing; (4) the computer cars' rows should follow who is NOT chosen (today the four colours are fixed drivers); (5) about 400 bytes, in a build that had few to spare.
+
+## 17 Nov 2026 - armour and weapons: every car's armour as a bar on the race order, the limp, the tank's shell and the clown's wheels (background agent, branch worktree-agent-a010b6360182407bb)
+
+Grant's words: "I would like to organise that the cars have some weapons. The tank can shoot, and the clown extends its wheels on the sides - if they hit you your car spins where it is. We need to add 'armour' to the cars as a gauge item. Tank is very strong. The fast dragster does not take much hit ... I would love a way to show damage on each car in the HUD somewhere." For the HUD he chose option V (docs/design/racetrack/armour_flash.gif). THE SHORT OF IT: all of it is built and all of it fits, behind a switch: `ARMOUR=1` on top of the driver cards (`bash tools/build_armour.sh` -> build/racer_armour.tap and build/racer_armour_grip1.tap, the one to drive; tools/build_racetrack_tapes.sh builds them too). With the switch off every tape is byte for byte what it was (racer.tap, tracks 2, 3 and 5 deleted and rebuilt: the same md5; the 36 race-track tapes rebuilt: not one changed; the plain game built last). Nobody has driven it, and whether it is fun is not something the emulator can say.
+
+GRANT'S THREE OPEN QUESTIONS, BUILT AS DEFAULTS (each one number or one place to change):
+1. At no armour a car LIMPS: half its top speed (ARM_LIMP_SHIFT 1 in src/armour_tune.asm; 2 would be a quarter). Nobody is knocked out. Measured: your car under 0.88 px a TV frame nine tenths of the time where it did 1.75; the dragster 1.01 where she did 1.91; your car limping from 10 s in still finishes (87 s for 3 laps).
+2. Only the COMPUTER's tank (Bruno, pink) and clown car (Spike, yellow) use weapons (ARM_TANK 3, ARM_CLOWN 2).
+3. No other car has a weapon. tools/driver_cards.txt now has a "weapon:" line on every card ("None yet." for the rest; Bruno's and Spike's are worded from Grant's message - paste the cards page's own words over them).
+
+THE ARMOUR RATING (tools/driver_cards.txt: "armour N" on each card's ratings line; Grant confirmed MAX 5, FRANK 5, JANE 2, BRUNO 9, SPIKE 4, SPECS 5, DOT 8; a card without it gets 5). Every car has six pieces; the rating says how much damage ONE PIECE takes (ARMOUR_PIECE in tools/make_cards.py; `python3 tools/make_cards.py table` prints this). A bump costs BOTH cars the same damage, by how fast they were closing - so the dragster loses pieces three times as fast as the tank in the same crash (measured: Bruno rammed into Jane until he lost his first piece; she had lost three).
+
+| rating | a piece takes | usual knocks (10) a piece | usual knocks for all six | hard rams (18) for all six | shells (16) | wheel hits (12) |
+|---|---|---|---|---|---|---|
+| 1 | 22 | 2.2 | 14 | 8 | 9 | 11 |
+| 2 (JANE) | 26 | 2.6 | 16 | 9 | 10 | 13 |
+| 3 | 30 | 3.0 | 18 | 10 | 12 | 15 |
+| 4 (SPIKE) | 34 | 3.4 | 21 | 12 | 13 | 17 |
+| 5 (MAX, FRANK, SPECS) | 38 | 3.8 | 23 | 13 | 15 | 19 |
+| 6 | 46 | 4.6 | 28 | 16 | 18 | 23 |
+| 7 | 55 | 5.5 | 33 | 19 | 21 | 28 |
+| 8 (DOT) | 65 | 6.5 | 39 | 22 | 25 | 33 |
+| 9 (BRUNO) | 77 | 7.7 | 47 | 26 | 29 | 39 |
+| 10 | 92 | 9.2 | 56 | 31 | 35 | 46 |
+
+A "usual knock" is two cars closing at a pixel a TV frame (damage 10); a rub is 3 or 4. The bottom of the scale is flatter than a straight line, as the speed scale is: at 14 a piece for a rating of 2 the dragster limped within 20 seconds of every race. Grass and walls do no damage (tested).
+
+THE NUMBERS TO TUNE - all in src/armour_tune.asm, with this table at its top (a PICTURE is one drawing of the screen, about 12 a second):
+
+| name | now | what it is |
+|---|---|---|
+| ARM_DIV, ARM_MIN | 5, 2 | a bump's damage: the closing speed in 256ths of a px a TV frame / 32, plus 2 |
+| ARM_COOL | 30 | pictures before a car just bumped can be hurt by a bump again (one crash is many touches) |
+| ARM_FLASH | 12 | pictures a lost piece flashes on the bar (about a second) |
+| ARM_LIMP_SHIFT | 1 | no armour: top speed halved this many times |
+| ARM_START | 60 | pictures from the race being set up before either weapon may be used |
+| SPIN_T, SPIN_RATE | 32, 2 | a car hit spins 32 TV frames, 2 of 64 headings a frame: one full turn, ending as it began |
+| WPN_SAFE | 40 | pictures after a hit before the wheels can hit that car again |
+| TANK_RANGE, TANK_AIM | 80, 6 | the tank fires at a car 16 to 80 px ahead and within 6 px of his nose's line |
+| TANK_COOL | 96 | pictures between shots (about 8 s) |
+| SHELL_SHIFT, SHELL_LIFE | 4, 30 | the shell flies 4 px a TV frame for 30 frames: 120 px |
+| SHELL_HIT, SHELL_DMG | 9, 16 | it hits a car whose middle is within 9 px; its damage |
+| WH_SEE_LEN, WH_SEE | 16, 30 | the wheels come out for a car within 16 px ahead/behind and 30 px to the side |
+| WH_LEN, WH_REACH | 12, 26 | while out they hit a car within 12 px ahead/behind and 26 px to the side |
+| WH_TIME, WH_COOL | 10, 60 | pictures out; pictures until they may come out again |
+| WHEEL_DMG | 12 | the damage a wheel does |
+
+WHAT IS ON THE SCREEN.
+- THE BAR (option V, the mock-up tool as the spec): the last column of each row of the race order, pixels 4-6 (3 wide), six pieces of 2 lines from the foot; a lost piece leaves one dot; the piece just lost flashes (two pictures on, two off) for ARM_FLASH pictures. The gap time moved 3 px left and the flag / best-lap clock 5 px left to make room (nothing overlaps: tested). It follows the race order as rows swap (tested over 298 pictures and 9 orders: 0 wrong). It is not drawn over a driver's face in the first second after the lights; it comes with the row.
+- THE MUG IS YOUR ARMOUR: one system, not two. The old damage (a point a crash, each point a little off the top speed) is switched off in this build; the mug now empties as your six pieces go (6 pieces full, 3 half, 0 empty) and the oil can mends your armour. I kept the mug because it is already where your eye goes for "my car's health", it needs no new art, and its slow-down is replaced by the limp at zero, which every car shares. Two-player races (TWOP) were not combined with ARMOUR.
+- THE SHELL: a white dot 3 x 3, by the cars' own two-colours-a-square rule (arm_dot, src/armour.asm; no new art). On plain road the square takes white ink on black. If a car is already in that square the dot shows in that car's colour; in a square of grass and road it shows in the grass's green; on all-grass it would be white on green, but the shell ends at the grass (looked at once a picture, so it can be up to a picture's flight - about 16 px - into it). It ends at a car (which spins and loses SHELL_DMG), at its range, or on the grass (all three tested). A falling note when it is fired; the crash noise on a hit (and the red border if it is you).
+- THE CLOWN'S WHEELS: two dots each side of Spike, out to 12 px from his middle across his heading - the car visibly wider while they are out. No new car pictures (0 bytes of art; proper pictures of the car with wheels out would be 16 more frames, about 1 KB with FLIP - there is not that room). A short low beep when they come out. A car they touch spins and loses WHEEL_DMG; a car 36 px off is not touched and does not bring them out (tested).
+- THE SPIN: on the spot - no speed, no steering, one full turn in 32 TV frames - for a computer car or you (your keys do nothing while it lasts).
+
+THE RACES (tests/rt_armour.py; GRIP1 tapes, the tight track, NORMAL; your car by the tidy autopilot; 5 races each with the same five runs of luck. "Not in" in its report is the last car: the game ends the race when four are in, as it always has.)
+
+| | ARMOUR, you from the lights | cards only, from the lights | ARMOUR, you 2 s late (in the pack) | cards only, 2 s late |
+|---|---|---|---|---|
+| finishing orders (Y you, F Frank, S Spike, B Bruno, J Jane) | YBFSJ YFJSB JFYBS YFJSB YFSBJ | YJFBS YFSJB YJBFS YJFBS YFBJS | JYFBS YFBSJ YFBJS YFBSJ JFBSY | YFJSB BYFSJ FBJYS JYBFS FBJYS |
+| flying laps: you | 18.9 | 18.2 | 18.7 | 19.2 |
+| Frank | 19.4 | 19.4 | 19.9 | 19.8 |
+| Spike | 20.5 | 19.6 | 21.6 | 20.0 |
+| Bruno | 20.6 | 19.2 | 20.1 | 19.4 |
+| Jane | 19.8 | 18.9 | 19.0 | 19.3 |
+| bumps a race | 58 | 43 | 87 | 54 |
+| shells fired / hit, a race | 6.2 / 5.4 | - | 5.2 / 5.2 | - |
+| wheels out / hits, a race | 5.0 / 3.4 | - | 4.8 / 4.2 | - |
+| spins a race: Y F S B J | 0.4 1.4 2.0 2.2 2.8 | - | 2.6 2.6 0.4 1.6 2.2 | - |
+| armour at the flag (of 6): Y F S B J | 6.0 4.4 3.2 4.8 1.6 | - | 3.4 3.0 4.0 4.4 1.2 | - |
+| who limped | Jane in 2 races (from 54 s, 31 s) | - | Jane in 2 (52 s, 42 s), Frank in 1 (63 s) | - |
+
+Race by race, shells fired/hit and wheels out/hit - from the lights: 8/8 5/2, 6/5 6/3, 6/4 6/5, 6/5 5/4, 5/5 3/3; in the pack: 7/7 4/3, 6/6 5/4, 4/4 4/3, 6/6 5/4, 3/3 6/7. Every car finished every race; nobody was lapped. The dragster suffers most - ending with 1 or 2 pieces and limping in about half the races - which is Grant's "hit the dragster" tactic at work. Your car is hardly touched when it leads (it is ahead of the weapons); in the pack it is spun about 2.6 times a race. The tank hits nearly every shot: his aim is narrow and short, so he only fires at a car sitting right in front of him on a straight. If that feels unfair: TANK_AIM down to 4, or TANK_COOL up. Lap-time differences under half a second are noise (the driver cards' entry).
+
+SPEED (pictures a second, start alone / mid-lap alone / in the pack; tests/stage_profile.py, 8 s each - two builds never drive the same 8 s): GRIP1 cards 12.25 / 13.00 / 12.00 -> with ARMOUR 12.12 / 12.50 / 11.88. Without GRIP1: 11.75 / 12.00 / 10.88 -> 11.75 / 12.00 / 11.25. The armour code itself costs about 4,500 to 5,200 T a picture (2%): the weapons looking at one car a picture (arm_rel, about 1,000 T when a car is in reach), the cool-downs and each car's spin and limp check (about 1,800), drawing the shell and wheels (about 300 while out), THE BARS about 370 T a picture on average (one bar drawn is about 800 T, and only a flashing bar or a changed row is drawn), and the moved gap time about 250 more than before. The half a picture a second lost mid-lap with GRIP1 is more than that 2% - partly the 8-second windows not being the same drive; not run to ground.
+
+MEMORY: the program 103 bytes free (89 with GRIP1), of the cards tape's 1,469: armour costs 1,366 bytes in the program and 319 under 0x8000 (the bars, a new race, firing a shell - the rare parts: src/armour_low.asm), leaving 471 there. Everything fitted, in the order asked.
+
+A PLAYER'S FIRE KEY (not built): the weapons are written for "a car" (arm_fire fires from the car in IX; arm_wheels pushes the wheels out). It would need a key read in read_keys (racer.asm) calling arm_fire with IX = your car when the cool-down allows; a second shell record if yours and the computer tank's may fly at once (there is one: sh_rec); the wheels' drawing and hit check taking the car from a variable instead of ARM_CLOWN; and the choose screen saying which car you drive (you are always MAX today). About 150 to 250 bytes - more than the 89 free with GRIP1, so something would have to move under 0x8000.
+
+TESTS: tests/armour_test.py (new), 28 of 28 on both armour tapes - a bump costs both the same, a harder one more, pieces in proportion to the ratings, your car too, the mug is your armour, grass costs nothing; the bars match each car's armour, are 3 px wide with a clear pixel either side, a lost piece flashes for 11 pictures then is a dot, and they follow the order in a race; the shell hits a car in line, is on the screen every picture it flies, spins the car on the spot (no movement, a full turn, back to its heading) and costs armour; your car too, with no control; a shell at nothing ends at its range (120 px), one across the road ends on the grass; the wheels come out for a car alongside, are on the screen, hit it once, miss a car 40 px off and one 36 px ahead, and do not come out for a car out of reach; the limp (you and a computer car) and finishing while limping; with ARMOUR off the two cards tapes have their old md5. tests/racetrack_test.py 15 of 15 on both armour tapes; tests/rt_fixed_test.py 3 of 3 (its boxes - map, plate, mug - needed nothing added: the race-order panel is not one of them). ONE CHANGE TO racetrack_test.py: its "the scenery matches the map to the pixel" check already leaves out every square a car is in; it now also leaves out the one square each dot of the shell or the wheels is in (rt_lib.py: weapon_dots, from the game's own sums). On a tape without ARMOUR there are no such dots and the check is exactly as it was. It is an exclusion like the cars', not a loosening of what the scenery must look like - but say so if it should be checked another way.
+
+PICTURES (docs/design/racetrack/armour/, by tests/rt_armour_shots.py from one real race, run of luck 3, you starting 2 s late): armour_panel.png (the screen, 3x) and armour_panel_close.png (the panel, 6x: bars at 6, 3, 6, 6 and 4 pieces, dots for the lost ones; the best-lap clock in the 4th row sits left of the bar); armour_tank.mp4 (Bruno fires at 21.2 s and hits Jane at 21.4 s; she spins in place), armour_wheels.mp4 (Spike's wheels hit your car at 4.1 s), armour_ram.mp4 (Jane bumped at 19.0 s, her top piece flashing on the bar, 3 left) - real speed, a screenshot a TV frame, 2x.
+
+NEW FILES: src/armour_tune.asm (the account and every number), src/armour.asm (what runs every picture), src/armour_low.asm (the rare parts, under 0x8000), tools/build_armour.sh, tests/armour_test.py, tests/rt_armour.py (race reports: `python3 tests/rt_armour.py racer_armour_grip1 ../build/racer_armour_grip1/src 5 late=2`, run from tests/), tests/rt_armour_shots.py. Changed: tools/driver_cards.txt (v2: armour and weapon lines; DOT's behaviour is now "A slow car but with good grip and good armour"), tools/make_cards.py (reads both, with or without; the armour scale), build.sh (ARMOUR=1), racer.asm / hud.asm / grip.asm / strip.asm (each change inside "if OPT_ARMOUR"), tools/build_racetrack_tapes.sh (38 tapes).
+
+NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not judged. The computer cars do not steer away from the shell or the wheels. One shell in the air at a time. The shell on an all-grass square was not looked at on the screen (it ends there within a picture). Whether a 32-TV-frame turn reads as "spins where it is" is for Grant's eye in armour_tank.mp4. Not combined with two players or the choose screen; not built on track 1 (wide), 2 or 3 (3 has no room).
