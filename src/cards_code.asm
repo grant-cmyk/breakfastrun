@@ -15,7 +15,7 @@
 ;           clumsy one's is higher, and the car then slides as well (the driver's margin: AI_x_SLIP in ai_tune.asm)
 ;   ACCEL   the push up to four fifths of its top speed, and SPEED the push above that (which sets the top speed:
 ;           7 pushes), each as so many 64ths more or less than the plain push
-; Out: DE, BC the car's push; carry set if it is braking (skid is then not called). About 800 T a car a picture.
+; Out: DE, BC the car's push; carry set if it is braking (skid is then not called). About 1,400 T a car a picture with its multiplies (less for a car whose push is the plain one, or one that is braking).
 ; ---------------------------------------------------------------------
 card_push:
         call sk_speed           ; HL = its speed, roughly (BC, DE kept)
@@ -78,6 +78,8 @@ cdp_free:
         inc hl
 cdp_3:
         ld a,(hl)
+        or a
+        ret z                   ; (0: the plain push as it is - and no carry)
         ld (cd_k),a
         push bc
         ex de,hl
@@ -240,5 +242,8 @@ cdn_c1:
         call cdn_p
         neg
         ret
-; (cd_v, cd_k, cd_near and the cards' numbers - cards.asm - are in src/cards_gap.asm: 42 bytes that fit the gap in front of
-; the multiplying table's page, which is otherwise empty)
+cd_v:   db 0                    ; the car's speed / 4
+cd_k:   db 0                    ; its push's number
+cd_near:                        ; NEAR, PULL for CYAN, GREEN, PINK, WHITE (ai_tune.asm)
+        db AI_C_NEAR,AI_C_PULL, AI_G_NEAR,AI_G_PULL, AI_P_NEAR,AI_P_PULL, AI_W_NEAR,AI_W_PULL
+        include "cards.asm"     ; the cards' numbers (tools/make_cards.py)

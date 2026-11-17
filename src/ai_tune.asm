@@ -127,7 +127,8 @@ AI_W_ERR   equ 2                ; WHITE
 ; CARDS=1 (Grant, 17 Nov 2026: "Each car has a personality ..."): THE DRIVERS, ON TOP OF THEIR CARS' CARDS. The car's
 ; acceleration, top speed and grip come from tools/driver_cards.txt (tools/make_cards.py -> src/cards.asm); the numbers
 ; here are how each driver DRIVES it, in Grant's words on the cards. The level (AI=0, 1, 2: EASY, NORMAL, HARD) is the
-; driver's SKILL: L below is that number, and a higher level turns in sooner (REACH) and makes fewer mistakes (ERR).
+; driver's SKILL: L below is that number, and a higher level turns in sooner (REACH), makes fewer mistakes (ERR) and
+; carries more speed into a corner (SLIP).
 ; Three numbers more than above:
 ;   SLIP   how much faster than its tyres will hold the driver goes into a corner (in quarter-pixels a frame over 64:
 ;          4 is 0.06 px a frame). 0: brakes down to exactly what the car can take - no slide, tidy. More: goes in too
@@ -138,6 +139,7 @@ AI_W_ERR   equ 2                ; WHITE
 ; =====================================================================
         if OPT_CARDS
 AI_L equ OPT_AI
+AI_SK equ 6*AI_L-6               ; (the driver's skill in the corners: EASY brakes 0.09 px a frame lower than NORMAL, HARD carries 0.09 more)
 AI_LUNGE equ 3
 ; CYAN - FRANK in the coupe: "Keeps a tidy line and brakes late ... very similar to Max"
 AI_C_REACH equ 32+8*AI_L
@@ -148,7 +150,7 @@ AI_C_FUSS  equ 2
 AI_C_PACE  equ 16
 AI_C_REACT equ 0
 AI_C_ERR   equ 8-2*AI_L
-AI_C_SLIP  equ 4
+AI_C_SLIP  equ 4+AI_SK
 AI_C_NEAR  equ 0
 AI_C_PULL  equ 0
 ; GREEN band (yellow on the track) - SPIKE in the clown car: "Erratic. A real clown. unpredictable. Almost seems to
@@ -162,11 +164,12 @@ AI_G_FUSS  equ 2
 AI_G_PACE  equ 16
 AI_G_REACT equ 0
 AI_G_ERR   equ 14-2*AI_L
-AI_G_SLIP  equ 24
+AI_G_SLIP  equ 24+AI_SK
 AI_G_NEAR  equ 56
 AI_G_PULL  equ 128+14
 ; PINK - BRUNO in the tank: "Heavy and slow, likes to get in the way. Cuts corners": holds the very middle of the road,
-; turns in the earliest (the corner cut), no slide at all, and moves over on a car that comes alongside
+; turns in the earliest (the corner cut), brakes to exactly what the tank will hold, and moves his line over on a car that
+; comes within 40 pixels
 AI_P_REACH equ 44+6*AI_L
 AI_P_LMASK equ 1
 AI_P_LHALF equ 1
@@ -175,7 +178,7 @@ AI_P_FUSS  equ 2
 AI_P_PACE  equ 16
 AI_P_REACT equ 0
 AI_P_ERR   equ 5-AI_L
-AI_P_SLIP  equ 0
+AI_P_SLIP  equ 0+AI_SK
 AI_P_NEAR  equ 40
 AI_P_PULL  equ 10
 ; WHITE - JANE in the dragster: "should shoot ahead of Max on the straights but really battle on the corners ...
@@ -189,7 +192,7 @@ AI_W_FUSS  equ 2
 AI_W_PACE  equ 16
 AI_W_REACT equ 0
 AI_W_ERR   equ 8-2*AI_L
-AI_W_SLIP  equ 16
+AI_W_SLIP  equ 16+AI_SK
 AI_W_NEAR  equ 0
 AI_W_PULL  equ 0
         endif

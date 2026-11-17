@@ -4201,9 +4201,6 @@ gd_2:
         ld c,29
         jp st_text
         ; (gap_draw, from hud.asm, also fills the gap)
-        if OPT_CARDS
-        include "cards_gap.asm" ; (CARDS: 42 bytes of the driver cards' tables fill some of what is left of it)
-        endif
         include "sq4.asm"
 mb_world:
         include "world.asm"

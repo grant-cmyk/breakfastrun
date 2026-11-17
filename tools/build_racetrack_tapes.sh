@@ -52,5 +52,8 @@ one racer_tight_w56s_normal_grip1_react1  GRIP1=1 REACT1=1 $T OUT=racer_tight_w5
 one racer_2p         TWOP=1 $T OUT=racer_2p BDIR=racer_2p
 one racer_2p_grip1   GRIP1=1 TWOP=1 $T OUT=racer_2p_grip1 BDIR=racer_2p_grip1
 one racer_2p_points  TWOP_PTS=3 TWOP=1 $T OUT=racer_2p_points BDIR=racer_2p_points
+# the driver cards (tools/build_cards.sh builds just these two; tools/driver_cards.txt has the ratings)
+one racer_cards        CARDS=1 $T OUT=racer_cards BDIR=racer_cards
+one racer_cards_grip1  GRIP1=1 CARDS=1 $T OUT=racer_cards_grip1 BDIR=racer_cards_grip1
 # and the plain game last
 bash build.sh > /tmp/rt_build_plain.log 2>&1 && echo "racer (the plain game): built last, src/options.asm is the plain game's again"
