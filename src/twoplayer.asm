@@ -373,6 +373,8 @@ lsh_7:
         ld a,(hl)
         cp OPT_2PPTS
         jr c,lsh_8
+        ld b,4                  ; (the last point on the panel: nothing more is drawn there once the race is over)
+        call p2p_nos
         ld a,1
         ld (race_over),a
 lsh_8:
