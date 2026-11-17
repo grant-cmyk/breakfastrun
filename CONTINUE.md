@@ -3,6 +3,23 @@
 **Stamped:** 2026-11-16 SAST (the choose screen added; the rest as of 2026-11-15 15:17) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
+**The green-line race track on tracks 1, 2 and 3 (17 Nov 2026, branch worktree-agent-a272a1ab88e676794 - not merged):**
+Grant chose the limit marking: the thin green line just inside the grass's edge. It is now one switch -
+`RACETRACK=green bash build.sh` -> build/racer_track_green.tap (track 1); `TRACK=2` or `TRACK=3` with it ->
+build/racer_track_green_track2.tap, _track3.tap; `GRIP1=1` with any of them -> ..._grip1.tap (your car's grip sums once a
+picture: quicker, the feel not yet judged - both kinds are kept). Always run plain `bash build.sh` last. Pictures a second,
+start / mid-lap / in the pack (today's breakfast tape 12.4 / 12.4 / 12.6): track 1 11.6 / 12.0 / 10.0 (GRIP1 11.9 / 12.4 /
+11.4); TRACK 2 10.1 / 10.0 / 9.25 (GRIP1 10.5 / 10.5 / 9.5) - slower because its roads lie close together and more grass
+edges are in view; track 3 11.75 / 11.25 / 11.0 (GRIP1 11.9 / 12.1 / 11.5). Bytes free in the program: 549, 1,974 and 202.
+All six tapes pass tests/racetrack_test.py (`TRACK=2 python3 tests/racetrack_test.py`; it now knows the green line) and
+tests/rt_fixed_test.py. What tracks 2 and 3 needed is in PROJECT-LOG's last entry: look-alike edge pictures merged (3
+pixels at most in a tile), the map's rows laid into each other's gaps, track 3's kinds kept in the program and its taller
+mini-map given a taller box. Two faults at the window's edges were fixed in every race-track tape (the 2-pixel rim, and a
+car at the left edge putting its colour 8 rows lower). Pictures and real-speed clips: docs/design/racetrack/built/green_track2_*,
+green_track3_*. Track 5 (the bridge) is not built in this look: it needs a bridge design in these colours, the bridge
+drawn again by the race track's squares, and room (PROJECT-LOG). Next for Grant: drive the three tapes and their _grip1
+twins; say whether track 2's speed will do, and whether GRIP1 feels the same.
+
 **The race track trial (16-17 Nov 2026, branches worktree-agent-af8779cbaad3c1b51, worktree-agent-ab8bf2b0bee0348cf, then
 worktree-agent-ae2e8b23fd6243e9b - not merged):** Grant scrapped the breakfast table for a traditional track - black road,
 solid green grass from 10 px beyond the road's edge, a dashed white limit line, each car its own colour, clash rule 4. A
