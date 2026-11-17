@@ -31,9 +31,10 @@ def check():
     md = g.mem(S['mapdat'], MAP_H * 3)
     y0 = my & ~7                                                          # the map's 3 x 3 squares, from the top of its first row of squares
     want = [bytes(3)] * (my - y0) + [md[i * 3:i * 3 + 3] for i in range(MAP_H)]
-    want += [bytes(3)] * (24 - len(want))
-    got = {'map': (box(scr, y0, mx, 24, 3), attrs(scr, y0, mx, 3, 3))}
-    exp = {'map': (want, [b'\x07' * 3] * 3)}
+    ML = (len(want) + 7) // 8 * 8                                         # (24 lines, 3 rows of squares; track 3's taller map: 32 and 4)
+    want += [bytes(3)] * (ML - len(want))
+    got = {'map': (box(scr, y0, mx, ML, 3), attrs(scr, y0, mx, ML // 8, 3))}
+    exp = {'map': (want, [b'\x07' * 3] * (ML // 8))}
     dm = g.mem(S['dmg_bmp'], DMG_ROWS * 3)
     got['mug'] = (box(scr, dy, dx, DMG_ROWS, 3), attrs(scr, dy, dx, 2, 3))
     exp['mug'] = ([dm[i * 3:i * 3 + 3] for i in range(DMG_ROWS)], [b'\x03' * 3] * 2)

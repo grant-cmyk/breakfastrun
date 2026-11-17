@@ -809,25 +809,47 @@ rt_car:
         call rq_ring            ; (the squares the rim may reach: into the buffer)
         ld a,0x7E               ; "OR (HL)" becomes "LD A,(HL)" at the four places draw_car puts the ink in: mask only
         call rtc_patch
+        ld a,(wxu)
+        ld (rt_u),a             ; (where the car is across, before the four passes move it)
         ld l,(ix+C_X)
         ld h,(ix+C_X+1)
         push hl
         dec hl
-        call rtc_x
+        sub 192                 ; THE WINDOW'S EDGES (17 Nov 2026): a part of the car that is out of sight beyond an edge must
+        cp 16                   ; not put its rim one pixel into view. So: one pixel left - the window's last column is kept
+        ld bc,0x0100+25*8       ; as it was if the car reaches past the right edge (buffer byte 25, bit 0) ...
+        call rtc_xk
         inc hl
         inc hl
-        call rtc_x
+        ld a,(rt_u)
+        cp 15
+        ld bc,0x8000+2*8        ; ... one pixel right - the first column, if it reaches past the left edge ...
+        call rtc_xk
         pop hl
         ld (ix+C_X),l
         ld (ix+C_X+1),h
         ld l,(ix+C_Y)
         ld h,(ix+C_Y+1)
         push hl
+        ld a,(dc_row0)
+        ld c,a                  ; C = the car's first line in the buffer
+        ld a,(dc_count)
+        add a,c
+        ld b,a                  ; B = the line after its last
+        push bc
         dec hl
-        call rtc_y
+        cp BUF_TOP+WIN_H
+        ld a,BUF_TOP+WIN_H-1    ; ... one pixel up - the window's last line, if the car runs on below it ...
+        call rtc_yk
+        pop bc
         inc hl
         inc hl
-        call rtc_y
+        ld a,c
+        cp BUF_TOP
+        sbc a,a
+        inc a                   ; (Z: the car starts above the window)
+        ld a,BUF_TOP            ; ... one pixel down - the first line, if it starts above it
+        call rtc_yk
         pop hl
         ld (ix+C_Y),l
         ld (ix+C_Y+1),h
@@ -846,6 +868,84 @@ rtc_d:
         call draw_car
         pop hl
         ret
+; RTC_XK (HL = the x for this pass; carry: the car reaches past the window's edge on that side - then BC = the bit, and
+; 8 x the buffer byte, of the window's edge column): the pass, and that column's pixels on the car's lines put back after
+rtc_xk:
+        jr nc,rtc_x
+        push hl
+        ld (rk_c+1),bc
+        call rk_at
+rk_s:   ld a,(hl)
+        ld (de),a
+        call rk_next
+        djnz rk_s
+        pop hl
+        call rtc_x
+        push hl
+rk_c:   ld bc,0
+        ld a,b
+        ld (rk_m+1),a
+        call rk_at
+rk_b:   ld a,(de)
+        xor (hl)
+rk_m:   and 0
+        xor (hl)                ; (the edge's bit as it was kept, the byte's others as they are now)
+        ld (hl),a
+        call rk_next
+        djnz rk_b
+        pop hl
+        ret
+rk_at:
+        ld a,(dc_row0)
+        ld b,a
+        call buf_addr
+        ld a,(dc_count)
+        ld b,a
+        ld de,rt_keep
+        ret
+rk_next:
+        inc de
+        inc h                   ; the next line down (screen layout, as draw_car steps)
+        ld a,h
+        and 7
+        ret nz
+        ld a,l
+        add a,32
+        ld l,a
+        ret c
+        ld a,h
+        sub 8
+        ld h,a
+        ret
+; RTC_YK (HL = the y for this pass; Z: the car reaches past the window's top or bottom - then A = the window's edge line
+; in the buffer): the pass, and that line's three bytes under the car put back after
+rtc_yk:
+        jr nz,rtc_y
+        push hl
+        ld (rk_ln+1),a
+        ld b,a
+        call rk_vat
+        ld de,rt_keep
+        ldi
+        ldi
+        ldi
+        pop hl
+        call rtc_y
+        push hl
+rk_ln:  ld b,0
+        call rk_vat
+        ex de,hl
+        ld hl,rt_keep
+        ldi
+        ldi
+        ldi
+        pop hl
+        ret
+rk_vat:
+        ld a,(rt_u)
+        and 0xF8
+        ld c,a
+        jp buf_addr
 rtc_patch:
         ld (dc_ink0),a
         ld (dc_ink1),a
@@ -986,10 +1086,10 @@ rq_s2:
         cpl
         and e
         call nz,rq_cell
-        dec l
-        dec l
-        ld de,32
-        add hl,de
+        ld de,32                ; the next row of squares. (17 Nov 2026: the 32 is added BEFORE stepping back two squares. HL's low
+        add hl,de               ; byte alone is stepped, and for a car at the window's left edge on a row of squares that starts a
+        dec l                   ; page of rt_sh - rows 0, 8 and 16 - "back two" wrapped round the page and the 32 then carried into
+        dec l                   ; the next one: the car's colour went into squares 8 rows lower, or into the pictures above rt_sh.)
         pop de
         inc e
         inc e
@@ -1233,4 +1333,6 @@ rt_cnt:   db 0
 rt_ink:   db 0                  ; the colour of the car being drawn
 rt_probe: db 0                  ; 1: draw_car goes to rt_car_sq once it knows where the picture falls
 rt_mixed: db 0                  ; 1: a grass-and-road square is under the car
+rt_u:     db 0                  ; rt_car: the car's place across (wxu) before the rim's passes
+rt_keep:  defs 28               ; rt_car: the pixels of the window's edge kept through a pass of the rim (a byte a line of the car, 27 at most)
 ; RT_B (above the colours): for each of the 20 rows of tiles in view, where the tile under screen column 0 is in the map
