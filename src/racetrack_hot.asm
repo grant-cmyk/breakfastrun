@@ -58,6 +58,13 @@ rt_class:
         ld (hl),a
         ld c,a                  ; C = the lines below the fold (from the lower pair of tiles: their lines 0 up)
         ld (sq_sv+1),a
+        or a
+        ld a,0xD9               ; (EXX: sq_bot's first instruction)
+        jr nz,rcl_fold
+        ld a,0xC9               ; none below the fold (one picture in eight): rt_sq ends at the fold - a RET there. (The lower
+rcl_fold:                       ; pair's pointer is then not moved on: nothing of those tiles is used in such a picture.)
+        ld (sq_bot),a
+        ld a,c
         add a,RT_PL
         ld (sq_dt1+1),a         ; the upper pair's first line used
         ld (sq_dt2+1),a
@@ -283,6 +290,7 @@ ren_1:
 ; through the shift tables - so a pair is one of nine cases, each done the quickest way. Uses IXL; the other BC too.
 rt_sq:
         exx
+rt_sq_in:                       ; (rt_dir comes in here, the other registers already in hand)
         ld a,(hl)               ; the upper-left tile
         inc hl
         ld b,(hl)               ; the upper-right
@@ -668,9 +676,8 @@ sh_row:
         exx
         rept WIN_W
         ld a,(hl)
-        add a,a
-        call nc,rt_cp           ; (bit 7 not set: it is in the buffer)
-        call m,rt_dir           ; (bits 7 and 6: rt_class's own. Bit 7 alone: nothing in it shows)
+        cp 0x40                 ; (0x80 to 0xBF - bit 7 alone, nothing in it shows - and only they, overflow here: one test)
+        call po,rt_any          ; (bit 7 not set: it is in the buffer. Bits 7 and 6: rt_class's own, made up on the screen)
         ldi                     ; its colour, and on to the next
         endm
         ld de,32-WIN_W
@@ -686,30 +693,30 @@ rt_dir:
         rrca
         and 0x3F
         ld (hl),a               ; the colour it shows in
+sd_sh:  ld h,0x40               ; (patched: this row's page of the screen)
         ld a,l
         exx
-        ld b,a
         sub c
-        jr z,sd_1
-        ld c,a                  ; (not the square the map's pointers are at: that many tiles on)
-        ld a,b
+        jr nz,sd_adj            ; (not the square the map's pointers are at)
+sd_1:
+        inc c
+        call rt_sq_in
+sd_hh:  ld h,RT_SH/256          ; (patched: this row's page of rt_sh)
+        ld e,l
+sd_at:  ld d,0x58               ; (patched: ... and of the screen's colours)
+        ret
+sd_adj:
+        ld c,a                  ; that many tiles on
         ld b,0
         add hl,bc
         ex de,hl
         add hl,bc
         ex de,hl
-        ld b,a
-sd_1:
-        ld c,b
-        inc c
         exx
-sd_sh:  ld h,0x40               ; (patched: this row's page of the screen)
-        call rt_sq
-sd_hh:  ld h,RT_SH/256          ; (patched: this row's page of rt_sh)
-        ld e,l
-sd_at:  ld d,0x58               ; (patched: ... and of the screen's colours)
-        xor a
-        ret
+        ld a,l
+        exx
+        ld c,a
+        jr sd_1
 sd_4:
         ld a,l
         exx
@@ -741,9 +748,11 @@ sd_hh2: ld h,RT_SH/256
         ld (hl),a
         ld e,l
 sd_at2: ld d,0x58
-        xor a
         ret
-; RT_CP: the square's 8 lines from the buffer to the screen (and the sign flag off: it is not for rt_dir)
+; RT_ANY (from rt_show, A = a square's colour): made up on the screen, or - RT_CP - its 8 lines copied from the buffer
+rt_any:
+        add a,a
+        jr c,rt_dir
 rt_cp:
         cp RT_LEAVE*2
         jr z,cp_lv
@@ -762,12 +771,10 @@ cp_sh:  ld h,0x40               ; (patched)
 cp_hh:  ld h,RT_SH/256          ; (patched)
         ld e,l
 cp_at:  ld d,0x58               ; (patched)
-        xor a
         ret
 cp_lv:                          ; a fixed box's square that has not changed (RT_LEAVE): its pixels stay as they are on the
         ld a,(de)               ; screen, and so does its colour (DE is at it: the colour is read back, for the LDI that follows)
         ld (hl),a
-        xor a
         ret
 
 ; RT_BUFSQ: DE = the buffer's first byte of the square whose colour is at HL in rt_sh.
