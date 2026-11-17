@@ -51,6 +51,11 @@ class Game:
             for i in range(1, 5): self.rpc('write', addr=self.sym['cars'] + i * self.sym['c_size'] + 19, value=0)
         self.wp = self.mem(self.sym['cars'], 14)[13]
     def car(self, i=0):
+        # (The emulator stops wherever the processor is when the TV frame ends. If that is inside the game's own move of a
+        # car - between writing the low and the high byte of where it is - the place read here is half old, half new, and
+        # 256 pixels out: seen once, 17 Nov 2026, as a car "at x 763" on a 576-pixel world. So the move is let finish first.)
+        S = self.sym
+        if 'ph_yok' in S and S['physics'] <= self.rpc('regs')['pc'] < S['ph_yok']: self.rpc('run', until_pc=S['ph_yok'], max_frames=2)
         c = self.mem(self.sym['cars'] + i * self.sym['c_size'], 14)
         return c[1] + 256 * c[2], c[4] + 256 * c[5], c[10]
     def put(self, x, y, ang=None, i=0, stop=True):
