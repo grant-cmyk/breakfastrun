@@ -11,6 +11,19 @@ CARSOPT="${1:-small}"
 # RACETRACK=1: A TRIAL - a traditional race track: black road, green grass to the pixel, a dashed white limit line, each car
 # its own colour (src/racetrack.asm; Grant, 16 Nov 2026). Track 1 -> build/racer_racetrack.tap. It needs the room the savings
 # give, so it turns them on; it builds in its own folder (build/racetrack); tools/make_world.py reads RACETRACK too.
+# RACETRACK=green: THE LOOK GRANT CHOSE (17 Nov 2026: "the lines on the outside look good") - the race track with the limit as
+# a thin green line, 1 pixel wide, 1 pixel inside the grass's edge. Any of tracks 1, 2 and 3:
+#   RACETRACK=green bash build.sh           -> build/racer_track_green.tap          (track 1)
+#   TRACK=2 RACETRACK=green bash build.sh   -> build/racer_track_green_track2.tap   (and TRACK=3)
+#   GRIP1=1 with either                     -> ..._grip1.tap   (your car's grip sums once a picture: quicker, the feel not yet judged)
+# It is short for RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 RACETRACK=1, which still works (and makes the same bytes).
+if [ "${RACETRACK:-0}" = "green" ]; then
+  [ "${TRACK:-1}" = "5" ] && { echo "RACETRACK=green: tracks 1, 2 and 3 only (track 5's bridge is not built in this look)"; exit 1; }
+  export RACETRACK=1 RT_NOLINE=1 RT_PIN=solid RT_PIN_GAP=1 RT_PIN_W=1
+  GN=""; [ "${TRACK:-1}" != "1" ] && GN="_track${TRACK}"
+  [ "${GRIP1:-0}" = "1" ] && GN="${GN}_grip1"
+  BDIR="${BDIR:-track_green$GN}"; OUT="${OUT:-racer_track_green$GN}"
+fi
 if [ "${RACETRACK:-0}" = "1" ]; then
   export RACETRACK TILE1=1 FLIP=1 TOWER=1 LOOP=1
   # RT_NOLINE=1 with it: no limit line (quicker: a concession for Grant to judge) -> build/racer_racetrack_noline.tap

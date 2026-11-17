@@ -5309,7 +5309,7 @@ faces     equ faces_src
         if OPT_TILE1 * OPT_FLIP * OPT_LOOP = 0
         .error RACETRACK needs TILE1=1, FLIP=1 and LOOP=1 (build.sh sets them)
         endif
-        if RT_DATA + rt_src_end - rt_src > HIMEM
+        if rt_src_end - rt_src > HIMEM - RT_DATA        ; (sizes, not addresses: an address past 0xFFFF starts again at 0 and would pass)
         .error RACETRACK: the pictures and the map run into the row lists at HIMEM
         endif
         endif
