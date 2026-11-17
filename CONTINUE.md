@@ -3,6 +3,8 @@
 **Stamped:** 2026-11-16 SAST (the choose screen added; the rest as of 2026-11-15 15:17) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
+**The tighter track and keener cars (17 Nov 2026, branch worktree-agent-acbbf0fac92b5a806 - not merged):** on the race track trial, track 1: `RT_ROADW=56 RT_CORNER=27` (road width, the big corners' radius; tools/make_world.py) and `AI=1` or `AI=2` (the computer cars NORMAL or HARD; every number in src/ai_tune.asm). Tapes build/racer_tight_*.tap - drive racer_tight_w56s_normal.tap first, then _hard. PROJECT-LOG's last entry has the tables. Nobody has driven them.
+
 **The race track trial (16-17 Nov 2026, branches worktree-agent-af8779cbaad3c1b51, worktree-agent-ab8bf2b0bee0348cf, then
 worktree-agent-ae2e8b23fd6243e9b - not merged):** Grant scrapped the breakfast table for a traditional track - black road,
 solid green grass from 10 px beyond the road's edge, a dashed white limit line, each car its own colour, clash rule 4. A
