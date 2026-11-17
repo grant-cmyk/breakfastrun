@@ -34,15 +34,18 @@ RT = os.environ.get('RACETRACK') == '1'
 RT_RUNOFF = 10                    # black run-off between the road's edge and the grass, pixels
 ROAD = 72                         # road width in pixels (48, 52, 56, 64, then 72 for the big cars - Grant, 10 Nov 2026)
 # THE TIGHTER TRACK (a trial, RACETRACK=1 only; Grant, 17 Nov 2026: "The track corners can be sharper now and the track
-# narrower" - with no O's to hit and a clear black road the game had become too easy). Two parameters, track 1 only:
+# narrower" - with no O's to hit and a clear black road the game had become too easy). Three parameters, track 1 only:
 #   RT_ROADW=56    the road's width in pixels (72 as it was; 56 and 48 were built)
 #   RT_CORNER=27   the four big corners' radius along the middle of the road, in pixels (54 as it was). The straights stay
 #                  where they are: a smaller radius makes each corner later and sharper, and the lap a little longer.
+#   RT_RUNOFF=8    the black run-off between the road's edge and the grass, pixels (10 as it was). 8 is the least: nearer
+#                  than that the start line's ends come within a colour square of the grass, and the build stops
 # Without them (or without RACETRACK=1) not one byte of any output changes.
 RT_CORNER = 54.0
 if RT and TRACK == 1:
     ROAD = int(os.environ.get('RT_ROADW') or ROAD)
     RT_CORNER = float(os.environ.get('RT_CORNER') or RT_CORNER)
+    RT_RUNOFF = int(os.environ.get('RT_RUNOFF') or RT_RUNOFF)   # RT_RUNOFF=8: the grass nearer the road's edge (10 as it was)
 
 # THE CORNER ARROWS' LOOK-AHEAD (the rest is further down: "THE CORNER ARROWS"). Change these to make the
 # arrows show earlier, later, more or less often; the generator prints how many waypoints of the lap show one.
@@ -97,6 +100,7 @@ if TRACK != 1:                    # a later track: the centre line of its design
 LX = 256 + OFF if TRACK == 1 else _t['lx']      # the start line's x (track 5: 384 - its start straight begins further right)
 BRIDGE = _t.get('bridge') if TRACK != 1 else None   # TRACK 5 only: the crossover (see the BRIDGE blocks below; nothing else changes for tracks 1-3)
 
+def total_len(): return sum(math.dist(p, q) for p, q in zip(PATH, PATH[1:] + PATH[:1]))
 def road_mask(width):
     im = Image.new('1', (PW, PH), 0)
     d = ImageDraw.Draw(im)
@@ -761,6 +765,11 @@ if RT:
             for _dx in range(15): _near |= _gp[_dy:_dy + PH, _dx:_dx + PW]
     assert not (_inkb & _near).any(), 'something white is within a colour square of the grass'
     _gt = rt_grass.reshape(H, 8, W, 8)
+    # a picture of the whole track as the game colours it (grass and limit line green, road black, the painted things white),
+    # 3 pixels to one, and the waypoints' line length - for looking at a track's shape (the tighter-track trial, 17 Nov 2026)
+    _pv = _np.zeros((PH, PW, 3), _np.uint8); _pv[rt_grass] = (0, 215, 0); _pv[_inkb] = (215, 215, 215)
+    Image.fromarray(_pv).resize((PW * 3, PH * 3), Image.NEAREST).save(os.path.join(BLD, 'rt_track_preview.png'))
+    print('racetrack: the road %d px wide, the big corners\' radius %g px, a lap %d px along the middle (%.1f s flat out)' % (ROAD, RT_CORNER, total_len(), total_len() / 87.5))
     g_all = _np.pad(_gt.all(axis=(1, 3)), 1, constant_values=True); g_any = _np.pad(_gt.any(axis=(1, 3)), 1, constant_values=True)
     w_any = _np.pad(_inkb.reshape(H, 8, W, 8).any(axis=(1, 3)), 1, constant_values=False)
     assert not (g_any & w_any).any(), 'a tile holds grass and something white'

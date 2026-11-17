@@ -1,8 +1,9 @@
 """The tighter-track trial's measurements (17 Nov 2026): lap times and time on the grass, car by car, on a race-track tape.
-Usage: python3 tests/rt_tight.py <tape name in build/> <its src folder> [races, default 3] [alone] [ace=88] [try=...]
+Usage: python3 tests/rt_tight.py <tape name in build/> <its src folder> [races, default 3] [alone] [ace=88] [try=...] [late=3]
   in the pack: your car by autopilot with the four computer cars;  alone: the computer cars stay on the grid.
   The autopilot is rt_lib's (it aims at the middle of the road: a careful lap) unless ace=LOOK is given: then rt_ace.py's,
   which cuts the corners the way a good driver does (LOOK 88 to 104 is about the quickest clean lap).
+  late= you sit on the grid that many seconds after the green light, then chase: can the cars be caught and passed?
   try=  to try the computer cars' settings WITHOUT building a tape: the four cars (CYAN, GREEN, PINK, WHITE), each
         reach,line,half,ease,fuss,pace,react,err - e.g. try=40,3,2,0,2,16,0,3/36,3,2,1,2,15,0,6/... (- leaves a car as built)
 A car is "on the grass" when the middle of it is over a tile the game's own surface map calls grass (what slows it).
@@ -11,7 +12,7 @@ the grid), its flying laps and their mean, and the share of its time on the gras
 import sys
 from rt_lib import *
 import rt_ace
-def measure(name, src, races=3, alone=False, look=None, tune=None, quiet=False):
+def measure(name, src, races=3, alone=False, look=None, tune=None, quiet=False, late=0):
     who = ['YOU (autopilot)', 'CYAN', 'GREEN', 'PINK', 'WHITE']; n = 1 if alone else 5
     first = [[] for _ in range(5)]; fly = [[] for _ in range(5)]; on = [0] * 5; visits = [0] * 5; total = [0] * 5; order = []
     for race in range(races):
@@ -30,7 +31,9 @@ def measure(name, src, races=3, alone=False, look=None, tune=None, quiet=False):
             return not (0 <= tx < 72 and 0 <= ty < S['maph']) or bool(surf[ty * 9 + (tx >> 3)] & (0x80 >> (tx & 7)))
         last = [None] * 5; t = [[] for _ in range(5)]; was = [False] * 5
         for f in range(80 * 50):
-            steer(); g.run(1)
+            if f < late * 50: g.key('Q', False); g.key('O', False); g.key('P', False)   # (late=: you sit on the grid while the others go)
+            else: steer()
+            g.run(1)
             c = g.mem(S['cars'], CS * 5)
             for i in range(n):
                 r = c[i * CS:(i + 1) * CS]
@@ -55,4 +58,4 @@ if __name__ == '__main__':
     a = sys.argv[3:]
     look = ([int(v[4:]) for v in a if v.startswith('ace=')] or [None])[0]
     tune = ([[None if c == '-' else [int(x) for x in c.split(',')] for c in v[4:].split('/')] for v in a if v.startswith('try=')] or [None])[0]
-    measure(sys.argv[1], sys.argv[2], ([int(v) for v in a if v.isdigit()] or [3])[0], 'alone' in a, look, tune)
+    measure(sys.argv[1], sys.argv[2], ([int(v) for v in a if v.isdigit()] or [3])[0], 'alone' in a, look, tune, late=([float(v[5:]) for v in a if v.startswith('late=')] or [0])[0])
