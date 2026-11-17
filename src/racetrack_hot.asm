@@ -697,8 +697,7 @@ sd_sh:  ld h,0x40               ; (patched: this row's page of the screen)
         ld a,l
         exx
         sub c
-        jr nz,sd_adj            ; (not the square the map's pointers are at)
-sd_1:
+        call nz,sd_adj          ; (not the square the map's pointers are at)
         inc c
         call rt_sq_in
 sd_hh:  ld h,RT_SH/256          ; (patched: this row's page of rt_sh)
@@ -716,23 +715,12 @@ sd_adj:
         ld a,l
         exx
         ld c,a
-        jr sd_1
+        ret
 sd_4:
         ld a,l
         exx
-        ld b,a
         sub c
-        jr z,sd_5
-        ld c,a
-        ld a,b
-        ld b,0
-        add hl,bc
-        ex de,hl
-        add hl,bc
-        ex de,hl
-        ld b,a
-sd_5:
-        ld c,b
+        call nz,sd_adj
         inc c
         exx
 sd_sh2: ld h,0x40
@@ -1087,55 +1075,6 @@ rq_g0:
         ld a,8
         call rq_g1
         ld (rt_bm+4),bc
-        jr rq_gx
-; RQ_G1: up to A of the picture's rows (D = how many are left) ORed together: C = their left 8 pixels (mask and ink), B = their right 8
-rq_g1:
-        ld bc,0
-        inc d
-        dec d
-        ret z
-        cp d
-        jr c,rq_g2
-        ld a,d
-rq_g2:
-        ld e,a
-        ld a,d
-        sub e
-        ld d,a
-rq_gc:  jp rq_gf                ; (patched: rq_gf or rq_gb)
-rq_gf:
-        ld a,(hl)
-        inc hl
-        or (hl)
-        inc hl
-        or c
-        ld c,a
-        ld a,(hl)
-        inc hl
-        or (hl)
-        inc hl
-        or b
-        ld b,a
-        dec e
-        jr nz,rq_gf
-        ret
-rq_gb:
-        ld a,(hl)
-        dec hl
-        or (hl)
-        dec hl
-        or b
-        ld b,a
-        ld a,(hl)
-        dec hl
-        or (hl)
-        dec hl
-        or c
-        ld c,a
-        dec e
-        jr nz,rq_gb
-        ret
-rq_gx:
         ld a,(wxu)              ; the picture's 16 pixels start at buffer x = wxu + 1
         inc a
         ld e,a
@@ -1228,6 +1167,53 @@ rq_s2:
         dec a
         ld (rt_cnt),a
         jr nz,rq_band
+        ret
+; RQ_G1: up to A of the picture's rows (D = how many are left) ORed together: C = their left 8 pixels (mask and ink), B = their right 8
+rq_g1:
+        ld bc,0
+        inc d
+        dec d
+        ret z
+        cp d
+        jr c,rq_g2
+        ld a,d
+rq_g2:
+        ld e,a
+        ld a,d
+        sub e
+        ld d,a
+rq_gc:  jp rq_gf                ; (patched: rq_gf or rq_gb)
+rq_gf:
+        ld a,(hl)
+        inc hl
+        or (hl)
+        inc hl
+        or c
+        ld c,a
+        ld a,(hl)
+        inc hl
+        or (hl)
+        inc hl
+        or b
+        ld b,a
+        dec e
+        jr nz,rq_gf
+        ret
+rq_gb:
+        ld a,(hl)
+        dec hl
+        or (hl)
+        dec hl
+        or b
+        ld b,a
+        ld a,(hl)
+        dec hl
+        or (hl)
+        dec hl
+        or c
+        ld c,a
+        dec e
+        jr nz,rq_gb
         ret
 ; RQ_SETPG (HL = a square in rt_sh): its row of squares' page of the buffer, for rq_cell - before rq_cell is called for
 ; any square of a row. Keeps all but A.

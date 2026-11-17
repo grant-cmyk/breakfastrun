@@ -5119,25 +5119,25 @@ cars_init_src:
         db 0
         dw CPU0Y
         dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, AI_C_PACE,AI_C_REACT,AI_C_ERR, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, AI_C_PACE,AI_C_REACT+OPT_REACT1,AI_C_ERR, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
         db 0
         dw CPU1X
         db 0
         dw CPU1Y
         dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, AI_G_PACE,AI_G_REACT,AI_G_ERR, 2,0,0, 0, 0,0     ; GREEN (SPIKE): 14/16 - still the slowest, few mistakes (it was 12/16: Grant, 15 Nov 2026, "just too slow you can speed him up")
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, AI_G_PACE,AI_G_REACT+OPT_REACT1,AI_G_ERR, 2,0,0, 0, 0,0     ; GREEN (SPIKE): 14/16 - still the slowest, few mistakes (it was 12/16: Grant, 15 Nov 2026, "just too slow you can speed him up")
         db 0
         dw CPU2X
         db 0
         dw CPU2Y
         dw 0,0
-        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, AI_P_PACE,AI_P_REACT,AI_P_ERR, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, AI_P_PACE,AI_P_REACT+OPT_REACT1,AI_P_ERR, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
         db 0
         dw CPU3X
         db 0
         dw CPU3Y
         dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, AI_W_PACE,AI_W_REACT,AI_W_ERR, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, AI_W_PACE,AI_W_REACT+OPT_REACT1,AI_W_ERR, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
 cars_init_src_end:
 high_end:
 ; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn

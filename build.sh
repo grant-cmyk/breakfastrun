@@ -22,6 +22,7 @@ if [ "${RACETRACK:-0}" = "green" ]; then
   export RACETRACK=1 RT_NOLINE=1 RT_PIN=solid RT_PIN_GAP=1 RT_PIN_W=1
   GN=""; [ "${TRACK:-1}" != "1" ] && GN="_track${TRACK}"
   [ "${GRIP1:-0}" = "1" ] && GN="${GN}_grip1"
+  [ "${REACT1:-0}" = "1" ] && GN="${GN}_react1"      # (REACT1=1: the computer cars decide every 8th TV frame - below)
   BDIR="${BDIR:-track_green$GN}"; OUT="${OUT:-racer_track_green$GN}"
 fi
 if [ "${RACETRACK:-0}" = "1" ]; then
@@ -86,6 +87,9 @@ printf 'OPT_CHOOSE equ %s               ; 1: the choose screen (tools/build_choo
 # GRIP1=1: A TRIAL SWITCH - your car is moved once a picture like the computer cars, its grip sums once a picture (it still
 # steers every TV frame). Quicker, but it changes the handling a little: off unless asked for (PROJECT-LOG, 17 Nov 2026).
 printf 'OPT_GRIP1 equ %s                ; 1: your car moved, and its grip worked out, once a picture (GRIP1=1 bash build.sh)\n' "${GRIP1:-0}" >> "$ROOT/src/options.asm"
+# REACT1=1: A TRIAL SWITCH - each computer car decides how to steer every 8th TV frame, not every 4th (their REACT setting
+# one higher). Quicker in the pack, but they turn in a little later: off unless asked for (PROJECT-LOG, 17 Nov 2026).
+printf 'OPT_REACT1 equ %s               ; 1: the computer cars decide every 8th TV frame, not every 4th (REACT1=1 bash build.sh)\n' "${REACT1:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the window'"'"'s 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)\n' "${RT_ROWS:-19}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}

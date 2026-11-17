@@ -3,6 +3,19 @@
 **Stamped:** 2026-11-16 SAST (the choose screen added; the rest as of 2026-11-15 15:17) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not yet merged to main) · commit: see `git log -1`
 **Lifecycle:** Active
 
+**The race track's smoothness pass (17 Nov 2026, branch worktree-agent-aaccef13180d1b3bf - not merged):** three exact
+stages in src/racetrack_hot.asm (the cars' colour rule and a short cut for a car alone on plain squares; the grass-edge
+squares reached with less overhead; plain squares under a car) - nothing changed on the screen, every test as before.
+Track 1 green now makes 12.0 / 12.4 / 11.4 pictures a second (start alone / mid-lap alone / in the pack; it made
+11.6 / 12.0 / 10.0), with GRIP1 12.5 / 12.75 / 11.6; the tight NORMAL tape 11.75 / 12.1 / 10.4, with GRIP1 11.9 / 12.4 / 11.6;
+track 2 10.75 / 10.5 / 10.0; track 3 12.0 / 12.1 / 11.5. 12.5 in the pack is NOT reached without switches. New switch
+`REACT1=1` (the computer cars decide every 8th TV frame: 11,000-19,000 T, but their laps are about 1.5 s slower) -> ..._react1.tap.
+Track 2's deficit is 50 more grass-edge squares in view than track 1: only roads further apart cure it. Left to do, exact:
+the kinds a byte a block (8,700 T, needs 2,304 bytes) and a case number for each edge square (8,000-12,000 T, 275 bytes and
+the generator); track 3 has 10 bytes free with GRIP1. Every race-track tape was rebuilt (some tight tapes had been stale).
+Clip: docs/design/racetrack/built/smooth_tight_before_after.mp4. Next for Grant: drive racer_track_green.tap beside
+racer_track_green_grip1.tap (and the tight pair) - nobody has driven any of it. PROJECT-LOG has the table.
+
 **The tighter track and keener cars (17 Nov 2026, branch worktree-agent-acbbf0fac92b5a806 - not merged):** on the race track trial, track 1: `RT_ROADW=56 RT_CORNER=27` (road width, the big corners' radius; tools/make_world.py) and `AI=1` or `AI=2` (the computer cars NORMAL or HARD; every number in src/ai_tune.asm). Tapes build/racer_tight_*.tap - drive racer_tight_w56s_normal.tap first, then _hard. PROJECT-LOG's last entry has the tables. Nobody has driven them.
 
 **The green-line race track on tracks 1, 2 and 3 (17 Nov 2026, branch worktree-agent-a272a1ab88e676794 - not merged):**
