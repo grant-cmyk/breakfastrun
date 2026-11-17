@@ -5,7 +5,8 @@
 ; much hit. So for example a tactic therefore is to hit the dragster - which will get more damage than you. I would love
 ; a way to show damage on each car in the HUD somewhere.")
 ; Only in builds made with ARMOUR=1 (tools/build_armour.sh -> build/racer_armour.tap): with OPT_ARMOUR 0 not a byte of
-; any other tape changes.
+; any other tape changes. This file is the account of it and the numbers; the code is src/armour.asm (what runs every
+; picture) and src/armour_low.asm (what runs now and then).
 ;
 ; WHAT THERE IS
 ;   ARMOUR   every car has ARM_PIECES pieces of armour (6). A car's ARMOUR RATING on its driver card
@@ -14,6 +15,7 @@
 ;            how fast they were closing on each other (ARM_DIV) plus a little (ARM_MIN), the same for both - so the car
 ;            with the poorer rating loses pieces sooner. Grass and walls do no damage.
 ;   LIMP     a car with no armour left stays in the race, at half its top speed (ARM_LIMP_SHIFT). Nobody is knocked out.
+;            (Halves only: 1 is a half, 2 a quarter. Three quarters would want a few more bytes of sums.)
 ;   THE BAR  (the HUD, Grant's option V) at the right edge of each car's row in the race order: 3 pixels wide, six pieces
 ;            of 2 pixels; a piece just lost FLASHES for about a second (ARM_FLASH) and then leaves a single dot.
 ;   THE MUG  in the window's corner is YOUR armour now (it empties as your pieces go): one system, not two. The oil can
@@ -26,10 +28,12 @@
 ; fiftieth of a second.
 ;   name            now   what it is
 ;   ARM_PIECES        6   pieces of armour on every car (the bar has room for six)
-;   ARM_DIV           4   a bump's damage = the closing speed halved this many times (4: a sixteenth - cars closing at
-;                         half a pixel a TV frame do 8 points of damage to each other; at a whole pixel, 16)
-;   ARM_MIN           2   ... plus this much, so that even a rub costs something
-;   ARM_COOL         12   pictures before a car that has just been bumped can be bumped again (one crash is many touches)
+;   ARM_DIV           5   a bump's damage = the closing speed halved this many times (5: a thirty-second of it in 256ths
+;                         of a pixel a TV frame - cars closing at one pixel a frame, the usual knock in the pack, do 8
+;                         points of damage to each other; at two pixels a frame, 16)
+;   ARM_MIN           2   ... plus this much, so that even a rub costs something (so: the usual knock 10, a hard ram 18)
+;   ARM_COOL         30   pictures before a car that has just been bumped can be bumped again (2.5 seconds: one crash is
+;                         many touches, and cars that run side by side are not ground down)
 ;   ARM_FLASH        12   pictures a lost piece flashes on the bar (about a second)
 ;   ARM_LIMP_SHIFT    1   a car with no armour: its top speed halved this many times (1: half; 2: a quarter)
 ;   ARM_START        60   pictures after a new race is set up before either weapon may be used (about 5 seconds - it
@@ -41,11 +45,11 @@
 ;   ARM_TANK          3   which car has the gun: 3 is the pink car, BRUNO
 ;   TANK_RANGE       80   pixels: he fires at a car this near or nearer, ahead of him ...
 ;   TANK_AIM          6   ... and no more than this many pixels to either side of the line his nose points along
-;   TANK_COOL        48   pictures between shots (about 4 seconds)
+;   TANK_COOL        96   pictures between shots (about 8 seconds)
 ;   SHELL_SHIFT       4   the shell's speed: 4 is 4 pixels a TV frame (3: 2 pixels; 5: 8). A car does about 1.7
 ;   SHELL_LIFE       30   TV frames the shell flies if it meets nothing (30 x 4 = 120 pixels)
 ;   SHELL_HIT         9   pixels: the shell hits a car whose middle is nearer than this, across and down
-;   SHELL_DMG        20   the damage a shell does (a firm bump is 8)
+;   SHELL_DMG        16   the damage a shell does (the usual knock in the pack is 10)
 ;   SHELL_INK         7   its colour on the black road: white
 ;   ARM_CLOWN         2   which car has the wheels: 2 is the yellow car with the green band, SPIKE
 ;   WH_SEE_LEN       16   pixels: the wheels come out when a car's middle is within this far ahead of or behind his ...
@@ -54,7 +58,7 @@
 ;   WH_REACH         26   ... and this far to the side (the wheel's tip is 14 from his middle, a car is 8 either way)
 ;   WH_TIME          10   pictures the wheels stay out (under a second)
 ;   WH_COOL          60   pictures from when they come out until they can come out again (about 5 seconds)
-;   WHEEL_DMG        14   the damage a wheel does
+;   WHEEL_DMG        12   the damage a wheel does
 ;   WH_DRAW          12   pixels from his middle to the wheel's outer end, as drawn
 ;
 ; A PLAYER'S FIRE KEY is not built (Grant has not asked yet; only the computer's two cars have weapons). The weapons are

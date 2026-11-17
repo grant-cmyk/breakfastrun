@@ -18,9 +18,11 @@ THE SCALE. A rating of 5 for speed and acceleration is the car as it has always 
          its driver brakes down to for a corner (plus the driver's own margin - AI_x_SLIP in src/ai_tune.asm).
   ARMOUR (only the ARMOUR=1 build uses it - src/armour.asm, tools/build_armour.sh; a card without "armour N" gets 5)
          every car has six pieces of armour. ARMOUR_PIECE[r]: the points of damage ONE PIECE takes before it is lost. A
-         bump does both cars the same damage - a sixteenth of how fast they were closing, plus 2: a FIRM BUMP (closing
-         at half a pixel a TV frame, the usual knock in the pack) is 10 points, a RAM at a whole pixel a frame 18, a rub
-         3 or 4; the tank's shell is 20 and the clown's wheel 14 (those numbers: src/armour_tune.asm).
+         bump does both cars the same damage - by how fast they were closing: a FIRM BUMP (closing at a pixel a TV
+         frame, the usual knock in the pack) is 10 points, a RAM at two pixels a frame 18, a rub 3 or 4; the tank's
+         shell is 16 and the clown's wheel 12 (those numbers: src/armour_tune.asm). The scale is flatter at the bottom
+         than at the top, as the speed scale is: at 14 a piece for a rating of 2 the dragster limped within 20 seconds
+         of every race (five-race reports, tests/rt_armour.py); at 26 she limps late in about half of them.
 """
 import os, re, sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -84,7 +86,7 @@ def table(cards):
     for r in range(1, 11):
         p = ARMOUR_PIECE[r]
         out.append('  %2d         %2d               %4.1f                 %3d                  %3d              %2d        %2d' % (
-            r, p, p / FIRM_BUMP, -(-6 * p // FIRM_BUMP), -(-6 * p // 18), -(-6 * p // 20), -(-6 * p // 14)))
+            r, p, p / FIRM_BUMP, -(-6 * p // FIRM_BUMP), -(-6 * p // 18), -(-6 * p // 16), -(-6 * p // 12)))
     out.append('THE CARS')
     for c in cards:
         n = numbers(c)

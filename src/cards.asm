@@ -17,16 +17,16 @@
 ;   10         2.02                  89       7                         21                 1.88
 ; ARMOUR (the ARMOUR=1 build): every car has 6 pieces; what ONE piece takes, and so how many knocks the car takes in all
 ; rating   a piece takes   firm bumps a piece   firm bumps for all six   rams (twice as fast)   shells   wheel hits
-;    1         22                2.2                  14                    8               7        10
-;    2         26                2.6                  16                    9               8        12
-;    3         30                3.0                  18                   10               9        13
-;    4         34                3.4                  21                   12              11        15
-;    5         38                3.8                  23                   13              12        17
-;    6         46                4.6                  28                   16              14        20
-;    7         55                5.5                  33                   19              17        24
-;    8         65                6.5                  39                   22              20        28
-;    9         77                7.7                  47                   26              24        33
-;   10         92                9.2                  56                   31              28        40
+;    1         22                2.2                  14                    8               9        11
+;    2         26                2.6                  16                    9              10        13
+;    3         30                3.0                  18                   10              12        15
+;    4         34                3.4                  21                   12              13        17
+;    5         38                3.8                  23                   13              15        19
+;    6         46                4.6                  28                   16              18        23
+;    7         55                5.5                  33                   19              21        28
+;    8         65                6.5                  39                   22              25        33
+;    9         77                7.7                  47                   26              29        39
+;   10         92                9.2                  56                   31              35        46
 ; THE CARS
 ;   MAX    RACER      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17, a piece of armour takes 38
 ;   FRANK  COUPE      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17, a piece of armour takes 38
