@@ -61,6 +61,11 @@ afl_bar:
 arm_bar:
         ld e,a
         ld d,0
+        ld hl,shown_order       ; (a row not yet drawn for the race - the drivers' faces are still there, in the first
+        add hl,de               ; second after the lights: its bar comes with the row)
+        ld a,(hl)
+        inc a
+        ret z
         ld hl,order
         add hl,de
         ld a,(hl)

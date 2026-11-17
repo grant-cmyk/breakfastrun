@@ -48,7 +48,9 @@ def read_cards(path=None):
             a, s, g = (int(v) for v in m.groups()[:3]); r = int(m.group(4) or 5)       # (a card with no armour rating: 5)
             for what, v in (('acceleration', a), ('speed', s), ('grip', g), ('armour', r)):
                 if not 1 <= v <= 10: raise SystemExit('driver_cards.txt: %s has %s %d - ratings are 1 to 10' % (name, what, v))
-            cards.append(dict(name=name, car=car, a=a, s=s, g=g, r=r)); name = None
+            cards.append(dict(name=name, car=car, a=a, s=s, g=g, r=r, weapon='None yet.')); name = None; continue
+        m = re.match(r'weapon:\s*(.*\S)', line)        # (the line after the ratings, as the driver cards page exports it; a card without one: "None yet.")
+        if m and cards: cards[-1]['weapon'] = m.group(1)
     return cards
 def top(s): return 448 + 7 * SPEED_K[s]
 def k_speed(s): return SPEED_K[s]
@@ -87,7 +89,7 @@ def table(cards):
     for c in cards:
         n = numbers(c)
         out.append('  %-6s %-10s acceleration %d, speed %d, grip %d, armour %d -> top speed %.2f px a frame, push %d, tyres %s, slides above %.2f, a piece of armour takes %d' % (
-            c['name'], c['car'], c['a'], c['s'], c['g'], c['r'], n['top'] / 256, 64 + n['ka'], ','.join(str(v) for v in n['tyres']), n['slide'] / 256, ARMOUR_PIECE[c['r']]))
+            c['name'], c['car'], c['a'], c['s'], c['g'], c['r'], n['top'] / 256, 64 + n['ka'], ','.join(str(v) for v in n['tyres']), n['slide'] / 256, ARMOUR_PIECE[c['r']]) + ('' if c['weapon'].lower().startswith('none') else '; weapon: ' + c['weapon']))
     return '\n'.join(out)
 def asm(cards):
     by = {c['name']: numbers(c) for c in cards}

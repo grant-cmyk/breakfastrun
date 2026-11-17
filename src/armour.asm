@@ -168,9 +168,12 @@ arm_limp:
         endm
         ret
 
-; ARM_TICK: once a picture, after the cars have moved and bumped. The cool-downs run down; a bar that is flashing is
-; drawn again; the mug follows your armour; the tank and the clown look for somebody.
+; ARM_TICK: once a picture, after the cars have moved and bumped. The tank and the clown look for somebody (first, so
+; that a piece they knock off flashes in this same picture); the cool-downs run down; a bar that is flashing is drawn
+; again; the mug follows your armour.
 arm_tick:
+        call arm_tank
+        call arm_clown_t
         ld b,NCARS
 atk_1:
         push bc
@@ -216,8 +219,9 @@ atk_4:
         ld h,a
         ld a,(hl)
         ld (dmg),a
-        call arm_tank
+        ret
 ; ARM_CLOWN_T: the clown's wheels, once a picture.
+arm_clown_t:
         ld ix,cars+ARM_CLOWN*C_SIZE
         ld hl,wh_out
         ld a,(hl)
