@@ -833,6 +833,14 @@ if RT:
     _both = sorted(set(_g) & set(_w))
     _asg = [b for b in _both if not _w[b]]; _asw = [b for b in _both if _w[b] and not _g[b]]; _two = [b for b in _both if _w[b] and _g[b]]
     gl = sorted(b for b in _g if b not in _both or b in _two) + _asg
+    # THE BANDED PICTURES FIRST (17 Nov 2026): a picture whose every line is all grass or all road - the grass's edge running
+    # level, with or without the green line - looks the same wherever the square's left edge cuts it. Where two tiles side by
+    # side hold the SAME such picture (about half of all the pairs of pictures: every level stretch of the road's edge) the
+    # game copies its lines as they are instead of shifting and joining two parts (rt_sq: rt_c1 - a third of the time). It
+    # tells such a picture by its number alone: 2 up to RT_BAND - 1. Only the numbers change; the map shows what it showed.
+    _bnd = lambda b: all(v in (0, 255) for v in b)
+    gl = [b for b in gl if _bnd(b)] + [b for b in gl if not _bnd(b)]
+    RT_BAND = 2 + sum(1 for b in gl if _bnd(b))
     wl = _asw + sorted(b for b in _w if b not in _both or b in _two)
     RT_W0 = 2 + len(gl)
     assert RT_W0 + len(wl) <= 256, 'too many pictures for one map: %d' % (RT_W0 + len(wl))
@@ -937,6 +945,7 @@ if RT:
         if os.environ.get('RT_PIN'): f.write('; LIMIT green %s gap %d wide %d\n' % (os.environ['RT_PIN'], _pg, _pw))
         for (tx, ty) in sorted(_redrawn): f.write('; REDRAWN tile %d,%d as %s\n' % (tx, ty, _gpic(tx, ty).hex()))
         f.write('RT_W0   equ %d      ; the map\'s numbers from here up are white things (below: 0 nothing, 1 all grass, then grass pictures)\n' % RT_W0)
+        f.write('RT_BAND equ %d      ; the grass pictures below this number are banded: every line all grass or all road (rt_sq copies a pair of the same one as it is)\n' % RT_BAND)
         f.write('RT_CLT  equ RT_DATA + %d        ; the two colour tables (each at the start of its page)\nRT_CLS  equ %s        ; the blocks\' kinds, 36 bytes a row\nRT_MAPR equ %s      ; where each row of the map is, less its first column kept (2 bytes a row)\n' % ((O_CLT, 'RT_DATA + %d' % O_CLS, 'RT_DATA + %d' % O_MAPR) if KH else (O_CLT, 'rt_cls', 'rt_mapr')))
         for k, (ctx, cty, dy) in CANS.items():
             for j in (0, 1):

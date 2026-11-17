@@ -43,6 +43,7 @@ while mem(SYM['race_on'], 1)[0] == 0: rpc('run', frames=1)
 if SCEN != 'pack':
     for i in range(1, 5): rpc('write', addr=SYM['cars'] + i * SYM['c_size'] + 19, value=0)
 CARS = SYM['cars']; wp = mem(CARS, 14)[13]
+GAPS = None
 def drive(frames=None, until_wp=None):
     global wp
     f = 0
@@ -54,9 +55,13 @@ def drive(frames=None, until_wp=None):
         diff = (math.degrees(math.atan2(tx - x, -(ty - y))) % 360 - ang * 360 / 64 + 540) % 360 - 180
         key('Q', abs(diff) < 70); key('O', diff < -8); key('P', diff > 8)
         rpc('run', frames=1); f += 1
+        if GAPS is not None:                              # (the timed drive: which TV frames brought a new picture)
+            r = w16(SYM['renders'])
+            if r != GAPS[0]: GAPS[0] = r; GAPS[1].append(f)
 if SCEN == 'mid': drive(until_wp=(wp + 12) % len(wps))
 if SCEN == 'pack': drive(frames=50)                      # (the pack is under way)
 r0 = w16(SYM['renders']); rpc('profile', on=True)
+GAPS = [r0, []]
 N = int(SECS * 50); drive(frames=N)
 r1 = w16(SYM['renders']); rep = rpc('profile_report', top=100000)
 z.kill()
@@ -83,6 +88,9 @@ for n, t in tot.items():
 wait = sum(t for n, t in tot.items() if n in WAIT or n.startswith('snd_w') or n.startswith('sw_'))
 print('%s %s: %d TV frames, %d pictures = %.2f pictures a second (%.2f TV frames a picture)' % (os.path.basename(TAP), SCEN, N, pics, pics * 50.0 / N, N / max(pics, 1)))
 print('  T-states a picture: %d in all; %d of it waiting for the TV (with the engine note); so %d of work' % (all_t // pics, wait // pics, (all_t - wait) // pics))
+gaps = [b - a for a, b in zip(GAPS[1], GAPS[1][1:])]      # TV frames each picture took
+if gaps:
+    print('  TV frames a picture: ' + ', '.join('%d: %d' % (k, gaps.count(k)) for k in sorted(set(gaps))) + ' - so %d%% of pictures took 5 or more' % round(100.0 * sum(1 for g in gaps if g >= 5) / len(gaps)))
 print('  by part:', ', '.join('%s %d' % (g, t // pics) for g, t in sorted(grp.items(), key=lambda kv: -kv[1])))
 if os.environ.get('DUMP'):                                # DUMP=file: every label's T a picture, in address order
     with open(os.environ['DUMP'], 'w') as f:

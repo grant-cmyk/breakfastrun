@@ -129,6 +129,17 @@ rcl_fold:                       ; pair's pointer is then not moved on: nothing o
         call rt_ent
         ld (sq_tz1+1),hl
         ld (sq_tz2+1),hl
+        if OPT_RTBAND
+        ld a,b
+        ld hl,rt_c1e
+        ld de,0x10000-4
+        call rt_ent
+        ld (sq_tc1+1),hl
+        ld a,c
+        ld hl,rt_c1e
+        call rt_ent
+        ld (sq_bc1+1),hl
+        endif
 rcl_same:
         ld hl,(camy)
         srl h
@@ -351,6 +362,14 @@ sq_tk2: call rt_wke
 sq_tw2: call rt_w1e
         jp sq_bot
 sq_tpp:
+        if OPT_RTBAND           ; two pictures. THE SAME BANDED ONE in both tiles (every line of it all grass or all road:
+        cp e                    ; the edge running level - RT_BAND, tools/make_world.py)? Then the square's lines are the
+        jr nz,sq_tw3            ; picture's own, wherever the square's left edge falls: copied as they are (rt_c1)
+        cp RT_BAND
+        jr nc,sq_tw3
+sq_tc1: call rt_c1e             ; (patched: the lines above the fold)
+        jp sq_bot
+        endif
 sq_tw3: call rt_w1e             ; two pictures: the left one's part written,
         exx
         ld a,b
@@ -420,6 +439,13 @@ sq_mb4: ld ixl,0
 sq_bk2: jp rt_wke
 sq_bw2: jp rt_w1e
 sq_bpp:
+        if OPT_RTBAND
+        cp e                    ; (the same banded picture twice, as above)
+        jr nz,sq_bw3
+        cp RT_BAND
+        jr nc,sq_bw3
+sq_bc1: jp rt_c1e
+        endif
 sq_bw3: call rt_w1e
         exx
         ld a,b
@@ -466,6 +492,16 @@ rt_o1:
         inc h
         endm
 rt_o1e: ret
+        if OPT_RTBAND
+rt_c1:                          ; RT_C1 writes the picture's lines as they are (no shift table: a pair of the same banded picture)
+        rept 8
+        ld a,(de)
+        inc d
+        ld (hl),a
+        inc h
+        endm
+rt_c1e: ret
+        endif
 rt_z:
         rept 8
         ld (hl),a

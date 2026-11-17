@@ -98,6 +98,8 @@ printf 'OPT_REACT1 equ %s               ; 1: the computer cars decide every 8th 
 # speed; track 3's map leaves none, so there it stays in the slower room under 0x8000. RT_PLATEUP=0 or 1 to say otherwise.)
 PUP=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && PUP=1
 printf 'OPT_RTPUP equ %s                ; RACETRACK: 1 - the place plate is drawn from the program, not from under 0x8000 (tracks 1 and 2)\n' "${RT_PLATEUP:-$PUP}" >> "$ROOT/src/options.asm"
+BAND=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && BAND=1
+printf 'OPT_RTBAND equ %s               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)\n' "${RT_BANDED:-$BAND}" >> "$ROOT/src/options.asm"
 printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the window'"'"'s 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)\n' "${RT_ROWS:-19}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}

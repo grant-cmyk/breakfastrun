@@ -13,6 +13,7 @@ line, grid, canisters). Then:
   4. GRASS IS SLOW: top speed on the grass 20-25% of the road's; a car can drive onto the grass and back.
 Usage: python3 tests/racetrack_test.py [part ...]     parts: scroll pack rule slide speed (default: all)
        TAPE=racer_track_green python3 tests/racetrack_test.py            another tape of track 1 (its build folder: the name less "racer_")
+       BDIR=racer_2p TAPE=racer_2p python3 tests/racetrack_test.py       a tape whose build folder is not its name less "racer_"
        TRACK=2 python3 tests/racetrack_test.py                           track 2 or 3 in the green-line look (build/racer_track_green_track2.tap;
                                                                          TAPE=racer_track_green_track2_grip1 with it for that one)
 THE GREEN LIMIT LINE (17 Nov 2026): a build that has one says so in its rt_world.asm ("; LIMIT green ..."), and the picture
@@ -26,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rt_lib import Game, ROOT
 TRACK = int(os.environ.get('TRACK') or 1)
 TAPE = os.environ.get('TAPE') or ('racer_racetrack' if TRACK == 1 else 'racer_track_green_track%d' % TRACK)
-SRC = os.path.join(ROOT, 'build', TAPE.replace('racer_', ''), 'src')
+SRC = os.path.join(ROOT, 'build', os.environ.get('BDIR') or TAPE.replace('racer_', ''), 'src')    # (BDIR=racer_2p: a tape whose build folder has another name)
 os.environ['TRACK'] = str(TRACK)                                          # (tools/make_world.py reads it: the road's shape for this track)
 if TRACK != 1:
     import tempfile; os.environ['WORLD_OUT'] = tempfile.mkdtemp()         # (it insists on a folder for a later track; nothing is written by the part run here)
