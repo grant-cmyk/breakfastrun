@@ -30,13 +30,13 @@ class Game:
         if down and k not in self.held: self.rpc('key_down', keys=k); self.held.add(k)
         if not down and k in self.held: self.rpc('key_up', keys=k); self.held.discard(k)
     def run(self, frames=1): self.rpc('run', frames=frames)
-    def to_grid(self):
-        """through the title to the first picture of the race (the lights not yet started)"""
+    def to_grid(self, key='1'):
+        """through the title to the first picture of the race (the lights not yet started); key='2': two players"""
         n = 0
         while self.mem(0x5800 + 8 * 32 + 10, 1)[0] != 0x7A and n < 400: self.run(5); n += 1
         self.run(25)
         if 'jin_on' in self.sym: self.rpc('write', addr=self.sym['jin_on'], value=0xFF)
-        self.rpc('press', keys='1', frames=10, after=5)
+        self.rpc('press', keys=key, frames=10, after=5)
         n = 0
         while self.w16(self.sym['renders']) == 0 and n < 200: self.run(5); n += 1
         assert n < 200, 'the race never started'

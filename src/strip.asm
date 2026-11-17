@@ -507,6 +507,9 @@ strip_triggers:
         or a
         ret z
         call nos_take           ; over a canister?
+        if OPT_2P
+        call p2_take            ; TWOP: or player 2? (twoplayer.asm)
+        endif
         call oil_tick           ; the oil can, and the damage's cool-down
         ld hl,COOL
         ld a,(hl)
