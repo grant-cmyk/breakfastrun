@@ -144,7 +144,9 @@ def scripted(tap, src, alone, pictures=230):
     for n in range(pictures):
         for (at, k, down) in SCRIPT:
             if at == n: g.key(k, bool(down))
-        picture(); path.append(g.car(0)); other.append(g.car(1))
+        picture()
+        g.poke(S['seed'], [(n * 157 + 1) & 255, (n * 31 + 7) & 255])   # (the crash noise takes random numbers for as long as it waits for the TV - how many depends on the
+        path.append(g.car(0)); other.append(g.car(1))                  # tape's speed, not its rules: the run of numbers starts afresh each picture, the same on both; tests/rt_same_drive.py)
     g.close(); return two, path, other
 for alone in (True, False):
     two, pa, oa = scripted(TAP2, SRC2, alone); _, pb, ob = scripted(TAP1, SRC1, alone)
