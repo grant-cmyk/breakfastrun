@@ -136,7 +136,9 @@ rt_code_end:
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
         include "faces.asm"     ; the drivers' faces for the race order
         include "hudtext_gfx.asm" ; the small letters' pictures (copied up at the start)
+        if OPT_RTPUP = 0        ; (tracks 1 and 2 have room for it in the program, where it runs at full speed: below)
         include "plateco.asm"   ; the place plate in the window (pl_draw)
+        endif
         include "title2.asm"    ; the title screen's car
         if OPT_2P
         include "twoplayer_low.asm" ; TWOP: its parts that run rarely
@@ -4118,7 +4120,7 @@ faces_src equ faces7
         if OPT_BRIDGE
         include "bridge.asm"    ; BRIDGE: track 5's crossover - levels, walls, ramps, the hidden car
         endif
-        if OPT_RT = 0           ; (RACETRACK: under 0x8000)
+        if (OPT_RT = 0) | OPT_RTPUP     ; (RACETRACK on track 3: under 0x8000, for want of room here)
         include "plateco.asm"   ; the place plate in the window (pl_draw)
         endif
         if OPT_CHOOSE

@@ -94,6 +94,10 @@ printf 'OPT_2PPTS equ %s                ; two players, the POINTS rule: first to
 # REACT1=1: A TRIAL SWITCH - each computer car decides how to steer every 8th TV frame, not every 4th (their REACT setting
 # one higher). Quicker in the pack, but they turn in a little later: off unless asked for (PROJECT-LOG, 17 Nov 2026).
 printf 'OPT_REACT1 equ %s               ; 1: the computer cars decide every 8th TV frame, not every 4th (REACT1=1 bash build.sh)\n' "${REACT1:-0}" >> "$ROOT/src/options.asm"
+# (RACETRACK: where the place plate's drawing lives. Tracks 1 and 2 have room in the program, where code runs at full
+# speed; track 3's map leaves none, so there it stays in the slower room under 0x8000. RT_PLATEUP=0 or 1 to say otherwise.)
+PUP=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && PUP=1
+printf 'OPT_RTPUP equ %s                ; RACETRACK: 1 - the place plate is drawn from the program, not from under 0x8000 (tracks 1 and 2)\n' "${RT_PLATEUP:-$PUP}" >> "$ROOT/src/options.asm"
 printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the window'"'"'s 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)\n' "${RT_ROWS:-19}" >> "$ROOT/src/options.asm"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}

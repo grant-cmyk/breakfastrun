@@ -866,15 +866,15 @@ if RT:
     RT_HIGH = 0xFFC3 - 0xEB00
     O_CLT, O_CLS = 2048, 2560; O_MAPR = O_CLS + 36 * H; O_END = O_MAPR + 2 * H
     holes = [[O_CLT + 0x45, O_CLT + 256, []], [O_CLT + 256 + 0x45, O_CLS, []], [O_END, RT_HIGH, []]]
-    # RT_GAPS (on for every track but track 1, whose tape is left byte for byte as it was measured; RT_GAPS=1 or 0 to say
-    # otherwise): ROWS LAID INTO EACH OTHER'S GAPS. A row of the map runs from the first tile the game reads to the last, and
+    # RT_GAPS (on for every track - track 1 too since 17 Nov 2026, when the two-player mode and the smoothness pass together
+    # needed its 2,200 bytes; RT_GAPS=0 to turn it off): ROWS LAID INTO EACH OTHER'S GAPS. A row of the map runs from the first tile the game reads to the last, and
     # where the track crosses a row twice (its left side and its right) the tiles between are never read - on tracks 2 and 3
     # that is over half the map. The game finds a tile at "the row's address + its column" and never looks at the ones
     # between, so another row's tiles can lie there. Nothing in the game changes: only where each row's address points.
     # And A TRACK TALLER THAN 64 ROWS (track 3, 84): its kinds, 36 bytes a row, no longer fit up there with the pictures (5,752
     # bytes wanted, 5,315 there are) - so on such a track the kinds and the rows' addresses live in the program (rt_low.asm)
     # and the room up there is all the map's. The game reaches all three through the names RT_CLS and RT_MAPR, wherever they are.
-    GAPS = os.environ.get('RT_GAPS', '0' if TRACK == 1 else '1') == '1'
+    GAPS = os.environ.get('RT_GAPS', '1') == '1'
     KH = O_END <= RT_HIGH             # the kinds and the rows' addresses fit up there
     assert KH or GAPS, 'the blocks\' kinds do not fit above the squares\' colours: %d bytes over (RT_GAPS=1 keeps them in the program)' % (O_END - RT_HIGH)
     mwhere = []; low = 0
