@@ -707,7 +707,12 @@ ph_surf_kept:
         ld c,a
         jr ph_nb
 ph_cpu:
+        if OPT_CARDS            ; CARDS: the car's own push for its speed, and the brake for a corner (card_push, below)
+        call card_push
+        call nc,skid            ; (braking: the tyres are not asked to turn it as well - no slide)
+        else
         call skid               ; fast and turning: it slides (DE, BC, fshift)
+        endif
         if OPT_RT               ; RACETRACK: on the grass the push is halved RT_GRASS_PUSH times (racetrack.asm: grass is slow)
         ld a,(ix+C_FSH)
         cp 3
@@ -996,7 +1001,7 @@ skid:                           ; (the computer cars: you have the grip model)
         ret z
         call sk_speed           ; HL = speed
         push de
-        ld de,SKID_VC
+skc_v:  ld de,SKID_VC           ; (CARDS: card_push writes the car's own number here)
         or a
         sbc hl,de
         pop de
@@ -1199,6 +1204,16 @@ ai_m2:
         ld a,(ix+C_STEER)       ; lift: steers but no throttle - loses time
         jp ai_set
 ai_m3:
+        if OPT_CARDS            ; (CARDS: kinds 4 and 5 - a lunge at another car: steers left, or right, throttle down - card_near)
+        cp 4
+        jr c,ai_m3w
+        sub 3
+        ld b,a
+        call pace_gate
+        or b
+        jp ai_set
+ai_m3w:
+        endif
         call pace_gate          ; wobble: steers the wrong way
         ld b,a
         ld a,(ix+C_STEER)
@@ -1345,7 +1360,14 @@ ai_have_target:
         dec a
         jr z,ai_e45
         ex de,hl                ; |cross| * 2 > dot: about 27 degrees off
+        if OPT_CARDS            ; (CARDS: and EASE 3 - |cross| * 4 > dot, about 14 degrees: the earliest)
+        ld b,a
+ai_e27:
         add hl,hl
+        djnz ai_e27
+        else
+        add hl,hl
+        endif
         ex de,hl
 ai_e45:
         or a
@@ -1388,6 +1410,7 @@ ai_throttle:
         ;         and every other frame only while easing off ----
         call pace_gate
         ld b,a
+        if 1-OPT_CARDS          ; (CARDS: easing off is the car's own braking, down to the speed its grip allows - card_push)
         ld a,(ix+C_EASE)
         or a
         jr z,ai_go
@@ -1395,6 +1418,7 @@ ai_throttle:
         and 2
         jr z,ai_go
         ld b,0
+        endif
 ai_go:
         ld a,(ix+C_STEER)
         or b
@@ -1472,6 +1496,9 @@ next_waypoint:
         and c
         sub b
         ld (ix+C_OFFY),a
+        if OPT_CARDS
+        call card_near          ; CARDS: a driver who goes looking for the other cars moves its line towards one
+        endif
         call rnd                ; a mistake?  ERR chances in 256
         cp (ix+C_ERR)
         ret nc
@@ -4183,6 +4210,9 @@ me_world:
         endif
         include "hud.asm"
         include "arrow.asm"     ; the corner arrow in front of your car (here, after the page-aligned tables: code put before sq4 moves them a page on)
+        if OPT_CARDS
+        include "cards_code.asm" ; CARDS: the driver cards - each car its own speed, acceleration and grip (and cards.asm, the numbers)
+        endif
         if OPT_RT = 0           ; (RACETRACK draws no tiles)
         if OPT_TILE1
         include "gen_tiles1.asm" ; TILE1=1: one routine for every camy AND 7 (about 1 KB less)

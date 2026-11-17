@@ -244,6 +244,12 @@ pd_t7:  db "YOUR RACE",0
 ; (from hud.asm: your car's set-up row and its tables - here to fill the gap)
 su_gtab:                        ; the grip at each level: gripping, with Q, sliding, both
         db G_GRIP, G_Q, G_SLIDE, G_QSLIDE       ; 1 (0.085 px a frame of sideways speed)
+        if OPT_CARDS            ; (CARDS: each level of grip you buy is one more point on your card's grip rating - cards.asm)
+        db CD_L2_G, CD_L2_Q, CD_L2_S, CD_L2_B
+        db CD_L3_G, CD_L3_Q, CD_L3_S, CD_L3_B
+        db CD_L4_G, CD_L4_Q, CD_L4_S, CD_L4_B
+        db CD_L5_G, CD_L5_Q, CD_L5_S, CD_L5_B
+        else
         if OPT_CHOOSE
         db 18, 9, 9, 6                           ; 2 (CHOOSE: the GRIP extra - about an eighth more)
         else
@@ -252,6 +258,7 @@ su_gtab:                        ; the grip at each level: gripping, with Q, slid
         db 25, 14, 14, 9                         ; 3
         db 30, 18, 18, 11                        ; 4
         db 36, 22, 22, 14                        ; 5
+        endif                   ; (CARDS)
 su_lv:    db 1,1,1              ; your levels: GRIP, SPEED, ACCEL
 su_pts:   db 2                  ; points still to spend
 su_up:    db 0                  ; 1: no set-up key was down last picture

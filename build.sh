@@ -101,6 +101,12 @@ printf 'OPT_RTPUP equ %s                ; RACETRACK: 1 - the place plate is draw
 BAND=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && BAND=1
 printf 'OPT_RTBAND equ %s               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)\n' "${RT_BANDED:-$BAND}" >> "$ROOT/src/options.asm"
 printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the window'"'"'s 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)\n' "${RT_ROWS:-19}" >> "$ROOT/src/options.asm"
+# CARDS=1: A TRIAL - THE DRIVER CARDS (Grant, 17 Nov 2026): every car's acceleration, top speed and grip come from its card in
+# tools/driver_cards.txt (ratings out of 10; change a number there and build again - tools/make_cards.py turns them into
+# src/cards.asm), and each computer driver has a personality (src/ai_tune.asm, the CARDS part). Grip is poor to start with.
+# For the race-track builds: tools/build_cards.sh -> build/racer_cards.tap
+printf 'OPT_CARDS equ %s                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)\n' "${CARDS:-0}" >> "$ROOT/src/options.asm"
+[ "${CARDS:-0}" = "1" ] && python3 "$ROOT/tools/make_cards.py"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as

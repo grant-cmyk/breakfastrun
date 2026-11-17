@@ -15,6 +15,14 @@
 ; worked out again from it. Multiplying uses quarter squares (sqtab):
 ; a * b = sq(a + b) - sq(|a - b|), sq(n) = n * n / 4.
 ; =====================================================================
+        if OPT_CARDS            ; CARDS: your car's numbers come from its driver card (src/cards.asm, made by tools/make_cards.py
+G_GRIP   equ CD_L1_G            ; from tools/driver_cards.txt). The grip is POOR to start with (Grant, 17 Nov 2026: "the initial
+G_SLIDE  equ CD_L1_S            ; grip needs to be poor - lots of skidding")
+G_Q      equ CD_L1_Q
+G_QSLIDE equ CD_L1_B
+G_PUSH   equ CD_PUSH
+G_TOP    equ CD_TOP
+        else
 G_GRIP   equ 16                 ; 0.0625 px a frame of sideways speed (8.8): GRIP level 1. It was 22;
                                 ; Grant, 14 Nov 2026: "have the car skid/slide more. The idea is that the
                                 ; player will need to 'buy' improved grip to reduce the skidding"
@@ -24,7 +32,7 @@ G_Q      equ 8                  ; ... while you steer with Q held (it was 14)
 G_QSLIDE equ 5                  ; ... both (it was 9)
 G_PUSH   equ 64                 ; 0.25 a frame (with drag 1/8: top speed 1.75)
 G_TOP    equ 448                ; 1.75 px a frame
-
+        endif
 you_grip:
         ld a,(ix+C_ANG)         ; this heading's sine and cosine (/128), worked
         inc a                   ; out again only when the heading changes

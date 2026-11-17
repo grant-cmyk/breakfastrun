@@ -2747,3 +2747,84 @@ TESTS (nothing loosened):
 TAPES: all 34 race-track tapes rebuilt by tools/build_racetrack_tapes.sh from this source.
 
 NOT DONE / NOT VERIFIED: nobody has driven any of it; not tried on a real Spectrum. The case numbers; the kinds a byte a block; track 3's 65 bytes. The one same-drive check above. Two players driving at once were not timed. racer_2p_points was rebuilt and passes the pixel and fixed-box tests; its points rule was not tested. Lap times by autopilot and the seam (tearing) were not measured again.
+
+## 17 Nov 2026 - the driver cards: every car its own acceleration, speed and grip from Grant's ratings, and a personality for each computer driver (background agent, branch worktree-agent-abfbe424651a42ce8)
+
+Grant's instruction: "the initial grip needs to be poor - lots of skidding - so all cars initially have low scores. Each car has a personality ... their acceleration, speed and grip/turning as ratings out of 10 - I will adjust these for each and explain so the game can have these apply in the game." His cards are tools/driver_cards.txt. THE SHORT OF IT: built, behind a switch (`CARDS=1`, off by default; the plain game, tracks 2, 3 and 5 and all 34 race-track tapes are byte for byte what they were). Change a rating in tools/driver_cards.txt, run `bash tools/build_cards.sh`, and it is in the tape - no code is touched. Tapes: build/racer_cards.tap and build/racer_cards_grip1.tap (the tight track, NORMAL drivers). Nobody has driven it: every number below is from the emulator and an autopilot, and none of them says how it FEELS.
+
+HOW A RATING BECOMES A GAME NUMBER - THE SCALE (tools/make_cards.py, the few lines at its top; `python3 tools/make_cards.py table` prints it; the slide and the first-second figures are measured on the tape by `python3 tests/rt_cards.py racer_cards build/racer_cards/src scale`). A TV frame is a fiftieth of a second. 5 for speed and acceleration is the car as it always was.
+
+| rating | SPEED: top speed, px a TV frame | ACCELERATION: TV frames from rest to 1.4 px a frame (and px covered in the first second) | GRIP, your car: after a flat-out right-angle turn it slides for ... TV frames and runs ... px straight on | GRIP, a computer car: it must be under ... px a frame to turn |
+|---|---|---|---|---|
+| 1 | 1.59 | 21 (63) | 130 frames, 138 px | 0.82 |
+| 2 | 1.64 | 19 (65) | 130, 138 | 0.94 |
+| 3 | 1.67 | 18 (67) | 103, 113 | 1.05 |
+| 4 | 1.70 | 16 (70) | 82, 91 | 1.17 |
+| 5 | 1.75 | 13 (72) | 82, 89 | 1.29 |
+| 6 | 1.80 | 11 (73) | 73, 81 | 1.41 |
+| 7 | 1.86 | 9 (75) | 64, 71 | 1.52 |
+| 8 | 1.91 | 8 (75) | 58, 65 | 1.64 |
+| 9 | 1.97 | 8 (76) | 52, 58 | 1.76 |
+| 10 | 2.02 | 7 (77) | 47, 54 | 1.88 |
+| the car as it was | 1.75 | 13 (72) | 58, 65 | (all slid above 1.00, none braked) |
+
+- SPEED: a point above 5 is worth 3.1% of the top speed; a point below 5 only 1.6% (the last one 3.1%). WHY NOT A STRAIGHT LINE: Grant gave Bruno and Spike speed 2 and Jane 8. At 3.1% a point all the way down that is 1.59 against 1.91 px a frame - a fifth - and with it Spike lapped in 24 seconds to the leaders' 18; flattened below 5 it is 1.64 against 1.91 (14%) and every car laps within about a tenth of the leader. The ratings were not touched - only what a point is worth.
+- ACCELERATION: 7.8% of the push a point. IT IS WORTH LITTLE IN THIS GAME, and that is the game's own sums, not the scale: every car loses an eighth of its speed every TV frame, so any car is near its top speed within half a second. A rating of 1 against 10 is 14 px in the first second. Where it shows is out of a corner a car has had to brake for.
+- GRIP, YOUR CAR: what the tyres hold (TYRES in tools/make_cards.py; the car as it was held 16, 8, 8, 5 - gripping, with Q held, sliding, both). 8 is that car or a shade better (17, 9, 8, 5); MAX's 4 holds 10, 5, 5, 3 - its slide lasts 82 TV frames where it lasted 58, and it runs 91 px straight on where it ran 65; at 1 (6, 3, 3, 2) the autopilot could not get round the tight track (one lap in 70 seconds, most of it on the grass). Two ratings side by side can measure the same slide (1 and 2, 4 and 5): the tyres' numbers are small whole numbers and the slide follows the "sliding" one; what differs between those is how soon the slide begins. Each level of grip bought on the start line (keys 1-3) is now one more point of the rating.
+- GRIP, A COMPUTER CAR: the next paragraph.
+
+WHAT "GRIP" MEANS FOR A COMPUTER CAR (src/cards_code.asm: card_push). Earlier notes said the computer cars had no grip model. They have a small one (skid, racer.asm): steering above 1.0 px a frame, a car's push and friction were halved, up to three times, so it drifted. All four had the same numbers. Now each car's card gives it THE SPEED IT MUST BE UNDER TO TURN (the last column above), and two things follow from it:
+1. THE BRAKE. When the car steers (or its driver eases off for a corner) while going faster than that, it brakes: no push, half the road's friction - it loses a sixteenth of its speed a TV frame - and it keeps braking until it is down to that speed. With no push it goes STRAIGHT ON the way it was already going, whichever way it points. So a car with little grip that arrives fast runs wide and crawls round; a car with a lot never lifts. Jane (grip 1) drops from 1.91 to between 0.6 and 1.3 px a frame at each corner; Bruno (grip 8, top speed 1.64) is at his limit already and slows the least (1.40 over his slowest quarter).
+2. THE SLIDE. The old drift now starts at the car's own speed, not at 1.0 for everyone. A tidy driver brakes down to it and hardly slides; a clumsy one (AI_x_SLIP in src/ai_tune.asm) goes in faster than the tyres hold and slides as well.
+ACCELERATION AND SPEED for a computer car: its push is multiplied by its card's number - one number up to four fifths of its top speed (acceleration), another above (which sets the top speed: 7 pushes).
+COST: about 6,000 T a picture in the pack, 2% of a picture's work (card_push 2,900 for the four cars, its multiplies 1,700, the speed sum it needs 900, the two drivers' look for a near car 1,050, less 600 the old drift no longer spends). 393 bytes of program (card_push 135, card_near 216, the tables 42): 1,469 free on the tight track's tape (it had 1,862), 1,455 with GRIP1; under 0x8000 unchanged (790).
+
+THE PERSONALITIES (src/ai_tune.asm, the CARDS part - plain numbers with Grant's words beside them; the level EASY / NORMAL / HARD, AI=0 / 1 / 2, is still the DRIVER'S skill on top: a higher level turns in sooner, makes fewer mistakes and carries 0.09 px a frame more into a corner).
+- MAX, the racer, 5 / 5 / 4 - YOUR car: top speed 1.75, push 64, tyres 10, 5, 5, 3 through the existing grip sums.
+- FRANK, the coupe (cyan), 5 / 5 / 4 - "very similar to Max": the same card, a tidy line, brakes to just over what the tyres hold, few mistakes.
+- JANE, the dragster (white), 7 / 8 / 1 - "should shoot ahead of Max on the straights but really battle on the corners": 1.91 px a frame against Max's 1.75; eases off the earliest of all (when the corner is only 14 degrees off her nose), and still goes in 0.25 px a frame faster than the car will hold, so she slides too. Alone, the slowest quarter of her lap averages 1.10 px a frame (Frank's 1.21, Bruno's 1.40).
+- BRUNO, the tank (pink), 4 / 2 / 8 - "Heavy and slow, likes to get in the way. Cuts corners": holds the exact middle of the road, turns in the earliest (the corner cut), does not slide, and when another car is within 40 px of him his line moves up to 10 px towards it. Top speed 1.64, but he hardly lifts: alone he laps as fast as Jane.
+- SPIKE, the clown car (yellow, the green band), 6 / 2 / 3 - "Erratic ... Almost seems to want to hit other cars": a wandering line, the most mistakes of anyone (a late turn-in, a lift or a wobble), into corners 0.37 px a frame too fast so he slides, and when another car is within 56 px his line moves up to 14 px towards it and, one time in four, he steers straight AT it for six TV frames (the lunge).
+- SPECS (4 / 5 / 3) and DOT (3 / 3 / 8) are on the choose screen only: their ratings are in src/cards.asm as numbers for that build to use; they do not race here.
+"Gets in the way" and "wants to hit" are the one piece of new behaviour (card_near, 216 bytes of which the lunge is 57; it runs only when a car reaches a waypoint). MEASURED (tests/rt_cards_near.py): Bruno's line is pulled towards another car for 70% of a race and Spike's for 22% (he is usually behind, alone); Spike was seen lunging in about 9 of a race's pictures, 71 in a race he spent in the pack. THE BUMPS DID NOT GO UP: 41 a race as built against 46 with the two drivers minding their own business (5 races each; it runs from 25 to 62 race to race). So the code does what it says, but whether it LOOKS like blocking, and like a clown who wants a crash, is for Grant's eyes; it was not judged.
+
+LAP TIMES (seconds; the tight track, NORMAL; 5 races of 3 laps in the pack, flying laps; tests/rt_tight.py). Your car is driven by the corner-cutting autopilot at two settings, because with poor grip the driver matters more than the car: TIDY (ace=104,30: it lifts early) never touches the grass; ROUGH (ace=88,60, the setting that suited the old car) is on it 4.5% of the time.
+
+| | alone on the track | in the pack, you TIDY | in the pack, you ROUGH | on the grass |
+|---|---|---|---|---|
+| YOU, Max | 18.0 (tidy) | 17.6 | 19.4 | 0% tidy; 4.5% rough (20 visits in 5 races) |
+| FRANK | 18.8 | 19.4 | 19.6 | 0% |
+| JANE | 18.2 | 18.6 | 18.6 | 0% |
+| BRUNO | 18.3 | 19.2 | 19.1 | 0% |
+| SPIKE | 19.1 | 19.2 | 19.3 | 0% |
+
+Finishing orders (Y you, C Frank, W Jane, P Bruno, G Spike): you tidy - YWPCG YPCWG YCWPG YWCPG YWCPG; you rough - WPYCG YPWCG YWCPG WCPYG YWPCG. Every computer car is within 10% of the leader, and within 4% of each other. Jane is the quickest of them but not by a straight's worth; Spike is last in all 10 races, by under a second a lap. Before the cards (the same tape without CARDS) the autopilot lapped 16.8 and the computer cars 17.6 to 18.7: EVERYONE IS SLOWER NOW, your car most of all in rough hands - which is what "poor grip to start with" asked for.
+EASY and HARD drivers on the same cards (5 races each, you rough): EASY - Frank 19.8, Bruno 19.6, Jane 19.6; HARD - Frank 19.1, Bruno 18.5, Jane 18.3.
+With GRIP1 (racer_cards_grip1.tap): you tidy 18.2 in the pack (18.0 alone), Frank 19.4, Jane 18.9, Bruno 19.2, Spike 19.6. GRIP1 still applies with the new grip numbers: top speed 1.74, the slide 85 TV frames and 92 px (82 and 91 without).
+
+SPEED, pictures a second (start alone / mid-lap alone / in the pack; tests/stage_profile.py, 8 seconds each - two builds never drive the same 8 seconds):
+
+| | without the cards | with |
+|---|---|---|
+| tight track | 12.25 / 12.88 / 11.38 | 11.75 / 12.00 / 10.88 |
+| with GRIP1 | 12.75 / 13.25 / 12.12 | 12.25 / 13.00 / 12.00 |
+
+The cards cost a quarter to half a picture a second - more, mid-lap without GRIP1. Only part of that is the new code (2%); the rest is your own car: sliding and being steered far more, its grip sums do more work every TV frame, which is why the GRIP1 tape (those sums once a picture) loses less. racer_cards_grip1.tap is the one to drive.
+
+TESTS (nothing loosened): tests/racetrack_test.py 15 of 15 and tests/rt_fixed_test.py 3 of 3 on both cards tapes (`RACETRACK=1 RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 BDIR=racer_cards TAPE=racer_cards python3 tests/racetrack_test.py`; `python3 tests/rt_fixed_test.py racer_cards racer_cards`). With CARDS off: tools/build_racetrack_tapes.sh rebuilt all 34 race-track tapes and git shows not one changed; racer.tap and tracks 2, 3 and 5, deleted and built afresh, have the md5 they had; the plain game was built last.
+
+NEW FILES: tools/make_cards.py (the cards -> src/cards.asm; THE SCALE is at its top), tools/build_cards.sh (the two tapes, then the plain game), src/cards.asm (made by the tool), src/cards_code.asm (card_push, card_near), the CARDS part of src/ai_tune.asm; tests/rt_cards.py (your car's top speed, time to speed and slide; the whole scale measured; the computer cars' speeds), tests/rt_cards_solo.py (each computer car alone: laps, corner speed, sliding), tests/rt_cards_near.py (do Bruno and Spike go for the other cars), tests/rt_cards_shots.py (the clips). tests/rt_tight.py takes `ace=LOOK,LIFT` and more than six races. tools/build_racetrack_tapes.sh builds the two cards tapes too (36 tapes).
+CLIPS (real speed, one screenshot a TV frame, twice the size; docs/design/racetrack/cards/): racer_cards_you_and_car4.mp4 - 14 seconds of your car (the tidy autopilot, started a second late) and Jane with the other three taken off the road: she is 37 px ahead at 5 s and 54 px at 7 s down the straight, and 18 px at 11 s after the corners (`ONLY=4 ACE=104,30 LATE=1.0 python3 tests/rt_cards_shots.py racer_cards racer_cards 14`). racer_cards_race.mp4 - 13 seconds of the whole pack from the lights (`ACE=104,30 LATE=1.6`, 13). The autopilot lifts a good deal with this grip, so your car is rarely at its full 1.75 in either.
+
+WHERE THE RATINGS, GRANT'S WORDS AND A RACEABLE GAME PULL AGAINST EACH OTHER (said plainly):
+- SPECS is described as "a decently fast car - good acceleration, good speed and reasonable grip - a real challenger" and rated 4 / 5 / 3: below Max on acceleration and grip and level on speed. By these numbers it is one of the two weakest cards, not a challenger. Either the words or the ratings want changing (say 6 / 6 / 4).
+- FRANK's behaviour line says "a little more top speed than Max, and the best of the low-grip bunch through a bend" but his ratings are Max's exactly, and the note says "very similar to Max". Built as the ratings say: identical cars.
+- JANE has by far the best card (7, 8 and 1; nobody else has two numbers over 6). On this track she is the quickest computer car even braking hard at every corner. If she should lose a lap's worth to Max in the corners, the lever is the bottom of the computer cars' grip scale (SLIDE_AT in tools/make_cards.py: with 0.41 px a frame for a rating of 1, not 0.82, she lapped 21.4 alone and ran near the back), or a track with fewer straights. It was set where the pack stays together.
+- BRUNO and SPIKE at speed 2, "really slow": on the scale as built they are only 6% down on Max's top speed, because anything truer left them a lap behind. Bruno looks slow on a straight next to Jane (1.64 against 1.91), less so next to Max.
+- SPIKE's note says "reasonable grip" and gives 3; Max's "weakness" is 4; Jane's "terrible" is 1. The scale follows the numbers.
+- DOT's behaviour says "needs the whole road to turn" and her grip is 8, the best there is.
+- "All cars initially have low scores": only grip was made poor. Speed and acceleration at 5 are the car as it was.
+
+NOT DONE / NOT VERIFIED: nobody has driven it; not tried on a real Spectrum. Whether a rating of 4 skids "enough" and 1 is "barely controllable" in the hand is not known - only what the autopilot does. Blocking and lunging were measured as numbers, not judged by eye. The two-player build with CARDS assembles (360 bytes free) but was not run; player 2 would get Max's card, not Frank's. Tracks 1 (wide), 2 and 3 were not built with CARDS (track 3 has not the 393 bytes). Autopilot lap times swing by half a second with the smallest change; treat differences under that as nothing. The acceleration column's frame counts are from the game's sums, not measured (a computer car is moved once a picture, so its time to speed can only be read to the nearest 4 TV frames); the first-second distances are measured. Speed and acceleration levels bought on the start line still add what they always did (6% and 16%), not one rating point.
+
+COMBINING WITH THE CHOOSE SCREEN (not attempted, as asked): (1) the chosen driver's card must set your car - today CD_TOP, CD_PUSH and the tyre rows are fixed numbers for MAX at build time; they need to become a seven-row table that su_apply (hud.asm) reads by the chosen driver; (2) the "extra" pip becomes +1 on that card's rating - for grip that is already how the tyre table is laid out (the next row is the next rating); for speed and acceleration CH_TOP, CH_SPUSH and CH_PUSH go and the next rating's numbers are read instead; (3) a card whose acceleration push is less than its top speed needs (DOT 3 / 3, SPECS 4 / 5) wants the choose build's "extra push only above a set speed" (yg_spush, grip.asm) with the speed taken from the card - today your car's push is simply raised to what its top speed needs, which for MAX changes nothing; (4) the computer cars' rows should follow who is NOT chosen (today the four colours are fixed drivers); (5) about 400 bytes, in a build that had few to spare.
