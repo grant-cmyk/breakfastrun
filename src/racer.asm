@@ -1052,219 +1052,6 @@ sks_1:
         pop bc
         ret
 
-        if OPT_CARDS
-; ---------------------------------------------------------------------
-; CARD_PUSH (CARDS; IX = a computer car; DE, BC = the plain push for the way it faces): THE CAR'S CARD (Grant, 17 Nov
-; 2026: "their acceleration, speed and grip/turning as ratings out of 10 ... so the game can have these apply in the
-; game"). Each computer car has a row in cd_tab (src/cards.asm, made by tools/make_cards.py from
-; tools/driver_cards.txt - never typed in here):
-;   GRIP    the speed its tyres start to slide at when it steers (skid's own rule, below: it was 1.0 px a frame for all)
-;   BRAKE   the speed it must come down to before it will turn: while it is steering (or its driver is easing off for
-;           a corner - C_EASE: the target well off its nose) and it is going faster than this, it gets no push and half
-;           the road's friction - it loses a sixteenth of its speed a TV frame, and WITH NO PUSH IT GOES STRAIGHT ON the
-;           way it was going, whatever way it points: too fast into a corner and it runs wide. So a car with little grip
-;           must turn in early and crawl round; one with a lot never lifts. A tidy driver's BRAKE is the GRIP speed; a
-;           clumsy one's is higher, and the car then slides as well (the driver's margin: AI_x_SLIP in ai_tune.asm)
-;   ACCEL   the push up to four fifths of its top speed, and SPEED the push above that (which sets the top speed:
-;           7 pushes), each as so many 64ths more or less than the plain push
-; Out: DE, BC the car's push; carry set if it is braking (skid is then not called). About 800 T a car a picture.
-; ---------------------------------------------------------------------
-card_push:
-        call sk_speed           ; HL = its speed, roughly (BC, DE kept)
-        srl h
-        rr l
-        srl h
-        rr l                    ; L = speed / 4 (64 = 1 px a frame)
-        ld a,h
-        or a
-        jr z,cdp_1
-        ld l,255
-cdp_1:
-        ld a,l
-        ld (cd_v),a
-        push de
-        ld a,(ix+C_KIND)        ; its row: kind * 8
-        add a,a
-        add a,a
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,cd_tab-8
-        add hl,de
-        ld e,(hl)               ; GRIP: where it starts to slide
-        inc hl
-        ld d,(hl)
-        inc hl
-        ld (skc_v+1),de
-        pop de
-        ld a,(cd_v)             ; over its braking speed, and steering, or easing off for a corner, or braking already?
-        cp (hl)                 ; brake - and once it has begun it brakes all the way down to that speed
-        push hl
-        inc hl
-        inc hl
-        inc hl
-        inc hl                  ; (the row's seventh byte: 1 while it is braking)
-        jr c,cdp_free
-        ld a,(ix+C_CTRL)
-        and CT_L+CT_R
-        or (ix+C_EASE)
-        or (hl)
-        jr z,cdp_free
-        ld (hl),1
-        pop hl
-        ld hl,fshift            ; (half the road's friction: a sixteenth of its speed a TV frame, about a fifth a picture -
-        inc (hl)                ; the whole of it took nearly half in one picture, far below the speed asked for)
-        ld de,0
-        ld b,d
-        ld c,d
-        scf
-        ret
-cdp_free:
-        ld (hl),0
-        pop hl
-        inc hl
-        ld a,(cd_v)             ; under four fifths of its top speed: the ACCEL push; over: the SPEED push
-        cp (hl)
-        inc hl
-        jr c,cdp_3
-        inc hl
-cdp_3:
-        ld a,(hl)
-        ld (cd_k),a
-        push bc
-        ex de,hl
-        call cdp_sc
-        ex (sp),hl
-        call cdp_sc
-        ld b,h
-        ld c,l
-        pop de
-        or a
-        ret
-cdp_sc:                         ; HL = a push (-64 to 64) -> HL = that push x (64 + K) / 64, K the card's number
-        push hl
-        ld b,l
-        ld a,(cd_k)
-        ld c,a
-        call mul8s
-        ld de,32
-        add hl,de
-        add hl,hl
-        add hl,hl
-        ld a,h
-        ld l,a
-        add a,a
-        sbc a,a
-        ld h,a
-        pop de
-        add hl,de
-        ret
-cd_v:   db 0                    ; the car's speed / 4
-cd_k:   db 0                    ; its push's number
-; ---------------------------------------------------------------------
-; CARD_NEAR (CARDS; IX = a computer car that has just reached a waypoint and picked its line to the next): THE DRIVERS
-; WHO GO LOOKING FOR YOU (Grant's cards: BRUNO "likes to get in the way", SPIKE "almost seems to want to hit other
-; cars"). Such a driver has two numbers in cd_near (ai_tune.asm: AI_x_NEAR, AI_x_PULL): if another car is within NEAR
-; pixels of it (across plus down), its line to the next waypoint is moved towards that car, by up to PULL pixels each
-; way - it drifts over to the side of the road the other car is on. NEAR 0: the driver minds its own business.
-; Only when it reaches a waypoint (about 3 times a second), so it costs next to nothing: about 250 T each time.
-; ---------------------------------------------------------------------
-card_near:
-        ld a,(ix+C_KIND)
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,cd_near-2
-        add hl,de
-        ld a,(hl)
-        or a
-        ret z
-        ld (cdn_r+1),a
-        inc hl
-        ld a,(hl)
-        ld (cdn_p+1),a
-        ld iy,cars
-        ld b,NCARS
-cdn_car:
-        push bc
-        ld l,(iy+C_X)           ; how far across and down the other car is
-        ld h,(iy+C_X+1)
-        ld e,(ix+C_X)
-        ld d,(ix+C_X+1)
-        or a
-        sbc hl,de
-        call cdn_byte
-        ld c,a                  ; C = across (-127 to 127)
-        ld l,(iy+C_Y)
-        ld h,(iy+C_Y+1)
-        ld e,(ix+C_Y)
-        ld d,(ix+C_Y+1)
-        or a
-        sbc hl,de
-        call cdn_byte
-        ld b,a                  ; B = down
-        or c
-        jr z,cdn_next           ; (itself)
-        ld a,b
-        call cdn_abs
-        ld e,a
-        ld a,c
-        call cdn_abs
-        add a,e
-cdn_r:  cp 0                    ; within NEAR?
-        jr nc,cdn_next
-        ld a,c
-        call cdn_clamp
-        ld (ix+C_OFFX),a
-        ld a,b
-        call cdn_clamp
-        ld (ix+C_OFFY),a
-        pop bc
-        ret
-cdn_next:
-        ld de,C_SIZE
-        add iy,de
-        pop bc
-        djnz cdn_car
-        ret
-cdn_byte:                       ; HL -> A, kept to -127..127
-        ld a,h
-        or a
-        jr z,cdn_b1
-        inc a
-        ld a,0x81
-        ret nz                  ; far below nothing
-        bit 7,l
-        ret z
-        ld a,l
-        ret
-cdn_b1:
-        bit 7,l
-        ld a,l
-        ret z
-        ld a,0x7F
-        ret
-cdn_abs:
-        or a
-        ret p
-        neg
-        ret
-cdn_clamp:                      ; A kept to -PULL..PULL
-        or a
-        jp m,cdn_c1
-cdn_p:  cp 0
-        ret c
-        ld a,(cdn_p+1)
-        ret
-cdn_c1:
-        neg
-        call cdn_p
-        neg
-        ret
-cd_near:                        ; NEAR, PULL for CYAN, GREEN, PINK, WHITE (ai_tune.asm)
-        db AI_C_NEAR,AI_C_PULL, AI_G_NEAR,AI_G_PULL, AI_P_NEAR,AI_P_PULL, AI_W_NEAR,AI_W_PULL
-        include "cards.asm"     ; the cards' numbers (tools/make_cards.py)
-        endif
 ; heading_push: A = heading 0..63 -> DE = push x, BC = push y (8.8)
 heading_push:
         rrca
@@ -1417,6 +1204,16 @@ ai_m2:
         ld a,(ix+C_STEER)       ; lift: steers but no throttle - loses time
         jp ai_set
 ai_m3:
+        if OPT_CARDS            ; (CARDS: kinds 4 and 5 - a lunge at another car: steers left, or right, throttle down - card_near)
+        cp 4
+        jr c,ai_m3w
+        sub 3
+        ld b,a
+        call pace_gate
+        or b
+        jp ai_set
+ai_m3w:
+        endif
         call pace_gate          ; wobble: steers the wrong way
         ld b,a
         ld a,(ix+C_STEER)
@@ -4404,6 +4201,9 @@ gd_2:
         ld c,29
         jp st_text
         ; (gap_draw, from hud.asm, also fills the gap)
+        if OPT_CARDS
+        include "cards_gap.asm" ; (CARDS: 42 bytes of the driver cards' tables fill some of what is left of it)
+        endif
         include "sq4.asm"
 mb_world:
         include "world.asm"
@@ -4413,6 +4213,9 @@ me_world:
         endif
         include "hud.asm"
         include "arrow.asm"     ; the corner arrow in front of your car (here, after the page-aligned tables: code put before sq4 moves them a page on)
+        if OPT_CARDS
+        include "cards_code.asm" ; CARDS: the driver cards - each car its own speed, acceleration and grip (and cards.asm, the numbers)
+        endif
         if OPT_RT = 0           ; (RACETRACK draws no tiles)
         if OPT_TILE1
         include "gen_tiles1.asm" ; TILE1=1: one routine for every camy AND 7 (about 1 KB less)

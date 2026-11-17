@@ -133,10 +133,12 @@ AI_W_ERR   equ 2                ; WHITE
 ;          4 is 0.06 px a frame). 0: brakes down to exactly what the car can take - no slide, tidy. More: goes in too
 ;          fast, and the car slides wide (the less grip on its card, the lower the speed it must come down to)
 ;   NEAR   0: minds its own business. Otherwise: when another car is within this many pixels (across plus down) ...
-;   PULL   ... its line is moved up to this many pixels towards that car
+;   PULL   ... its line is moved up to this many pixels towards that car. Add 128 and it LUNGES too: one time in four
+;          it steers straight at the other car for AI_LUNGE of its turns (a turn is two TV frames)
 ; =====================================================================
         if OPT_CARDS
 AI_L equ OPT_AI
+AI_LUNGE equ 3
 ; CYAN - FRANK in the coupe: "Keeps a tidy line and brakes late ... very similar to Max"
 AI_C_REACH equ 32+8*AI_L
 AI_C_LMASK equ 3
@@ -152,17 +154,17 @@ AI_C_PULL  equ 0
 ; GREEN band (yellow on the track) - SPIKE in the clown car: "Erratic. A real clown. unpredictable. Almost seems to
 ; want to hit other cars": the widest wandering line, twitchy steering, by far the most mistakes (a late turn-in, a
 ; lift, a wobble: about four a lap), into corners too fast, and it steers for any car that comes near
-AI_G_REACH equ 28+6*AI_L
+AI_G_REACH equ 40+6*AI_L
 AI_G_LMASK equ 7
 AI_G_LHALF equ 4
 AI_G_EASE  equ 2
 AI_G_FUSS  equ 2
 AI_G_PACE  equ 16
 AI_G_REACT equ 0
-AI_G_ERR   equ 22-2*AI_L
+AI_G_ERR   equ 14-2*AI_L
 AI_G_SLIP  equ 24
 AI_G_NEAR  equ 56
-AI_G_PULL  equ 16
+AI_G_PULL  equ 128+14
 ; PINK - BRUNO in the tank: "Heavy and slow, likes to get in the way. Cuts corners": holds the very middle of the road,
 ; turns in the earliest (the corner cut), no slide at all, and moves over on a car that comes alongside
 AI_P_REACH equ 44+6*AI_L
@@ -179,15 +181,15 @@ AI_P_PULL  equ 10
 ; WHITE - JANE in the dragster: "should shoot ahead of Max on the straights but really battle on the corners ...
 ; Brakes early because she has to ... skids wide if pushed": flat out, eases off the earliest (27 degrees), and still
 ; goes in faster than the long car will hold
-AI_W_REACH equ 30+6*AI_L
-AI_W_LMASK equ 7
-AI_W_LHALF equ 4
+AI_W_REACH equ 40+6*AI_L
+AI_W_LMASK equ 3
+AI_W_LHALF equ 2
 AI_W_EASE  equ 3
 AI_W_FUSS  equ 2
 AI_W_PACE  equ 16
 AI_W_REACT equ 0
 AI_W_ERR   equ 8-2*AI_L
-AI_W_SLIP  equ 10
+AI_W_SLIP  equ 16
 AI_W_NEAR  equ 0
 AI_W_PULL  equ 0
         endif

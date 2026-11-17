@@ -20,7 +20,7 @@ def measure(name, src, races=3, alone=False, look=None, tune=None, quiet=False, 
     for race in range(races):
         g = Game(name, src); g.to_grid()
         S = g.sym; CS = S['c_size']
-        g.poke(S['seed'], [0x34 + 37 * race, 0x12 + race])     # a different run of luck (the cars' lines and mistakes) each race
+        g.poke(S["seed"], [(0x34 + 37 * race) & 255, 0x12 + race])     # a different run of luck (the cars' lines and mistakes) each race
         for k, t in enumerate(tune or []):
             if t is None: continue
             g.poke(S['ai_styles'] + 5 * k, t[:5]); g.poke(S['cars'] + (k + 1) * CS + 19, [t[5], t[6], t[7]])

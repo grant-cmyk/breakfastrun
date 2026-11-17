@@ -7,8 +7,10 @@ To change what a rating is WORTH (every car at once): THE SCALE just below.
   python3 tools/make_cards.py table     only prints them (nothing is written)
 
 THE SCALE. A rating of 5 for speed and acceleration is the car as it has always been (1.75 px a TV frame, push 64).
-  SPEED  each point is SPEED_STEP 64ths of the plain push, and the top speed is 7 pushes: 448 + 7 x SPEED_STEP x (s - 5)
-         in 256ths of a pixel a TV frame. (Why 7: every TV frame a car gains its push and then loses an eighth.)
+  SPEED  SPEED_K[s]: so many 64ths of the plain push more or less at speed, and the top speed is 7 pushes:
+         448 + 7 x SPEED_K[s] in 256ths of a pixel a TV frame. (Why 7: every TV frame a car gains its push and then loses
+         an eighth.) A point above 5 is worth 3.1% of the top speed; a point below it only 1.6% (a little more for the
+         last), so that a slow car is not left a lap behind - Grant gave two of them speed 2.
   ACCEL  each point is ACCEL_STEP 64ths of the plain push more or less, while the car is under four fifths of its top speed
   GRIP   HOLD[g]: what the tyres of YOUR car will hold, in 256ths of a pixel a frame of sideways speed (16 was the car as
          it was). While you hold Q, and while it is sliding, they hold half of that; both together, five sixteenths.
@@ -18,11 +20,11 @@ THE SCALE. A rating of 5 for speed and acceleration is the car as it has always 
 import os, re, sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 # ---- THE SCALE (the only numbers to tune; the ratings are Grant's) ----
-SPEED_STEP = 2          # 64ths of the push a point of speed: 1 is 1.6% of the top speed a point
-ACCEL_STEP = 5          # 64ths of the push a point of acceleration: 5 is 7.8% a point
 #        rating:  1   2   3   4   5   6   7   8   9  10
+SPEED_K  = [None, -6, -4, -3, -2,  0,  2,  4,  6,  8, 10]   # the SPEED push, 64ths more or less than the plain push: each 1 is 1.6% of the top speed
+ACCEL_STEP = 5          # 64ths of the push a point of acceleration: 5 is 7.8% a point
 HOLD     = [None, 7,  8,  9, 10, 12, 13, 15, 17, 19, 21]
-SLIDE_AT = [None, 182, 214, 246, 278, 310, 342, 374, 406, 438, 470]
+SLIDE_AT = [None, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
 # ---- who drives what in the race today (the others are on the choose screen only) ----
 PLAYER = 'MAX'
 CPU = [('FRANK', 'C', 'CYAN'), ('SPIKE', 'G', 'GREEN'), ('BRUNO', 'P', 'PINK'), ('JANE', 'W', 'WHITE')]
@@ -39,8 +41,8 @@ def read_cards(path=None):
                 if not 1 <= v <= 10: raise SystemExit('driver_cards.txt: %s has %s %d - ratings are 1 to 10' % (name, what, v))
             cards.append(dict(name=name, car=car, a=a, s=s, g=g)); name = None
     return cards
-def top(s): return 448 + 7 * SPEED_STEP * (s - 5)
-def k_speed(s): return SPEED_STEP * (s - 5)
+def top(s): return 448 + 7 * SPEED_K[s]
+def k_speed(s): return SPEED_K[s]
 def k_accel(a): return ACCEL_STEP * (a - 5)
 def tyres(g):
     g = max(1, min(10, g)); h = HOLD[g]

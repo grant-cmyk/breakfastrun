@@ -4,24 +4,24 @@
 ; THE SCALE (tools/make_cards.py): what a rating is worth
 ; rating   top speed, px a TV frame   push while getting up to speed   your tyres hold   a computer car slides above
 ;                                     (64 = the car as it was)         (16 = as it was)  (px a TV frame, when it steers)
-;    1           1.53                         44                           7                0.71
-;    2           1.59                         49                           8                0.84
-;    3           1.64                         54                           9                0.96
-;    4           1.70                         59                          10                1.09
-;    5           1.75                         64                          12                1.21
-;    6           1.80                         69                          13                1.34
-;    7           1.86                         74                          15                1.46
-;    8           1.91                         79                          17                1.59
-;    9           1.97                         84                          19                1.71
-;   10           2.02                         89                          21                1.84
+;    1           1.59                         44                           7                0.82
+;    2           1.64                         49                           8                0.94
+;    3           1.67                         54                           9                1.05
+;    4           1.70                         59                          10                1.17
+;    5           1.75                         64                          12                1.29
+;    6           1.80                         69                          13                1.41
+;    7           1.86                         74                          15                1.52
+;    8           1.91                         79                          17                1.64
+;    9           1.97                         84                          19                1.76
+;   10           2.02                         89                          21                1.88
 ; THE CARS
-;   MAX    RACER      acceleration 5, speed 5, grip 4 -> top speed 1.75 px a frame (448), push 64 (your car: 64), tyres 10,5,5,3, slides above 1.09
-;   FRANK  COUPE      acceleration 5, speed 5, grip 4 -> top speed 1.75 px a frame (448), push 64 (your car: 64), tyres 10,5,5,3, slides above 1.09
-;   JANE   DRAGSTER   acceleration 7, speed 8, grip 1 -> top speed 1.91 px a frame (490), push 74 (your car: 74), tyres 7,4,4,2, slides above 0.71
-;   BRUNO  TANK       acceleration 4, speed 2, grip 8 -> top speed 1.59 px a frame (406), push 59 (your car: 59), tyres 17,9,9,5, slides above 1.59
-;   SPIKE  CLOWN CAR  acceleration 6, speed 2, grip 3 -> top speed 1.59 px a frame (406), push 69 (your car: 69), tyres 9,5,5,3, slides above 0.96
-;   SPECS  SALOON     acceleration 4, speed 5, grip 3 -> top speed 1.75 px a frame (448), push 59 (your car: 64), tyres 9,5,5,3, slides above 0.96
-;   DOT    TRUCK      acceleration 3, speed 3, grip 8 -> top speed 1.64 px a frame (420), push 54 (your car: 60), tyres 17,9,9,5, slides above 1.59
+;   MAX    RACER      acceleration 5, speed 5, grip 4 -> top speed 1.75 px a frame (448), push 64 (your car: 64), tyres 10,5,5,3, slides above 1.17
+;   FRANK  COUPE      acceleration 5, speed 5, grip 4 -> top speed 1.75 px a frame (448), push 64 (your car: 64), tyres 10,5,5,3, slides above 1.17
+;   JANE   DRAGSTER   acceleration 7, speed 8, grip 1 -> top speed 1.91 px a frame (490), push 74 (your car: 74), tyres 7,4,4,2, slides above 0.82
+;   BRUNO  TANK       acceleration 4, speed 2, grip 8 -> top speed 1.64 px a frame (420), push 59 (your car: 60), tyres 17,9,9,5, slides above 1.64
+;   SPIKE  CLOWN CAR  acceleration 6, speed 2, grip 3 -> top speed 1.64 px a frame (420), push 69 (your car: 69), tyres 9,5,5,3, slides above 1.05
+;   SPECS  SALOON     acceleration 4, speed 5, grip 3 -> top speed 1.75 px a frame (448), push 59 (your car: 64), tyres 9,5,5,3, slides above 1.05
+;   DOT    TRUCK      acceleration 3, speed 3, grip 8 -> top speed 1.67 px a frame (427), push 54 (your car: 61), tyres 17,9,9,5, slides above 1.64
 ; ---- your car (MAX): its top speed, its push, and its tyres at each level of grip you buy (a level = a point of grip) ----
 CD_TOP  equ 448
 CD_PUSH equ 64
@@ -71,11 +71,11 @@ CD_DOT_G equ 8
 ;      four fifths of its top speed (both / 4), its ACCEL push and its SPEED push (64ths more or less than the plain 64),
 ;      1 while it is braking (the game writes it), and a byte to make the row 8 ----
 cd_tab:
-        dw 278
-        db 69+AI_C_SLIP, 89, 0, 0, 0, 0      ; CYAN: FRANK (COUPE) - acceleration 5, speed 5, grip 4
-        dw 246
-        db 61+AI_G_SLIP, 81, 5, 250, 0, 0      ; GREEN: SPIKE (CLOWN CAR) - acceleration 6, speed 2, grip 3
-        dw 406
-        db 101+AI_P_SLIP, 81, 251, 250, 0, 0      ; PINK: BRUNO (TANK) - acceleration 4, speed 2, grip 8
-        dw 182
-        db 45+AI_W_SLIP, 98, 10, 6, 0, 0      ; WHITE: JANE (DRAGSTER) - acceleration 7, speed 8, grip 1
+        dw 300
+        db 75+AI_C_SLIP, 89, 0, 0, 0, 0      ; CYAN: FRANK (COUPE) - acceleration 5, speed 5, grip 4
+        dw 270
+        db 67+AI_G_SLIP, 84, 5, 252, 0, 0      ; GREEN: SPIKE (CLOWN CAR) - acceleration 6, speed 2, grip 3
+        dw 420
+        db 105+AI_P_SLIP, 84, 251, 252, 0, 0      ; PINK: BRUNO (TANK) - acceleration 4, speed 2, grip 8
+        dw 210
+        db 52+AI_W_SLIP, 98, 10, 6, 0, 0      ; WHITE: JANE (DRAGSTER) - acceleration 7, speed 8, grip 1
