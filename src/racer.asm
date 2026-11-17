@@ -233,7 +233,7 @@ tick_loop:
         pop bc
         djnz tick_loop
         if OPT_2P
-        call p2_ticked          ; TWOP: player 1's grip sums back in their place (twoplayer.asm)
+        call p2_ticked          ; TWOP: player 2's buttons and car, the picture's TV frames in one go (twoplayer.asm)
         endif
         ; the computer cars MOVE once a picture: all its TV frames in one call
         ; (physics steps the speed and position ph_steps times). They are only
@@ -419,7 +419,7 @@ tick:
         ld (race_time),hl
 tk_clock:
         if OPT_2P
-        call p2_top             ; TWOP: the leash's count; and player 2 first, on the frames that their sums are in (twoplayer.asm)
+        call p2_top             ; TWOP: the leash's hold runs down (twoplayer.asm)
         endif
         ld hl,BOOST_T           ; the NOS burns down, a frame at a time
         ld a,(hl)
@@ -470,9 +470,6 @@ tk_yn:
         ld a,1
         ld (ph_steps),a
         call physics
-        endif
-        if OPT_2P
-        call p2_after           ; TWOP: then player 2's buttons and car, unless they went first (twoplayer.asm)
         endif
         ld ix,cars+C_SIZE       ; the computer cars THINK on alternate frames
         ld b,NCARS-1            ; (cars 2 and 4 on one, 1 and 3 on the other);

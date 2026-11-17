@@ -8,7 +8,7 @@ p2_new:
         ldir
         ld hl,p2_yg
         ld de,p2_yg+1
-        ld c,P2_YGN-1
+        ld c,0x22-1             ; (and the panel's rows as shown, after them)
         ld (hl),b
         ldir
         ld a,(two_p)

@@ -5,10 +5,10 @@
 ;   - PLAYER 2 drives the car in the second grid place (cyan) with 6 left, 7 right, 0 accelerate, 5 brake, 8 NOS.
 ;     (Not 9: with 0 and 9 both in use, O + P + 0 held together would read as 9 as well - the Spectrum's keyboard
 ;     is a grid of wires, and three corners of a square of it held down look like the fourth.)
-;   - THE SAME SUMS AS YOUR CAR: the grip model (grip.asm) keeps one car's speeds in the 34 bytes from yg_vf. Player
-;     2's are kept in p2_yg and the two sets change places (p2_swap) around player 2's turn; so do the two NOS
-;     timers. Changing places costs about 2,000 T, so on alternate TV frames player 2 goes first and the sets
-;     change places once a frame, not twice. (GRIP1: both cars are moved once a picture, so twice a picture.)
+;   - THE SAME SUMS AS YOUR CAR: the grip model (grip.asm) keeps one car's speeds in the bytes from yg_vf. Player 2's
+;     (the 18 of them that last from one TV frame to the next) are kept in p2_yg, and the two sets change places
+;     (p2_swap, about 1,300 T) around player 2's turn; so do the two NOS timers. To change places only twice a picture,
+;     player 2's car has all of a picture's TV frames one after the other, after everything else's (p2_ticked).
 ;   - THE VIEW (camera2) is centred between the two cars. THE LEASH: the car further round the lap (the leader) is
 ;     never nearer the window's edge than P2_MX / P2_MY pixels; when that pushes the other car's box over the
 ;     window's edge it is put back (leash): on the middle of the road at the waypoint behind the one the leader
@@ -21,7 +21,7 @@ P2_MX      equ 40               ; the leader is kept this far inside the window'
 P2_MY      equ 32               ; ... and its top and bottom
 LEASH_BACK equ 40               ; a car is put back at the first waypoint behind the leader that is this far from it or more (pixels across + down)
 LEASH_HOLD equ 12               ; TV frames a car put back is held still, flashing (the time it costs, with starting from rest)
-P2_YGN     equ yg_tang+1-yg_vf  ; the grip model's bytes for one car
+P2_YGN     equ 18               ; the grip model's bytes that are kept for each car (p2_swap)
 
 two_p:     db 0                 ; 1: two players (the title's 2); kept from race to race
 ; Its other variables are not in the program (there is no room): they use memory that is free once the race is on -
@@ -30,18 +30,17 @@ p2_vars    equ TS               ; ---- zero at the start of every race ----
 p2_boost   equ TS               ; player 2's NOS: TV frames of boost left (player 1's, while their own is in BOOST_T's place)
 p2_inv     equ TS+1             ; player 2's canisters, 0..3
 p2_up      equ TS+2             ; player 2's NOS key was up (so a press is new)
-p2_live    equ TS+3             ; 1: player 2's sums are in the grip model's place
-p2_first   equ TS+4             ; this TV frame player 2 went first
 lsh_t      equ TS+5             ; the leash: TV frames the car put back is still held
 lsh_car    equ TS+6             ; ... which: 1 player 1's, 2 player 2's (0: none) - the byte after lsh_t
 p2_pts     equ TS+7             ; POINTS: player 1's, player 2's (2 bytes)
 P2_NVARS   equ 9
-p2_yg      equ 0x5E00           ; player 2's grip sums, P2_YGN bytes (player 1's, while p2_live is 1); zero at the start of every race
+p2_yg      equ 0x5E00           ; player 2's grip sums, P2_YGN bytes (player 1's, during player 2's turn); zero at the start of every race
 c2_lr      equ TS+9             ; camera2: the leader's car record, the other's
 c2_tr      equ TS+11
 P2_LOWC    equ 0x5E22           ; and two routines that run from there (twoplayer_pic.asm; start_once copies them down)
-        if P2_YGN > 0x22
-        .error twoplayer.asm: the grip model's bytes have grown - move P2_LOWC up
+p2p_shown  equ 0x5E12           ; the panel: what each of its 5 rows shows (0: nothing yet); zero at the start of every race
+        if (yg_t1-yg_vf-14) OR (yg_c6-yg_s6-1) OR (yg_rs-yg_c6-1)
+        .error twoplayer.asm: the grip model's variables have moved - see p2_swap
         endif
 c2_l:      dw 0                 ; camera2: the leader's place and the other's, one way at a time
 c2_t:      dw 0
@@ -49,15 +48,16 @@ c2_lim:    dw 0
 
 ; p2_swap: the two players' grip sums change places, and their NOS timers
 p2_swap:
-        ld hl,p2_live
-        ld a,(hl)
-        xor 1
-        ld (hl),a
-        ld hl,yg_vf
-        ld de,p2_yg
-        ld b,P2_YGN
+        ld hl,yg_vf             ; what the grip model keeps from one TV frame to the next: its speeds, heading and sliding
+        ld de,p2_yg             ; flag, the heading's sine and cosine (14 bytes from yg_vf),
+        ld b,yg_t1-yg_vf
         call p2_x
-p2_swap_s:                      ; (only the NOS timers)
+        ld hl,yg_s6             ; ... their small copies and the count to its fresh start (3),
+        ld b,3
+        call p2_x
+        ld hl,yg_tang           ; ... and which heading the sine and cosine are for. (The other 16 bytes are sums it
+        inc b                   ; makes and uses within one call.)
+        call p2_x
         ld hl,BOOST_T
         ld de,p2_boost
         ld b,1
@@ -83,34 +83,37 @@ p2_top:
         inc hl
         ld (hl),0               ; (time: it is let go)
 p2o_1:
-        if OPT_GRIP1 = 0
-        xor a
-        ld (p2_first),a
-        ld a,(p2_live)          ; player 2's sums were left in place last frame: player 2 first, then yours back
-        or a
-        ret z
-        ld (p2_first),a
-        call p2_tick
-        jp p2_swap
-        else
         ret
-        endif
 
-; p2_after: after your car's TV frame - player 2's, unless they went first
-p2_after:
+; p2_ticked: after a picture's TV frames of everything else (main) - player 2's. Their sums and NOS timer change places
+; with yours once, their car has all the picture's TV frames one after the other (the buttons are read in a burst at the
+; start of a picture anyway), and yours come back. The frame count that says when to look at the ground is stepped as if
+; the frames had been taken in turn.
+p2_ticked:
         ld a,(two_p)
         or a
         ret z
-        if OPT_GRIP1
-        call p2_swap_s          ; (GRIP1: only the NOS timers change places here - the cars are moved once a picture)
+        call p2_swap
+        ld a,(dt)
+        ld b,a
+        ld hl,ticks
+        ld a,(hl)
+        sub b
+        ld (hl),a
+p2b_1:
+        push bc
+        ld hl,ticks
+        inc (hl)
         call p2_tick
-        jp p2_swap_s
-        else
-        ld a,(p2_first)
-        or a
-        ret nz
-        call p2_swap            ; (and their sums stay in place until the next frame)
-        endif                   ; ... on into p2_tick
+        pop bc
+        djnz p2b_1
+        if OPT_GRIP1            ; (GRIP1: it has only steered - now it is moved, once, as yours is)
+        ld a,(dt)
+        ld (ph_steps),a
+        call p2_phys
+        endif
+        jp p2_swap
+
 ; p2_tick: player 2's TV frame - the buttons, and the car moved (their NOS timer is in BOOST_T's place here)
 p2_tick:
         ld hl,BOOST_T
@@ -207,13 +210,6 @@ p2_phys:
         ld (ix+C_KIND),1
         ret
 
-; p2_ticked: after a picture's TV frames - your sums back in their place for everything else that reads them
-p2_ticked:
-        ld a,(p2_live)
-        or a
-        ret z
-        jp p2_swap
-
 ; p2_move (main's cpu_move; B = NCARS-1 for the second car): Z - player 2's car, and it is seen to
 p2_move:
         ld a,b
@@ -222,12 +218,6 @@ p2_move:
         ld a,(two_p)
         dec a
         ret nz
-        if OPT_GRIP1            ; (GRIP1: moved here, once a picture, with its own sums in place)
-        call p2_swap
-        call p2_phys
-        call p2_swap
-        xor a
-        endif
         ret
 
 ; ---------------------------------------------------------------------
@@ -506,6 +496,8 @@ p2p_2:
         inc hl
         ld a,(hl)
         ld (p2p_t0+5),a
+        ld a,c
+        add a,e                 ; (what the row shows: the place - and whose, since two rows share the text)
         ld hl,p2p_t0
         jr p2p_put
 p2p_lap:
@@ -536,12 +528,26 @@ p2p_nos:
         ld a,h
         add a,'0'
         ld (p2p_t4+4),a
+        add a,l
+        add a,l
+        add a,l
+        add a,l
         else
         ld a,(p2_inv)
         add a,'0'
         ld (p2p_t4+4),a
         endif
         ld hl,p2p_t4
-p2p_put:
+p2p_put:                        ; A = what the row shows now, HL = its text, B = the row: printed only when it has changed
+        ex de,hl
+        ld hl,p2p_shown
+        ld c,b
+        ld b,0
+        add hl,bc
+        ld b,c
+        cp (hl)
+        ret z
+        ld (hl),a
+        ex de,hl
         ld c,26
         jp print_at
