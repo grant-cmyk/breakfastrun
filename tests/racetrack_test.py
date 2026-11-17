@@ -11,12 +11,25 @@ line, grid, canisters). Then:
      scorer's two numbers (tools/make_racetrack_clash_score.py) from the real tape: BACKGROUND = scenery pixels showing the
      wrong colour, CAR = pixels of the car's outline not in its colour.
   4. GRASS IS SLOW: top speed on the grass 20-25% of the road's; a car can drive onto the grass and back.
-Usage: python3 tests/racetrack_test.py [part ...]     parts: scroll pack rule slide speed (default: all)"""
+Usage: python3 tests/racetrack_test.py [part ...]     parts: scroll pack rule slide speed (default: all)
+       TAPE=racer_track_green python3 tests/racetrack_test.py            another tape of track 1 (its build folder: the name less "racer_")
+       TRACK=2 python3 tests/racetrack_test.py                           track 2 or 3 in the green-line look (build/racer_track_green_track2.tap;
+                                                                         TAPE=racer_track_green_track2_grip1 with it for that one)
+THE GREEN LIMIT LINE (17 Nov 2026): a build that has one says so in its rt_world.asm ("; LIMIT green ..."), and the picture
+worked out here then has it too - from the road's shape again, not from the build's map. And where tools/make_world.py had
+to draw a tile as its nearest look-alike (tracks 2 and 3 have more edge pictures than the map can number: "; REDRAWN ..."),
+that tile is taken as the build says it is - after checking it is within 3 pixels of the true shape; everything else in the
+picture must still match to the pixel."""
 import os, sys, re, math
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rt_lib import Game, ROOT
-SRC = os.path.join(ROOT, 'build', 'racetrack', 'src')
+TRACK = int(os.environ.get('TRACK') or 1)
+TAPE = os.environ.get('TAPE') or ('racer_racetrack' if TRACK == 1 else 'racer_track_green_track%d' % TRACK)
+SRC = os.path.join(ROOT, 'build', TAPE.replace('racer_', ''), 'src')
+os.environ['TRACK'] = str(TRACK)                                          # (tools/make_world.py reads it: the road's shape for this track)
+if TRACK != 1:
+    import tempfile; os.environ['WORLD_OUT'] = tempfile.mkdtemp()         # (it insists on a folder for a later track; nothing is written by the part run here)
 wsrc = open(os.path.join(ROOT, 'tools', 'make_world.py')).read()
 wns = {'__file__': os.path.join(ROOT, 'tools', 'make_world.py')}
 exec(wsrc[:wsrc.index('road = road_mask(ROAD)')], wns)
@@ -32,6 +45,26 @@ for m in re.finditer(r'row_(\d+):\s+defb\s+(.*)', src):
             for b in range(8):
                 if tiles[v[i + 1]][j] & (0x80 >> b): WHITE[int(m.group(1)) * 8 + j, v[i] * 8 + b] = True
 assert not (WHITE & GRASS).any()
+# GREEN: what shows green - the grass, and the build's thin green limit line if it has one (GRASS stays the real grass:
+# "is the car on the grass" is asked of that)
+GREEN = GRASS.copy()
+rtw = open(os.path.join(SRC, 'rt_world.asm')).read()
+_m = re.search(r'; LIMIT green (\w+) gap (\d+) wide (\d+)', rtw)
+if _m:
+    _gap, _wide = int(_m.group(2)), int(_m.group(3))
+    _pin = np.array(road_mask(ROAD + 2 * (10 - _gap)), dtype=bool) & ~np.array(road_mask(ROAD + 2 * (10 - _gap - _wide)), dtype=bool)
+    if _m.group(1) == 'dash': _yy, _xx = np.mgrid[0:PH, 0:PW]; _pin &= ((_xx // 8) + (_yy // 8)) % 2 == 0
+    _near = np.zeros_like(WHITE); _wp = np.pad(WHITE, 7)                  # (left out within a colour square of anything white)
+    for _dy in range(15):
+        for _dx in range(15): _near |= _wp[_dy:_dy + PH, _dx:_dx + PW]
+    GREEN |= _pin & ~_near
+REDRAWN = [(int(m.group(1)), int(m.group(2)), bytes.fromhex(m.group(3))) for m in re.finditer(r'; REDRAWN tile (\d+),(\d+) as ([0-9a-f]{16})', rtw)]
+_far = 0
+for _tx, _ty, _b in REDRAWN:
+    _t = np.unpackbits(np.frombuffer(_b, np.uint8)).reshape(8, 8).astype(bool)
+    _far = max(_far, int((GREEN[_ty * 8:_ty * 8 + 8, _tx * 8:_tx * 8 + 8] != _t).sum()))
+    GREEN[_ty * 8:_ty * 8 + 8, _tx * 8:_tx * 8 + 8] = _t
+assert not (WHITE & GREEN).any()
 CANS = [(int(m.group(1)), int(m.group(2))) for m in re.finditer(r'NOS_\w_X equ (\d+)\nNOS_\w_Y equ (\d+)', src)]
 SY = int(re.search(r'TRACK_SY\s+equ\s+(\d+)', src).group(1)); LX = 288
 INKS = [2, 5, 6, 3, 7]                                                    # you red; cyan, yellow, magenta, white
@@ -44,7 +77,7 @@ def check(ok, msg):
 
 def ideal(cx, cy):
     """the scenery the window ought to show for a camera at (cx, cy): 0 black, 4 green, 7 white"""
-    g = GRASS[cy:cy + 152, cx:cx + 192]; w = WHITE[cy:cy + 152, cx:cx + 192]
+    g = GREEN[cy:cy + 152, cx:cx + 192]; w = WHITE[cy:cy + 152, cx:cx + 192]
     out = np.zeros((152, 192), np.uint8); out[g] = 4; out[w] = 7
     for x, y in CANS:                                                     # (a canister goes when it is picked up: not compared)
         out[max(0, y - cy - 12):max(0, y - cy + 12), max(0, x - cx - 12):max(0, x - cx + 12)] = 255
@@ -86,7 +119,7 @@ def free_area():
     return a
 
 def scroll(alone):
-    g = Game(); g.to_grid(); g.go(alone=alone)
+    g = Game(TAPE, SRC); g.to_grid(); g.go(alone=alone)
     bad = pics = offs = 0; seen = set(); worst = None; edge = 0
     start = g.wp; lapped = False; f = 0
     while f < 2600 and not lapped:
@@ -102,6 +135,8 @@ def scroll(alone):
         edge += int((gsq & squares(ok)).sum())
         pics += 1; seen.add((cx & 7, cy & 7)); bad += d
         if d and worst is None: worst = (cx, cy, d); g.shot(os.path.join(ROOT, 'build', 'racetrack_test_fail.png'))
+        if d and os.environ.get('WHERE'):                                  # WHERE=1: each wrong picture's pixels (window x, y, shown, wanted) and the cars' places in the window
+            ys, xs = np.nonzero((px != want) & ok); print('   wrong at camera %d,%d:' % (cx, cy), [(int(x), int(y), int(px[y, x]), int(want[y, x])) for y, x in list(zip(ys, xs))[:8]], 'cars', [(g.car(i)[0] - cx, g.car(i)[1] - cy) for i in range(5)])
         if g.wp == (start - 2) % len(g.wps): lapped = True
     g.close()
     who = 'alone' if alone else 'in the pack'
@@ -140,22 +175,23 @@ def rule_squares(g, label, tally):
     return wrong, back, carsc, far, wred
 
 def rule():
-    g = Game(); g.to_grid(); g.go(alone=True); g.key('Q', False)
+    g = Game(TAPE, SRC); g.to_grid(); g.go(alone=True); g.key('Q', False)
     tally = {}; wrong = []; far = 0
     for name, y in (('on the road', SY - 8), ('on the limit line', SY - 44), ('on the limit line, lower', SY - 41), ('across the grass edge', SY - 56),
-                    ('across the grass edge, higher', SY - 60), ('on the grass', SY - 84), ('on the grass, deeper', SY - 99)):
+                    ('across the grass edge, higher', SY - 60), ('on the grass', SY - 84), ('on the grass, deeper', SY - 99),
+                    ('on the start line', SY - 8), ('on the start line, higher', SY - 20)):   # (17 Nov 2026: white under the car whatever the limit line is)
         for dx in (0, 3, 5):                                              # (three pixel offsets across)
-            g.put(LX + 60 + dx, y, 16); g.run(12)
+            g.put((LX - 8 if 'start line' in name else LX + 60) + dx, y, 16); g.run(12)
             w, b, c, f, wr = rule_squares(g, '%s (+%d)' % (name, dx), tally); wrong += w; far += f
             if name in ('on the limit line', 'across the grass edge', 'on the grass') and dx == 0 and os.environ.get('SHOTS'):
                 g.shot(os.path.join(os.environ['SHOTS'], 'car_%s.png' % name.replace(' ', '_')))
     g.close()
-    check(all(tally.get(k, 0) >= 6 for k in ('road', 'line', 'mixed', 'grass')), 'your car parked in 21 places: squares of every kind were under it (%s)' % ', '.join('%s %d' % kv for kv in sorted(tally.items())))
+    check(all(tally.get(k, 0) >= 6 for k in ('road', 'line', 'mixed', 'grass')), 'your car parked in 27 places: squares of every kind were under it (%s)' % ', '.join('%s %d' % kv for kv in sorted(tally.items())))
     check(not wrong, 'each square has the colours rule 4 says: road and line - red on black; all grass - red on green; grass and road - left alone, the car green with a black rim (%d wrong%s)' % (len(wrong), ': ' + '; '.join(wrong[:3]) if wrong else ''))
     check(far == 0, 'the scenery beyond the car\'s 1-pixel rim is unchanged by the car - bar white that shares a road square with it (%d pixels changed)' % far)
 
 def slide():
-    g = Game(); g.to_grid(); g.go(alone=True)
+    g = Game(TAPE, SRC); g.to_grid(); g.go(alone=True)
     S = g.sym; tally = {}; wrong = []; B = []; C = []; WR = []; farsum = 0; phase = 0; deep = 0; back = 0; n = 0; offgrass = 0
     gif = os.environ.get('SLIDE_GIF')
     while n < 1500:
@@ -180,7 +216,7 @@ def slide():
     print('      (the mock-up\'s rule 4, PLAIN=1 python3 tools/make_racetrack_clash_score.py: 367 pictures, background 1129, worst 34; car 2025, worst 61 - another drive, and a smaller drawing of the car: the game\'s has 92 pixels of outline)')
 
 def speed():
-    g = Game(); g.to_grid(); g.go(alone=True)
+    g = Game(TAPE, SRC); g.to_grid(); g.go(alone=True)
     S = g.sym
     def v():
         c = g.mem(S['cars'], 10); return math.hypot(int.from_bytes(c[6:8], 'little', signed=True), int.from_bytes(c[8:10], 'little', signed=True)) / 256
@@ -188,11 +224,12 @@ def speed():
     def each(f): top[0] = max(top[0], v())
     g.drive(frames=600, each=each)
     for k in 'OP': g.key(k, False)
-    g.key('Q', True); g.put(LX - 88, SY + 72, 16)                         # on the grass below the start straight, pointing along it
+    GY = SY + 72 if TRACK == 1 else SY + 52                               # (tracks 2 and 3: the world ends 72 pixels below their start straight's middle - the car goes nearer the road, still wholly on the grass)
+    g.key('Q', True); g.put(LX - 88, GY, 16)                         # on the grass below the start straight, pointing along it
     for _ in range(250): g.run(1)
     vg = v(); x, y, a = g.car()
     check(GRASS[y + 8, x + 8] and 0.20 <= vg / top[0] <= 0.25, 'grass is slow: flat out on the grass %.2f pixels a frame, %.0f%% of the road\'s %.2f (20-25%% asked)' % (vg, 100 * vg / top[0], top[0]))
-    g.put(LX - 40, SY + 72, 0)                                            # ... then pointing at the road
+    g.put(LX - 40, GY, 0)                                            # ... then pointing at the road
     for _ in range(400):
         g.run(1); x, y, a = g.car()
         if not GRASS[y + 8, x + 8] and y < SY + 20: break
@@ -201,8 +238,10 @@ def speed():
     check(not GRASS[y + 8, x + 8] and g.mem(S['cars'] + 12, 1)[0] == 3, 'and it drives off the grass back onto the road (now at %d, %d)' % (x, y))
     # the computer cars: a lap in the pack, how much of it on the grass
     g.close()
-    g = Game(); g.to_grid(); g.go(); on = [0] * 4; tot = 0
-    for f in range(1500):
+    g = Game(TAPE, SRC); g.to_grid(); g.go(); on = [0] * 4; tot = 0
+    # (30 seconds on track 1 - time to begin a second lap; a longer track gets as much longer as its centre line is: track 1's is 1,472 pixels)
+    FR = 1500 if TRACK == 1 else int(1500 * sum(math.dist(g.wps[k], g.wps[(k + 1) % len(g.wps)]) for k in range(len(g.wps))) / 1472)
+    for f in range(FR):
         g.steer(); g.run(1)
         if f % 5 == 0:
             tot += 1
@@ -210,8 +249,9 @@ def speed():
                 x, y, a = g.car(i); on[i - 1] += bool(GRASS[min(PH - 1, y + 8), min(PW - 1, x + 8)])
     laps = [g.mem(S['cars'] + i * S['c_size'] + 25, 1)[0] for i in range(1, 5)]
     g.close()
-    check(max(on) / tot < 0.05 and min(laps) >= 2, 'the computer cars stay on the road: in 30 s each has its middle on the grass %s of the time (laps begun: %s)' % (' '.join('%.1f%%' % (100 * o / tot) for o in on), laps))
+    check(max(on) / tot < 0.05 and min(laps) >= 2, 'the computer cars stay on the road: in %d s each has its middle on the grass %s of the time (laps begun: %s)' % (FR // 50, ' '.join('%.1f%%' % (100 * o / tot) for o in on), laps))
 
+if REDRAWN: check(_far <= 3, 'this build draws %d tiles as their nearest look-alike: each is within 3 pixels of the true shape (the most: %d)' % (len(REDRAWN), _far))
 PARTS = {'scroll': lambda: scroll(True), 'pack': lambda: scroll(False), 'rule': rule, 'slide': slide, 'speed': speed}
 for p in (sys.argv[1:] or list(PARTS)): PARTS[p]()
 print('%d passed, %d failed' % (passes, len(fails)))
