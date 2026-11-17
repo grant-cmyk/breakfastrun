@@ -33,6 +33,16 @@ PW, PH = W * 8, H * 8             # pixels
 RT = os.environ.get('RACETRACK') == '1'
 RT_RUNOFF = 10                    # black run-off between the road's edge and the grass, pixels
 ROAD = 72                         # road width in pixels (48, 52, 56, 64, then 72 for the big cars - Grant, 10 Nov 2026)
+# THE TIGHTER TRACK (a trial, RACETRACK=1 only; Grant, 17 Nov 2026: "The track corners can be sharper now and the track
+# narrower" - with no O's to hit and a clear black road the game had become too easy). Two parameters, track 1 only:
+#   RT_ROADW=56    the road's width in pixels (72 as it was; 56 and 48 were built)
+#   RT_CORNER=27   the four big corners' radius along the middle of the road, in pixels (54 as it was). The straights stay
+#                  where they are: a smaller radius makes each corner later and sharper, and the lap a little longer.
+# Without them (or without RACETRACK=1) not one byte of any output changes.
+RT_CORNER = 54.0
+if RT and TRACK == 1:
+    ROAD = int(os.environ.get('RT_ROADW') or ROAD)
+    RT_CORNER = float(os.environ.get('RT_CORNER') or RT_CORNER)
 
 # THE CORNER ARROWS' LOOK-AHEAD (the rest is further down: "THE CORNER ARROWS"). Change these to make the
 # arrows show earlier, later, more or less often; the generator prints how many waypoints of the lap show one.
@@ -59,11 +69,13 @@ def arc(cx, cy, r, a0, a1, n=10):
     for i in range(n + 1):
         a = math.radians(a0 + (a1 - a0) * i / n)
         PATH.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-arc(380, 280, 40, 90, 0)          # bottom-right corner (going anticlockwise on screen)
-arc(380, 120, 40, 0, -90)         # top-right
+_r = 40                           # the corners' radius here, before the track is scaled up 1.35 times below (40 -> 54 px)
+if RT_CORNER != 54.0: _r = RT_CORNER / 1.35     # (RT_CORNER: the straights stay at x = 100 and 420, y = 80 and 320)
+arc(420 - _r, 320 - _r, _r, 90, 0)          # bottom-right corner (going anticlockwise on screen)
+arc(420 - _r, 80 + _r, _r, 0, -90)         # top-right
 PATH.append((300, 80)); PATH.append((270, 120)); PATH.append((230, 120)); PATH.append((200, 80))
-arc(140, 120, 40, -90, -180)      # top-left
-arc(140, 280, 40, 180, 90)        # bottom-left
+arc(100 + _r, 80 + _r, _r, -90, -180)      # top-left
+arc(100 + _r, 320 - _r, _r, 180, 90)        # bottom-left
 
 OFF = 32                          # the whole track moves this far in from the corner
 PATH = [(x + OFF, y + OFF) for x, y in PATH]
@@ -105,6 +117,7 @@ MW = 24; MSC = 11
 # the ribbon 4 to 5 pixels across, 5 bytes a line. Track 1's is 29 lines, the tall track 3's 44.
 # (The ribbon is drawn from a road 12 pixels narrower than the real one, so that it comes out 4 to 5 across and not 6.)
 _mroad = road
+if ROAD < 72: _mroad = road_mask(72).load()      # (RT_ROADW: the map's ribbon is drawn as for the 72 px road - a narrower one would come out under 2 pixels)
 if os.environ.get('MAPW40', '0') == '1': MW = 40; MSC = 19; _mroad = road_mask(ROAD - 12).load()
 _xs = [x for x in range(PW) if any(_mroad[x, y] for y in range(0, PH, 4))]; _ys = [y for y in range(PH) if any(_mroad[x, y] for x in range(0, PW, 4))]
 MMX0 = min(_xs) - int(2.4 * 256 / MSC); MMY0 = min(_ys) - int(0.4 * 256 / MSC)   # the road's left edge on column 2, its top on line 0
@@ -212,7 +225,8 @@ if BRIDGE:                        # BRIDGE: its ink - look P4 (concrete wings, w
 # the starting grid (Grant, 10 Nov 2026): the classic stagger, two lanes - P1
 # on the inside (the upper lane: the first bend is a left-hander), P2 beside it
 # and 16 px back, P3 behind P1, and so on. Top-left of each car, facing right.
-LANE_A, LANE_B = SY - 14 - 8, SY + 14 - 8        # lane centres 14 px either side of the middle (11 for 16 x 16 cars)
+_lane = 14 if ROAD >= 56 else ROAD // 2 - 13     # (RT_ROADW under 56: the lanes closer, so that the grid's boxes stay 4 px inside the road's edge - 11 at 48)
+LANE_A, LANE_B = SY - _lane - 8, SY + _lane - 8        # lane centres 14 px either side of the middle (11 for 16 x 16 cars)
 GRID = [(LX - 40, LANE_A), (LX - 56, LANE_B), (LX - 72, LANE_A), (LX - 88, LANE_B), (LX - 104, LANE_A)]   # x on the 8-px tile grid: the boxes share tiles
 GRID_ORDER = [0, 1, 4, 3, 2]                     # car in each place: YOU, CYAN, WHITE, PINK, GREEN
 for gx, gy in GRID:                              # a grid box behind each: [ shape, 1 px lines

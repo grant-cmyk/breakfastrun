@@ -46,6 +46,7 @@ HIMEM   equ COPIER + 152*40 + 3 ; 0xFFC3 .. 0xFFF3: 49 bytes above the screen-co
 ; of each (the last 6 can take an interrupt's pushes) - 90 bytes on each of pages D0-D7 from xxA0, less D2's
 ; (cloth_pat is at D2C0: 32 bytes there). start_once fills them.
         include "options.asm"   ; OPT_TALL (always 1 now: which tables sit in the program)
+        include "ai_tune.asm"   ; the computer cars' settings, by level (AI=1 or 2 bash build.sh; 0: as they were)
 ; MAPW40=1 (a build option; Grant, 16 Nov 2026, of the widths mocked up: "C wide please"): the mini-map 40 pixels wide, 5 bytes
 ; a line. Its ink is then too long for the D0 strip (145 to 220 bytes against 90), so it stays in the program itself (MAPDAT is
 ; a label there, at the program's end) - which needs room: build it with the savings on (TILE1=1 FLIP=1 TOWER=1).
@@ -3658,6 +3659,7 @@ pa_line:
 ;   x frac, x, y frac, y, vx, vy, heading, buttons, friction,
 ;   waypoint, offset x, offset y, mistake, kind of mistake, think,
 ;   PACE, REACT, ERR, picture, steering, ease off, laps, lap start
+; (PACE, REACT and ERR are now named numbers in ai_tune.asm, where the three levels are - 17 Nov 2026)
 ; Tuned on the real ROM (tests/tune_ai.py) to race round your pace:
 ; CPU A: 7 of 8, fewest mistakes  (laps ~13.9 s)
 ; CPU B: 7 of 8, more mistakes    (~14.2 s)
@@ -5117,25 +5119,25 @@ cars_init_src:
         db 0
         dw CPU0Y
         dw 0,0
-        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, 15,0,8, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
+        db STARTA,0,3, CPU0WP,0,0xFC, 0,0,0, AI_C_PACE,AI_C_REACT,AI_C_ERR, 1,0,0, 0, 0,0  ; CYAN: 15/16 throttle
         db 0
         dw CPU1X
         db 0
         dw CPU1Y
         dw 0,0
-        db STARTA,0,3, CPU1WP,0,4, 0,0,0, 14,0,6, 2,0,0, 0, 0,0     ; GREEN (SPIKE): 14/16 - still the slowest, few mistakes (it was 12/16: Grant, 15 Nov 2026, "just too slow you can speed him up")
+        db STARTA,0,3, CPU1WP,0,4, 0,0,0, AI_G_PACE,AI_G_REACT,AI_G_ERR, 2,0,0, 0, 0,0     ; GREEN (SPIKE): 14/16 - still the slowest, few mistakes (it was 12/16: Grant, 15 Nov 2026, "just too slow you can speed him up")
         db 0
         dw CPU2X
         db 0
         dw CPU2Y
         dw 0,0
-        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, 15,0,12, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
+        db STARTA,0,3, CPU2WP,0,0xFE, 0,0,0, AI_P_PACE,AI_P_REACT,AI_P_ERR, 3,0,0, 0, 0,0 ; PINK: 15/16, the most mistakes
         db 0
         dw CPU3X
         db 0
         dw CPU3Y
         dw 0,0
-        db STARTA,0,3, CPU3WP,0,2, 0,0,0, 16,0,3, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
+        db STARTA,0,3, CPU3WP,0,2, 0,0,0, AI_W_PACE,AI_W_REACT,AI_W_ERR, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
 cars_init_src_end:
 high_end:
 ; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn
