@@ -1929,7 +1929,13 @@ bp_you:
         ld (snd_bump),a
         ld hl,10*256+2          ; a crash: the border red for a fifth of a second
         call flash
+        if OPT_2P               ; TWOP: no damage in a two-player race - player 2's car has no gauge, and it would not be fair
+        ld a,(two_p)
+        or a
+        call z,dmg_hit
+        else
         call dmg_hit            ; and damage
+        endif
 bp_snd:
         ; touching: bounce apart. Along whichever way they are further
         ; apart, each car is kicked away from the other at KICK speed and

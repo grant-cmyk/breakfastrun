@@ -100,20 +100,20 @@ big_tab:
         db 7,14
         dw bf_0_4
         db 8,12
-        dw bf_0_5
-        db 7,14
-        dw bf_0_6
-        db 6,16
-        dw bf_0_7
-        db 5,17
-        dw bf_0_8
-        db 6,16
-        dw bf_0_9
-        db 5,17
-        dw bf_0_10
-        db 6,16
-        dw bf_0_11
-        db 7,14
+        dw bf_0_3+52
+        db 7,142
+        dw bf_0_2+60
+        db 6,144
+        dw bf_0_1+64
+        db 5,145
+        dw bf_0_0+60
+        db 6,144
+        dw bf_0_15+64
+        db 5,145
+        dw bf_0_14+60
+        db 6,144
+        dw bf_0_13+52
+        db 7,142
         dw bf_0_12
         db 8,12
         dw bf_0_13
@@ -132,20 +132,20 @@ big_tab:
         db 7,15
         dw bf_1_4
         db 8,12
-        dw bf_1_5
-        db 6,15
-        dw bf_1_6
-        db 5,17
-        dw bf_1_7
-        db 5,17
-        dw bf_1_8
-        db 6,16
-        dw bf_1_9
-        db 5,17
-        dw bf_1_10
-        db 5,17
-        dw bf_1_11
-        db 6,15
+        dw bf_1_3+56
+        db 6,143
+        dw bf_1_2+64
+        db 5,145
+        dw bf_1_1+64
+        db 5,145
+        dw bf_1_0+60
+        db 6,144
+        dw bf_1_15+64
+        db 5,145
+        dw bf_1_14+64
+        db 5,145
+        dw bf_1_13+56
+        db 6,143
         dw bf_1_12
         db 8,12
         dw bf_1_13
@@ -164,20 +164,20 @@ big_tab:
         db 5,17
         dw bf_2_4
         db 8,13
-        dw bf_2_5
-        db 6,17
-        dw bf_2_6
-        db 6,17
-        dw bf_2_7
-        db 6,17
+        dw bf_2_3+64
+        db 6,145
+        dw bf_2_2+64
+        db 6,145
+        dw bf_2_1+64
+        db 6,145
         dw bf_2_8
         db 8,13
-        dw bf_2_9
-        db 6,17
-        dw bf_2_10
-        db 6,17
-        dw bf_2_11
-        db 6,17
+        dw bf_2_15+64
+        db 6,145
+        dw bf_2_14+64
+        db 6,145
+        dw bf_2_13+64
+        db 6,145
         dw bf_2_12
         db 7,13
         dw bf_2_13
@@ -196,20 +196,20 @@ big_tab:
         db 6,17
         dw bf_3_4
         db 7,14
-        dw bf_3_5
-        db 5,17
-        dw bf_3_6
-        db 5,17
-        dw bf_3_7
-        db 5,17
-        dw bf_3_8
-        db 6,16
-        dw bf_3_9
-        db 5,17
-        dw bf_3_10
-        db 5,17
-        dw bf_3_11
-        db 5,17
+        dw bf_3_3+64
+        db 5,145
+        dw bf_3_2+64
+        db 5,145
+        dw bf_3_1+64
+        db 5,145
+        dw bf_3_0+60
+        db 6,144
+        dw bf_3_15+64
+        db 5,145
+        dw bf_3_14+64
+        db 5,145
+        dw bf_3_13+64
+        db 5,145
         dw bf_3_12
         db 7,14
         dw bf_3_13
@@ -228,20 +228,20 @@ big_tab:
         db 9,12
         dw bf_4_4
         db 10,9
-        dw bf_4_5
-        db 7,12
+        dw bf_4_3+44
+        db 7,140
         dw bf_4_6
         db 7,13
-        dw bf_4_7
-        db 6,14
+        dw bf_4_1+52
+        db 6,142
         dw bf_4_8
         db 6,13
-        dw bf_4_9
-        db 6,14
+        dw bf_4_15+52
+        db 6,142
         dw bf_4_10
         db 6,13
-        dw bf_4_11
-        db 7,12
+        dw bf_4_13+44
+        db 7,140
         dw bf_4_12
         db 9,9
         dw bf_4_13

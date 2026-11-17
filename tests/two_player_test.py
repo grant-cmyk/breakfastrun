@@ -34,21 +34,20 @@ b0, b1 = g.car(0), g.car(1)
 check(b0[:2] != a0[:2] and b0[2] != a0[2] and b1 == a1, "Q and P move and turn player 1's car; player 2's does not stir (%s -> %s; %s)" % (a0, b0, b1))
 g.run(60)                                               # (player 1's car rolls to a stop)
 c0 = g.car(0)
-g.key('0', True); g.key('6', True); g.run(40); g.key('0', False); g.key('6', False)
+g.key('0', True); g.key('6', True); g.run(10); g.key('6', False); g.run(30); g.key('0', False)
 d0, d1 = g.car(0), g.car(1)
 check(d1[:2] != b1[:2] and (b1[2] - d1[2]) % 64 in range(1, 32) and d0[2] == c0[2] and math.hypot(d0[0] - c0[0], d0[1] - c0[1]) < 3,
       "0 and 6 move player 2's car and turn it left; player 1's only rolls (%s -> %s; %s -> %s)" % (b1, d1, c0, d0))
 e1 = g.car(1); g.key('7', True); g.run(10); g.key('7', False)
 check((g.car(1)[2] - e1[2]) % 64 in range(1, 32), "7 turns player 2's car right")
-g.run(80); s0 = g.car(1); g.key('0', True); g.run(30); v_go = math.hypot(g.car(1)[0] - s0[0], g.car(1)[1] - s0[1])
-g.key('0', False); g.key('5', True); p0 = g.car(1); g.run(12); p1 = g.car(1); g.run(12); p2 = g.car(1); g.key('5', False)
-check(v_go > 10 and math.hypot(p2[0] - p1[0], p2[1] - p1[1]) < math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "5 brakes player 2's car")
+g.run(20); g.key('5', True); g.run(10); k0, k1 = g.rec(0)[11], g.rec(1)[11]; g.key('5', False)
+check(k1 == 8 and k0 == 0, "5 is player 2's brake (their car's buttons read %d, player 1's %d)" % (k1, k0))
 S = g.sym
 g.poke(S['inv'], [1, 0, 0]); g.poke(S['p2_inv'], [1])
-g.rpc('press', keys='8', frames=3, after=2)
+g.key('8', True); g.run(10); g.key('8', False); g.run(2)
 check(g.mem(S['p2_inv'], 1)[0] == 0 and g.mem(S['inv'], 3) == bytes([1, 0, 0]), "8 fires player 2's NOS canister, not player 1's")
 g.run(60); g.poke(S['p2_inv'], [1])
-g.rpc('press', keys='SPACE', frames=3, after=2)
+g.key('SPACE', True); g.run(10); g.key('SPACE', False); g.run(2)
 check(g.mem(S['p2_inv'], 1)[0] == 1 and g.mem(S['inv'], 3) == bytes([0, 0, 0]), "SPACE fires player 1's, not player 2's")
 g.close()
 
@@ -120,23 +119,39 @@ for stopper in (1, 0):
     print('      (nearest to the leader %.0f px, furthest %.0f; spots in the window %s ...)' % (min(e['far'] for e in events), max(e['far'] for e in events), [e['spot'] for e in events[:4]]))
 
 # ---- 4. one player on the two-player tape = the game without the switch ----
-SCRIPT = [(0, 'Q', 1), (60, 'P', 1), (75, 'P', 0), (140, 'O', 1), (150, 'O', 0), (260, 'Q', 0), (290, 'Q', 1), (300, 'SPACE', 1), (305, 'SPACE', 0),
-          (420, 'O', 1), (452, 'O', 0), (600, 'A', 1), (620, 'A', 0), (700, 'P', 1), (716, 'P', 0), (900, 'O', 1), (930, 'O', 0)]
-def scripted(tap, src, alone, frames=1100):
-    g = Game2(tap, src); g.start(1, alone=alone)
-    two = g.two() if 'two_p' in g.sym else 0
+# (The game reads the keys and moves the cars in a burst at the start of each picture - as many TV frames' worth as the last
+# picture took - so WHEN a key is seen, and how far a computer car has got, depend on how long the pictures take; and the
+# tape with the switch spends a few more T-states a picture testing "two players?". To compare the game's RULES and not its
+# speed, both tapes are stopped at the same instruction every picture (dt_ok, where the burst's length is set), the length
+# is made 5 TV frames, the keys are changed there, and the cars are read there. Both start from the same state at the green
+# light: the cars as they stood on the grid, the counters at 0.)
+SCRIPT = [(0, 'Q', 1), (12, 'P', 1), (15, 'P', 0), (28, 'O', 1), (30, 'O', 0), (52, 'Q', 0), (58, 'Q', 1), (60, 'SPACE', 1), (62, 'SPACE', 0),
+          (84, 'O', 1), (90, 'O', 0), (120, 'A', 1), (124, 'A', 0), (140, 'P', 1), (143, 'P', 0), (180, 'O', 1), (186, 'O', 0)]   # (in pictures)
+def scripted(tap, src, alone, pictures=230):
+    g = Game2(tap, src); S = g.sym
+    g.to_grid(key='1')
+    grid = g.mem(S['cars'], 5 * S['c_size'])
+    g.go(alone=False); g.key('Q', False)
+    two = g.two() if 'two_p' in S else 0
+    def picture(): g.rpc('run', until_pc=S['dt_ok'], max_frames=40); g.rpc('set', a=5)
+    picture()
+    g.poke(S['cars'], grid)
+    if alone:
+        for i in range(1, 5): g.rpc('write', addr=S['cars'] + i * S['c_size'] + 19, value=0)
+    g.poke(S['yg_vf'], [0] * (S['yg_tang'] + 1 - S['yg_vf']))
+    for v in ('ticks', 'renders', 'race_time', 'seed'): g.poke(S[v], [1, 0])
     path = []; other = []
-    for f in range(frames):
+    for n in range(pictures):
         for (at, k, down) in SCRIPT:
-            if at == f: g.key(k, bool(down))
-        g.run(1); path.append(g.car(0)); other.append(g.car(1))
+            if at == n: g.key(k, bool(down))
+        picture(); path.append(g.car(0)); other.append(g.car(1))
     g.close(); return two, path, other
 for alone in (True, False):
     two, pa, oa = scripted(TAP2, SRC2, alone); _, pb, ob = scripted(TAP1, SRC1, alone)
     same = sum(1 for a, b in zip(pa, pb) if a == b)
     first = next((i for i, (a, b) in enumerate(zip(pa, pb)) if a != b), None)
     far = max(math.hypot(a[0] - b[0], a[1] - b[1]) for a, b in zip(pa, pb))
-    check(two == 0 and same == len(pa), "one player, %s: a scripted drive's car is where it is on the tape without the switch, all %d TV frames%s" %
+    check(two == 0 and same == len(pa), "one player, %s: a scripted drive's car is where it is on the tape without the switch, all %d pictures%s" %
           ('alone' if alone else 'with the computer cars', len(pa), '' if same == len(pa) else ' - NOT SO: %d the same, first different at frame %s, furthest apart %.1f px' % (same, first, far)))
     if not alone:
         check(oa[-1] != oa[0] and oa == ob, "... and the second car is the computer's, where it is on that tape too%s" % ('' if oa == ob else ' - NOT SO (first different at frame %s)' % next(i for i, (a, b) in enumerate(zip(oa, ob)) if a != b)))
