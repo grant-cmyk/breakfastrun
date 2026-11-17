@@ -1177,6 +1177,7 @@ rq_k1:
         ld (rt_cnt),a
         ld de,rt_bm
 rq_band:
+        call rq_setpg
         push de
         ld a,(de)
         ld b,a
@@ -1228,6 +1229,17 @@ rq_s2:
         ld (rt_cnt),a
         jr nz,rq_band
         ret
+; RQ_SETPG (HL = a square in rt_sh): its row of squares' page of the buffer, for rq_cell - before rq_cell is called for
+; any square of a row. Keeps all but A.
+rq_setpg:
+        ld a,h
+        sub RT_SH/256
+        add a,a
+        add a,a
+        add a,a
+        add a,BUF_HI
+        ld (rq_pg+1),a
+        ret
 ; RQ_CELL (HL = a square in rt_sh, rt_ink = the colour): the rule for one square. First the square is brought into the
 ; back buffer if it is not there: cleared if nothing in it showed, made up (rt_sq_buf) if rt_class left it for rt_show.
 ; Keeps HL, C.
@@ -1247,6 +1259,25 @@ rq_cs:
 rq_c0:
         endif
         ld a,(hl)
+        cp RT_PLAIN
+        jr nz,rq_any
+        ld a,h                  ; PLAIN ROAD, nothing in it showing - nearly every square a car is in: its 8 lines in the
+        ex af,af'               ; buffer cleared and the car's colour on black, here and now (as rq_hid and rq_road do)
+rq_pg:  ld h,BUF_HI             ; (patched by rq_band: this row of squares' page of the buffer)
+        inc l
+        xor a
+        rept 7
+        ld (hl),a
+        inc h
+        endm
+        ld (hl),a
+        dec l
+        ex af,af'
+        ld h,a
+        ld a,(rt_ink)
+        ld (hl),a
+        ret
+rq_any:
         add a,a
         jr nc,rq_slow           ; in the buffer already (another car has it, or the arrow)
         jp p,rq_hid             ; nothing in it shows

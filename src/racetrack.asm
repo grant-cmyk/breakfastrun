@@ -220,6 +220,7 @@ rt_arrow:
         ld hl,RT_SH+(WIN_Y/8+ARROW_TOP/8)*32+WIN_COL+ARROW_COL
         ld c,3
 ra_r:
+        call rq_setpg           ; (rq_cell wants to know the row's page of the buffer)
         ld b,3
 ra_c:
         push bc
