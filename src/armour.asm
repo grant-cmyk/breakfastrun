@@ -62,7 +62,7 @@ abp_1:
 abp_no:
         pop hl
         ret
-; ARM_HURT (HL = a car's row, B = damage): its armour takes it; a piece goes (and flashes on the bar) each time the
+; ARM_HURT (HL = a car's row, B = damage): its armour takes it; a piece goes (and flashes on the health blocks) each time the
 ; damage in the piece it is on reaches what a piece takes.
 arm_hurt:
         ld a,(hl)
@@ -169,8 +169,8 @@ arm_limp:
         ret
 
 ; ARM_TICK: once a picture, after the cars have moved and bumped. The tank and the clown look for somebody (first, so
-; that a piece they knock off flashes in this same picture); the cool-downs run down; a bar that is flashing is drawn
-; again; the mug follows your armour.
+; that a piece they knock off flashes in this same picture); the cool-downs run down; a row whose health blocks are flashing is drawn
+; again (a car with none left: all the time - its red outlines flash).
 arm_tick:
         call arm_tank
         call arm_clown_t
@@ -193,7 +193,7 @@ atk_1:
         dec (hl)
         push hl
         ld a,e
-        call arm_bar
+        call arm_bar_t
         pop hl
 atk_2:
         inc hl
@@ -211,15 +211,7 @@ atk_3:
 atk_4:
         pop bc
         djnz atk_1
-        ld a,(arm_tab+1)        ; the mug: your armour (it empties from the top - dmg_make)
-        add a,arm_mug AND 255
-        ld l,a
-        adc a,arm_mug/256
-        sub l
-        ld h,a
-        ld a,(hl)
-        ld (dmg),a
-        ret
+        ret                     ; (the mug that showed your armour has gone: the health blocks in the race order show it)
 ; ARM_CLOWN_T: the clown's wheels, once a picture.
 arm_clown_t:
         ld ix,cars+ARM_CLOWN*C_SIZE
@@ -719,7 +711,6 @@ ado_5:
         ld (hl),a
         ret
 
-arm_mug:  db 8,6,5,4,2,1,0      ; the mug's level (dmg, 0 full to 8 empty) for 0 to 6 pieces of your armour
 ; each car's row (arm_row): what a piece of its armour takes - from its card (cd_arm, src/cards.asm) - and the 7 bytes the
 ; game keeps for it
 arm_tab:

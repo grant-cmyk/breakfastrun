@@ -484,6 +484,7 @@ hg_1:
         inc hl
         djnz hg_1
         jp msg_go
+        if OPT_ARMOUR = 0
 gap_update:                     ; one place a time: its gap, if it changed
         ld a,(race_on)
         or a
@@ -497,6 +498,7 @@ gu_1:
         jr nc,gu_1
         add a,NCARS
         jp gap_draw             ; (it sits in racer.asm, in the gap before sq4's page)
+        endif
 best_panel:                     ; under the racers: a clock and the lap RECORD - the
         ld b,TOWER_Y+2*NCARS    ; best lap of any race since the game was loaded (a
         ld c,28                 ; hi-score, Grant 10 Nov 2026), centred under the
@@ -613,11 +615,6 @@ st_put:
         ld a,b
         add a,c
         ld b,a
-        if OPT_ARMOUR           ; ARMOUR: the race order's gap time goes 3 pixels further left (armour.asm)
-        ld a,(arm_gapf)
-        or a
-        jp nz,arm_gap_put
-        endif
         ld a,(ST_COL)
         add a,a
         add a,a
@@ -891,7 +888,11 @@ tu_same:
         ld a,b
         cp NCARS
         jr nz,tu_place
+        if OPT_ARMOUR           ; (ARMOUR: no gap times in the race order - the health blocks have their room)
+        ret
+        else
         jp gap_update           ; nothing moved: bring one place's gap up to date
+        endif
 
 cell_addr:                      ; cell row B, column C -> HL = its top pixel row
         ld a,b
@@ -1043,15 +1044,15 @@ trp_2:
         ld b,a
         jp tr_face
 tr_race:                        ; the gap (columns 28-29); once it is in, a flag
+        if OPT_ARMOUR           ; (ARMOUR: no gap - the health blocks have its room; the flag and the clock in column 28,
+        jp arm_flag             ; then the blocks: armour_low.asm)
+        else
         ld a,1                  ; (30); a clock if it has the best lap (31). (Each
         ld (tr_force),a         ; row had its lap too: yours is large in the
         ld a,(tr_row)           ; message bar now - the layout review, Grant,
         sub TOWER_Y             ; 10 Nov 2026)
         srl a
         call gap_draw           ; A = place
-        if OPT_ARMOUR           ; ARMOUR: the flag and the clock 5 pixels further left, then the row's armour bar (armour.asm)
-        jp arm_flag
-        endif
         ld a,(tr_key)           ; column 31: the flag once it is in, the clock if it has the best
         and 0x18                ; lap; both: the flag above the small clock (Grant, 14 Nov 2026:
         ret z                   ; "the flag and the fastest time icons are in the same column")
@@ -1071,6 +1072,7 @@ tr_race:                        ; the gap (columns 28-29); once it is in, a flag
         inc b
         ld de,CLOCK8
         jr tr_glyph
+        endif                   ; (ARMOUR)
 tr_glyph16:                     ; 16 rows at DE into cells tr_row and below, column C
         ld a,(tr_row)
         ld b,a

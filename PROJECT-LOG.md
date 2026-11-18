@@ -2962,3 +2962,56 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Mock-ups for health in the race order (Grant: "The vertical health bars are not visible, and the coffee cup is no longer
   relevant"): docs/design/racetrack/health_options.png (A-D), then variations of C (Grant: "for health can you do
   variations of C"): docs/design/racetrack/health_c_options.png (C, C2-C5).
+
+## 2026-11-18 22:10 SAST - laps when you go off the track, the faces look about, the health blocks (option C)
+- LAPS LOST OFF THE TRACK (Grant: "I also went off track for a bit, and I seemed to lose a lap"). THE CAUSE: your laps are
+  counted by waypoints - points along the middle of the road, 32 pixels apart on the tight track. The game keeps the one
+  you are heading for; you pass it within 40 of it, and the lap counts at the first one after the start line. A missed one
+  was forgiven only if you came within 64 of one of the next FOUR. Off the road past more than four (along the infield
+  grass, a spin onto it, a corner cut across the grass) and back on further round, the game kept waiting for the one where
+  you left - and found it a lap later. Reproduced (tests/lap_offtrack_test.py on the tape before the fix): along the grass
+  past eight waypoints, back on at 11 - "heading for 4" still, the line not counted; across the bottom-left corner's grass
+  (30 to 37) - the same; a 3-lap race with that excursion each lap: laps [1, 2, 2] at the crossings, never finished.
+- THE RULE NOW (src/lap_low.asm, under 0x8000; racer.asm's rp_try_next jumps to it when none of the five is near): when you
+  are 96 or more (|dx| + |dy|) from your waypoint, the game looks ahead for the first one you are within 64 of and counts
+  you past all those before it - but only as far round as you could have DRIVEN in the time since you were last near your
+  waypoint: 2 pixels a TV frame (your top speed on the road is 1.70, on the grass about 1.1), plus 3, never more than half
+  the track (NWP/2 - 1). Why: a fixed window has to choose between losing long excursions and allowing cuts (on the tight
+  track a window of 11 would let a diagonal cut gain about a second); the time rule does both - on the grass you are always
+  slower than the allowance grows, so going off never costs a lap; a short cut quicker than the road is held (you show
+  behind in the race order) until the time has caught up, so it gains nothing; a cut of more than half the track is never
+  counted. Ordinary driving counts exactly as before (the rule only acts 96 or more from your waypoint). The computer cars
+  do not use it (they steer back to their waypoint). Player 2 (two-player tapes) has it too. Not track 3 (no room under
+  0x8000: OPT_RTLAP, build.sh RT_LAPFIX). THE PLAIN GAME HAS THE SAME FOUR-WAYPOINT RULE and so the same fault in principle -
+  unchanged, as asked; say if it should have the fix too.
+- THE FACES LOOK ABOUT (Grant: "at the start of the games I want the faces animated looking left and right"): tw_anim
+  (src/plate_slow.asm), called each picture from dmg_anim (or straight from the picture on ARMOUR tapes): until the lights
+  go green each race-order face goes everyday / eyes in turn, a step every 32 TV frames, each row a step on from the one
+  above (the podium's way) - reusing the title's pa_car. 41 bytes under 0x8000, none in the program; about 16,000-21,000 T
+  once every 32 TV frames before the race (all five faces), 120 T a picture otherwise, 45 T a picture in the race. Not
+  track 3 (OPT_RTEYES). Test: tests/faces_look_test.py (every sample of every face is one of its two looks, exactly; both
+  looks seen in every row; rows not in step; none left once racing) - before: the faces never changed.
+- THE HEALTH BLOCKS, OPTION C (ARMOUR tapes; Grant: "when health is good all bars are green, when 2 bars the 2 bars are
+  yellow and 1 bar the 1 bar is red, when 0 - all three bars flash red"): each race-order row's last three squares black,
+  a block in each (6 x 12 pixels; two pieces a block, an odd one the lower half), bright green / yellow / red by the blocks
+  left (pieces / 2 rounded up); a piece just lost flashes as its half (ARM_FLASH, about a second), the colour changes at
+  once; at none, three red outlines flash two pictures on, two off, for as long as it lasts. src/armour_low.asm (arm_bar;
+  arm_bar_t draws only when the look changes: a drawing is about 8,000 T, so about 4,000 T a picture for each car with no
+  armour left, and 7 drawings for a lost piece). THE GAP TIMES HAVE GONE from the race order (no room; nothing replaces
+  them); the finished flag and the best-lap clock sit where the gap was (column 28). THE MUG HAS GONE (dmg_anim, dmg_draw,
+  dmg_make, the icon, the gap code: all left out of ARMOUR builds); its corner of the window is the track's; the NOS spoons
+  stay where they were in that corner. Bytes given back: the program 63 -> 425 free (GRIP1; 77 -> 439 without), under
+  0x8000 171 -> 375. Speed in the pack over 20 s: 11.10 pictures a second against 11.30 before - but the two drives part
+  ways early (different cars in view), so that is not like for like. Pictures: docs/design/racetrack/armour/health_c_built.png,
+  _panel.png (3x), health_c_loss_clip.mp4 (50 fps, 2x: Frank 5 -> 4 pieces, green to yellow; Jane 1 -> 0, red outlines).
+- TESTS: lap_offtrack_test (new); faces_look_test (new); armour_test 28/28 - the bar checks rewritten for the blocks: each
+  row's three squares read as whole / half / outline / empty plus the colour of all six squares, compared with every car's
+  armour as set by hand, and in a race at every picture looked at; the flash on loss (5 to 4: both looks seen, yellow at
+  once - the picture of the loss itself may still show the old one, as the blocks are drawn before the bumps); the red
+  outline flash at none; the mug check became "nothing of the mug is in the program". The dragster-flash check now reads
+  the row that SHOWS her (shown_order; it read the race order's place, wrong for the picture or two after a swap). racetrack_test
+  checks the mug's old corner as the track, to the pixel, on ARMOUR tapes (added); rt_fixed_test skips the mug on ARMOUR
+  tapes. The cards tapes' md5s re-recorded (laps, faces). Plain game, tracks 2/3/5 and the track-3 race-track tapes byte
+  for byte as they were.
+- Bytes free (program / under 0x8000), measured as 0xC000 - code_end and LOWTAB - 0xE8 - low_end: racer_armour_grip1
+  425 / 375. NOT VERIFIED: nobody has driven any of it; the lap rule's 2 px a frame has not been tried with NOS on grass.
