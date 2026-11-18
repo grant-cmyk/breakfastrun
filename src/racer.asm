@@ -149,6 +149,9 @@ rt_code_end:
         if OPT_ARMOUR
         include "armour_low.asm" ; ARMOUR: its parts that run rarely (the bars on the race order, a new race, firing a shell)
         endif
+        if OPT_RTLAP
+        include "lap_low.asm"   ; your laps when you go off the track a fair bit and come back on further round
+        endif
 low_end:                        ; (the end of what is kept under 0x8000: the room left is LOWTAB-0xE8 less this)
         endif
         if OPT_MULTI
@@ -3643,10 +3646,14 @@ rp_k2:
         ld de,64
         or a
         sbc hl,de
+        if OPT_RTLAP            ; RACETRACK: none near - off the road a fair bit? (lap_low.asm: the time it allows)
+        jp nc,rp_far
+        else
         if OPT_2P
         ret nc
         else
         jr nc,rp_pos
+        endif
         endif
         inc b                   ; the ones missed, then the one reached
 rp_k3:

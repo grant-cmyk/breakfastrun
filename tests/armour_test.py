@@ -16,7 +16,7 @@ import sys, os, math, hashlib
 from rt_lib import *
 TAPE = sys.argv[1] if len(sys.argv) > 1 else 'racer_armour_grip1'
 SRC = os.path.join(ROOT, 'build', TAPE, 'src')
-CARDS_MD5 = {'racer_cards': '4e5e80946f95644d35c4758e21ed3b3b', 'racer_cards_grip1': '8d2a86595e6ccfcf28bdadb35c27f8ad'}   # (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
+CARDS_MD5 = {'racer_cards': '0532c6113aade1d628a78602d9d8070e', 'racer_cards_grip1': '363168c752c7a53106c9780c82b7e10b'}   # (18 Nov 2026, later: your laps when you go off the track and back on further round - src/lap_low.asm - changed every race-track tape but track 3; re-recorded then. Was 4e5e8094..., 8d2a8659...) (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
 YOU, FRANK, SPIKE, BRUNO, JANE = range(5)
 passed = failed = 0
 def check(ok, msg):
