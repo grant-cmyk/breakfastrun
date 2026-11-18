@@ -231,13 +231,13 @@ AI_R_BRAKEG equ 107               ; the speed they brake down to for a bend, in 
 ; Measured (tests/race_measure.py, 20 races of 3 laps, the good driver from the back, 70%): what mixes them most is the
 ; LINE - two cars on lines a few pixels either side of the others' (yellow's 7,7: -7 to 0; magenta's 7,0: 0 to +7) can
 ; run side by side and pass, where on one line they queue. With these the computer cars changed places with EACH OTHER
-; about 17 times a race (3 with the four the same), and ran nose-to-tail behind another car about a third of the time
-; (about half). Their laps within 1.5% of each other; the good driver won 9 of 20, 1.9 s behind when beaten.
+; about 15 times a race (3 with the four the same), and ran nose-to-tail behind another car about a third of the time
+; (nearly half). Their laps within 1.5% of each other; the good driver won 19 of 40, 1.8 s behind when beaten.
 ; AT 75% SPEED (Grant, 19 Nov 2026: "Any chance of speed 75%?" - the racer_race75 tapes, tools/build_race.sh): the same
 ; drivers, but each car one or two 64ths slower on the straights than at 70% (AI_R75, in each KS below). At 75% your car's
 ; tyres give a little less in the bends than the speed gains (the good driver's best lap 22.8 s, 3.5% quicker than at 70%)
 ; while the computer cars, which hardly brake, gained 8% (22.2 s): with the 70% numbers the good driver won 0 of 20. With
-; these: 11 of 20, 1.5 s behind when beaten (each 64th off the straight is about 0.6 s a lap at 75%).
+; these: 20 of 40, 1.8 s behind when beaten (each 64th off the straight is about 0.6 s a lap at 75%).
         if GAME_SPEED > 70
 AI_R75     equ 1
         else
