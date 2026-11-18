@@ -1,68 +1,49 @@
 ; ARMOUR AND WEAPONS (ARMOUR=1; src/armour.asm has the account of it and every number): the parts that run only now and
-; then - the race order's armour bars, a new race, the moment a shell is fired. They live under 0x8000, where code runs
-; slower while the TV picture is being drawn, to leave the program's room for the parts that run every picture.
+; then - the race order's health blocks, a new race, the moment a shell is fired. They live under 0x8000, where code
+; runs slower while the TV picture is being drawn, to leave the program's room for the parts that run every picture.
 ; ---- THE HUD (the race order, hud.asm) ----
-; ARM_GAP_PUT (from st_put, when the race order's gap time is being written: B = the pixel row, ST_ACC its 16 pixels):
-; the gap ARM_TXT_SH pixels further left than it was - from 3 pixels before column 29 - leaving the car's picture to
-; its left and the flag to its right as they are.
-arm_gap_put:
-        ld c,28*8
-        call scr_addr
-        ex de,hl
-        ld hl,(ST_ACC)
-        xor a
-        rept ARM_TXT_SH
-        add hl,hl
-        rla
-        endm
-        ex de,hl
-        ld c,a
-        ld a,(hl)
-        and 0xFF AND (0xFF << ARM_TXT_SH)
-        or c
-        ld (hl),a
-        inc l
-        ld (hl),d
-        inc l
-        ld a,(hl)
-        and (1 << ARM_GLY_SH)-1
-        or e
-        ld (hl),a
-        jp st_nx
-; ARM_FLAG (from tower_row, in a race): the flag (it is in), the clock (it has the best lap) or both, ARM_GLY_SH pixels
-; left of where they were; then this row's bar.
+; ARM_FLAG (from tower_row, in a race): the flag (it is in), the clock (it has the best lap) or both, in column 28 - where
+; the gap time was (it has gone: the health blocks have its room); then this row's health blocks.
 arm_flag:
-        ld a,(tr_row)
-        ld b,a
         ld a,(tr_key)
         and 0x18
         jr z,afl_bar
+        ld c,28
         ld de,clock_top
         cp 0x10
         jr z,afl_2
         ld de,flag_top
         cp 0x08
         jr z,afl_2
+        ld a,(tr_row)           ; both: the flag above the small clock
+        ld b,a
         ld de,FLAG8
-        call arm_glyph
+        push bc
+        call tr_glyph
+        pop bc
+        inc b
         ld de,CLOCK8
-        call arm_glyph
+        call tr_glyph
         jr afl_bar
 afl_2:
-        call arm_glyph
-        call arm_glyph
+        call tr_glyph16
 afl_bar:
         ld a,(tr_row)
         sub TOWER_Y
         srl a
-; ARM_BAR (A = a place, 0 to 4): the armour bar of the car in that place - in the row's last column, pixels 4 to 6 of
-; its 8 (3 wide), lines 2 to 13 of the row's 16: six pieces of 2 lines, the first at the foot. A piece that is gone
-; leaves one dot. While its FLASH runs the piece just lost is shown and not shown, two pictures each.
+; ARM_BAR (A = a place, 0 to 4): THE HEALTH BLOCKS of the car that row shows (Grant, 18 Nov 2026, option C: "when health
+; is good all bars are green, when 2 bars the 2 bars are yellow and 1 bar the 1 bar is red, when 0 - all three bars
+; flash red"). The row's last three squares (columns 29-31, both its character rows) black, a block in each: 6 pixels
+; wide (pixels 1-6), 12 lines tall (lines 2-13 of the row's 16). A block is two of the car's six pieces of armour; an odd
+; one left shows as the lower half of its block. The ink by the blocks left (pieces / 2, rounded up): 3 green, 2 yellow,
+; 1 red. While a FLASH runs (ARM_FLASH pictures after a piece is lost) the half just lost is shown and not shown, two
+; pictures each. With none left: three red outlines, two pictures on and two off, for as long as it lasts (the FLASH
+; kept going round here - atk_1 in armour.asm counts it down every picture and calls this).
 arm_bar:
         ld e,a
         ld d,0
         ld hl,shown_order       ; (a row not yet drawn for the race - the drivers' faces are still there, in the first
-        add hl,de               ; second after the lights: its bar comes with the row)
+        add hl,de               ; second after the lights: its blocks come with the row)
         ld a,(hl)
         inc a
         ret z
@@ -71,40 +52,136 @@ arm_bar:
         call arm_row_a
         ld d,(hl)               ; D = its pieces
         inc hl
-        inc hl
+        inc hl                  ; HL at its FLASH
+        ld a,d
+        ld c,0x44               ; the colour (bright, on black): green,
+        cp 5
+        jr nc,abr_c
+        ld c,0x46               ; yellow,
+        cp 3
+        jr nc,abr_c
+        ld c,0x42               ; red
+abr_c:
+        or a
+        jr nz,abr_s
+        ld a,(hl)               ; none left: keep the FLASH going round (4, 3, 2, 1, 0: two shown, two not)
+        or a
+        jr nz,abr_o
+        ld (hl),4
+abr_o:
+        and 2
+        jr z,abr_d              ; (D = 0: nothing shown this picture)
+        ld a,0x80               ; (D = 0x80: the outlines)
+        jr abr_d
+abr_s:
         bit 1,(hl)
-        jr z,abr_0
-        inc d
-abr_0:
+        jr z,abr_d
+        inc a                   ; the piece just lost, shown this picture
+abr_d:
+        ld d,a                  ; D = halves of a block shown
         ld a,e
         add a,a
         add a,TOWER_Y
-        ld b,a
-        ld c,31
-        call cell_addr
-        inc h
-        inc h
-        ld b,ARM_PIECES
-abr_1:
-        ld a,b
-        dec a
-        cp d                    ; piece B - 1: is it there?
-        ld a,0x0E
+        ld b,a                  ; B = the row's first character row
+        rrca                    ; its colours: 0x5800 + 32 x B + 29, and the row below
+        rrca
+        rrca
+        ld l,a
+        and 3
+        or 0x58
+        ld h,a
+        ld a,l
+        and 0xE0
+        or 29
+        ld l,a
+        ld a,c
+        ld (hl),a
+        inc l
+        ld (hl),a
+        inc l
+        ld (hl),a
+        push de
+        ld de,30
+        add hl,de
+        pop de
+        ld (hl),a
+        inc l
+        ld (hl),a
+        inc l
+        ld (hl),a
+        ld c,29                 ; the three blocks, columns 29-31
+abr_b:
+        push bc
+        push de
+        ld a,c                  ; E = 2 x the block (0, 2, 4): the halves before it
+        sub 29
+        add a,a
         ld e,a
-        jr c,abr_2
+        call cell_addr          ; HL = its top line
+        ld a,d
+        rla
+        ld c,0x42               ; the outline: its sides
+        ld a,2
+        jr c,abr_e
+        ld c,0x7E               ; a block: solid
+        ld a,d
+        sub e                   ; halves in this block
+        ld e,16                 ; (none: no line drawn)
+        jr c,abr_t
+        jr z,abr_t
+        ld e,8                  ; one: the lower half, lines 8-13
+        dec a
+        jr z,abr_t
+        ld a,2                  ; two: lines 2-13
+abr_e:
+        ld e,a
+abr_t:                          ; lines E to 13: the first and the last whole, the rest C; the others clear
+        ld b,0
+abr_l:
+        ld a,b
+        cp e
+        jr c,abr_0
+        cp 14
+        jr nc,abr_0
+        cp 13
+        jr z,abr_7
+        cp e
+        ld a,c
+        jr nz,abr_w
+abr_7:
+        ld a,0x7E
+        jr abr_w
+abr_0:
         xor a
-        ld e,0x04
-abr_2:
+abr_w:
         call abr_put
-        ld a,e
-        call abr_put
-        djnz abr_1
+        inc b
+        bit 4,b
+        jr z,abr_l
+        pop de
+        pop bc
+        inc c
+        ld a,c
+        cp 32
+        jr nz,abr_b
         ret
-abr_put:                        ; A = the bar's 3 pixels for this line; HL to the line below
-        ld c,a
-        ld a,(hl)
-        and 0xF1
-        or c
+arm_bar_t:                      ; (from arm_tick: HL at the car's FLASH, just counted down; A = the place) drawn again only when
+        bit 0,(hl)              ; it changes - at an odd count, as the shown and not shown go by twos (a drawing is about 8,000
+        jp nz,arm_bar           ; T: this halves it) ...
+        inc (hl)
+        dec (hl)
+        ret nz
+        dec hl                  ; ... and at 0: drawn as it now is - or, with no pieces left, the outlines' flash set going
+        dec hl                  ; round again (they are not shown at 1, 0 or 4)
+        ld c,(hl)
+        inc hl
+        inc hl
+        inc c
+        dec c
+        jp nz,arm_bar
+        ld (hl),4
+        ret
+abr_put:                        ; A into the line at HL; HL to the line below
         ld (hl),a
         inc h
         ld a,h
@@ -117,38 +194,6 @@ abr_put:                        ; A = the bar's 3 pixels for this line; HL to th
         ld a,h
         sub 8
         ld h,a
-        ret
-arm_glyph:                      ; 8 rows at DE into cell row B, ARM_GLY_SH pixels left of column 31; B to the next row, DE on 8
-        ld c,30
-        call cell_addr
-        push bc
-        ld b,8
-agl_1:
-        ld a,(de)
-        inc de
-        push de
-        ld e,a
-        ld d,0
-        ex de,hl
-        rept ARM_GLY_SH
-        add hl,hl
-        endm
-        ex de,hl
-        ld a,(hl)
-        and 0xFF AND (0xFF << ARM_GLY_SH)
-        or d
-        ld (hl),a
-        inc l
-        ld a,(hl)
-        and (1 << ARM_GLY_SH)-1
-        or e
-        ld (hl),a
-        dec l
-        inc h
-        pop de
-        djnz agl_1
-        pop bc
-        inc b
         ret
 
 ; ARM_NEW: a new race - every car's armour whole, nothing flashing, nobody spinning; the weapons wait ARM_START pictures.

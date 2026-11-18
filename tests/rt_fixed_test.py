@@ -3,6 +3,8 @@ when they have changed (src/racetrack.asm, rt_hud). This checks that what the SC
 picture: a drive in the pack from before the lights, stopped each time a picture has just gone up (copy_done), and the
 screen's squares for each box compared, to the pixel and the colour, with what the game holds for it at that moment -
 the map with its dots (MAPDAT), the plate as composed (pl_bmp: place, lap, lap time), the mug (dmg_bmp).
+ARMOUR tapes since 18 Nov 2026 have no mug (Grant: "the coffee cup is no longer relevant"): there the box is not looked
+for, and its corner is checked as the track by tests/racetrack_test.py, pixel for pixel, instead.
 Usage: python3 tests/rt_fixed_test.py [tape name] [build folder]     FRAMES=3000 (how long is driven)"""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -23,9 +25,12 @@ def box(scr, y0, x0, lines, wide):
         out.append(bytes(scr[a + x0:a + x0 + wide]))
     return out
 def attrs(scr, y0, x0, rows, wide): return [bytes(scr[6144 + (y0 // 8 + r) * 32 + x0:][:wide]) for r in range(rows)]
-MAP_H = S['map_h']; my, mx = where(S['map_buf']); py, px = where(S['pl_b']); dy, dx = where(S['dmg_b'])
-PL_W, PL_H, DMG_ROWS = S['pl_w'], S['pl_h'], S['dmg_rows']
-bad = {}; seen = {'map': 0, 'plate': 0, 'mug': 0}; changes = {'map': 0, 'plate': 0, 'mug': 0}; last = {}
+MUG = 'dmg_bmp' in S
+MAP_H = S['map_h']; my, mx = where(S['map_buf']); py, px = where(S['pl_b'])
+PL_W, PL_H = S['pl_w'], S['pl_h']
+if MUG: dy, dx = where(S['dmg_b']); DMG_ROWS = S['dmg_rows']
+BOXES = ('map', 'plate', 'mug') if MUG else ('map', 'plate')
+bad = {}; seen = {k: 0 for k in BOXES}; changes = {k: 0 for k in BOXES}; last = {}
 def check():
     scr = g.mem(0x4000, 6912)
     md = g.mem(S['mapdat'], MAP_H * 3)
@@ -35,9 +40,10 @@ def check():
     want += [bytes(3)] * (ML - len(want))
     got = {'map': (box(scr, y0, mx, ML, 3), attrs(scr, y0, mx, ML // 8, 3))}
     exp = {'map': (want, [b'\x07' * 3] * (ML // 8))}
-    dm = g.mem(S['dmg_bmp'], DMG_ROWS * 3)
-    got['mug'] = (box(scr, dy, dx, DMG_ROWS, 3), attrs(scr, dy, dx, 2, 3))
-    exp['mug'] = ([dm[i * 3:i * 3 + 3] for i in range(DMG_ROWS)], [b'\x03' * 3] * 2)
+    if MUG:
+        dm = g.mem(S['dmg_bmp'], DMG_ROWS * 3)
+        got['mug'] = (box(scr, dy, dx, DMG_ROWS, 3), attrs(scr, dy, dx, 2, 3))
+        exp['mug'] = ([dm[i * 3:i * 3 + 3] for i in range(DMG_ROWS)], [b'\x03' * 3] * 2)
     if g.mem(S['lt_on'], 1)[0] == 0:                                      # (the start lights hang where the plate is)
         pb = g.mem(S['pl_bmp'], PL_W * PL_H)
         y0 = py & ~7
@@ -57,7 +63,8 @@ for f in range(FRAMES):
         check(); g.rpc('step', n=1)
 g.close() if hasattr(g, 'close') else None
 ok = True
-for k in ('map', 'plate', 'mug'):
+if not MUG: print('(no mug on this tape - ARMOUR: its corner is checked as the track by tests/racetrack_test.py)')
+for k in BOXES:
     good = k not in bad and seen[k] > 100 and changes[k] > 3
     ok &= good
     print('%s  the %s on the screen is what the game holds for it at every picture: %d pictures looked at, it changed %d times%s' % (

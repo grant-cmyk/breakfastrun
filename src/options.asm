@@ -27,6 +27,8 @@ OPT_REACT1 equ 0               ; 1: the computer cars decide every 8th TV frame,
 OPT_RTPUP equ 0                ; RACETRACK: 1 - the place plate is drawn from the program, not from under 0x8000 (tracks 1 and 2)
 OPT_ARROWC equ 1               ; RACETRACK: 1 - the corner arrow black over grass, green beside it (option C; not track 3)
 OPT_RTBAND equ 0               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)
+OPT_RTLAP equ 0                ; RACETRACK: 1 - off the track and back on further round costs no lap (src/lap_low.asm; not track 3)
+OPT_RTEYES equ 0               ; RACETRACK: 1 - the race order's faces look left and right until the lights go green (not track 3)
 OPT_RTROWS equ 19              ; the race track trial: how many of the window's 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)
 OPT_CARDS equ 0                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)
 OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)

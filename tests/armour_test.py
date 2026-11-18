@@ -2,8 +2,10 @@
 Usage: python3 tests/armour_test.py [tape name in build/, default racer_armour_grip1]     (build it: bash tools/build_armour.sh)
   1 a bump takes armour from BOTH cars - the same damage, so pieces go in proportion to their ratings; a harder ram
     does more; the grass does none
-  2 the bar on the screen is each car's armour, row by row, as the race order changes; a piece just lost flashes, then
-    stays a dot
+  2 the health blocks on the screen are each car's armour, row by row, as the race order changes (Grant's option C, 18
+    Nov 2026: three blocks, half a block a piece, green / yellow / red by the blocks left); a piece just lost flashes,
+    then is gone; a car with none has three red outlines that flash. (Until 18 Nov 2026 this was the thin bar, option V:
+    the checks were rewritten for the blocks - the same things checked, as strictly: every row, every picture looked at.)
   3 the tank's shell: fired at a car in line it hits, spins it where it is and costs it armour; fired at nothing it ends
     at its range; fired across the road it ends on the grass
   4 the clown's wheels: they come out for a car alongside, hit it, and do not hit a car out of reach
@@ -16,7 +18,7 @@ import sys, os, math, hashlib
 from rt_lib import *
 TAPE = sys.argv[1] if len(sys.argv) > 1 else 'racer_armour_grip1'
 SRC = os.path.join(ROOT, 'build', TAPE, 'src')
-CARDS_MD5 = {'racer_cards': '40d10f129d10d6ccee8a946af540e2c7', 'racer_cards_grip1': 'ed5512fe7fbc6afc5db7d3839b0ec70b'}   # (18 Nov 2026, later: the grid's [ boxes moved into the square behind each car - every race-track tape's map changed; re-recorded. Were 4e5e8094..., 8d2a8659...) (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
+CARDS_MD5 = {'racer_cards': 'cda9079e8f13a9c0112940ac70c20fca', 'racer_cards_grip1': '0fd8aed06546ffce981fa25c8fbe17c6'}   # (18 Nov 2026, merged: the grid's boxes and the slower-game settings together with your laps off the track - src/lap_low.asm - and the faces looking about before the race - tw_anim; re-recorded then. Was 40d10f12..., ed5512fe... on the one branch, 2e2f9529..., 3f4f616e... on the other) (18 Nov 2026, later: the grid's [ boxes moved into the square behind each car - every race-track tape's map changed; re-recorded. Were 4e5e8094..., 8d2a8659...) (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
 YOU, FRANK, SPIKE, BRUNO, JANE = range(5)
 passed = failed = 0
 def check(ok, msg):
@@ -45,18 +47,27 @@ class Scene:
             self.g.next_picture(); self.g.rpc('run', until_pc=self.S['snd_picture'], max_frames=40)
             for i in range(1, 5): self.g.poke(self.S['cars'] + i * self.CS + 16, [255])
     def bars(self):
-        """the bars as the screen has them: for each place, the six pieces from the foot up - 'X' there, '.' a dot, '?' anything else"""
-        scr = self.g.mem(0x4000, 6144); out = []
+        """the health blocks as the screen has them, for each place: its three squares (columns 29-31, both character rows),
+        each 'F' a whole block (pixels 1-6, lines 2-13), 'H' the lower half (lines 8-13), 'O' an outline, '.' empty, '?'
+        anything else; then ':' and the colour of all six squares - 'g', 'y' or 'r' (bright, on black), '?' anything else"""
+        scr = self.g.mem(0x4000, 6912); out = []
+        BLK = {tuple([0] * 2 + [0x7E] * 12 + [0] * 2): 'F', tuple([0] * 8 + [0x7E] * 6 + [0] * 2): 'H', tuple([0] * 16): '.',
+               tuple([0] * 2 + [0x7E] + [0x42] * 10 + [0x7E] + [0] * 2): 'O'}
         for p in range(5):
-            y0 = (self.S['tower_y'] + 2 * p) * 8; s = ''
-            for k in range(6):
-                v = [scr[((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | 31] & 0x0E for y in (y0 + 12 - 2 * k, y0 + 13 - 2 * k)]
-                s += 'X' if v == [0x0E, 0x0E] else '.' if v == [0, 0x04] else '?'
+            r0 = self.S['tower_y'] + 2 * p; s = ''
+            for c in (29, 30, 31):
+                lines = tuple(scr[((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | c] for y in range(r0 * 8, r0 * 8 + 16))
+                s += BLK.get(lines, '?')
+            at = set(scr[6144 + (r0 + k) * 32 + c] for k in (0, 1) for c in (29, 30, 31))
+            s += ':' + ({0x44: 'g', 0x46: 'y', 0x42: 'r'}.get(at.pop(), '?') if len(at) == 1 else '?')
             out.append(s)
         return out
     def want_bar(self, i):
-        r = self.row(i); n = r[1] + (1 if r[3] & 2 else 0)
-        return 'X' * n + '.' * (6 - n)
+        r = self.row(i); n, fl = r[1], r[3]
+        col = 'g' if n >= 5 else 'y' if n >= 3 else 'r'
+        if n == 0: return ('OOO' if fl & 2 else '...') + ':r'
+        n += 1 if fl & 2 else 0
+        return ''.join('F' if n - 2 * b >= 2 else 'H' if n - 2 * b == 1 else '.' for b in range(3)) + ':' + col
     def close(self): self.g.close()
 X = 501                                                   # a car's x on the right-hand straight (its middle 509)
 
@@ -80,9 +91,7 @@ def bumps():
     d = ram(YOU, FRANK, 500)                    #  straight, your car could meet them too - 18 Nov 2026, seen when the grid's [ boxes moved)
     check(d[0] == d[1] > 0 and sc.row(YOU)[0] == per[FRANK], 'your car too: you ram Frank, whose rating is yours, and each takes %d' % d[0])
     for i in range(5): sc.hold(i, 200 + 30 * i, 250, 0)
-    g.poke(S['arm_tab'] + 1, [3, 0]); sc.picture(2)
-    mug = g.mem(S['dmg'], 1)[0]
-    check(mug == g.mem(S['arm_mug'] + 3, 1)[0] and 0 < mug < 8, 'the mug is your armour: with 3 pieces of 6 it stands at %d of 8 (the game\'s own table)' % mug)
+    check('dmg_bmp' not in S and 'dmg_anim' not in S, 'the mug has gone (Grant, 18 Nov 2026: "the coffee cup is no longer relevant"): nothing of it is in the program - its squares in the window\'s corner are the track\'s, checked pixel for pixel by tests/racetrack_test.py')
     before = sc.row(YOU)[:3]; g.put(300, 300, 16, 0); g.key('Q', True)
     for _ in range(150): g.run(1)
     g.key('Q', False)
@@ -96,26 +105,31 @@ def bar():
     for i, n in enumerate([6, 5, 3, 1, 0]): g.poke(S['arm_tab'] + 8 * i + 1, [n, 0, 1])       # (flash 1: the bar is drawn afresh)
     sc.picture(3)
     order = list(g.mem(S['order'], 5)); got = sc.bars(); want = [sc.want_bar(c) for c in order]
-    check(got == want and '?' not in ''.join(got), 'the bars on the screen are the cars\' armour, 6 5 3 1 0 pieces set by hand: %s for the cars in the order %s' % (' '.join(got), order))
-    scr = g.mem(0x4000, 6144); gap = True
-    for p in range(5):                                    # (nothing but the bar in the row's last 5 pixels, and a clear pixel left of the bar)
-        for y in range((S['tower_y'] + 2 * p) * 8, (S['tower_y'] + 2 * p) * 8 + 16):
-            if scr[((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | 31] & 0x11: gap = False
-    check(gap, 'the bar is 3 pixels wide with a clear pixel either side of it, in all five rows')
-    # a piece is lost: it flashes, then it is a dot
-    p = order.index(JANE); g.poke(S['arm_tab'] + 8 * JANE + 1, [4, sc.row(JANE)[0] - 1, 1]); sc.picture(2)
+    check(got == want and '?' not in ''.join(got), 'the health blocks on the screen are the cars\' armour, 6 5 3 1 0 pieces set by hand: %s for the cars in the order %s' % (' '.join(got), order))
+    # none left: three red outlines, flashing two pictures on and two off, for as long as it lasts
+    p0 = order.index(JANE); seq = []
+    for _ in range(16):
+        sc.picture(); seq.append(sc.bars()[p0])
+    runs = [len(list(k)) for _, k in __import__('itertools').groupby(seq)]
+    check(set(seq) == {'OOO:r', '...:r'} and max(runs) <= 3 and len(runs) >= 6, 'a car with none: three red outlines that flash, on and off by twos (16 pictures: %s)' % ' '.join(s[:3] for s in seq))
+    # a piece is lost: it flashes, then it is gone - from 5 to 4: three blocks to two, so green to yellow at once
+    p = order.index(JANE); g.poke(S['arm_tab'] + 8 * JANE + 1, [5, sc.row(JANE)[0] - 1, 1]); sc.picture(2)
+    was = sc.bars()[list(g.mem(S['order'], 5)).index(JANE)]
     g.poke(S['arm_tab'] + 8 * JANE + 5, [0])
     sc.hold(JANE, X, 250, 0); sc.hold(BRUNO, X, 268, 0, vy=-600)
     seen = []; n = 0
     while n < 40:
         sc.picture(); n += 1; r = sc.row(JANE)
-        p = list(g.mem(S['order'], 5)).index(JANE)      # (her row now: holding the two cars can change the order - 18 Nov 2026,
-                                                          # with you last on the grid it does)
-        if r[1] == 3: seen.append((r[3], sc.bars()[p][3]))
-        if r[1] == 3 and r[3] == 0 and len([s for s in seen if s[0] == 0]) >= 4: break
-    fl = [s[1] for s in seen if s[0] > 0]; after = [s[1] for s in seen if s[0] == 0]
-    check(len(fl) >= 10 and 'X' in fl and '.' in fl and '?' not in fl, 'the dragster loses a piece in a ram: on the bar it FLASHES for %d pictures (%s)' % (len(fl), ''.join(fl)))
-    check(len(after) >= 4 and set(after) == {'.'} and sc.bars()[p] == 'XXX...', '... then it stops, and the piece is a single dot (%s)' % sc.bars()[p])
+        shown = [v & 7 for v in g.mem(S['shown_order'], 5)]   # (the row that shows her now: holding the two cars can change the
+        if r[1] == 4: seen.append((r[3], sc.bars()[shown.index(JANE)] if JANE in shown else None))  # (order - 18 Nov 2026, with you
+                                                          #  last on the grid it does - and the rows are drawn again one a picture:
+                                                          #  for a picture or two after a swap no row shows her)
+        if r[1] == 4 and r[3] == 0 and len([s for s in seen if s[0] == 0]) >= 4: break
+    nfl = len([s for s in seen if s[0] > 0]); fl = [s[1] for s in seen if s[0] > 0 and s[1]]; after = [s[1] for s in seen if s[0] == 0 and s[1]]
+    p = [v & 7 for v in g.mem(S['shown_order'], 5)].index(JANE)
+    # (the blocks are drawn before the bumps in a picture, so the picture in which the piece is lost still shows it as it was)
+    check(was == 'FFH:g' and nfl >= 10 and len(fl) >= 5 and fl[0] in (was, 'FFH:y', 'FF.:y') and set(fl[1:]) == {'FFH:y', 'FF.:y'}, 'the dragster loses a piece in a ram (5 to 4: %s before): the half it lost FLASHES for %d pictures, the colour yellow from the next picture (%s - in the pictures her row was up)' % (was, nfl, ' '.join(fl)))
+    check(len(after) >= 4 and set(after) == {'FF.:y'} and sc.bars()[p] == 'FF.:y', '... then it stops, and the half is gone (%s)' % sc.bars()[p])
     sc.close()
     # in a race: the rows follow the order
     g = Game(TAPE, SRC); g.to_grid(); g.go(); S = g.sym; import rt_ace
@@ -135,7 +149,22 @@ def bar():
                 if got != [sc.want_bar(c) for c in order]:
                     bad += 1
                     if os.environ.get('WHERE'): print('   wrong at TV frame %d: order %s, bars %s, wanted %s, rows %s' % (f, order, got, [sc.want_bar(c) for c in order], [sc.row(c)[1:4] for c in order]))
-    check(bad == 0 and len(orders) >= 3 and looked > 100, 'in a race the bars follow the cars as the rows swap: %d pictures looked at, %d different orders, %d wrong' % (looked, len(orders), bad))
+    check(bad == 0 and len(orders) >= 3 and looked > 100, 'in a race the health blocks follow the cars as the rows swap: %d pictures looked at, %d different orders, %d wrong' % (looked, len(orders), bad))
+    g.close()
+
+def rows_same():
+    """18 Nov 2026: four rows of the race order were seen all showing the red car (yours) 4 s after the green. The rows were
+    drawn again one in four pictures, the first one that changed first: early in a race, with places changing at the top,
+    the rows below could show a car that had left them for a second or more. Now a row a picture (ARMOUR tapes). Looked at
+    every TV frame for 10 s from the green, a good driver from the back of the grid: no two rows show the same car's colour
+    for more than 10 TV frames running (a swap takes two pictures). (Before: 57 TV frames running, 112 frames in all.)"""
+    g = Game(TAPE, SRC); g.to_grid(); g.go(); S = g.sym; import rt_ace
+    steer = rt_ace.ace(g, 104, 30); run = best = n = 0
+    for f in range(500):
+        steer(); g.run(1)
+        scr = g.mem(0x5800 + 6 * 32, 10 * 32); cols = [scr[2 * p * 32 + 26] for p in range(5)]
+        run = run + 1 if len(set(cols)) < 5 else 0; best = max(best, run); n += run > 0
+    check(best <= 10, 'no two rows of the race order show the same car for more than 10 TV frames running (10 s from the green: the longest %d, %d TV frames in all)' % (best, n))
     g.close()
 
 def shell():
@@ -245,6 +274,6 @@ def same_tapes():
         check(got == md5, 'with ARMOUR off, build/%s.tap is byte for byte the tape it was (md5 %s)' % (name, got))
 
 if __name__ == '__main__':
-    bumps(); bar(); shell(); wheels(); limp(); same_tapes()
+    bumps(); bar(); rows_same(); shell(); wheels(); limp(); same_tapes()
     print('%d passed, %d failed' % (passed, failed))
     sys.exit(1 if failed else 0)

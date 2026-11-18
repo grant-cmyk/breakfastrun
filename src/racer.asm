@@ -149,6 +149,9 @@ rt_code_end:
         if OPT_ARMOUR
         include "armour_low.asm" ; ARMOUR: its parts that run rarely (the bars on the race order, a new race, firing a shell)
         endif
+        if OPT_RTLAP
+        include "lap_low.asm"   ; your laps when you go off the track a fair bit and come back on further round
+        endif
 low_end:                        ; (the end of what is kept under 0x8000: the room left is LOWTAB-0xE8 less this)
         endif
         if OPT_MULTI
@@ -347,7 +350,13 @@ rt_nomap:
         call nz,lights_draw
         call hud_pre            ; (their colours, and the canisters' cells cleared)
         call nos_draw           ; the NOS canisters you hold, in the window's corner
+        if OPT_ARMOUR           ; (ARMOUR: no mug - the health blocks in the race order show the armour; Grant, 18 Nov 2026)
+        if OPT_RTEYES
+        call tw_anim            ; (before the race, the race order's faces look about: plate_slow.asm)
+        endif
+        else
         call dmg_anim           ; and your car's damage, in the other corner
+        endif
         call pl_draw            ; and your place, on its plate, top right
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
@@ -2949,6 +2958,7 @@ dmg_hit:
         ret nc
         inc (hl)
         ret
+        if OPT_ARMOUR = 0       ; (ARMOUR: no mug)
 dmg_draw:                       ; the gauge is composed only when the damage changes (dmg_make,
         ld a,(dmg)              ; plate_slow.asm: 48 bytes at dmg_bmp); each picture it is just copied
         ld hl,dmg_sh            ; in - every byte of its 3 x 2 cells, which are the icon's alone, so
@@ -2978,6 +2988,7 @@ dd_1:
 dd_3:
         djnz dd_1
         ret
+        endif
 
 ; ---------------------------------------------------------------------
 ; SOUND (the beeper): played in the time the loop would otherwise spend
@@ -3643,10 +3654,14 @@ rp_k2:
         ld de,64
         or a
         sbc hl,de
+        if OPT_RTLAP            ; RACETRACK: none near - off the road a fair bit? (lap_low.asm: the time it allows)
+        jp nc,rp_far
+        else
         if OPT_2P
         ret nc
         else
         jr nc,rp_pos
+        endif
         endif
         inc b                   ; the ones missed, then the one reached
 rp_k3:
@@ -4149,7 +4164,6 @@ arl_dx:   db 0                  ; arm_rel's sums (in this order)
 arl_hx:   db 0
 arl_dy:   db 0
 arl_hy:   db 0
-arm_gapf: db 0                  ; 1 while the race order's gap time is being written (st_put, hud.asm)
         endif
 race_vars_end:
 shown_dot:   defs 2*NCARS       ; each car's dot on the mini-map (0xFF x: none) - not reset
@@ -4196,6 +4210,7 @@ scr_addr:
 
         ; (buf_addr and scr_addr sit here too, in the gap before sq4's page)
 
+        if OPT_ARMOUR = 0       ; (ARMOUR: no gap times - the health blocks have their room)
 gap_draw:                       ; A = place: draw its car's gap, note it
         ld (gd_place),a
         ld e,a
@@ -4251,18 +4266,9 @@ gd_1:
 gd_2:
         ld a,(gd_y)
         ld b,a
-        if OPT_ARMOUR           ; ARMOUR: the gap 3 pixels further left, to make room for the armour bar (arm_gap_put, armour.asm)
-        ld c,28
-        ld a,1
-        ld (arm_gapf),a
-        call st_text
-        xor a
-        ld (arm_gapf),a
-        ret
-        else
         ld c,29
         jp st_text
-        endif
+        endif                   ; (ARMOUR)
         ; (gap_draw, from hud.asm, also fills the gap)
         include "sq4.asm"
 mb_world:

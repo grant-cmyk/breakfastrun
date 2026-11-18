@@ -95,6 +95,39 @@ ta_1:
         cp NCARS
         jr nz,ta_1
         ret
+        if OPT_RTEYES
+; TW_ANIM (RACETRACK): the race order's faces look left and right before the race (Grant, 18 Nov 2026: "at the start of
+; the games I want the faces animated looking left and right - as per our sprites"). As the title's row does (t_anim): the
+; everyday face and the eyes in turn, a step every 32 TV frames (pa_step), each row a step on from the one above, as the
+; podium's are (pa_one), so they do not all move together. From the moment the race screen is up until the lights go
+; green; then the rows give way to the gaps as before. Called every picture (dmg_anim); it draws only when the step changes.
+tw_anim:
+        ld a,(race_on)
+        or a
+        ret nz
+        call pa_step            ; E = the step
+        ret z
+        ld hl,shown_order       ; the car each row shows (0xFF: not drawn yet - left alone)
+        ld b,TOWER_Y            ; B = its first character row
+twa_1:
+        ld a,(hl)
+        inc hl
+        cp NCARS
+        jr nc,twa_2
+        push hl
+        ld c,30                 ; the face's two columns: 30-31
+        res 1,e                 ; (just the two looks: everyday and eyes)
+        call pa_car             ; (it keeps B, C, D and E)
+        pop hl
+twa_2:
+        inc e
+        inc b
+        inc b
+        ld a,b
+        cp TOWER_Y+2*NCARS
+        jr nz,twa_1
+        ret
+        endif
 pf_row:                         ; a row: D its left byte, E its right, solid between (clear if D is 0)
         push hl
         push bc
@@ -142,6 +175,7 @@ HP_PUT  macro
         endm
         endif
 hud_pre:
+        if OPT_ARMOUR = 0       ; (ARMOUR: no mug - its squares are the window's, as an empty spoon's are)
         if OPT_RT               ; RACETRACK: the mug goes to the screen afresh only when it has changed - its steam (every 8th
         ld hl,rt_fx             ; picture: dmg_anim), the damage, a new race. If not, its squares are left as they are on the
         ld a,(renders)          ; screen (RT_LEAVE: rt_hud, racetrack.asm)
@@ -177,6 +211,7 @@ hpr_g:
         HP_PUT
         inc l
         HP_PUT
+        endif                   ; (ARMOUR)
         ld a,(INV)              ; the spoons: red - beside the gauge, then leftwards (NOS_COL, racer.asm)
         ld hl,HP_AT + WIN_W - 4
         ld de,HP_NB - 3
@@ -235,6 +270,7 @@ pl_key:  dw 0                   ; the place and lap pl_bmp was composed for
 pl_lin:  db 0                   ; pl_down's rows: 1 in pl_bmp, 0 in the buffer
 pl_bmp:  defs PL_W*PL_H          ; the plate, composed
 
+        if OPT_ARMOUR = 0       ; (ARMOUR: no mug - the health blocks in the race order show the armour)
 ; DMG_MAKE: the health gauge composed for damage A (HL = dmg_sh) into dmg_bmp: DMG_ROWS rows of 3
 ; bytes - the outline, and the fill in every row but the first C (dmg_emp: it empties from the top).
 dmg_make:
@@ -272,6 +308,9 @@ dk_4:
 ; 2026: "animate it so that the steam out of the top looks like steam coming out of the cup ... just
 ; those top bits".)
 dmg_anim:
+        if OPT_RTEYES
+        call tw_anim            ; (RACETRACK: before the race, the race order's faces look about - below)
+        endif
         ld a,(renders)
         and 7
         jr nz,da_2
@@ -296,6 +335,7 @@ da_2:
 dmg_sh:  db 0xFF                 ; the damage dmg_bmp shows (0xFF: none yet)
 dmg_bmp: defs 3*DMG_ROWS
         include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
+        endif                   ; (ARMOUR)
 pl_tl:   dw 0xFFFF               ; the lap time (frames) the plate's figures were last cut for
 
 ; ---------------------------------------------------------------------

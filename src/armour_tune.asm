@@ -16,10 +16,14 @@
 ;            with the poorer rating loses pieces sooner. Grass and walls do no damage.
 ;   LIMP     a car with no armour left stays in the race, at half its top speed (ARM_LIMP_SHIFT). Nobody is knocked out.
 ;            (Halves only: 1 is a half, 2 a quarter. Three quarters would want a few more bytes of sums.)
-;   THE BAR  (the HUD, Grant's option V) at the right edge of each car's row in the race order: 3 pixels wide, six pieces
-;            of 2 pixels; a piece just lost FLASHES for about a second (ARM_FLASH) and then leaves a single dot.
-;   THE MUG  in the window's corner is YOUR armour now (it empties as your pieces go): one system, not two. The oil can
-;            on the road mends your armour, as it mended your damage.
+;   THE BLOCKS (the HUD, Grant's option C, 18 Nov 2026 - it was the thin bar, option V): each car's row in the race order
+;            ends in three black squares with a block in each, a block for two pieces (an odd one: the lower half of its
+;            block), green with three blocks left, yellow with two, red with one; a piece just lost FLASHES for about a
+;            second (ARM_FLASH) and then is gone; with none left, three red outlines flash for as long as it lasts
+;            (armour_low.asm: arm_bar). The gap times are no longer shown (no room); the flag and the best-lap clock sit
+;            where the gap was (column 28).
+;   NO MUG   (Grant, 18 Nov 2026: "the coffee cup is no longer relevant"): the mug in the window's corner has gone - the
+;            blocks show your armour too. The NOS spoons stay in that corner. The oil can on the road mends your armour.
 ;   THE TANK SHOOTS (BRUNO, the computer's): a shell straight ahead when a car is in line ahead of him.
 ;   THE CLOWN'S WHEELS (SPIKE, the computer's): out to both sides for a moment when a car is alongside.
 ;   A car a shell or a wheel hits SPINS WHERE IT IS (SPIN_T: no speed, no steering, a full turn) and loses armour.
@@ -27,14 +31,14 @@
 ; THE NUMBERS TO TUNE - all of them are here. A PICTURE is one drawing of the screen (about 12 a second); a TV FRAME is a
 ; fiftieth of a second.
 ;   name            now   what it is
-;   ARM_PIECES        6   pieces of armour on every car (the bar has room for six)
+;   ARM_PIECES        6   pieces of armour on every car (the three blocks show six)
 ;   ARM_DIV           5   a bump's damage = the closing speed halved this many times (5: a thirty-second of it in 256ths
 ;                         of a pixel a TV frame - cars closing at one pixel a frame, the usual knock in the pack, do 8
 ;                         points of damage to each other; at two pixels a frame, 16)
 ;   ARM_MIN           2   ... plus this much, so that even a rub costs something (so: the usual knock 10, a hard ram 18)
 ;   ARM_COOL         30   pictures before a car that has just been bumped can be bumped again (2.5 seconds: one crash is
 ;                         many touches, and cars that run side by side are not ground down)
-;   ARM_FLASH        12   pictures a lost piece flashes on the bar (about a second)
+;   ARM_FLASH        12   pictures a lost piece flashes on the health blocks (about a second)
 ;   ARM_LIMP_SHIFT    1   a car with no armour: its top speed halved this many times (1: half; 2: a quarter)
 ;   ARM_START        60   pictures after a new race is set up before either weapon may be used (about 5 seconds - it
 ;                         covers the wait on the grid and the first moments after the lights)
@@ -95,8 +99,6 @@ WH_TIME        equ 10
 WH_COOL        equ 60
 WHEEL_DMG      equ 12
 WH_DRAW        equ 12
-ARM_TXT_SH     equ 3            ; the HUD: the gap time sits this many pixels further left, to make room for the bar ...
-ARM_GLY_SH     equ 5            ; ... and the flag and the best-lap clock this many
 ; a car's row of arm_tab (8 bytes; arm_row gives HL at its PIECES):
 ;   -1 what a piece takes (from the card)   0 PIECES left   1 damage taken in the piece it is on   2 FLASH, pictures left
 ;   3 SPIN, TV frames left   4 pictures until a bump counts again   5 pictures until a wheel can hit it again

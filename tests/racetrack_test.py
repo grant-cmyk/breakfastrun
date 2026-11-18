@@ -126,9 +126,11 @@ def free_area():
     if MAP_R0 < 16: a[MAP_R0 * 8:16 * 8, 0:24] = False                    # ... and the mini-map's box where it is taller than 3 rows of squares (track 3: from row 15)
     return a
 
+mug_px = [0]
+NOMUG = 'dmg_bmp' not in open(os.path.join(ROOT, 'build', TAPE + '.sym')).read()   # ARMOUR tapes since 18 Nov 2026: the mug has gone
 def scroll(alone):
     g = Game(TAPE, SRC); g.to_grid(); g.go(alone=alone)
-    bad = pics = offs = 0; seen = set(); worst = None; edge = 0
+    bad = pics = offs = 0; seen = set(); worst = None; edge = 0; mug_px[0] = 0
     start = g.wp; lapped = False; f = 0
     while f < 2600 and not lapped:
         g.steer(); f += 3
@@ -138,6 +140,9 @@ def scroll(alone):
         cars = np.zeros((152, 192), bool)
         for body, ink in car_masks(g, cx, cy): cars |= body
         ok = free_area() & ~spread(squares(grow(cars, 1))) & (want != 255)
+        if NOMUG and g.mem(g.sym['msg_timer'], 1)[0] == 0:               # (... so its corner - rows 16-18, columns 21-23 - is the track's, and is checked
+            ok[16 * 8:19 * 8, 21 * 8:24 * 8] = ~spread(squares(grow(cars, 1)))[16 * 8:19 * 8, 21 * 8:24 * 8] & (want != 255)[16 * 8:19 * 8, 21 * 8:24 * 8]
+            mug_px[0] += 1                                                 #  too, whenever the crew chief's bubble is not up)
         for wx, wy, _ in g.weapon_dots():                                  # (ARMOUR tapes: the tank's shell and the clown's wheels are not scenery either -
             wx -= cx; wy -= cy                                             #  the one square each of their dots is in is left out, as the cars' squares are)
             if 0 <= wx < 192 and 0 <= wy < 152: ok[wy & ~7:(wy & ~7) + 8, wx & ~7:(wx & ~7) + 8] = False
@@ -153,6 +158,7 @@ def scroll(alone):
     who = 'alone' if alone else 'in the pack'
     check(pics > 100 and lapped, '%s: a lap by autopilot, %d pictures looked at' % (who, pics))
     check(bad == 0, '%s: rows 3-15 of every picture match the map to the pixel - road black, grass green, line white - outside the cars\' squares (%d wrong pixels%s)' % (who, bad, '' if worst is None else '; first at camera %d,%d: %d' % worst))
+    if NOMUG: check(mug_px[0] > 50, '%s: and where the mug was (rows 16-18, columns 21-23: it has gone) the track, to the pixel, in %d of those pictures' % (who, mug_px[0]))
     check(len(seen) >= 32 and edge > 1000, '%s: with the view at %d of the 64 pixel offsets, and %d squares that held both grass and road checked' % (who, len(seen), edge))
 
 def rule_squares(g, label, tally):

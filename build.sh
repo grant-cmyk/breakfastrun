@@ -107,6 +107,14 @@ ARC=1; [ "${TRACK:-1}" = "3" ] && ARC=0
 printf 'OPT_ARROWC equ %s               ; RACETRACK: 1 - the corner arrow black over grass, green beside it (option C; not track 3)\n' "${RT_ARROWC:-$ARC}" >> "$ROOT/src/options.asm"
 BAND=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && BAND=1
 printf 'OPT_RTBAND equ %s               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)\n' "${RT_BANDED:-$BAND}" >> "$ROOT/src/options.asm"
+# RT_LAPFIX: your laps when you go off the track a fair bit and come back on further round (src/lap_low.asm; Grant, 18 Nov
+# 2026: "I went off track for a bit, and I seemed to lose a lap"). On for the race track, but not on track 3, which has no
+# room under 0x8000 for it (about 100 bytes; it has 12): there the old rule stays (the next four waypoints only).
+LAPF=0; [ "${RACETRACK:-0}" != "0" ] && [ "${TRACK:-1}" != "3" ] && LAPF=1
+printf 'OPT_RTLAP equ %s                ; RACETRACK: 1 - off the track and back on further round costs no lap (src/lap_low.asm; not track 3)\n' "${RT_LAPFIX:-$LAPF}" >> "$ROOT/src/options.asm"
+# RT_EYES: the race order's faces look left and right before the race (src/plate_slow.asm tw_anim; Grant, 18 Nov 2026: "at
+# the start of the games I want the faces animated looking left and right"). Not on track 3: no room under 0x8000 there.
+printf 'OPT_RTEYES equ %s               ; RACETRACK: 1 - the race order'"'"'s faces look left and right until the lights go green (not track 3)\n' "${RT_EYES:-$LAPF}" >> "$ROOT/src/options.asm"
 printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the window'"'"'s 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)\n' "${RT_ROWS:-19}" >> "$ROOT/src/options.asm"
 # CARDS=1: A TRIAL - THE DRIVER CARDS (Grant, 17 Nov 2026): every car's acceleration, top speed and grip come from its card in
 # tools/driver_cards.txt (ratings out of 10; change a number there and build again - tools/make_cards.py turns them into
