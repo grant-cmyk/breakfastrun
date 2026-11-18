@@ -1020,7 +1020,7 @@ ph_sn1:
 ; turning fast.
 ; ---------------------------------------------------------------------
 SKID_VC   equ 256               ; the computer cars: from 1.0 px a frame, as before
-SKID_STEP equ 64                ; and more for each 0.25 faster (Grant: more skid)
+SKID_STEP equ 64*GAME_SPEED/100 ; and more for each 0.25 faster (Grant: more skid; GAME_SPEED: a slower game, smaller steps)
 SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
 skid:                           ; (the computer cars: you have the grip model)
         ld a,(ix+C_CTRL)        ; a computer car: only while turning fast
@@ -2007,7 +2007,7 @@ TB_X    equ tb
 TB_Y    equ tb+3
 TB_VX   equ tb+5
 TB_VY   equ tb+7
-KICK    equ 0x00C0          ; bounce speed: 0.75 pixels a frame
+KICK    equ 0x00C0*GAME_SPEED/100 ; bounce speed: 0.75 pixels a frame (GAME_SPEED: a slower game, a softer bounce)
 TOUCH   equ 15              ; cars touch closer than this in x and y (12 for the 16 x 16
                             ; cars; 15 for the 20 x 20 ones, Grant 10 Nov 2026)
 bump:
