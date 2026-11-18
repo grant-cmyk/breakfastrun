@@ -16,7 +16,7 @@ import sys, os, math, hashlib
 from rt_lib import *
 TAPE = sys.argv[1] if len(sys.argv) > 1 else 'racer_armour_grip1'
 SRC = os.path.join(ROOT, 'build', TAPE, 'src')
-CARDS_MD5 = {'racer_cards': '4e5e80946f95644d35c4758e21ed3b3b', 'racer_cards_grip1': '8d2a86595e6ccfcf28bdadb35c27f8ad'}   # (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
+CARDS_MD5 = {'racer_cards': '40d10f129d10d6ccee8a946af540e2c7', 'racer_cards_grip1': 'ed5512fe7fbc6afc5db7d3839b0ec70b'}   # (18 Nov 2026, later: the grid's [ boxes moved into the square behind each car - every race-track tape's map changed; re-recorded. Were 4e5e8094..., 8d2a8659...) (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
 YOU, FRANK, SPIKE, BRUNO, JANE = range(5)
 passed = failed = 0
 def check(ok, msg):
@@ -76,7 +76,8 @@ def bumps():
     dj, db = sc.damage(JANE), sc.damage(BRUNO); lj, lb = 6 - sc.row(JANE)[1], 6 - sc.row(BRUNO)[1]
     check(dj == db or lj == 6, 'after %d more rams the tank and the dragster have taken the same damage (%d and %d)' % (n, db, dj))
     check(lb == 1 and lj == min(6, db // per[JANE]) and lj > lb, 'in proportion to their ratings: the dragster (a piece takes %d) has lost %d pieces when the tank (a piece takes %d) loses its first' % (per[JANE], lj, per[BRUNO]))
-    d = ram(YOU, FRANK, 500)
+    sc.hold(BRUNO, 200 + 30 * BRUNO, 250, 0); sc.hold(JANE, 200 + 30 * JANE, 250, 0)    # (the tank and the dragster back to their places first: left on the
+    d = ram(YOU, FRANK, 500)                    #  straight, your car could meet them too - 18 Nov 2026, seen when the grid's [ boxes moved)
     check(d[0] == d[1] > 0 and sc.row(YOU)[0] == per[FRANK], 'your car too: you ram Frank, whose rating is yours, and each takes %d' % d[0])
     for i in range(5): sc.hold(i, 200 + 30 * i, 250, 0)
     g.poke(S['arm_tab'] + 1, [3, 0]); sc.picture(2)
