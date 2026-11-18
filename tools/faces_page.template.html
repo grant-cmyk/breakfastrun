@@ -32,14 +32,14 @@ textarea{width:100%;box-sizing:border-box;min-height:140px;font:12px/1.3 var(--m
 </style>
 <main>
 <h1>Breakfast Run: the drivers' faces</h1>
-<p>Each driver six ways: as in the game now; with the eyes moved; happy; sad; and two new ones, <b>idea 1</b> and <b>idea 2</b>, for trying other expressions (they start as copies of now). Under each name the podium animation plays. <b>Click a square to swap it</b>: paper becomes ink, ink becomes paper; drag to paint the same way. The arrows under each face shift the whole picture one pixel (what falls off one edge comes back on the other). <b>Undo</b> takes back the last change. When you are happy, copy the text and paste it back to Claude.</p>
+<p>Each driver six ways: as in the game now; with the eyes moved; happy; sad; and two new ones, <b>idea 1</b> and <b>idea 2</b>, for trying other expressions (they start as copies of now). Under each name the podium animation plays. <b>Click a square to swap it</b>: paper becomes ink, ink becomes paper; drag to paint the same way. The arrows under each face shift the whole picture one pixel (what falls off one edge comes back on the other); <b>Mirror</b> flips it left to right; <b>Copy</b> takes a face and <b>Paste</b> puts it over another (any driver, any look). <b>Undo</b> takes back the last change. When you are happy, copy the text and paste it back to Claude.</p>
 <div class="bar"><button id="undo">Undo</button><button id="copy">Copy all faces as text</button><button id="reset">Put back the saved faces</button><span id="said"></span></div>
 <div id="drivers"></div>
 <label for="out" class="cap">The faces as text (# is ink)</label>
 <textarea id="out" readonly></textarea>
 </main>
 <script>
-const DATA=/*DATA*/{};const MOODS=['now','eyes','happy','sad','idea1','idea2'];const LABEL={idea1:'idea 1',idea2:'idea 2'};const KEY='br-faces-8';let undo=[];
+const DATA=/*DATA*/{};const MOODS=['now','eyes','happy','sad','idea1','idea2'];const LABEL={idea1:'idea 1',idea2:'idea 2'};const KEY='br-faces-8';let undo=[];let clip=null;
 let faces=JSON.parse(JSON.stringify(DATA.faces));
 try{const s=localStorage.getItem(KEY);if(s){const v=JSON.parse(s);if(v.length===faces.length&&v[0].length===MOODS.length)faces=v}}catch(e){}
 const root=document.getElementById('drivers'),out=document.getElementById('out');
@@ -49,6 +49,7 @@ function draw(cv,art,col,grid){const n=cv.width/16,c=cv.getContext('2d');c.fillS
 function text(){return DATA.keys.map((nm,d)=>MOODS.map((m,k)=>nm+' '+m+'\n'+faces[d][k].join('\n')).join('\n\n')).join('\n\n')}
 function save(){out.value=text();try{localStorage.setItem(KEY,JSON.stringify(faces))}catch(e){}}
 function keep(){undo.push(JSON.stringify(faces));if(undo.length>200)undo.shift()}
+function mirror(art){return art.map(r=>r.split('').reverse().join(''))}
 function shift(art,dx,dy){const n=art.map(r=>r.split(''));const o=n.map(r=>r.slice());for(let y=0;y<16;y++)for(let x=0;x<16;x++)o[(y+dy+16)%16][(x+dx+16)%16]=n[y][x];return o.map(r=>r.join(''))}
 let anims=[],step=0;function tick(){anims.forEach(([c,d,seq])=>draw(c,faces[d][seq[step%4]],DATA.colours[d],false));step++}
 function build(){anims=[];root.textContent='';root.style.cssText='display:flex;flex-direction:column;gap:16px';
@@ -62,6 +63,11 @@ function build(){anims=[];root.textContent='';root.style.cssText='display:flex;f
    const put=e=>{const[x,y]=at(e),r=faces[d][k][y];if(ink===null){keep();ink=r[x]==='#'?'.':'#'}faces[d][k][y]=r.slice(0,x)+ink+r.slice(x+1);re();save()};
    g.addEventListener('pointerdown',e=>{g.setPointerCapture(e.pointerId);ink=null;put(e)});g.addEventListener('pointermove',e=>{if(e.buttons&&ink!==null)put(e)});
    const nu=document.createElement('div');nu.className='nudge';[['\u2191',0,-1,'up'],['\u2193',0,1,'down'],['\u2190',-1,0,'left'],['\u2192',1,0,'right']].forEach(([t,dx,dy,w])=>{const bt=document.createElement('button');bt.textContent=t;bt.setAttribute('aria-label','shift '+nm+' '+(LABEL[m]||m)+' '+w);bt.addEventListener('click',()=>{keep();faces[d][k]=shift(faces[d][k],dx,dy);re();save()});nu.appendChild(bt)});
+   const said=()=>document.getElementById('said');
+   [['Mirror','mirror',()=>{keep();faces[d][k]=mirror(faces[d][k]);re();save()}],
+    ['Copy','copy',()=>{clip=faces[d][k].slice();said().textContent='Copied '+nm+' '+(LABEL[m]||m)+'. Press Paste under another face.'}],
+    ['Paste','paste onto',()=>{if(!clip){said().textContent='Copy a face first.';return}keep();faces[d][k]=clip.slice();re();save();said().textContent='Pasted onto '+nm+' '+(LABEL[m]||m)+'.'}]]
+    .forEach(([t,w,f])=>{const bt=document.createElement('button');bt.textContent=t;bt.setAttribute('aria-label',w+' '+nm+' '+(LABEL[m]||m));bt.addEventListener('click',f);nu.appendChild(bt)});
    box.appendChild(cap);box.appendChild(g);box.appendChild(nu);row.appendChild(box)});root.appendChild(s)});save()}
 document.getElementById('copy').addEventListener('click',()=>{const said=document.getElementById('said');navigator.clipboard.writeText(text()).then(()=>said.textContent='Copied.',()=>{out.focus();out.select();said.textContent='Select the text below and copy it.'})});
 document.getElementById('undo').addEventListener('click',()=>{const u=undo.pop();if(!u)return;faces=JSON.parse(u);build();save();document.getElementById('said').textContent='Undone.'});
