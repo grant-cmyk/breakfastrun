@@ -3108,3 +3108,65 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   left: the wheels stay in. 32/32. racetrack_test 19/19.
 - 70%: tools/build_slow.sh now also builds build/racer_armour_slow70.tap (Grant: "Any chance of a 70% speed"; 50% "too slow
   but much smoother").
+
+## 2026-11-18 23:43 SAST - RACE or COMBAT: a traditional race, made competitive; the rubber band as a second tape
+- Grant: "Now I need a game option - combat or race. Race produces a bunch of the same looking cars, but different colours
+  and numbers. I would like to try a traditional race ... the idea is to make it competitive so you don't run away with it.
+  70% speed is good." Then: "Number won't be legible - that's fine" (no numbers on the cars).
+- TAPES (behind RACEMODE=1, with ARMOUR=1; ELASTIC=1 for the rubber band; every other tape byte for byte as it was):
+  `bash tools/build_race.sh` -> build/racer_race70.tap (no rubber band) and build/racer_race70_elastic.tap (rubber band). Both
+  are the 70% armour GRIP1 tape with the gentler NOS, and both hold both games. Also in tools/build_racetrack_tapes.sh.
+- THE TITLE: the row "3 CHOOSE YOUR PLAYER" (it did nothing) is now "M  MODE: RACE" - M changes it to COMBAT and back. RACE
+  to start with; the choice is kept from race to race (rmode, title.asm).
+- COMBAT: the armour tape's game exactly (cards, personalities, armour, health blocks, shells, wheels, their limits).
+- RACE (src/race_td.asm, race_low.asm, race.asm; the switches are a few numbers and first bytes put in place before each race
+  by rm_setup, so nothing extra runs in the race):
+  - every car is the racer (MAX's car) in its own colour - you red, then cyan, yellow, magenta, white. NO NUMBERS: a 5 x 7 box
+    with a 3 x 5 digit cut out of it on each roof was built and worked (you 7, cyan 3, yellow 4, magenta 5, white 9), but Grant
+    judged it illegible at this size and it was taken out (160 bytes back). Not put in the race order either: the row's
+    colour already says which car it is.
+  - no armour lost (arm_bump returns at once), no shells or wheels (arm_tick returns at once), no driver steering at
+    another car (card_near returns at once): a bump is just a bump. The faces in the race order stay (the drivers).
+  - the race order's right-hand squares (29-31): the GAP TO THE CAR AHEAD in small letters (each car's gap to the leader
+    at the last checkpoint it passed, hud.asm's cp_hook, less that of the car ahead; nothing for the leader), in the row's
+    own colour. A place's gap is brought up to date one picture in five, when no row of the order needs drawing again.
+  - THE COMPUTER CARS: all four the same driver (ai_tune.asm, the RACE part): REACH 60 (the most that still counts every
+    waypoint), line 3,2, EASE 0, FUSS 2, PACE 16, REACT 0, ERR 2. On MAX's card as it is a computer car slows to 0.82 px
+    a frame for every bend (70% of its top speed); with the best driving that fits they lapped 24.7 s against the good
+    driver's 23.7, and he won 10 of 10 by 5-10 s. So THEIR GRIP is raised (AI_R_GRIP 107/64, x1.67): on this track they
+    then neither slide nor brake for a bend at their top speed. Their top speed and acceleration stay MAX's (1.18 px a
+    frame at 70%, the same as yours). This is the one place RACE is not "the same card for all" - say if it should be.
+  - NOS: the pickups as in COMBAT (the autopilots never use it - not measured).
+  - THE RUBBER BAND (racer_race70_elastic.tap, race.asm el_tick, every picture): a computer car behind the leader gets
+    +1/64 of its push (+2.3% top speed at 70%) for every waypoint it is behind (32 px, about half a second), up to +3/64
+    (+7%) from 3 waypoints (about 1.6 s) back; a computer car more than 4 waypoints (about 2 s) ahead of you eases off
+    1/64 (-2.3%). Nothing pushes once any car has finished.
+- MEASURED (tests/race_measure.py: 3 laps, you from the back of the grid, race N with its own luck; GOOD = rt_ace.py LOOK
+  104 LIFT 30, CAREFUL = rt_lib's middle-of-the-road autopilot; neither uses NOS):
+
+| tape, driver (5 races) | your places | wins | gap to the winner when beaten | order changes a race | flying laps: you / the 4 computer cars |
+|---|---|---|---|---|---|
+| race70, good | 2, 5, 1, 5, 1 | 2 | 1.3, 1.7, 3.3 s (mean 2.1) | 25 | 23.8 / 24.0-24.3 |
+| race70, careful | 5, 5, 5, 5, 5 | 0 | 15.0, 13.5, 15.0, 12.9, 14.6 | 3 | 28.4 / 23.7-24.2 |
+| race70_elastic, good | 5, 1, 4, 3, 4 | 1 | 2.1, 1.3, 1.0, 2.4 (mean 1.7) | 25 | 23.9 / 24.0-24.3 |
+| race70_elastic, careful | 5, 5, 5, 5, 5 | 0 | 13.8, 11.9, 11.0, 11.0, 11.8 | 11 | 28.0 / 24.4-24.9 |
+
+  Over 10 races: race70 good won 5, mean place 2.2, 2.2 s behind when beaten; the computer cars within 1-2% of each other a
+  lap. The careful driver is 4 s a lap slower than the computer cars and loses by 11-15 s on either tape: the rubber band
+  is too small to close that, as asked ("subtle"); it does make the computer cars' own race closer and gives him a few
+  more places changing hands (11 against 3 a race). Rubber-band settings tried (good driver, 10 races): push every 2
+  waypoints, easing for ANY car ahead of you - you won 8 of 10 (the easing helps you from the back more than the push
+  hurts); easing only 2 s ahead - 5 of 10; the one built - 3 of 10, beaten by 0.9 s on average.
+- MEMORY: racer_race70 371 bytes free in the program, 8 under 0x8000 (the cards' rows and the title's few bytes), 47 in the
+  table block at TD (the set-up and the gaps live there); racer_race70_elastic 293 in the program.
+- SPEED (tests/stage_profile.py, 8 s): pictures a second start / pack - combat tape racer_armour_slow70 11.6 / 11.0;
+  racer_race70 12.0 / 10.6; elastic 11.9 / 10.5 (the pack drives differ - in RACE the cars stay together, more of them in view).
+- TESTS: tests/race_mode_test.py 16/16 on both tapes (the title and its memory across a race, the same picture for every
+  car at 16 headings, a whole RACE with no weapon or armour activity though the cars bump, the gap shown = the gap to the
+  car ahead, the squares in the row's colour; COMBAT's code as assembled and its health blocks). armour_test 32/32 on both
+  in COMBAT (RT_MODE=combat - rt_lib now pokes the mode when asked); racetrack_test 19/19 in RACE and COMBAT (it now reads
+  each car's picture as draw_car does: in RACE every car the racer); rt_fixed_test, faces_look_test, lap_offtrack_test pass;
+  two_player_test 19/19, armour_test 32/32 on the old tapes. Pictures: docs/design/racetrack/race_mode/ (race_title.png,
+  race_grid.png, race_mid.png at 3x; race_close_finish.mp4 - the last 12 s of race 3, you winning by 0.2 s, real speed, 2x).
+- NOT VERIFIED: nobody has driven it; whether the races feel fair or fun; the computer cars' extra grip is visible to a
+  sharp eye (they never slide); NOS's effect on the balance.
