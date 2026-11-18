@@ -95,6 +95,39 @@ ta_1:
         cp NCARS
         jr nz,ta_1
         ret
+        if OPT_RTEYES
+; TW_ANIM (RACETRACK): the race order's faces look left and right before the race (Grant, 18 Nov 2026: "at the start of
+; the games I want the faces animated looking left and right - as per our sprites"). As the title's row does (t_anim): the
+; everyday face and the eyes in turn, a step every 32 TV frames (pa_step), each row a step on from the one above, as the
+; podium's are (pa_one), so they do not all move together. From the moment the race screen is up until the lights go
+; green; then the rows give way to the gaps as before. Called every picture (dmg_anim); it draws only when the step changes.
+tw_anim:
+        ld a,(race_on)
+        or a
+        ret nz
+        call pa_step            ; E = the step
+        ret z
+        ld hl,shown_order       ; the car each row shows (0xFF: not drawn yet - left alone)
+        ld b,TOWER_Y            ; B = its first character row
+twa_1:
+        ld a,(hl)
+        inc hl
+        cp NCARS
+        jr nc,twa_2
+        push hl
+        ld c,30                 ; the face's two columns: 30-31
+        res 1,e                 ; (just the two looks: everyday and eyes)
+        call pa_car             ; (it keeps B, C, D and E)
+        pop hl
+twa_2:
+        inc e
+        inc b
+        inc b
+        ld a,b
+        cp TOWER_Y+2*NCARS
+        jr nz,twa_1
+        ret
+        endif
 pf_row:                         ; a row: D its left byte, E its right, solid between (clear if D is 0)
         push hl
         push bc
@@ -272,6 +305,9 @@ dk_4:
 ; 2026: "animate it so that the steam out of the top looks like steam coming out of the cup ... just
 ; those top bits".)
 dmg_anim:
+        if OPT_RTEYES
+        call tw_anim            ; (RACETRACK: before the race, the race order's faces look about - below)
+        endif
         ld a,(renders)
         and 7
         jr nz,da_2
