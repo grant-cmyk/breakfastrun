@@ -7,5 +7,5 @@
 cd_race:
         rept 4
         dw CD_R_SLIDE*AI_R_GRIP/64            ; (their grip: ai_tune.asm, AI_R_GRIP)
-        db CD_R_BRAKE*AI_R_GRIP/64, CD_R_VSW, CD_R_KA AND 255, CD_R_KS AND 255, 0, 0
+        db CD_R_BRAKE*AI_R_BRAKEG/64, CD_R_VSW, CD_R_KA AND 255, CD_R_KS AND 255, 0, 0
         endm

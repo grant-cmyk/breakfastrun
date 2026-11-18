@@ -3171,3 +3171,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   race_grid.png, race_mid.png at 3x; race_close_finish.mp4 - the last 12 s of race 3, you winning by 0.2 s, real speed, 2x).
 - NOT VERIFIED: nobody has driven it; whether the races feel fair or fun; the computer cars' extra grip is visible to a
   sharp eye (they never slide); NOS's effect on the balance.
+
+## 2026-11-18 SAST - race mode: the computer cars skid a bit
+- Grant (of the race tapes): "that was tough and good. The computer cars need to skid a bit more". Their RACE grip was
+  107/64 of MAX's card, so at 70% they never reached their slide speed (1.37 px a frame against a top speed of 1.19).
+  src/ai_tune.asm: AI_R_GRIP 107 -> 88 (they slide above 1.13); their corner braking kept as tuned (AI_R_BRAKEG 107,
+  src/race_low.asm). tests/race_measure.py now prints how much of the time each computer car is in a slide.
+- Measured, 5 races of 3 laps, the good driver from the back: race70 - in a slide 8-13% of the time (0% before); won 2 of
+  5, mean place 1.8, 1.1 s behind when beaten, laps 24.2-24.5 against 23.8. Elastic tape - in a slide 7-14%; won 4 of 5,
+  mean place 1.2 (small samples: earlier runs of the same settings differed by two wins). 270/210 tried: won 5 of 5.
+- race_mode_test 16/16.

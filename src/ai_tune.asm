@@ -220,7 +220,11 @@ AI_R_PACE  equ 16
 AI_R_REACT equ 0
 AI_R_ERR   equ 2
 AI_R_SLIP  equ 12
-AI_R_GRIP  equ 107
+AI_R_GRIP  equ 88                ; (was 107: Grant, 18 Nov 2026, "the computer cars need to skid a bit more" - at 88 they slide
+                                  ; above 1.13 px a frame, just under their top speed: in a slide about 10% of the time they are
+                                  ; moving; the good driver still won 2 of 5, 2.2 s behind when beaten, laps unchanged. 270/210 = 82:
+                                  ; you won 5 of 5. tests/race_measure.py prints the share)
+AI_R_BRAKEG equ 107               ; ... the speed they brake down to for a bend stays as tuned (it went with AI_R_GRIP until then)
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
 ; behind the leader gets one 64th more push (at 70% speed a 64th is 2.3% of its top speed) for every 2^EL_SH waypoints it
 ; is behind (waypoints are 32 pixels apart, about half a second at speed), up to EL_MAX 64ths; and one more than EL_AHEAD
