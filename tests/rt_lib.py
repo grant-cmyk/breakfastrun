@@ -36,6 +36,9 @@ class Game:
         while self.mem(0x5800 + 8 * 32 + 10, 1)[0] != 0x7A and n < 400: self.run(5); n += 1
         self.run(25)
         if 'jin_on' in self.sym: self.rpc('write', addr=self.sym['jin_on'], value=0xFF)
+        # (RACE or COMBAT tapes, tools/build_race.sh: RT_MODE=combat or race chooses the game, as the title's M would - the
+        #  tests written for the armour tape run on these in COMBAT. Unset: the game the tape starts with, RACE.)
+        if os.environ.get('RT_MODE') and 'rmode' in self.sym: self.poke(self.sym['rmode'], [int(os.environ['RT_MODE'] == 'race')])
         self.rpc('press', keys=key, frames=10, after=5)
         n = 0
         while self.w16(self.sym['renders']) == 0 and n < 200: self.run(5); n += 1

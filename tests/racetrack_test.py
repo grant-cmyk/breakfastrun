@@ -97,6 +97,7 @@ def car_masks(g, cx, cy):
     for i in range(5):
         c = allc[i * S['c_size']:(i + 1) * S['c_size']]
         x, y, ang, kind = c[1] + 256 * c[2], c[4] + 256 * c[5], c[10], c[22]
+        if 'dc_kmask' in S: kind &= g.mem(S['dc_kmask'] + 1, 1)[0]     # (RACE or COMBAT tapes: in RACE draw_car makes every car the racer)
         e = g.tab[4 * (kind * 16 + ((ang >> 2) & 15)):][:4]
         addr, first, n = e[0] + 256 * e[1], e[2], e[3] & 0x7F; flip = e[3] & 0x80
         body = np.zeros((152, 192), bool); ink = np.zeros((152, 192), bool)
