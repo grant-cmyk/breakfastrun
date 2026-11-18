@@ -62,9 +62,12 @@ one racer_cards_grip1  GRIP1=1 CARDS=1 $T OUT=racer_cards_grip1 BDIR=racer_cards
 # armour and weapons on the driver cards (tools/build_armour.sh builds just these two; src/armour_tune.asm has the numbers)
 one racer_armour        ARMOUR=1 CARDS=1 $T OUT=racer_armour BDIR=racer_armour
 one racer_armour_grip1  GRIP1=1 ARMOUR=1 CARDS=1 $T OUT=racer_armour_grip1 BDIR=racer_armour_grip1
-# RACE or COMBAT at 70% (tools/build_race.sh builds just these two; src/race.asm says what RACE is)
+# RACE or COMBAT at 70% and 75% (tools/build_race.sh builds just these four; src/race.asm says what RACE is)
 R="RACEMODE=1 ARMOUR=1 CARDS=1 GRIP1=1 NOS=2 NOS_FR=100 GAME_SPEED=70 $T"
 one racer_race70          $R OUT=racer_race70 BDIR=racer_race70
 one racer_race70_elastic  ELASTIC=1 $R OUT=racer_race70_elastic BDIR=racer_race70_elastic
+R="RACEMODE=1 ARMOUR=1 CARDS=1 GRIP1=1 NOS=2 NOS_FR=100 GAME_SPEED=75 $T"      # (Grant, 19 Nov 2026: "Any chance of speed 75%?")
+one racer_race75          $R OUT=racer_race75 BDIR=racer_race75
+one racer_race75_elastic  ELASTIC=1 $R OUT=racer_race75_elastic BDIR=racer_race75_elastic
 # and the plain game last
 bash build.sh > /tmp/rt_build_plain.log 2>&1 && echo "racer (the plain game): built last, src/options.asm is the plain game's again"

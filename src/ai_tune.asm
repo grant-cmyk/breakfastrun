@@ -233,6 +233,16 @@ AI_R_BRAKEG equ 107               ; the speed they brake down to for a bend, in 
 ; run side by side and pass, where on one line they queue. With these the computer cars changed places with EACH OTHER
 ; about 17 times a race (3 with the four the same), and ran nose-to-tail behind another car about a third of the time
 ; (about half). Their laps within 1.5% of each other; the good driver won 9 of 20, 1.9 s behind when beaten.
+; AT 75% SPEED (Grant, 19 Nov 2026: "Any chance of speed 75%?" - the racer_race75 tapes, tools/build_race.sh): the same
+; drivers, but each car one or two 64ths slower on the straights than at 70% (AI_R75, in each KS below). At 75% your car's
+; tyres give a little less in the bends than the speed gains (the good driver's best lap 22.8 s, 3.5% quicker than at 70%)
+; while the computer cars, which hardly brake, gained 8% (22.2 s): with the 70% numbers the good driver won 0 of 20. With
+; these: 11 of 20, 1.5 s behind when beaten (each 64th off the straight is about 0.6 s a lap at 75%).
+        if GAME_SPEED > 70
+AI_R75     equ 1
+        else
+AI_R75     equ 0
+        endif
 ; CYAN - THE SMOOTH ONE: a tight, tidy line (0 to +1 px off it), lifts early for a bend (EASE 2), almost never wrong;
 ;        its car grips best (it never slides) but has MAX's top speed - the others are quicker on the straights
 AI_RC_REACH equ 56
@@ -245,7 +255,7 @@ AI_RC_REACT equ 0
 AI_RC_ERR   equ 1
 AI_RC_GRIP  equ 104
 AI_RC_KA    equ 0
-AI_RC_KS    equ 0
+AI_RC_KS    equ 0-2*AI_R75
 ; YELLOW - THE LATE BRAKER: cuts every corner as hard as it may (REACH 60), never lifts, twitchy hands (FUSS 3) - in a
 ;        slide more than a quarter of the time - and more small mistakes; its own line, a few pixels to one side; its car
 ;        the fastest on the straights (+4.6%) and the least grip
@@ -259,7 +269,7 @@ AI_RY_REACT equ 0
 AI_RY_ERR   equ 5
 AI_RY_GRIP  equ 76
 AI_RY_KA    equ 0
-AI_RY_KS    equ 2
+AI_RY_KS    equ 2-AI_R75
 ; MAGENTA - THE WIDE ONE: keeps a little nearer the middle of the road (REACH 54), on its own line a few pixels to the
 ;        other side, lifts for the bends (EASE 1), steady hands; its car is the quickest away from a slow corner (+9%
 ;        acceleration), a touch quicker on the straights (+2.3%), grips a little better than MAX's computer car did
@@ -273,7 +283,7 @@ AI_RM_REACT equ 0
 AI_RM_ERR   equ 2
 AI_RM_GRIP  equ 92
 AI_RM_KA    equ 6
-AI_RM_KS    equ 1
+AI_RM_KS    equ 1-2*AI_R75
 ; WHITE - THE ERRATIC ONE: its line wanders the most (-8 to +7 px), twitchy hands, never lifts, the most mistakes (about
 ;        one a lap) - and quick when it gets it right: its car +2.3% on the straights, a little less grip
 AI_RW_REACH equ 60
@@ -286,7 +296,7 @@ AI_RW_REACT equ 0
 AI_RW_ERR   equ 10
 AI_RW_GRIP  equ 80
 AI_RW_KA    equ 0
-AI_RW_KS    equ 1
+AI_RW_KS    equ 1-AI_R75
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
 ; behind the leader gets one 64th more push (at 70% speed a 64th is 2.3% of its top speed) for every 2^EL_SH waypoints it
 ; is behind (waypoints are 32 pixels apart, about half a second at speed), up to EL_MAX 64ths; and one more than EL_AHEAD
