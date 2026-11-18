@@ -4,7 +4,7 @@ Usage: python3 tools/import_faces.py pasted.txt   (blocks: NAME now|eyes|happy|s
 Grant's trial expressions, 18 Nov 2026: kept in face_moods.txt, not used by the game until he says where)"""
 import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-KEY = {'YOU': 'YOU', 'CYAN': 'CYAN', 'SLIM': 'WHITE', 'PINK': 'PINK', 'GREEN': 'GREEN', 'SPECS': 'SPECS', 'DOT': 'DOT'}
+KEY = {'YOU': 'YOU', 'CYAN': 'CYAN', 'SLIM': 'WHITE', 'WHITE': 'WHITE', 'PINK': 'PINK', 'GREEN': 'GREEN', 'SPECS': 'SPECS', 'DOT': 'DOT'}
 d = {}
 for m in re.finditer(r'(\w+) (now|eyes|happy|sad|idea1|idea2)\n((?:[#.]{16}\n?){16})', open(sys.argv[1]).read()):
     rows = m.group(3).split(); assert len(rows) == 16, m.group(0)[:20]
