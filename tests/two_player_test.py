@@ -6,15 +6,15 @@
   4. one player (the title's 1) on the two-player tape is the one-player game: a scripted drive's car positions are
      the same, TV frame by TV frame, as on the same build without the switch
 Usage: python3 tests/two_player_test.py [tape with TWOP=1] [the same build without it]   (names in build/, no .tap;
-       default racer_2p and racer_tight_w56s_normal; build folders under build/: TWOPDIR, OFFDIR)"""
+       default racer_2p and racer_tight_w56s_normal_pole; build folders under build/: TWOPDIR, OFFDIR)"""
 import os, sys, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from twop_lib import Game2, WIN_W, WIN_H
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 TAP2 = sys.argv[1] if len(sys.argv) > 1 else 'racer_2p'
-TAP1 = sys.argv[2] if len(sys.argv) > 2 else 'racer_tight_w56s_normal'
+TAP1 = sys.argv[2] if len(sys.argv) > 2 else 'racer_tight_w56s_normal_pole'   # (18 Nov 2026: the ordinary tapes start you last; the two-player tapes, and these, on pole)
 SRC2 = os.path.join(ROOT, 'build', os.environ.get('TWOPDIR', 'racer_2p'), 'src')
-SRC1 = os.path.join(ROOT, 'build', os.environ.get('OFFDIR', 'tight_w56s_normal'), 'src')
+SRC1 = os.path.join(ROOT, 'build', os.environ.get('OFFDIR', 'tight_w56s_normal_pole'), 'src')
 PASS = FAIL = 0
 def check(ok, what):
     global PASS, FAIL

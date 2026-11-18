@@ -158,6 +158,9 @@ def rule_squares(g, label, tally):
     masks = car_masks(g, cx, cy); body, ink = masks[0]
     others = np.zeros_like(body)
     for b, i in masks[1:]: others |= spread(squares(grow(b, 1)))
+    for wx, wy, _ in g.weapon_dots():                                     # (ARMOUR: the tank's shell and the clown's wheels are not scenery -
+        wx -= cx; wy -= cy                                                #  their dots' squares are left out, as the other cars' are; 18 Nov
+        if 0 <= wx < 192 and 0 <= wy < 152: others[wy & ~7:(wy & ~7) + 8, wx & ~7:(wx & ~7) + 8] = True   # 2026: with you last on the grid the tank fires at you)
     rim = grow(body, 1); wrong = []
     for r, c in zip(*np.nonzero(squares(body))):
         s = (slice(r * 8, r * 8 + 8), slice(c * 8, c * 8 + 8))
@@ -179,6 +182,9 @@ def rule_squares(g, label, tally):
     back = int(((px != want) & ~body & area).sum()); carsc = int(((px != INKS[0]) & ink & area).sum())
     far = int(((px != want) & ~rim & area & ~((want == 7) & spread(squares(body)))).sum())   # ... and what the rule never allows
     wred = int(((px != want) & ~body & area & (want == 7) & (px == INKS[0])).sum())            # (of the background score: white shown in the car's colour)
+    if far and os.environ.get('WHERE'):                                   # WHERE=1: where those pixels are (window x, y, shown, wanted)
+        ys, xs = np.nonzero((px != want) & ~rim & area & ~((want == 7) & spread(squares(body))))
+        print('   %s: %d pixels the rule never allows, e.g.' % (label, far), [(int(x), int(y), int(px[y, x]), int(want[y, x])) for y, x in zip(ys[:6], xs[:6])])
     return wrong, back, carsc, far, wred
 
 def rule():

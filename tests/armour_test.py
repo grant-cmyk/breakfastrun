@@ -16,7 +16,7 @@ import sys, os, math, hashlib
 from rt_lib import *
 TAPE = sys.argv[1] if len(sys.argv) > 1 else 'racer_armour_grip1'
 SRC = os.path.join(ROOT, 'build', TAPE, 'src')
-CARDS_MD5 = {'racer_cards': 'b7bafc8ab01b0490094e1484e4e456a4', 'racer_cards_grip1': 'f71ba17e07232abd940376bd4e98628f'}   # (18 Nov 2026: the corner arrow's option C, then your car's grass slowdown halved, changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
+CARDS_MD5 = {'racer_cards': '4e5e80946f95644d35c4758e21ed3b3b', 'racer_cards_grip1': '8d2a86595e6ccfcf28bdadb35c27f8ad'}   # (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
 YOU, FRANK, SPIKE, BRUNO, JANE = range(5)
 passed = failed = 0
 def check(ok, msg):
@@ -108,6 +108,8 @@ def bar():
     seen = []; n = 0
     while n < 40:
         sc.picture(); n += 1; r = sc.row(JANE)
+        p = list(g.mem(S['order'], 5)).index(JANE)      # (her row now: holding the two cars can change the order - 18 Nov 2026,
+                                                          # with you last on the grid it does)
         if r[1] == 3: seen.append((r[3], sc.bars()[p][3]))
         if r[1] == 3 and r[3] == 0 and len([s for s in seen if s[0] == 0]) >= 4: break
     fl = [s[1] for s in seen if s[0] > 0]; after = [s[1] for s in seen if s[0] == 0]

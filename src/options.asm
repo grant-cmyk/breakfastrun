@@ -21,6 +21,7 @@ OPT_RT equ 0                   ; 1: the race track trial - black road, green gra
 OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)
 OPT_GRIP1 equ 0                ; 1: your car moved, and its grip worked out, once a picture (GRIP1=1 bash build.sh)
 OPT_2P equ 0                   ; 1: two players in one view (TWOP=1 RACETRACK=1 bash build.sh)
+OPT_GRIDBACK equ 0             ; 1: you start last on the grid (race-track builds; GRID_BACK=0 bash build.sh for pole)
 OPT_2PPTS equ 0                ; two players, the POINTS rule: first to this many points (0: the LEASH rule; TWOP_PTS=3)
 OPT_REACT1 equ 0               ; 1: the computer cars decide every 8th TV frame, not every 4th (REACT1=1 bash build.sh)
 OPT_RTPUP equ 0                ; RACETRACK: 1 - the place plate is drawn from the program, not from under 0x8000 (tracks 1 and 2)

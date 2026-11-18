@@ -66,9 +66,8 @@ arm_bar:
         ld a,(hl)
         inc a
         ret z
-        ld hl,order
-        add hl,de
-        ld a,(hl)
+        dec a                   ; the car the row SHOWS (not the one the race order has there now: two cars that swapped
+        and 7                   ; and swapped back before the row was drawn again left a row with the other's bar - 18 Nov 2026)
         call arm_row_a
         ld d,(hl)               ; D = its pieces
         inc hl

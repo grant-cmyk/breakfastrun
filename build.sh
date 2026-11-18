@@ -90,6 +90,9 @@ printf 'OPT_GRIP1 equ %s                ; 1: your car moved, and its grip worked
 # TWOP=1: A TRIAL - the title's 2 starts a two-player race in one shared view (src/twoplayer.asm; Grant, 17 Nov 2026: "two
 # players would exist in the same screen"). With RACETRACK=1; it needs about 900 bytes. TWOP_PTS=N with it: the POINTS rule.
 printf 'OPT_2P equ %s                   ; 1: two players in one view (TWOP=1 RACETRACK=1 bash build.sh)\n' "${TWOP:-0}" >> "$ROOT/src/options.asm"
+# GRID_BACK: on the race-track builds you start last on the grid (Grant, 18 Nov 2026); not with two players. GRID_BACK=0: on pole.
+GB=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TWOP:-0}" != "1" ] && [ "${GRID_BACK:-1}" != "0" ] && GB=1
+printf 'OPT_GRIDBACK equ %s             ; 1: you start last on the grid (race-track builds; GRID_BACK=0 bash build.sh for pole)\n' "$GB" >> "$ROOT/src/options.asm"
 printf 'OPT_2PPTS equ %s                ; two players, the POINTS rule: first to this many points (0: the LEASH rule; TWOP_PTS=3)\n' "${TWOP_PTS:-0}" >> "$ROOT/src/options.asm"
 # REACT1=1: A TRIAL SWITCH - each computer car decides how to steer every 8th TV frame, not every 4th (their REACT setting
 # one higher). Quicker in the pack, but they turn in a little later: off unless asked for (PROJECT-LOG, 17 Nov 2026).

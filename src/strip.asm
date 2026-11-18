@@ -666,7 +666,8 @@ ot_out:
         ld (dmg),a              ; mended
         if OPT_ARMOUR
         call arm_mend           ; (ARMOUR: your armour whole again - armour.asm)
-        endif
+        xor a                   ; (arm_mend leaves A as it likes: without this the can's tiles became tile 1, a solid block -
+        endif                   ; the white rectangle Grant saw, 18 Nov 2026)
         ld b,a
         call ot_set             ; and the can is gone
         call rnd

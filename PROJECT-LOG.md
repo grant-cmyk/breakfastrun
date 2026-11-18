@@ -2941,3 +2941,24 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - tests/racetrack_test.py's grass check follows: 58-70% for your car where RT_GRASS_YOU is on (20-25% otherwise).
 - All 38 race-track tapes rebuilt; the plain game unchanged. racetrack_test 15/15 (armour GRIP1), 16/16 (track 3 green);
   armour_test 28/28 after re-recording the cards tapes' md5s again; two_player_test 19/19.
+
+## 2026-11-18 SAST - the white rectangle, you last on the grid, your car slower, a bar fault
+- THE WHITE RECTANGLE (Grant: "sometimes picking up a NOS or health - a white rectangle is left"): the oil can (health).
+  On ARMOUR tapes, picking it up called arm_mend, which left A non-zero, and the next lines wrote A into the can's two map
+  tiles - tile 1, a solid block, in a white square. src/strip.asm ot_out: `xor a` after arm_mend. Found by a scripted hunt
+  for solid white blocks in the window over 3,000 TV frames (39 hits before, 0 after); the NOS canisters were never involved.
+- YOU LAST ON THE GRID (Grant: "start our person at the back of the grid"): GRID_BACK, on for race-track builds except
+  two players (tools/make_world.py: you GRID[4], the others one place up - CYAN pole, WHITE, PINK, GREEN; build.sh writes
+  OPT_GRIDBACK; src/hudtext_gfx.asm grid_order 1,4,3,2,0). GRID_BACK=0 for pole.
+- YOUR CAR SLOWER (Grant: "make our car a bit slower"): MAX's speed card 5 -> 4 (tools/driver_cards.txt): top speed 1.75 ->
+  1.70 px a frame (measured 1.70 on the road; 1.12 on the grass).
+- A FAULT THE NEW GRID SHOWED: an armour bar could be the wrong car's for a few pictures after two cars swapped and swapped
+  back before the row was drawn again - arm_bar drew for the car the race order has in that place, not the one the row
+  shows. src/armour_low.asm: it now reads shown_order.
+- Tests: racetrack_test 15/15 (armour GRIP1; its slide check now leaves out the tank's shell like the other checks do -
+  he fires at you now that you start behind him); 16/16 track 2; armour_test 28/28 (the dragster-flash check finds her
+  row each picture; cards md5s re-recorded); two_player_test 19/19 against new pole twins of the tight tapes
+  (racer_tight_w56s_normal_pole, _grip1_pole: the two-player tapes keep you on pole). 40 race-track tapes; plain game unchanged.
+- Mock-ups for health in the race order (Grant: "The vertical health bars are not visible, and the coffee cup is no longer
+  relevant"): docs/design/racetrack/health_options.png (A-D), then variations of C (Grant: "for health can you do
+  variations of C"): docs/design/racetrack/health_c_options.png (C, C2-C5).

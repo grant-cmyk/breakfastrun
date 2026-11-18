@@ -1,10 +1,11 @@
 BREAKFAST RUN DRIVER CARDS v2
 (Grant's ratings and notes, pasted 17 Nov 2026 from the driver cards page, as he typed them. Ratings are out of 10.
+ 18 Nov 2026: MAX's speed 5 -> 4 (Grant: "make our car a bit slower"): top speed 1.75 -> 1.70 px a frame.
  v2, 17 Nov 2026: the ARMOUR ratings, confirmed by Grant, and each card's weapon line. The two weapon lines that are not
  "None yet." are worded from Grant's message of 17 Nov, not copied from the cards page - paste the page's own words over them.)
 
 == MAX / RACER ==
-acceleration 5, speed 5, grip 4, armour 5
+acceleration 5, speed 4, grip 4, armour 5
 weapon: None yet.
 behaviour: The all-rounder. Nothing stands out and nothing lets it down. Slides in a way you can read and catch.
 note: Our racer - an all rounder, although grip is probably its weakenss

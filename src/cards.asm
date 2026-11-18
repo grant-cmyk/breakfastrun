@@ -28,7 +28,7 @@
 ;    9         77                7.7                  47                   26              29        39
 ;   10         92                9.2                  56                   31              35        46
 ; THE CARS
-;   MAX    RACER      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17, a piece of armour takes 38
+;   MAX    RACER      acceleration 5, speed 4, grip 4, armour 5 -> top speed 1.70 px a frame, push 64, tyres 10,5,5,3, slides above 1.17, a piece of armour takes 38
 ;   FRANK  COUPE      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 1.17, a piece of armour takes 38
 ;   JANE   DRAGSTER   acceleration 7, speed 8, grip 1, armour 2 -> top speed 1.91 px a frame, push 74, tyres 6,3,3,2, slides above 0.82, a piece of armour takes 26
 ;   BRUNO  TANK       acceleration 4, speed 2, grip 8, armour 9 -> top speed 1.64 px a frame, push 59, tyres 17,9,8,5, slides above 1.64, a piece of armour takes 77; weapon: Shoots a shell straight ahead. A hit spins the other car where it is.
@@ -36,7 +36,7 @@
 ;   SPECS  SALOON     acceleration 4, speed 5, grip 3, armour 5 -> top speed 1.75 px a frame, push 59, tyres 9,4,4,3, slides above 1.05, a piece of armour takes 38
 ;   DOT    TRUCK      acceleration 3, speed 3, grip 8, armour 8 -> top speed 1.67 px a frame, push 54, tyres 17,9,8,5, slides above 1.64, a piece of armour takes 65
 ; ---- your car (MAX): its top speed, its push, and its tyres at each level of grip you buy (a level = a point of grip) ----
-CD_TOP  equ 448
+CD_TOP  equ 434
 CD_PUSH equ 64
 CD_L1_G equ 10
 CD_L1_Q equ 5
@@ -60,7 +60,7 @@ CD_L5_S equ 8
 CD_L5_B equ 5
 ; ---- every driver's card, as numbers (for the choose screen to come: nothing is stored for these) ----
 CD_MAX_A equ 5
-CD_MAX_S equ 5
+CD_MAX_S equ 4
 CD_MAX_G equ 4
 CD_MAX_R equ 5
 CD_FRANK_A equ 5

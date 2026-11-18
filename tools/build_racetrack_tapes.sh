@@ -49,6 +49,10 @@ one racer_tight_w56s_normal_grip1         GRIP1=1 $T OUT=racer_tight_w56s_normal
 one racer_tight_w56s_normal_react1        REACT1=1 $T OUT=racer_tight_w56s_normal_react1 BDIR=tight_w56s_normal_react1
 one racer_tight_w56s_normal_grip1_react1  GRIP1=1 REACT1=1 $T OUT=racer_tight_w56s_normal_grip1_react1 BDIR=tight_w56s_normal_grip1_react1
 # two players (on the tight 56 px track, NORMAL)
+# (the two-player tapes start you on pole, as before - player 2 drives the car beside you; tests/two_player_test.py compares
+#  their one-player mode with these two, the ordinary tapes built with you on pole: GRID_BACK=0)
+one racer_tight_w56s_normal_pole        GRID_BACK=0 $T OUT=racer_tight_w56s_normal_pole BDIR=tight_w56s_normal_pole
+one racer_tight_w56s_normal_grip1_pole  GRID_BACK=0 GRIP1=1 $T OUT=racer_tight_w56s_normal_grip1_pole BDIR=tight_w56s_normal_grip1_pole
 one racer_2p         TWOP=1 $T OUT=racer_2p BDIR=racer_2p
 one racer_2p_grip1   GRIP1=1 TWOP=1 $T OUT=racer_2p_grip1 BDIR=racer_2p_grip1
 one racer_2p_points  TWOP_PTS=3 TWOP=1 $T OUT=racer_2p_points BDIR=racer_2p_points
