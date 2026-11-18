@@ -2962,3 +2962,54 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Mock-ups for health in the race order (Grant: "The vertical health bars are not visible, and the coffee cup is no longer
   relevant"): docs/design/racetrack/health_options.png (A-D), then variations of C (Grant: "for health can you do
   variations of C"): docs/design/racetrack/health_c_options.png (C, C2-C5).
+
+## 2026-11-18 SAST - the slower game (three trial tapes) and the grid's colour clash
+- SLOWER AND SMOOTHER (Grant: "the game plays too fast, I want it slower and smoother"; then "I would prefer a maximum
+  jump of 4 pixels or even less"; "gentler NOS is fine"). ONE setting, GAME_SPEED (percent of today's; 100, the default, is
+  byte for byte the game as it was). It scales together: every car's top speed and push (so acceleration) from its card,
+  your car's tyres (so it slides the same way, only slower), the computer cars' corner speeds (where they slide and the
+  speed they brake down to, the driver's margin included), and in the code the computer cars' slide steps (SKID_STEP), the
+  bounce in a bump (KICK) and the speed at which your skid hisses. Grass, NOS and the limp were shares of the push already.
+  Not scaled: the steering rate (the car still turns about 280 degrees a second - at 50% a full-lock circle is about 20 px
+  across, a car and a bit), the tank's shell, the engine's note, and the set-up row's upgrades (keys 1-3 before the start,
+  hud.asm: a level still adds today's 28/256 top speed and 4-10 push - relatively more at a lower speed; left for after the
+  other agent's hud.asm work). Where: tools/make_cards.py (the top), build.sh, src/grip.asm, src/racer.asm two lines.
+- THE GENTLER NOS (a named setting: NOS=0/1/2 - twice, a half more, a quarter more - and NOS_FR, how many TV frames a
+  canister burns; build.sh): on the slow tapes a quarter more push and top speed for 2 seconds (100 TV frames), where today
+  it is twice for 1 second. 20 bytes. The 100% tapes keep today's NOS.
+- TAPES (not the default - Grant picks by driving): bash tools/build_slow.sh -> build/racer_armour_slow60.tap, _slow55,
+  _slow50 (the armour GRIP1 tape at 60/55/50%, the gentler NOS). 37 bytes free on them; 57 on the armour GRIP1 tape.
+- MEASURED (tests/slow_measure.py: each picture taken as it reaches the screen; "jump" = the larger of across and down, in
+  px; "at speed" = pictures over 80% of the top speed; 60 s in the pack, NOS alone on the track; tests/stage_profile.py;
+  tests/rt_tight.py ace=104,30, 3 races of 3 laps in the pack, RACE_SECS=200):
+
+| | 100% today | 60% | 55% | 50% |
+|---|---|---|---|---|
+| your top speed, px a TV frame (card) | 1.70 | 1.02 | 0.93 | 0.85 |
+| your car's jump a picture at speed: typical / largest | 7 / 12 | 4 / 6 (5+ px: 20%) | 4 / 6 (15%) | 3-4 / 6 (7%) |
+| the view's (camera's) jump: typical / largest | 7 / 12 | 4 / 7 | 4 / 7 | 4 / 7 |
+| pictures a second: start / mid-lap / pack (stage_profile, 8 s) | 12.0 / 12.3 / 11.0 | 12.1 / 12.8 / 11.0 | 11.9 / 12.6 / 11.1 | 12.1 / 12.8 / 11.8 |
+| pictures of 5+ TV frames (60 s in the pack) | 56% | 30% | 58% | 64% |
+| NOS: top speed, jump typical / largest | 3.39, 13 / 15 | 1.27, 5 / 7 | 1.16, 4-5 / 6 | 1.05, 4 / 7 |
+| flying laps (s): you / Frank / Spike / Bruno / Jane | 18.1 / 19.2 / 21.3 / 21.1 / 19.5 | 27.5 / 31.9 / 32.2 / 31.9 / 29.6 | 30.0 / 36.4 / 37.3 / 38.7 / 30.8 | 32.0 / 36.6 / 42.3 / 38.0 / 38.2 |
+| computer cars on the grass | 0% | 0% | 0% | 0% |
+
+  Picture rate does not change with speed (the work a picture is the same); a 5- or 6-frame picture is the bigger jump.
+  The computer cars still make every corner and stay off the grass; their laps scale with the speed (Frank 1.66 times at
+  60%). Your car (the autopilot) gains on them as the speed drops - it turns relatively tighter - so the races get easier
+  for the same driver. Clip, real speed, 100 / 60 / 55 / 50 side by side, 14 s from the green light through the first
+  bend: docs/design/racetrack/speed/speed_100_60_55_50.mp4 (still: _still.png; tests/speed_clip.py).
+- RECOMMENDED: 50% - the only one where your car moves 4 px or less in nine pictures in ten at full speed (55% is close).
+- THE GRID (Grant: "at the start grid for a couple of cars the white grid has a colour clash with the car"): the [ boxes'
+  top and bottom lines reached 3 px into the cars' colour squares and went red, pink, cyan in the lane that is not level
+  with the squares (the view is centred on your car, which always puts the squares 4 px off it up and down; across, the
+  view always starts on a square). tools/make_world.py: on the race track each [ is drawn wholly in the square behind its
+  car (7 px to 2 px behind it); the cars stand where they did (x 248/232/216/200/184 for places 1-5, the same distance to
+  the line as before). The plain game's grid unchanged. docs/design/racetrack/grid_clash_before_after.png.
+  tests/racetrack_test.py part grid (PLAYERS=2 for two players): no square holds a white marking and a car - 0 on the
+  armour, pole, two-player and track 2 tapes (6, 5 and 6 squares on the old ones).
+- Tests: racetrack_test 17/17 (armour GRIP1), 18/18 (track 2 green); armour_test 28/28 (the cards md5s re-recorded; its
+  "you ram Frank" scene now moves the tank and the dragster out of the way first - left on the straight, the check passed
+  or failed by luck); rt_fixed_test 3/3; two_player_test 19/19. On the slow tapes racetrack_test fails only its two
+  timed checks (2 laps in 30 s, the crawl back within 1,500 frames) - fixed times for today's speed; armour_test 28/28.
+- All 40 race-track tapes rebuilt; the plain game and tracks 2, 3, 5 byte for byte as before.

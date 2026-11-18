@@ -233,10 +233,17 @@ _lane = 14 if ROAD >= 56 else ROAD // 2 - 13     # (RT_ROADW under 56: the lanes
 LANE_A, LANE_B = SY - _lane - 8, SY + _lane - 8        # lane centres 14 px either side of the middle (11 for 16 x 16 cars)
 GRID = [(LX - 40, LANE_A), (LX - 56, LANE_B), (LX - 72, LANE_A), (LX - 88, LANE_B), (LX - 104, LANE_A)]   # x on the 8-px tile grid: the boxes share tiles
 GRID_ORDER = [0, 1, 4, 3, 2]                     # car in each place: YOU, CYAN, WHITE, PINK, GREEN
+# THE BOX'S PLACE (Grant, 18 Nov 2026: "at the start grid for a couple of cars the white grid has a colour clash with the
+# car"). The box was a [ from 3 px behind the car to 3 px into it, so its top and bottom lines shared the car's own colour
+# squares, and took the car's colour (red, pink, cyan) in whichever lane was not level with the squares - on the screen a
+# car is never level with them both ways: the view is centred on your car, which puts the squares 4 px off it up and down.
+# Across, the view always starts on a square (every car on the grid stands on the 8-px tile grid), so on the race track
+# the [ is drawn wholly in the square behind the car: 7 px to 2 px behind it. The cars stand where they did.
+_gb = (-7, -2) if RT else (-3, 3)               # the [ from x + this to x + that (the plain game: as it was)
 for gx, gy in GRID:                              # a grid box behind each: [ shape, 1 px lines
     for y in range(gy - 1, gy + 17):
-        if road[gx - 3, y]: px[gx - 3, y] = 1
-    for x in range(gx - 3, gx + 4):
+        if road[gx + _gb[0], y]: px[gx + _gb[0], y] = 1
+    for x in range(gx + _gb[0], gx + _gb[1] + 1):
         for y in (gy - 1, gy + 16):
             if road[x, y]: px[x, y] = 1
 # start line: checker band 8px tall across the bottom straight at x=256..263

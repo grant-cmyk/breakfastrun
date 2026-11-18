@@ -9,7 +9,7 @@ Usage: python3 tests/rt_tight.py <tape name in build/> <its src folder> [races, 
   try=  to try the computer cars' settings WITHOUT building a tape: the four cars (CYAN, GREEN, PINK, WHITE), each
         reach,line,half,ease,fuss,pace,react,err - e.g. try=40,3,2,0,2,16,0,3/36,3,2,1,2,15,0,6/... (- leaves a car as built)
 A car is "on the grass" when the middle of it is over a tile the game's own surface map calls grass (what slows it).
-Each race is run to the flag from the lights with a different run of luck. Prints, for each car: its first laps (from
+Each race is run to the flag from the lights (80 seconds at most: RACE_SECS=200 before it for a slower tape) with a different run of luck. Prints, for each car: its first laps (from
 the grid), its flying laps and their mean, and the share of its time on the grass."""
 import sys
 from rt_lib import *
@@ -32,7 +32,7 @@ def measure(name, src, races=3, alone=False, look=None, tune=None, quiet=False, 
             tx, ty = (x + 8) >> 3, (y + 8) >> 3
             return not (0 <= tx < 72 and 0 <= ty < S['maph']) or bool(surf[ty * 9 + (tx >> 3)] & (0x80 >> (tx & 7)))
         last = [None] * 5; t = [[] for _ in range(5)]; was = [False] * 5
-        for f in range(80 * 50):
+        for f in range(int(os.environ.get('RACE_SECS', '80')) * 50):     # (RACE_SECS=200 for a slow tape: GAME_SPEED)
             if f < late * 50: g.key('Q', False); g.key('O', False); g.key('P', False)   # (late=: you sit on the grid while the others go)
             else: steer()
             g.run(1)
