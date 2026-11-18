@@ -64,15 +64,51 @@ aw_1:
         push de                 ; RACETRACK: its squares' ink yellow (racetrack.asm)
         push bc
         call rt_arrow
+        if OPT_ARROWC
+        call aw_next            ; (the first row's ink switches: yellow over road, none over grass)
+        endif
         pop bc
         pop de
         endif
         ld hl,ARROW_BUF
         ld b,ARROW_ROWS
 aw_row:
+        if OPT_RT * OPT_ARROWC  ; RACETRACK: over a road square masked and yellow as before; over grass its pixels turned round (rt_arrow, aw_next)
+        ld a,(de)
+        inc e
+aw_k0:  or 0                    ; (0: its mask cuts the arrow and its outline out; 0xFF: nothing cut ...)
+        and (hl)
+        ld (hl),a
+        ld a,(de)
+        inc e
+        xor (hl)                ; (... and the arrow turns what is under it the other way round)
+        ld (hl),a
+        inc l
+        ld a,(de)
+        inc e
+aw_k1:  or 0                    ; (0: its mask cuts the arrow and its outline out; 0xFF: nothing cut ...)
+        and (hl)
+        ld (hl),a
+        ld a,(de)
+        inc e
+        xor (hl)                ; (... and the arrow turns what is under it the other way round)
+        ld (hl),a
+        inc l
+        ld a,(de)
+        inc e
+aw_k2:  or 0                    ; (0: its mask cuts the arrow and its outline out; 0xFF: nothing cut ...)
+        and (hl)
+        ld (hl),a
+        ld a,(de)
+        inc e
+        xor (hl)                ; (... and the arrow turns what is under it the other way round)
+        ld (hl),a
+        inc l
+        else
         call aw_byte
         call aw_byte
         call aw_byte
+        endif
         ld a,e
         add a,c
         ld e,a
@@ -83,6 +119,9 @@ aw_row:
         ld a,h
         and 7
         jr nz,aw_2
+        if OPT_RT * OPT_ARROWC
+        call aw_next            ; (a new row of squares)
+        endif
         ld a,l
         add a,32
         ld l,a
@@ -93,6 +132,7 @@ aw_row:
 aw_2:
         djnz aw_row
         ret
+        if OPT_RT * OPT_ARROWC = 0
 aw_byte:                        ; a byte of the buffer: what is kept of it, then the ink
         ld a,(de)
         inc e
@@ -104,4 +144,5 @@ aw_byte:                        ; a byte of the buffer: what is kept of it, then
         ld (hl),a
         inc l
         ret
+        endif
 aw_tab: db 0, 1, 2, 1+8, 0+8, 3+8, 4, 3     ; up, up-right, right, down-right, down, down-left, left, up-left

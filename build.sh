@@ -98,6 +98,10 @@ printf 'OPT_REACT1 equ %s               ; 1: the computer cars decide every 8th 
 # speed; track 3's map leaves none, so there it stays in the slower room under 0x8000. RT_PLATEUP=0 or 1 to say otherwise.)
 PUP=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && PUP=1
 printf 'OPT_RTPUP equ %s                ; RACETRACK: 1 - the place plate is drawn from the program, not from under 0x8000 (tracks 1 and 2)\n' "${RT_PLATEUP:-$PUP}" >> "$ROOT/src/options.asm"
+# RT_ARROWC: the corner arrow black over grass, green beside it (Grant, 17 Nov 2026, option C). On by default, but not on
+# track 3, which has no room under 0x8000 for it (12 bytes free; it needs about 150): there the arrow stays yellow by the cars' rule.
+ARC=1; [ "${TRACK:-1}" = "3" ] && ARC=0
+printf 'OPT_ARROWC equ %s               ; RACETRACK: 1 - the corner arrow black over grass, green beside it (option C; not track 3)\n' "${RT_ARROWC:-$ARC}" >> "$ROOT/src/options.asm"
 BAND=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && BAND=1
 printf 'OPT_RTBAND equ %s               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)\n' "${RT_BANDED:-$BAND}" >> "$ROOT/src/options.asm"
 printf 'OPT_RTROWS equ %s              ; the race track trial: how many of the window'"'"'s 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)\n' "${RT_ROWS:-19}" >> "$ROOT/src/options.asm"

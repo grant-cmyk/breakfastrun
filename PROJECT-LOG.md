@@ -2914,3 +2914,20 @@ PICTURES (docs/design/racetrack/armour/, by tests/rt_armour_shots.py from one re
 NEW FILES: src/armour_tune.asm (the account and every number), src/armour.asm (what runs every picture), src/armour_low.asm (the rare parts, under 0x8000), tools/build_armour.sh, tests/armour_test.py, tests/rt_armour.py (race reports: `python3 tests/rt_armour.py racer_armour_grip1 ../build/racer_armour_grip1/src 5 late=2`, run from tests/), tests/rt_armour_shots.py. Changed: tools/driver_cards.txt (v2: armour and weapon lines; DOT's behaviour is now "A slow car but with good grip and good armour"), tools/make_cards.py (reads both, with or without; the armour scale), build.sh (ARMOUR=1), racer.asm / hud.asm / grip.asm / strip.asm (each change inside "if OPT_ARMOUR"), tools/build_racetrack_tapes.sh (38 tapes).
 
 NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not judged. The computer cars do not steer away from the shell or the wheels. One shell in the air at a time. The shell on an all-grass square was not looked at on the screen (it ends there within a picture). Whether a 32-TV-frame turn reads as "spins where it is" is for Grant's eye in armour_tank.mp4. Not combined with two players or the choose screen; not built on track 1 (wide), 2 or 3 (3 has no room).
+
+## 2026-11-18 SAST - the corner arrow, option C: black over grass, green beside it
+- Grant: "the yellow arrow needs mask or outline to be clearer". Why: its 1-pixel black outline vanished over grass (in an
+  all-grass square the cleared pixels show the square's green), so it read yellow on green; where road met grass part of
+  it went green. Mock-ups docs/design/racetrack/arrow_clear_options.png (A black box, B thick outline, C black over grass);
+  Grant chose C.
+- Built (src/racetrack.asm rt_arrow, ra_inv, aw_next; src/arrow.asm): over road the arrow is masked and yellow as before.
+  If any of its 3 x 3 squares holds grass, all nine are drawn the other way: green ink on black, an all-grass square's
+  pixels inverted (so a car on the grass there shows black), and the arrow XORed in - black over grass, green over the road
+  beside it. The first try cut it out black in mixed squares, which made it vanish over their road part; the second left a
+  yellow tip in a road square; the whole-arrow rule fixes both. docs/design/racetrack/arrow_c_built.png.
+- Switch OPT_ARROWC (RT_ARROWC=0/1), on by default for race-track builds, OFF on track 3: it needs about 150 bytes under
+  0x8000 and track 3 has 12. Track 3 keeps the old yellow arrow.
+- Tapes: all 38 race-track tapes rebuilt (tools/build_racetrack_tapes.sh); the plain game, tracks 2, 3, 5 and the two
+  track 3 green tapes are byte for byte as before. Armour tapes: 83 / 69 bytes free.
+- Tests: racetrack_test 15/15 (armour GRIP1), 16/16 (track 2 green); rt_fixed_test 3/3; armour_test 28/28 after
+  re-recording its two pinned cards-tape md5s (those tapes now carry the new arrow); two_player_test 19/19.

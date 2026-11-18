@@ -212,8 +212,142 @@ rw_lines:
         djnz rw_lines
         ret
 
-; RT_ARROW (from arrow_draw, when it is about to draw): the corner arrow's 3 x 3 squares take yellow ink, by the cars'
-; rule (rq_cell) - so in a grass-and-road square it shows in the grass's green.
+        if OPT_ARROWC
+; RT_ARROW (from arrow_draw, when it is about to draw): the corner arrow's 3 x 3 squares. Over road it is YELLOW on black, by
+; the cars' rule (rq_cell). Over grass it is BLACK, cut out of the green (Grant, 17 Nov 2026, of three mock-ups -
+; docs/design/racetrack/arrow_clear_options.png - "C"; before, its black outline vanished over grass and it read yellow
+; on green): a square that is all grass is turned round - green ink on black paper and its pixels inverted, so the grass
+; is ink and anything already in it (a car on the grass) shows black - and a grass-and-road square is left as the scenery
+; has it. In both, arrow_draw turns the pixels under the arrow the other way round, so it is black on the grass and green
+; on the road beside it (it was invisible there, cut out black on black, in the first try). ra_flags says how each square
+; is drawn - 0 masked and yellow, 0xFF turned round - three a row; aw_next hands them to arrow_draw a row at a time.
+rt_arrow:
+        ld a,6
+        ld (rt_ink),a
+        ld hl,ra_flags
+        ld (ra_fp),hl
+        ld (aw_ptr),hl
+        ld hl,RT_SH+(WIN_Y/8+ARROW_TOP/8)*32+WIN_COL+ARROW_COL
+        ld c,3
+ra_r:
+        call rq_setpg           ; (rq_cell wants to know the row's page of the buffer)
+        ld b,3
+ra_c:
+        push bc
+        ld a,(rt_mixed)
+        push af
+        xor a
+        ld (rt_mixed),a
+        call rq_cell
+        ld b,0                  ; B: 0, this square takes the arrow masked and yellow
+        ld a,(hl)
+        cp 0x26                 ; (yellow on green: rq_cell made it all grass)
+        jr nz,ra_m
+        ld (hl),RT_EDGE         ; all grass: green ink on black, its pixels the other way round
+        call ra_inv
+        ld b,0xFF
+ra_m:
+        ld a,(rt_mixed)
+        or a
+        jr z,ra_f
+        ld b,0xFF               ; grass and road: the scenery's green stays; the arrow turns it round
+ra_f:
+        pop af
+        ld c,a
+        ld a,(rt_mixed)
+        or c
+        ld (rt_mixed),a
+        push hl
+        ld hl,(ra_fp)
+        ld (hl),b
+        inc hl
+        ld (ra_fp),hl
+        pop hl
+        pop bc
+        inc l
+        djnz ra_c
+        ld a,l
+        add a,32-3
+        ld l,a
+        jr nc,ra_1
+        inc h
+ra_1:
+        dec c
+        jr nz,ra_r
+        ld hl,ra_flags          ; ONE COLOUR for the whole arrow: if any of its squares is turned round, all are (else its tip
+        ld b,9                  ; or tail, in a road square, would stay yellow beside the rest in green and black)
+        xor a
+ra_any:
+        or (hl)
+        inc hl
+        djnz ra_any
+        ret z
+        ld de,ra_flags
+        ld hl,RT_SH+(WIN_Y/8+ARROW_TOP/8)*32+WIN_COL+ARROW_COL
+        ld c,3
+ra_r2:
+        ld b,3
+ra_c2:
+        ld a,(de)
+        or a
+        jr nz,ra_n2
+        ld (hl),RT_EDGE         ; a road square of a turned-round arrow: green ink on black, so the arrow shows green in it
+        cpl
+        ld (de),a
+ra_n2:
+        inc de
+        inc l
+        djnz ra_c2
+        ld a,l
+        add a,32-3
+        ld l,a
+        jr nc,ra_3
+        inc h
+ra_3:
+        dec c
+        jr nz,ra_r2
+        ret
+ra_inv:                         ; the square at HL in rt_sh: its 8 lines in the buffer turned the other way round (as rq_clr finds them)
+        ld a,h
+        sub RT_SH/256
+        add a,a
+        add a,a
+        add a,a
+        add a,BUF_HI
+        ld d,a
+        ld e,l
+        inc e
+        ld b,8
+ri_1:
+        ld a,(de)
+        cpl
+        ld (de),a
+        inc d
+        djnz ri_1
+        ret
+; AW_NEXT (arrow_draw, at the top and as it goes down into each new row of squares): that row's three ink switches into
+; the drawing loop. Keeps all but A.
+aw_next:
+        push hl
+        ld hl,(aw_ptr)
+        ld a,(hl)
+        ld (aw_k0+1),a
+        inc hl
+        ld a,(hl)
+        ld (aw_k1+1),a
+        inc hl
+        ld a,(hl)
+        ld (aw_k2+1),a
+        inc hl
+        ld (aw_ptr),hl
+        pop hl
+        ret
+ra_flags: ds 9
+ra_fp:  dw 0
+aw_ptr: dw 0
+        else
+; RT_ARROW (OPT_ARROWC 0, track 3): the corner arrow's 3 x 3 squares take yellow ink, by the cars' rule (rq_cell) - so in a
+; grass-and-road square it shows in the grass's green.
 rt_arrow:
         ld a,6
         ld (rt_ink),a
@@ -237,4 +371,5 @@ ra_1:
         dec c
         jr nz,ra_r
         ret
+        endif
 
