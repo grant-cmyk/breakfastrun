@@ -163,7 +163,17 @@ yg_p0:
         ld a,(BOOST_T)          ; NOS: twice the push (and the top speed)
         or a
         jr z,yg_p1
+        if OPT_NOS              ; (NOS=1 or 2, the GENTLER NOS - Grant, 18 Nov 2026, for the slow game: "gentler NOS is fine"):
+        ld d,h                  ; a half more (1) or a quarter more (2), so that your car's jump from one picture to the next
+        ld e,l                  ; stays small while it burns
+        rept OPT_NOS
+        srl d
+        rr e
+        endm
+        add hl,de
+        else
         add hl,hl
+        endif
 yg_p1:
         if OPT_BRIDGE
         call ramp_adj           ; BRIDGE: less push up a ramp, more down it (bridge.asm; A and DE are free here)
@@ -244,7 +254,17 @@ yg_arm:
         ld a,(BOOST_T)          ; pushes harder than its top speed needs, and is
         or a                    ; held to it here
         jr z,yg_d3
+        if OPT_NOS              ; (the gentler NOS: the top speed up a half or a quarter, as its push)
+        ld b,h
+        ld c,l
+        rept OPT_NOS
+        srl b
+        rr c
+        endm
+        add hl,bc
+        else
         add hl,hl
+        endif
 yg_d3:
         if OPT_BRIDGE
         call ramp_top           ; BRIDGE: a lower top speed up a ramp, a higher one down it (bridge.asm)
@@ -308,13 +328,13 @@ yg_g3:
         jr z,yg_g4              ; pixel a frame or more), harder for a bigger one. A
         ld hl,(yg_vs)           ; small slide is silent: it hissed in every corner, and
         call abs_hl             ; "the sound being made sounds like skidding. It is just
-        ld de,128               ; annoying" (Grant, 14 Nov 2026)
+        ld de,128*GAME_SPEED/100 ; annoying" (Grant, 14 Nov 2026; GAME_SPEED: a slower game, the same share of the speed)
         or a
         sbc hl,de
         ld a,0
         jr c,yg_g4
         inc a
-        ld de,128
+        ld de,128*GAME_SPEED/100
         sbc hl,de
         jr c,yg_g4
         inc a

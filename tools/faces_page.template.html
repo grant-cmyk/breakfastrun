@@ -15,7 +15,9 @@ button{font:600 14px var(--font);padding:8px 14px;border-radius:6px;border:1px s
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .driver{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .driver h2{font-family:var(--head);font-size:18px;margin:0}
-.moods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.moods{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+@media (max-width:1300px){.moods{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.nudge{display:flex;gap:4px;flex-wrap:wrap}.nudge button{padding:4px 9px;font-size:13px}
 @media (max-width:900px){.moods{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .anim{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
 .anim span{display:flex;gap:8px;align-items:center}
@@ -30,35 +32,39 @@ textarea{width:100%;box-sizing:border-box;min-height:140px;font:12px/1.3 var(--m
 </style>
 <main>
 <h1>Breakfast Run: the drivers' faces</h1>
-<p>Each driver four ways: as in the game now, with the eyes moved (starts as a copy of now: shift the eyes a pixel), happy and sad. Under each name the podium animation plays: the winner goes now, eyes, now, happy; second and third go now, eyes, now, sad. Click or drag on a big picture to change its pixels; the small picture beside each name is its real size, doubled. When you are happy with them, copy the text and paste it back to Claude.</p>
-<div class="bar"><button id="copy">Copy all faces as text</button><button id="reset">Put back the saved faces</button><span id="said"></span></div>
+<p>Each driver six ways: as in the game now; with the eyes moved; happy; sad; and two new ones, <b>idea 1</b> and <b>idea 2</b>, for trying other expressions (they start as copies of now). Under each name the podium animation plays. <b>Click a square to swap it</b>: paper becomes ink, ink becomes paper; drag to paint the same way. The arrows under each face shift the whole picture one pixel (what falls off one edge comes back on the other). <b>Undo</b> takes back the last change. When you are happy, copy the text and paste it back to Claude.</p>
+<div class="bar"><button id="undo">Undo</button><button id="copy">Copy all faces as text</button><button id="reset">Put back the saved faces</button><span id="said"></span></div>
 <div id="drivers"></div>
 <label for="out" class="cap">The faces as text (# is ink)</label>
 <textarea id="out" readonly></textarea>
 </main>
 <script>
-const DATA=/*DATA*/{};const MOODS=['now','eyes','happy','sad'];
+const DATA=/*DATA*/{};const MOODS=['now','eyes','happy','sad','idea1','idea2'];const LABEL={idea1:'idea 1',idea2:'idea 2'};const KEY='br-faces-8';let undo=[];
 let faces=JSON.parse(JSON.stringify(DATA.faces));
-try{const s=localStorage.getItem('br-faces-7');if(s){const v=JSON.parse(s);if(v.length===faces.length&&v[0].length===4)faces=v}}catch(e){}
+try{const s=localStorage.getItem(KEY);if(s){const v=JSON.parse(s);if(v.length===faces.length&&v[0].length===MOODS.length)faces=v}}catch(e){}
 const root=document.getElementById('drivers'),out=document.getElementById('out');
 function draw(cv,art,col,grid){const n=cv.width/16,c=cv.getContext('2d');c.fillStyle=col;c.fillRect(0,0,cv.width,cv.height);c.fillStyle='#000';
  art.forEach((r,y)=>{for(let x=0;x<16;x++)if(r[x]==='#')c.fillRect(x*n,y*n,n,n)});
  if(grid){c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=1;for(let i=1;i<16;i++){c.beginPath();c.moveTo(i*n+.5,0);c.lineTo(i*n+.5,cv.height);c.moveTo(0,i*n+.5);c.lineTo(cv.width,i*n+.5);c.stroke()}}}
-function text(){return DATA.names.map((nm,d)=>MOODS.map((m,k)=>nm+' '+m+'\n'+faces[d][k].join('\n')).join('\n\n')).join('\n\n')}
-function save(){out.value=text();try{localStorage.setItem('br-faces-7',JSON.stringify(faces))}catch(e){}}
+function text(){return DATA.keys.map((nm,d)=>MOODS.map((m,k)=>nm+' '+m+'\n'+faces[d][k].join('\n')).join('\n\n')).join('\n\n')}
+function save(){out.value=text();try{localStorage.setItem(KEY,JSON.stringify(faces))}catch(e){}}
+function keep(){undo.push(JSON.stringify(faces));if(undo.length>200)undo.shift()}
+function shift(art,dx,dy){const n=art.map(r=>r.split(''));const o=n.map(r=>r.slice());for(let y=0;y<16;y++)for(let x=0;x<16;x++)o[(y+dy+16)%16][(x+dx+16)%16]=n[y][x];return o.map(r=>r.join(''))}
 let anims=[],step=0;function tick(){anims.forEach(([c,d,seq])=>draw(c,faces[d][seq[step%4]],DATA.colours[d],false));step++}
 function build(){anims=[];root.textContent='';root.style.cssText='display:flex;flex-direction:column;gap:16px';
  DATA.names.forEach((nm,d)=>{const s=document.createElement('section');s.className='driver';const h=document.createElement('h2');h.textContent=nm;s.appendChild(h);const an=document.createElement('div');an.className='anim';[['On the top step',[0,1,0,2]],['Second or third',[0,1,0,3]]].forEach(([lab,seq])=>{const sp=document.createElement('span');const c=document.createElement('canvas');c.width=c.height=16;sp.appendChild(c);sp.appendChild(document.createTextNode(lab));an.appendChild(sp);anims.push([c,d,seq])});s.appendChild(an);
   const row=document.createElement('div');row.className='moods';s.appendChild(row);
   MOODS.forEach((m,k)=>{const box=document.createElement('div');box.className='mood';const cap=document.createElement('div');cap.className='cap';
-   const sm=document.createElement('canvas');sm.width=sm.height=16;cap.appendChild(sm);cap.appendChild(document.createTextNode(m));
+   const sm=document.createElement('canvas');sm.width=sm.height=16;cap.appendChild(sm);cap.appendChild(document.createTextNode(LABEL[m]||m));
    const g=document.createElement('canvas');g.className='grid';g.width=g.height=288;g.setAttribute('aria-label',nm+' '+m+' face, editable');
    const re=()=>{draw(g,faces[d][k],DATA.colours[d],true);draw(sm,faces[d][k],DATA.colours[d],false)};re();
    let ink=null;const at=e=>{const b=g.getBoundingClientRect();return[Math.min(15,Math.max(0,Math.floor((e.clientX-b.left)/b.width*16))),Math.min(15,Math.max(0,Math.floor((e.clientY-b.top)/b.height*16)))]};
-   const put=e=>{const[x,y]=at(e),r=faces[d][k][y];if(ink===null)ink=r[x]==='#'?'.':'#';faces[d][k][y]=r.slice(0,x)+ink+r.slice(x+1);re();save()};
+   const put=e=>{const[x,y]=at(e),r=faces[d][k][y];if(ink===null){keep();ink=r[x]==='#'?'.':'#'}faces[d][k][y]=r.slice(0,x)+ink+r.slice(x+1);re();save()};
    g.addEventListener('pointerdown',e=>{g.setPointerCapture(e.pointerId);ink=null;put(e)});g.addEventListener('pointermove',e=>{if(e.buttons&&ink!==null)put(e)});
-   box.appendChild(cap);box.appendChild(g);row.appendChild(box)});root.appendChild(s)});save()}
+   const nu=document.createElement('div');nu.className='nudge';[['\u2191',0,-1,'up'],['\u2193',0,1,'down'],['\u2190',-1,0,'left'],['\u2192',1,0,'right']].forEach(([t,dx,dy,w])=>{const bt=document.createElement('button');bt.textContent=t;bt.setAttribute('aria-label','shift '+nm+' '+(LABEL[m]||m)+' '+w);bt.addEventListener('click',()=>{keep();faces[d][k]=shift(faces[d][k],dx,dy);re();save()});nu.appendChild(bt)});
+   box.appendChild(cap);box.appendChild(g);box.appendChild(nu);row.appendChild(box)});root.appendChild(s)});save()}
 document.getElementById('copy').addEventListener('click',()=>{const said=document.getElementById('said');navigator.clipboard.writeText(text()).then(()=>said.textContent='Copied.',()=>{out.focus();out.select();said.textContent='Select the text below and copy it.'})});
-document.getElementById('reset').addEventListener('click',()=>{faces=JSON.parse(JSON.stringify(DATA.faces));build();document.getElementById('said').textContent='Saved faces put back.'});
+document.getElementById('undo').addEventListener('click',()=>{const u=undo.pop();if(!u)return;faces=JSON.parse(u);build();save();document.getElementById('said').textContent='Undone.'});
+document.getElementById('reset').addEventListener('click',()=>{keep();faces=JSON.parse(JSON.stringify(DATA.faces));build();document.getElementById('said').textContent='Saved faces put back.'});
 build();tick();setInterval(tick,600);
 </script>

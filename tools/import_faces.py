@@ -1,11 +1,12 @@
 """Take in faces copied from the Breakfast Run Faces page ("Copy all faces as text"): the everyday
 ones into tools/face_art.txt, happy and sad into tools/face_moods.txt. Then run make_faces.py.
-Usage: python3 tools/import_faces.py pasted.txt   (blocks: NAME now|happy|sad, then 16 rows of # and .)"""
+Usage: python3 tools/import_faces.py pasted.txt   (blocks: NAME now|eyes|happy|sad|idea1|idea2, then 16 rows of # and .; idea1 and idea2 are
+Grant's trial expressions, 18 Nov 2026: kept in face_moods.txt, not used by the game until he says where)"""
 import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 KEY = {'YOU': 'YOU', 'CYAN': 'CYAN', 'SLIM': 'WHITE', 'PINK': 'PINK', 'GREEN': 'GREEN', 'SPECS': 'SPECS', 'DOT': 'DOT'}
 d = {}
-for m in re.finditer(r'(\w+) (now|eyes|happy|sad)\n((?:[#.]{16}\n?){16})', open(sys.argv[1]).read()):
+for m in re.finditer(r'(\w+) (now|eyes|happy|sad|idea1|idea2)\n((?:[#.]{16}\n?){16})', open(sys.argv[1]).read()):
     rows = m.group(3).split(); assert len(rows) == 16, m.group(0)[:20]
     d[(KEY[m.group(1)], m.group(2))] = [r.replace('#', 'X') for r in rows]
 p = os.path.join(HERE, 'face_art.txt'); s = open(p).read(); n = 0

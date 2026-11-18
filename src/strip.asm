@@ -593,7 +593,7 @@ trg_3:
 ; in the middle of the top area, one at a time; driving over one puts it in
 ; your first empty slot (none taken if all 3 are full).
 ; ---------------------------------------------------------------------
-BOOST_FR equ 50
+BOOST_FR equ NOS_FR
 
 nos_place:                      ; show the canister NOS_SHOW names, hide the other
         ld a,(NOS_SHOW)

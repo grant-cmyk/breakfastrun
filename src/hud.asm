@@ -699,9 +699,16 @@ hu_best:
 hu_order:
         call strip_triggers     ; the canisters, the oil can - and what the crew chief says
         ; (no scoreboard under the window any more: your place and lap are on the plate in it - Grant, 14 Nov 2026)
-        ld a,(renders)          ; spread the HUD out: the order on one
+        if OPT_ARMOUR           ; ARMOUR: the race order a row EVERY picture (the rows were drawn again one in four pictures,
+        call tower_update       ; the first that changed first: early in a race, with places changing at the top, the rows
+        endif                   ; below could show the car that had left them for seconds - four rows of the red car were
+        ld a,(renders)          ; seen, 18 Nov 2026). Spread the HUD out: the order on one
         and 3                   ; picture in four, the map on another, the
+        if OPT_ARMOUR
+        ret z
+        else
         jp z,tower_update       ; clock on the other two
+        endif
         cp 2
         jp z,map_update
         if OPT_PIT

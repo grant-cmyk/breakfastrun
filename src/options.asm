@@ -32,3 +32,6 @@ OPT_RTEYES equ 0               ; RACETRACK: 1 - the race order's faces look left
 OPT_RTROWS equ 19              ; the race track trial: how many of the window's 19 rows of squares scroll (RT_ROWS=16 RACETRACK=1 bash build.sh)
 OPT_CARDS equ 0                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)
 OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)
+GAME_SPEED equ 100             ; the whole game's speed, percent of today's (GAME_SPEED=60 CARDS=1: tools/build_slow.sh)
+OPT_NOS equ 0                  ; NOS: 0 twice the push and top speed; 1 a half more; 2 a quarter more (NOS=1 bash build.sh)
+NOS_FR equ 50                  ; NOS: how many TV frames one canister burns (NOS_FR=100 bash build.sh)

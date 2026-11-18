@@ -12,7 +12,11 @@ line, grid, canisters). Then:
      wrong colour, CAR = pixels of the car's outline not in its colour.
   4. GRASS IS SLOW: top speed on the grass 20-25% of the road's (your car 58-70% since 18 Nov 2026, Grant: "half the effect"
      - RT_GRASS_YOU in racetrack.asm; it is your car this test drives); a car can drive onto the grass and back.
-Usage: python3 tests/racetrack_test.py [part ...]     parts: scroll pack rule slide speed (default: all)
+  5. THE START GRID (Grant, 18 Nov 2026: "at the start grid for a couple of cars the white grid has a colour clash with the
+     car"): at the first picture after the title, no colour square in the window holds both a white marking from the map
+     (the grid's [ boxes) and a car's pixels or its 1-pixel rim; and every white marking near the cars shows white.
+     PLAYERS=2 before it: the same with two players (the two-player tapes).
+Usage: python3 tests/racetrack_test.py [part ...]     parts: scroll pack rule slide speed grid (default: all)
        TAPE=racer_track_green python3 tests/racetrack_test.py            another tape of track 1 (its build folder: the name less "racer_")
        BDIR=racer_2p TAPE=racer_2p python3 tests/racetrack_test.py       a tape whose build folder is not its name less "racer_"
        TRACK=2 python3 tests/racetrack_test.py                           track 2 or 3 in the green-line look (build/racer_track_green_track2.tap;
@@ -271,8 +275,19 @@ def speed():
     g.close()
     check(max(on) / tot < 0.05 and min(laps) >= 2, 'the computer cars stay on the road: in %d s each has its middle on the grass %s of the time (laps begun: %s)' % (FR // 50, ' '.join('%.1f%%' % (100 * o / tot) for o in on), laps))
 
+def grid():
+    g = Game(TAPE, SRC); g.to_grid(key=os.environ.get('PLAYERS', '1')); cx, cy = at_picture(g)
+    body = np.zeros((152, 192), bool)
+    for b, k in car_masks(g, cx, cy): body |= b                           # (body: the car's pixels and its 1-pixel rim)
+    w = WHITE[cy:cy + 152, cx:cx + 192]; px, at = g.window(); g.close()
+    both = squares(body) & squares(w)
+    where = ' '.join('(row %d, column %d)' % (r, c) for r, c in zip(*np.nonzero(both)))
+    check(not both.any(), 'the start grid (view at %d, %d): no colour square holds both a white marking and a car - %d do %s' % (cx, cy, both.sum(), where))
+    near = spread(squares(grow(body, 8))); wrong = w & ~body & near & (px != 7)
+    check(w[near].any() and not wrong.any(), 'and the white markings round the cars show white: %d pixels of %d are another colour' % (wrong.sum(), (w & ~body & near).sum()))
+
 if REDRAWN: check(_far <= 3, 'this build draws %d tiles as their nearest look-alike: each is within 3 pixels of the true shape (the most: %d)' % (len(REDRAWN), _far))
-PARTS = {'scroll': lambda: scroll(True), 'pack': lambda: scroll(False), 'rule': rule, 'slide': slide, 'speed': speed}
+PARTS = {'scroll': lambda: scroll(True), 'pack': lambda: scroll(False), 'rule': rule, 'slide': slide, 'speed': speed, 'grid': grid}
 for p in (sys.argv[1:] or list(PARTS)): PARTS[p]()
 print('%d passed, %d failed' % (passes, len(fails)))
 sys.exit(1 if fails else 0)

@@ -18,7 +18,7 @@ import sys, os, math, hashlib
 from rt_lib import *
 TAPE = sys.argv[1] if len(sys.argv) > 1 else 'racer_armour_grip1'
 SRC = os.path.join(ROOT, 'build', TAPE, 'src')
-CARDS_MD5 = {'racer_cards': '2e2f9529076224240d488e3927e4cff0', 'racer_cards_grip1': '3f4f616ed09f5d4b8662b0e057a0843e'}   # (18 Nov 2026, later again: the race order's faces look about before the race - tw_anim, src/plate_slow.asm - changed them again. Was 0532c611..., 363168c7...) (18 Nov 2026, later: your laps when you go off the track and back on further round - src/lap_low.asm - changed every race-track tape but track 3; re-recorded then. Was 4e5e8094..., 8d2a8659...) (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
+CARDS_MD5 = {'racer_cards': 'cda9079e8f13a9c0112940ac70c20fca', 'racer_cards_grip1': '0fd8aed06546ffce981fa25c8fbe17c6'}   # (18 Nov 2026, merged: the grid's boxes and the slower-game settings together with your laps off the track - src/lap_low.asm - and the faces looking about before the race - tw_anim; re-recorded then. Was 40d10f12..., ed5512fe... on the one branch, 2e2f9529..., 3f4f616e... on the other) (18 Nov 2026, later: the grid's [ boxes moved into the square behind each car - every race-track tape's map changed; re-recorded. Were 4e5e8094..., 8d2a8659...) (18 Nov 2026: the corner arrow's option C, your car's grass slowdown halved, you last on the grid and MAX's speed 4 changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
 YOU, FRANK, SPIKE, BRUNO, JANE = range(5)
 passed = failed = 0
 def check(ok, msg):
@@ -87,7 +87,8 @@ def bumps():
     dj, db = sc.damage(JANE), sc.damage(BRUNO); lj, lb = 6 - sc.row(JANE)[1], 6 - sc.row(BRUNO)[1]
     check(dj == db or lj == 6, 'after %d more rams the tank and the dragster have taken the same damage (%d and %d)' % (n, db, dj))
     check(lb == 1 and lj == min(6, db // per[JANE]) and lj > lb, 'in proportion to their ratings: the dragster (a piece takes %d) has lost %d pieces when the tank (a piece takes %d) loses its first' % (per[JANE], lj, per[BRUNO]))
-    d = ram(YOU, FRANK, 500)
+    sc.hold(BRUNO, 200 + 30 * BRUNO, 250, 0); sc.hold(JANE, 200 + 30 * JANE, 250, 0)    # (the tank and the dragster back to their places first: left on the
+    d = ram(YOU, FRANK, 500)                    #  straight, your car could meet them too - 18 Nov 2026, seen when the grid's [ boxes moved)
     check(d[0] == d[1] > 0 and sc.row(YOU)[0] == per[FRANK], 'your car too: you ram Frank, whose rating is yours, and each takes %d' % d[0])
     for i in range(5): sc.hold(i, 200 + 30 * i, 250, 0)
     check('dmg_bmp' not in S and 'dmg_anim' not in S, 'the mug has gone (Grant, 18 Nov 2026: "the coffee cup is no longer relevant"): nothing of it is in the program - its squares in the window\'s corner are the track\'s, checked pixel for pixel by tests/racetrack_test.py')
@@ -149,6 +150,21 @@ def bar():
                     bad += 1
                     if os.environ.get('WHERE'): print('   wrong at TV frame %d: order %s, bars %s, wanted %s, rows %s' % (f, order, got, [sc.want_bar(c) for c in order], [sc.row(c)[1:4] for c in order]))
     check(bad == 0 and len(orders) >= 3 and looked > 100, 'in a race the health blocks follow the cars as the rows swap: %d pictures looked at, %d different orders, %d wrong' % (looked, len(orders), bad))
+    g.close()
+
+def rows_same():
+    """18 Nov 2026: four rows of the race order were seen all showing the red car (yours) 4 s after the green. The rows were
+    drawn again one in four pictures, the first one that changed first: early in a race, with places changing at the top,
+    the rows below could show a car that had left them for a second or more. Now a row a picture (ARMOUR tapes). Looked at
+    every TV frame for 10 s from the green, a good driver from the back of the grid: no two rows show the same car's colour
+    for more than 10 TV frames running (a swap takes two pictures). (Before: 57 TV frames running, 112 frames in all.)"""
+    g = Game(TAPE, SRC); g.to_grid(); g.go(); S = g.sym; import rt_ace
+    steer = rt_ace.ace(g, 104, 30); run = best = n = 0
+    for f in range(500):
+        steer(); g.run(1)
+        scr = g.mem(0x5800 + 6 * 32, 10 * 32); cols = [scr[2 * p * 32 + 26] for p in range(5)]
+        run = run + 1 if len(set(cols)) < 5 else 0; best = max(best, run); n += run > 0
+    check(best <= 10, 'no two rows of the race order show the same car for more than 10 TV frames running (10 s from the green: the longest %d, %d TV frames in all)' % (best, n))
     g.close()
 
 def shell():
@@ -258,6 +274,6 @@ def same_tapes():
         check(got == md5, 'with ARMOUR off, build/%s.tap is byte for byte the tape it was (md5 %s)' % (name, got))
 
 if __name__ == '__main__':
-    bumps(); bar(); shell(); wheels(); limp(); same_tapes()
+    bumps(); bar(); rows_same(); shell(); wheels(); limp(); same_tapes()
     print('%d passed, %d failed' % (passed, failed))
     sys.exit(1 if failed else 0)

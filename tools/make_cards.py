@@ -36,6 +36,15 @@ SLIDE_AT = [None, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
 #        ARMOUR: the damage one of a car's six pieces takes (a firm bump is 10 - FIRM_BUMP, for the table only)
 ARMOUR_PIECE = [None, 22, 26, 30, 34, 38, 46, 55, 65, 77, 92]
 FIRM_BUMP = 10
+# ---- GAME_SPEED (Grant, 18 Nov 2026: "the game plays too fast, I want it slower and smoother"): ONE number for the whole
+#      game's speed, in percent of today's (GAME_SPEED=60 bash tools/build_armour.sh ...; 100, the default, is the game as
+#      it was, byte for byte). Every car's top speed and push (so its acceleration), your car's tyres (so it slides the
+#      same way, only slower), and the computer cars' corner speeds (where they slide and what they brake down to, the
+#      driver's margin included) are all multiplied by it - so each car keeps its place against the others. The rest
+#      that goes with speed (the computer cars' slide steps, the bounce in a bump, the skid's hiss, the engine's note)
+#      is GAME_SPEED in src/options.asm, written by build.sh. Grass, NOS and the limp are shares of the push already.
+GAME_SPEED = int(os.environ.get('GAME_SPEED', '100'))
+def gs(v): return (v * GAME_SPEED + 50) // 100           # a speed at GAME_SPEED, rounded
 # ---- who drives what in the race today (the others are on the choose screen only) ----
 PLAYER = 'MAX'
 CPU = [('FRANK', 'C', 'CYAN'), ('SPIKE', 'G', 'GREEN'), ('BRUNO', 'P', 'PINK'), ('JANE', 'W', 'WHITE')]
@@ -60,14 +69,15 @@ def k_accel(a): return ACCEL_STEP * (a - 5)
 def tyres(g): return TYRES[max(1, min(10, g))]
 def numbers(c):
     """one car's game numbers from its card"""
-    n = dict(c); n['top'] = top(c['s']); n['ks'] = k_speed(c['s']); n['ka'] = k_accel(c['a']); n['slide'] = SLIDE_AT[c['g']]
+    n = dict(c); n['top'] = gs(top(c['s'])); n['ks'] = gs(64 + k_speed(c['s'])) - 64; n['ka'] = gs(64 + k_accel(c['a'])) - 64; n['slide'] = gs(SLIDE_AT[c['g']])
     # a computer car has the ACCEL push up to four fifths of its top speed - or, if that push alone would never get it
     # there (7 pushes is all a push can hold), up to 85% of what it can hold; from there the SPEED push takes over
     n['vsw'] = min(n['top'] * 4 // 5, 7 * (64 + n['ka']) * 85 // 100)
     # YOUR car's sums have one push and a top speed that holds it: the push must at least be what that top speed needs
     n['push'] = max(64 + n['ka'], -(-n['top'] // 7))
-    n['tyres'] = tyres(c['g'])
+    n['tyres'] = gs_tyres(c['g'])
     return n
+def gs_tyres(g): return tuple(max(1, gs(v)) for v in tyres(g))   # your tyres at GAME_SPEED (never less than 1)
 def frames_to_speed(a, s=5, want=358):
     """TV frames from rest to 1.4 px a frame (four fifths of the old top speed), by the game's own sums"""
     ka, t = k_accel(a), top(s); vsw = min(t * 4 // 5, 7 * (64 + ka) * 85 // 100); v = 0; n = 0
@@ -102,10 +112,12 @@ def asm(cards):
          '; build again; to change what a rating is worth, the scale at the top of tools/make_cards.py.']
     L += ['; ' + l for l in table(cards).splitlines()]
     p = by[PLAYER]
+    if GAME_SPEED != 100:
+        L += ['; GAME_SPEED %d: every speed below is %d%% of the scale above (top speeds, pushes, your tyres, the corner speeds)' % (GAME_SPEED, GAME_SPEED)]
     L += ['; ---- your car (%s): its top speed, its push, and its tyres at each level of grip you buy (a level = a point of grip) ----' % PLAYER,
           'CD_TOP  equ %d' % p['top'], 'CD_PUSH equ %d' % p['push']]
     for lv in range(1, 6):
-        t = tyres(p['g'] + lv - 1)
+        t = gs_tyres(p['g'] + lv - 1)
         L += ['CD_L%d_%s equ %d' % (lv, k, v) for k, v in zip('GQSB', t)]
     L += ['; ---- every driver\'s card, as numbers (for the choose screen to come: nothing is stored for these) ----']
     for c in cards:
@@ -122,8 +134,9 @@ def asm(cards):
         for what, k in (('acceleration', n['ka']), ('speed', n['ks'])):
             if not -60 <= k <= 60: raise SystemExit('%s: the scale gives a %s push the game cannot multiply (%d: keep it within 60 of the plain push)' % (who, what, k))
         L.append('        dw %d' % n['slide'])
-        L.append('        db %d+AI_%s_SLIP, %d, %d, %d, 0, 0      ; %s: %s (%s) - acceleration %d, speed %d, grip %d' % (
-            n['slide'] // 4, letter, n['vsw'] // 4, n['ka'] & 255, n['ks'] & 255, colour, who, n['car'], n['a'], n['s'], n['g']))
+        brake = '%d+AI_%s_SLIP' % (n['slide'] // 4, letter) if GAME_SPEED == 100 else '((%d+AI_%s_SLIP)*%d+50)/100' % (SLIDE_AT[by[who]['g']] // 4, letter, GAME_SPEED)
+        L.append('        db %s, %d, %d, %d, 0, 0      ; %s: %s (%s) - acceleration %d, speed %d, grip %d' % (
+            brake, n['vsw'] // 4, n['ka'] & 255, n['ks'] & 255, colour, who, n['car'], n['a'], n['s'], n['g']))
     return '\n'.join(L) + '\n'
 if __name__ == '__main__':
     cards = read_cards()

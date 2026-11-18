@@ -127,7 +127,17 @@ printf 'OPT_CARDS equ %s                ; 1: the driver cards - each car its own
 # number). tools/build_armour.sh -> build/racer_armour.tap
 printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)\n' "${ARMOUR:-0}" >> "$ROOT/src/options.asm"
 [ "${ARMOUR:-0}" = "1" ] && [ "${CARDS:-0}${RACETRACK:-0}" != "11" ] && { echo "ARMOUR=1 needs CARDS=1 and RACETRACK=1 (tools/build_armour.sh)"; exit 1; }
-[ "${CARDS:-0}" = "1" ] && python3 "$ROOT/tools/make_cards.py"
+# GAME_SPEED=60 (with CARDS=1 and BDIR=...): A TRIAL - THE WHOLE GAME SLOWER (Grant, 18 Nov 2026: "the game plays too fast, I
+# want it slower and smoother"): every car's top speed, push, tyres and corner speeds at that percent of today's (the top of
+# tools/make_cards.py), and the few other numbers that go with speed (GAME_SPEED in the code). 100 (the default): as it was.
+# NOS=1 (or 2): a GENTLER NOS - the push and top speed up a half (or a quarter) where they double today; NOS_FR=100: it burns
+# that many TV frames (50 today). tools/build_slow.sh builds the slow trial tapes.
+GS=${GAME_SPEED:-100}
+[ "$GS" != "100" ] && { [ "${CARDS:-0}" != "1" ] || [ -z "${BDIR:-}" ]; } && { echo "GAME_SPEED needs CARDS=1 and a BDIR= (tools/build_slow.sh)"; exit 1; }
+printf 'GAME_SPEED equ %s             ; the whole game'"'"'s speed, percent of today'"'"'s (GAME_SPEED=60 CARDS=1: tools/build_slow.sh)\n' "$GS" >> "$ROOT/src/options.asm"
+printf 'OPT_NOS equ %s                  ; NOS: 0 twice the push and top speed; 1 a half more; 2 a quarter more (NOS=1 bash build.sh)\n' "${NOS:-0}" >> "$ROOT/src/options.asm"
+printf 'NOS_FR equ %s                  ; NOS: how many TV frames one canister burns (NOS_FR=100 bash build.sh)\n' "${NOS_FR:-50}" >> "$ROOT/src/options.asm"
+[ "${CARDS:-0}" = "1" ] && GAME_SPEED=100 python3 "$ROOT/tools/make_cards.py"
 B=$(ls /root/.claude/plugins/synced/*/retro/skills/zxspectrum/scripts/build.sh 2>/dev/null | head -1)
 B=${ZX_BUILD:-$B}
 # ONE TRACK A BUILD (15 Nov 2026: memory has no room for two). TRACK unset or 1: track 1, from src/ as
@@ -146,6 +156,7 @@ else
   cd "$T/src"; OUTN="racer_track$TRACK"
 fi
 OUTN="${OUT:-$OUTN}"
+[ "$GS" != "100" ] && GAME_SPEED=$GS CARDS_OUT=. python3 "$ROOT/tools/make_cards.py" | tail -1   # (the slow cards: in the copy only)
 [ -n "${PREASM:-}" ] && bash -c "$PREASM"
 bash "$B" asm racer.asm "$ROOT/build/$OUTN.tap" racer
 pasmo racer.asm "$ROOT/build/$OUTN.bin" "$ROOT/build/$OUTN.sym"
