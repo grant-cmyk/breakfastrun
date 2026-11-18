@@ -4163,6 +4163,8 @@ sh_fired: db 0                  ; counts for the tests and the race reports: she
 sh_hits:  db 0                  ; times the wheels came out, cars a wheel hit;
 wh_outs:  db 0
 wh_hits:  db 0
+sh_ammo:  db 0                  ; shells the tank has left this race, times the clown's wheels can still come out
+wh_ammo:  db 0
 arl_dx:   db 0                  ; arm_rel's sums (in this order)
 arl_hx:   db 0
 arl_dy:   db 0

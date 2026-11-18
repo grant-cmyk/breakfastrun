@@ -3096,3 +3096,15 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   looks (idea1/idea2) for YOU, CYAN, GREEN (idea2) and PINK. Looks now 270 bytes (under 0x8000 on the race-track builds);
   the choose build's seven 321 bytes, fitting. All tapes rebuilt; plain game and tracks 2, 3, 5 unchanged. faces_look_test
   PASS, armour_test 29/29 (cards md5s re-recorded), racetrack_test 19/19.
+
+## 2026-11-18 SAST - the tank fires straight and less, the clown less, both a few times a race; a 70% tape
+- Grant: "the tank is only allowed to shoot straight, and less frequently ... the clown spikes less often - we need the
+  idea - like our NOS - they can only do this so many times". src/armour_tune.asm: TANK_COOL 96 -> 192 pictures (about 16 s),
+  TANK_SHOTS 3 a race, TANK_STRAIGHT 1 (he fires only with his nose square to the screen, give or take one step of 64, so
+  the shell flies straight along the road); WH_COOL 60 -> 120 (about 10 s), WH_USES 3 a race. sh_ammo / wh_ammo (racer.asm)
+  set by arm_new, spent by arm_fire / arm_wheels. 26 bytes; armour GRIP1 395 bytes free.
+- tests/armour_test.py: the shell checks top his shells up first (they test the shell, and fire four in one race); new
+  checks - no shells left: no shot in 400 frames; nose off square: no shot, the same set-up square: a shot; no wheel-outs
+  left: the wheels stay in. 32/32. racetrack_test 19/19.
+- 70%: tools/build_slow.sh now also builds build/racer_armour_slow70.tap (Grant: "Any chance of a 70% speed"; 50% "too slow
+  but much smoother").

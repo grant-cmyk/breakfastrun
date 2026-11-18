@@ -209,6 +209,10 @@ anw_1:
         ld a,ARM_START
         ld (sh_cool),a
         ld (wh_cool),a
+        ld a,TANK_SHOTS         ; a race's shells and wheel-outs, as the NOS canisters (18 Nov 2026)
+        ld (sh_ammo),a
+        ld a,WH_USES
+        ld (wh_ammo),a
         ret
 arm_mend:
         ld hl,arm_tab+1
@@ -228,6 +232,8 @@ anw_2:
         ret
 ; ARM_FIRE (IX = the car that fires): a shell leaves it, straight along its heading.
 arm_fire:
+        ld hl,sh_ammo           ; (one shell fewer)
+        dec (hl)
         ld a,TANK_COOL
         ld (sh_cool),a
         ld a,(ix+C_KIND)

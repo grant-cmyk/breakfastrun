@@ -263,6 +263,9 @@ acl_in:
 acl_2:
         call arm_can
         ret nz
+        ld a,(wh_ammo)          ; no wheel-outs left this race
+        or a
+        ret z
         ld hl,wh_tg             ; one car a picture: is it alongside?
         call arm_next
         call arm_rel
@@ -272,6 +275,8 @@ acl_2:
         ret nc
 ; ARM_WHEELS: the wheels go out (for WH_TIME pictures; not again for WH_COOL).
 arm_wheels:
+        ld hl,wh_ammo           ; (one fewer)
+        dec (hl)
         ld hl,WH_TIME+256*WH_COOL
         ld (wh_out),hl
         ld hl,wh_outs
@@ -296,6 +301,16 @@ arm_tank:
 atn_1:
         call arm_can
         ret nz
+        ld a,(sh_ammo)          ; none left this race
+        or a
+        ret z
+        if TANK_STRAIGHT        ; his nose square to the screen, give or take a step: the shell goes straight
+        ld a,(ix+C_ANG)
+        inc a
+        and 15
+        cp 3
+        ret nc
+        endif
         ld hl,sh_tg
         call arm_next
         call arm_rel            ; HL = how far ahead, DE = how far to the side (32 = a pixel)

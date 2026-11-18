@@ -49,7 +49,8 @@
 ;   ARM_TANK          3   which car has the gun: 3 is the pink car, BRUNO
 ;   TANK_RANGE       80   pixels: he fires at a car this near or nearer, ahead of him ...
 ;   TANK_AIM          6   ... and no more than this many pixels to either side of the line his nose points along
-;   TANK_COOL        96   pictures between shots (about 8 seconds)
+;   TANK_COOL       192   pictures between shots (about 16 seconds; 96 until 18 Nov 2026)
+;   TANK_SHOTS        3   shells he has for a race; TANK_STRAIGHT 1: only with his nose square to the screen
 ;   SHELL_SHIFT       4   the shell's speed: 4 is 4 pixels a TV frame (3: 2 pixels; 5: 8). A car does about 1.7
 ;   SHELL_LIFE       30   TV frames the shell flies if it meets nothing (30 x 4 = 120 pixels)
 ;   SHELL_HIT         9   pixels: the shell hits a car whose middle is nearer than this, across and down
@@ -61,7 +62,8 @@
 ;   WH_LEN           12   pixels: while they are out they hit a car within this far ahead or behind ...
 ;   WH_REACH         26   ... and this far to the side (the wheel's tip is 14 from his middle, a car is 8 either way)
 ;   WH_TIME          10   pictures the wheels stay out (under a second)
-;   WH_COOL          60   pictures from when they come out until they can come out again (about 5 seconds)
+;   WH_COOL         120   pictures from when they come out until they can come out again (about 10 seconds; 60 until
+;                         18 Nov 2026); WH_USES 3: times a race they can come out
 ;   WHEEL_DMG        12   the damage a wheel does
 ;   WH_DRAW          12   pixels from his middle to the wheel's outer end, as drawn
 ;
@@ -84,7 +86,10 @@ WPN_SAFE       equ 40
 ARM_TANK       equ 3
 TANK_RANGE     equ 80
 TANK_AIM       equ 6
-TANK_COOL      equ 96
+TANK_COOL      equ 192            ; (was 96: Grant, 18 Nov 2026, "less frequently")
+TANK_SHOTS     equ 3              ; shells a race, like the NOS canisters (Grant: "they can only do this so many times")
+TANK_STRAIGHT  equ 1              ; 1: he fires only with his nose square to the screen, give or take one step of 64 (Grant:
+                                  ; "the tank is only allowed to shoot straight"): so the shell always flies straight
 SHELL_SHIFT    equ 4
 SHELL_LIFE     equ 30
 SHELL_HIT      equ 9
@@ -96,7 +101,8 @@ WH_SEE         equ 30
 WH_LEN         equ 12
 WH_REACH       equ 26
 WH_TIME        equ 10
-WH_COOL        equ 60
+WH_COOL        equ 120            ; (was 60: Grant, 18 Nov 2026, "the clown spikes less often")
+WH_USES        equ 3              ; times a race the wheels can come out (Grant: "like our NOS - they can only do this so many times")
 WHEEL_DMG      equ 12
 WH_DRAW        equ 12
 ; a car's row of arm_tab (8 bytes; arm_row gives HL at its PIECES):

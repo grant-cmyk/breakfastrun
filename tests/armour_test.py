@@ -203,6 +203,7 @@ def shell():
     check(hit > 0 and moved == 0, 'your car too: hit while you hold accelerate and steer, it spins and does not move until the spin is over')
     # at nothing: the range
     sc.quiet(True, False); sc.hold(YOU, 200, 250, 0); sc.hold(BRUNO, X, 340, 0); sc.hold(FRANK, X, 280, 0)
+    if 'sh_ammo' in S: g.poke(S['sh_ammo'], [3])
     k0 = list(g.mem(S['sh_fired'], 2)); n = 0
     while list(g.mem(S['sh_fired'], 1))[0] == k0[0] and n < 300: g.run(1); n += 1
     sc.hold(FRANK, 230, 250, 0); y0 = 340; ymin = y0
@@ -211,12 +212,22 @@ def shell():
     check(k == [k0[0] + 1, k0[1]] and want - 8 <= y0 - ymin <= want, 'a shell fired at nothing (its target taken away) hits nobody and ends at its range: %d pixels (%d asked)' % (y0 - ymin, want))
     # across the road: the grass
     sc.quiet(True, False); sc.hold(BRUNO, X - 10, 300, 16); sc.hold(FRANK, X + 14, 300, 16)
+    if 'sh_ammo' in S: g.poke(S['sh_ammo'], [3])            # (18 Nov 2026: the tank has TANK_SHOTS a race - these checks are about the shell)
     n = 0
     while list(g.mem(S['sh_fired'], 1))[0] == k[0] and n < 300: g.run(1); n += 1
     sc.hold(FRANK, 230, 250, 0); x0 = X - 10; xmax = x0
     while g.mem(S['sh_life'], 1)[0] and n < 600: g.run(1); n += 1; v = g.mem(S['sh_rec'], 6); xmax = max(xmax, v[1] + 256 * v[2])
     surf = g.mem(S['surface_map'], 9 * S['maph']); tx, ty = (xmax + 8) >> 3, (300 + 8) >> 3
     check(list(g.mem(S['sh_fired'], 2)) == [k[0] + 1, k[1]] and xmax - x0 < want - 16 and surf[ty * 9 + (tx >> 3)] & (0x80 >> (tx & 7)), 'a shell fired across the road ends on the grass, short of its range (after %d pixels)' % (xmax - x0))
+    if 'sh_ammo' in S:                                    # (18 Nov 2026, Grant: "they can only do this so many times")
+        g.poke(S['sh_ammo'], [0]); sc.quiet(True, False); sc.hold(BRUNO, X, 340, 0); sc.hold(FRANK, X, 280, 0)
+        f0 = g.mem(S['sh_fired'], 1)[0]; g.run(400)
+        check(g.mem(S['sh_fired'], 1)[0] == f0, 'with no shells left the tank does not fire, a car in line ahead of him for 400 TV frames (TANK_SHOTS %d a race)' % S['tank_shots'])
+        g.poke(S['sh_ammo'], [3]); sc.hold(BRUNO, X, 340, 12); sc.hold(FRANK, X + 46, 321, 12); g.poke(S['sh_cool'], [0])   # (Frank 50 px along heading 12)
+        f0 = g.mem(S['sh_fired'], 1)[0]; g.run(300); off = g.mem(S['sh_fired'], 1)[0] - f0
+        g.poke(S['sh_ammo'], [3]); sc.hold(BRUNO, X - 20, 340, 16); sc.hold(FRANK, X + 30, 340, 16); g.poke(S['sh_cool'], [0])   # (and square: 50 px straight ahead)
+        f0 = g.mem(S['sh_fired'], 1)[0]; g.run(300); on = g.mem(S['sh_fired'], 1)[0] - f0
+        check(off == 0 and on >= 1, 'nor with his nose off square: a car 50 px along heading 12 of 64 draws no shot (%d), the same set-up pointing straight does (%d) (TANK_STRAIGHT)' % (off, on))
     sc.close()
 
 def wheels():
@@ -241,6 +252,10 @@ def wheels():
     check(sc.row(JANE)[7] == 0 and sc.row(BRUNO)[7] == 0 and sc.damage(JANE) == 0 and sc.damage(BRUNO) == 0, 'a car 40 pixels to his other side, and one 36 pixels ahead of him, are not touched')
     sc.quiet(False, True); sc.hold(FRANK, X + 36, 300, 0); sc.picture(8)
     check(list(g.mem(S['sh_fired'], 4))[2] == 1, 'and for a car 36 pixels to his side - out of reach - the wheels do not come out')
+    if 'wh_ammo' in S:                                    # (18 Nov 2026: WH_USES a race)
+        g.poke(S['wh_ammo'], [0]); g.poke(S['wh_cool'], [0]); sc.quiet(False, True); sc.hold(FRANK, X + 22, 300, 0)
+        o0 = list(g.mem(S['sh_fired'], 4))[2]; sc.picture(20)
+        check(list(g.mem(S['sh_fired'], 4))[2] == o0, 'with no wheel-outs left this race, the wheels stay in for a car 22 pixels to his side (WH_USES %d a race)' % S['wh_uses'])
     sc.close()
 
 def limp():
