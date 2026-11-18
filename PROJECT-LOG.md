@@ -3151,8 +3151,9 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 | race70_elastic, good | 5, 1, 4, 3, 4 | 1 | 2.1, 1.3, 1.0, 2.4 (mean 1.7) | 25 | 23.9 / 24.0-24.3 |
 | race70_elastic, careful | 5, 5, 5, 5, 5 | 0 | 13.8, 11.9, 11.0, 11.0, 11.8 | 11 | 28.0 / 24.4-24.9 |
 
-  Over 10 races: race70 good won 5, mean place 2.2, 2.2 s behind when beaten; the computer cars within 1-2% of each other a
-  lap. The careful driver is 4 s a lap slower than the computer cars and loses by 11-15 s on either tape: the rubber band
+  Over 10 races (the same driver, races 1-10): race70 - won 7, mean place 1.9, 2.1 s behind when beaten; race70_elastic -
+  won 3, mean place 3.4, 2.6 s behind when beaten; the computer cars within 1-3% of each other a lap on both. (Five or ten
+  races are few: the same settings measured twice gave 5 and 7 wins of 10.) The careful driver is 4 s a lap slower than the computer cars and loses by 11-15 s on either tape: the rubber band
   is too small to close that, as asked ("subtle"); it does make the computer cars' own race closer and gives him a few
   more places changing hands (11 against 3 a race). Rubber-band settings tried (good driver, 10 races): push every 2
   waypoints, easing for ANY car ahead of you - you won 8 of 10 (the easing helps you from the back more than the push
