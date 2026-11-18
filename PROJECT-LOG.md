@@ -2931,3 +2931,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   track 3 green tapes are byte for byte as before. Armour tapes: 83 / 69 bytes free.
 - Tests: racetrack_test 15/15 (armour GRIP1), 16/16 (track 2 green); rt_fixed_test 3/3; armour_test 28/28 after
   re-recording its two pinned cards-tape md5s (those tapes now carry the new arrow); two_player_test 19/19.
+
+## 2026-11-18 SAST - your car's grass slowdown halved
+- Grant: "there is too much of a slow down when going off the track in my car. Slowdown should have half the effect it
+  currently does". Your car on the grass settled at 21% of the road's speed (lost 79%). Now its push on the grass is one and
+  a half times, not halved (src/grip.asm, switch RT_GRASS_YOU in src/racetrack.asm): it settles at 4.5 pushes, 64% of the
+  road's (loses 36%: under half the effect). The grass friction is unchanged, so it still bites the moment you go on.
+  The computer cars are unchanged (they spend 0-0.5% of a race on the grass).
+- tests/racetrack_test.py's grass check follows: 58-70% for your car where RT_GRASS_YOU is on (20-25% otherwise).
+- All 38 race-track tapes rebuilt; the plain game unchanged. racetrack_test 15/15 (armour GRIP1), 16/16 (track 3 green);
+  armour_test 28/28 after re-recording the cards tapes' md5s again; two_player_test 19/19.

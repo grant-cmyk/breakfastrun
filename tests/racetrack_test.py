@@ -10,7 +10,8 @@ line, grid, canisters). Then:
   3. A SLIDE: straight on at the first bend into the grass, a crawl, and back - the rule holds at every picture; and the
      scorer's two numbers (tools/make_racetrack_clash_score.py) from the real tape: BACKGROUND = scenery pixels showing the
      wrong colour, CAR = pixels of the car's outline not in its colour.
-  4. GRASS IS SLOW: top speed on the grass 20-25% of the road's; a car can drive onto the grass and back.
+  4. GRASS IS SLOW: top speed on the grass 20-25% of the road's (your car 58-70% since 18 Nov 2026, Grant: "half the effect"
+     - RT_GRASS_YOU in racetrack.asm; it is your car this test drives); a car can drive onto the grass and back.
 Usage: python3 tests/racetrack_test.py [part ...]     parts: scroll pack rule slide speed (default: all)
        TAPE=racer_track_green python3 tests/racetrack_test.py            another tape of track 1 (its build folder: the name less "racer_")
        BDIR=racer_2p TAPE=racer_2p python3 tests/racetrack_test.py       a tape whose build folder is not its name less "racer_"
@@ -234,7 +235,8 @@ def speed():
     g.key('Q', True); g.put(LX - 88, GY, 16)                         # on the grass below the start straight, pointing along it
     for _ in range(250): g.run(1)
     vg = v(); x, y, a = g.car()
-    check(GRASS[y + 8, x + 8] and 0.20 <= vg / top[0] <= 0.25, 'grass is slow: flat out on the grass %.2f pixels a frame, %.0f%% of the road\'s %.2f (20-25%% asked)' % (vg, 100 * vg / top[0], top[0]))
+    LO, HI = (0.58, 0.70) if S.get('rt_grass_you', 0) else (0.20, 0.25)    # (your car: RT_GRASS_YOU; see the note at the top)
+    check(GRASS[y + 8, x + 8] and LO <= vg / top[0] <= HI, 'grass is slow: flat out on the grass %.2f pixels a frame, %.0f%% of the road\'s %.2f (%d-%d%% asked)' % (vg, 100 * vg / top[0], top[0], LO * 100, HI * 100))
     g.put(LX - 40, GY, 0)                                            # ... then pointing at the road
     for _ in range(400):
         g.run(1); x, y, a = g.car()

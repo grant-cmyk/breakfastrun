@@ -187,10 +187,21 @@ yg_padd:
         ld a,(ix+C_FSH)
         cp 3
         jr z,yg_road
+        if RT_GRASS_YOU         ; your car (Grant, 18 Nov 2026: "Slowdown should have half the effect it currently does"):
+        push hl                 ; the push one and a half times, not halved - it settles at 4.5 pushes, 64% of the road's
+        ld h,d                  ; speed (it lost 79%, now 36%). The grass's friction is as before, so it still bites at once.
+        ld l,e
+        sra h
+        rr l
+        add hl,de
+        ex de,hl
+        pop hl
+        else
         rept RT_GRASS_PUSH
         sra d
         rr e
         endm
+        endif
 yg_road:
         endif
         add hl,de

@@ -16,7 +16,7 @@ import sys, os, math, hashlib
 from rt_lib import *
 TAPE = sys.argv[1] if len(sys.argv) > 1 else 'racer_armour_grip1'
 SRC = os.path.join(ROOT, 'build', TAPE, 'src')
-CARDS_MD5 = {'racer_cards': '136d3e7dd2efab12ab365f12cde90094', 'racer_cards_grip1': '1f19bf4f0b45868c6ee2a26bcf431311'}   # (18 Nov 2026: the corner arrow's option C changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
+CARDS_MD5 = {'racer_cards': 'b7bafc8ab01b0490094e1484e4e456a4', 'racer_cards_grip1': 'f71ba17e07232abd940376bd4e98628f'}   # (18 Nov 2026: the corner arrow's option C, then your car's grass slowdown halved, changed every race-track tape; re-recorded then. Was 2c244abf..., e18993a3...)
 YOU, FRANK, SPIKE, BRUNO, JANE = range(5)
 passed = failed = 0
 def check(ok, msg):

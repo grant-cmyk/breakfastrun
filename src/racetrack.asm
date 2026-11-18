@@ -74,6 +74,8 @@ RT_EDGE4_D equ RT_EDGE_D+1      ; and a square that may hold grass OR white: the
 RT_GRASS_FSH equ 2              ; the friction shift on grass: 2 (a quarter lost each frame; the old table's off-road value)
 RT_GRASS_PUSH equ 1             ; ... and the push on grass is halved this many times. 2 and 1: top speed 3 x 1/2 = 1.5 pushes,
                                 ; 21% of the road's. (2 and 0: 43%; 1 and 0: 14%; 2 and 2: 11%.)
+RT_GRASS_YOU equ 1              ; YOUR car on the grass: 1 - its push one and a half times (64% of the road's speed: Grant,
+                                ; 18 Nov 2026, "half the effect"); 0 - halved like the others' (RT_GRASS_PUSH, 21%)
 
 ; the cars' colours (ink), by C_KIND: you red; then cyan, yellow, magenta, white
 rt_inks: db 2,5,6,3,7
