@@ -3092,3 +3092,7 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   200 had caught a face half-redrawn for one TV frame, the looks being read from slower memory); armour_test 29/29 (cards
   md5s re-recorded); racetrack_test 19/19; two_player_test 19/19; lap_offtrack_test PASS; choose_test passed every check it
   reached before its 10-minute limit.
+- 18 Nov 2026, later: Grant's second faces paste - YOU eyes (front on) and sad, GREEN happy, PINK happy and sad, and trial
+  looks (idea1/idea2) for YOU, CYAN, GREEN (idea2) and PINK. Looks now 270 bytes (under 0x8000 on the race-track builds);
+  the choose build's seven 321 bytes, fitting. All tapes rebuilt; plain game and tracks 2, 3, 5 unchanged. faces_look_test
+  PASS, armour_test 29/29 (cards md5s re-recorded), racetrack_test 19/19.
