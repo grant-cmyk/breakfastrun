@@ -137,6 +137,13 @@ def asm(cards):
         brake = '%d+AI_%s_SLIP' % (n['slide'] // 4, letter) if GAME_SPEED == 100 else '((%d+AI_%s_SLIP)*%d+50)/100' % (SLIDE_AT[by[who]['g']] // 4, letter, GAME_SPEED)
         L.append('        db %s, %d, %d, %d, 0, 0      ; %s: %s (%s) - acceleration %d, speed %d, grip %d' % (
             brake, n['vsw'] // 4, n['ka'] & 255, n['ks'] & 255, colour, who, n['car'], n['a'], n['s'], n['g']))
+    # RACE mode (RACEMODE=1, src/race.asm): every computer car drives YOUR car's card (MAX's ratings) - its row as above,
+    # as numbers for race_low.asm's table (only constants: nothing is stored unless RACEMODE=1 builds the table)
+    n = by[PLAYER]
+    brake = '%d+AI_R_SLIP' % (n['slide'] // 4) if GAME_SPEED == 100 else '((%d+AI_R_SLIP)*%d+50)/100' % (SLIDE_AT[n['g']] // 4, GAME_SPEED)
+    L += ['; ---- RACE mode (RACEMODE=1): every computer car on %s\'s card (acceleration %d, speed %d, grip %d) - the same row, as numbers ----' % (PLAYER, n['a'], n['s'], n['g']),
+          'CD_R_SLIDE equ %d' % n['slide'], 'CD_R_BRAKE equ %s' % brake, 'CD_R_VSW equ %d' % (n['vsw'] // 4),
+          'CD_R_KA equ %d' % n['ka'], 'CD_R_KS equ %d' % n['ks']]
     return '\n'.join(L) + '\n'
 if __name__ == '__main__':
     cards = read_cards()

@@ -9,3 +9,9 @@ ai_styles_src:  ;  reach  line   ease fuss       (the numbers are in ai_tune.asm
         db AI_W_REACH, AI_W_LMASK,AI_W_LHALF, AI_W_EASE, AI_W_FUSS     ; WHITE Slim Jane, the fastest: full throttle (in
                                 ;       cars_init), brakes early, rarely wrong
 rev4_src:   db 0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15   ; 0..15, bits reversed
+        if OPT_RACE             ; RACE mode: the four drivers' styles (ai_tune.asm, AI_R_...; race.asm points ai_style here)
+ai_race_src:
+        rept 4
+        db AI_R_REACH, AI_R_LMASK,AI_R_LHALF, AI_R_EASE, AI_R_FUSS
+        endm
+        endif

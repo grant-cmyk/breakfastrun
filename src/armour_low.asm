@@ -31,6 +31,13 @@ afl_bar:
         ld a,(tr_row)
         sub TOWER_Y
         srl a
+        if OPT_RACE             ; (RACE mode: no health blocks - the gap to the car ahead in their place: race.asm)
+        ld e,a
+        ld a,(rmode)
+        or a
+        ld a,e
+        jp nz,rg_force
+        endif
 ; ARM_BAR (A = a place, 0 to 4): THE HEALTH BLOCKS of the car that row shows (Grant, 18 Nov 2026, option C: "when health
 ; is good all bars are green, when 2 bars the 2 bars are yellow and 1 bar the 1 bar is red, when 0 - all three bars
 ; flash red"). The row's last three squares (columns 29-31, both its character rows) black, a block in each: 6 pixels

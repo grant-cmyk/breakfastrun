@@ -896,7 +896,11 @@ tu_same:
         cp NCARS
         jr nz,tu_place
         if OPT_ARMOUR           ; (ARMOUR: no gap times in the race order - the health blocks have their room)
+        if OPT_RACE
+        jp rg_update            ; (RACE mode: one place's gap to the car ahead - race.asm)
+        else
         ret
+        endif
         else
         jp gap_update           ; nothing moved: bring one place's gap up to date
         endif
@@ -1121,6 +1125,9 @@ tg_row:
 ; the lines above and below the frame's rows are cleared. Uses the other BC (the count of each).
 tower_b:
         ld a,(tr_car)
+        if OPT_RACE
+tw_kmask: and 0xFF              ; (RACE mode: every car the racer - race.asm makes this AND 0)
+        endif
         rrca
         rrca
         ld l,a

@@ -105,3 +105,9 @@ cd_tab:
         db 105+AI_P_SLIP, 84, 251, 252, 0, 0      ; PINK: BRUNO (TANK) - acceleration 4, speed 2, grip 8
         dw 210
         db 52+AI_W_SLIP, 98, 10, 6, 0, 0      ; WHITE: JANE (DRAGSTER) - acceleration 7, speed 8, grip 1
+; ---- RACE mode (RACEMODE=1): every computer car on MAX's card (acceleration 5, speed 4, grip 4) - the same row, as numbers ----
+CD_R_SLIDE equ 300
+CD_R_BRAKE equ 75+AI_R_SLIP
+CD_R_VSW equ 86
+CD_R_KA equ 0
+CD_R_KS equ -2

@@ -119,6 +119,9 @@ t_redraw:
         call t_ging
         ld hl,t_script
         call ds_run
+        if OPT_RACE
+        call t_mode             ; RACE or COMBAT, after "M  MODE:"
+        endif
 t_logo: ld de,0                 ; the logo twice the size: 14 x 4 cells, centred on the card
 t_lsk:  ld a,0
         ld (db_skip+1),a
@@ -250,6 +253,18 @@ t_keys:
         endif
         endif                   ; (CHOOSE)
 t_k:
+        if OPT_RACE
+        cp 37                   ; M: RACE or COMBAT
+        jr nz,t_k1
+        ld hl,rmode
+        ld a,(hl)
+        xor 1
+        ld (hl),a
+        call t_mode
+        call k_up
+        jr t_loop
+t_k1:
+        endif
         cp 32                   ; K: the keys
         jr nz,t_loop
         call keys_screen
@@ -605,13 +620,30 @@ t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "
         else
         db 10,6,"1  ONE PLAYER",0   ; the four choices on four rows (Grant, 15 Nov 2026: "condense the menu, add a menu
         db 11,6,"2  TWO PLAYERS",0  ; option 'choose your player' ... we will build that later but you can show the
+        if OPT_RACE             ; RACE or COMBAT (Grant, 18 Nov 2026: "I need a game option - combat or race"): M changes
+        db 12,6,"M  MODE:",0    ; it - t_mode writes which after it (the row "3 CHOOSE YOUR PLAYER", which did nothing, is gone)
+        else
         db 12,6,"3  CHOOSE YOUR PLAYER",0   ; menu option for now": 3 does nothing yet)
+        endif
         db 13,6,"K  CHOOSE KEYS",0
         db 15,6,"--------------------",0
         endif
         db 0x94,6,1,20,0x79
         db 0xFF
 t_lrec: db "LAP RECORD",0
+        if OPT_RACE
+rmode:  db 1                    ; THE GAME: 1 RACE, 0 COMBAT (the title's M; kept from race to race - race.asm)
+t_mode:                         ; the title's row 12: which game
+        ld hl,t_race
+        ld a,(rmode)
+        or a
+        jr nz,tmo_1
+        ld hl,t_combat
+tmo_1:  ld bc,0x0C0F
+        jp print_at
+t_race: db "RACE  ",0
+t_combat: db "COMBAT",0
+        endif
         if 1-OPT_CHOOSE
         if OPT_2P = 0
 t_press: db "                    ",0

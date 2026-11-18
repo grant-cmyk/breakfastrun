@@ -149,6 +149,9 @@ rt_code_end:
         if OPT_ARMOUR
         include "armour_low.asm" ; ARMOUR: its parts that run rarely (the bars on the race order, a new race, firing a shell)
         endif
+        if OPT_RACE
+        include "race_low.asm"  ; RACE mode: the computer cars' card rows (written as they drive)
+        endif
         if OPT_RTLAP
         include "lap_low.asm"   ; your laps when you go off the track a fair bit and come back on further round
         endif
@@ -192,11 +195,17 @@ st_so:
         if OPT_RT
         call rt_new             ; RACETRACK: the window's squares black (racetrack.asm)
         endif
+        if OPT_RACE
+        call rm_setup           ; (RACE or COMBAT before the race order is first drawn: its cars' pictures)
+        endif
         call hud_init
         ld hl,cars_init         ; copy the starting records into place
         ld de,cars
         ld bc,NCARS*C_SIZE
         ldir
+        if OPT_RACE
+        call rm_setup           ; RACE or COMBAT: the chosen game's parts in place (race.asm)
+        endif
         if OPT_2P
         call p2_new             ; TWOP: player 2's things start afresh (twoplayer.asm)
         endif
@@ -285,6 +294,9 @@ cpu_move:
         endif                   ; that no car is ever drawn beyond a wall            ; cars that touch, and the cereal O's
 
         call race_progress      ; your waypoints and laps, everyone's progress
+        if OPT_ELASTIC
+        call el_tick            ; ELASTIC (RACE mode): the push for a computer car behind the leader (race.asm)
+        endif
         call hud_update         ; the panel, message bar and lap strip
         if OPT_2P
         call p2_panel           ; TWOP: both players' places and laps, top right (twoplayer.asm)
@@ -322,6 +334,9 @@ da_show:
         else
         if OPT_RT
         call rt_car             ; RACETRACK: the car by the clash rule (racetrack.asm)
+        if OPT_RACE
+        call num_draw           ; RACE mode: its number on its roof (race.asm)
+        endif
         else
         call draw_car
         endif
@@ -1482,7 +1497,7 @@ ai_style:
         add a,l                 ; kind * 5
         ld l,a
         ld h,0
-        ld de,ai_styles-5
+ais_tab: ld de,ai_styles-5      ; (RACE mode: race.asm points it at the race drivers' styles)
         add hl,de
         ret
 ; pace_gate (IX): A = CT_GO on PACE of every 16 frames, else 0
@@ -2539,7 +2554,13 @@ draw_car:
         ; picture: big_tab[kind * 16 + heading]: the frame's address, its first
         ; row and how many rows it has (only the rows in use are kept: the cars
         ; turned at full size are up to 27 rows, the upright ones 20)
+        if OPT_RACE             ; (RACE mode: every car the racer - race.asm makes this AND 0)
+        ld a,(ix+C_KIND)
+dc_kmask: and 0xFF
+        ld l,a
+        else
         ld l,(ix+C_KIND)
+        endif
         ld h,0
         add hl,hl
         add hl,hl
@@ -4288,6 +4309,9 @@ me_world:
         include "cards_code.asm" ; CARDS: the driver cards - each car its own speed, acceleration and grip (and cards.asm, the numbers)
         endif
         if OPT_ARMOUR
+        if OPT_RACE
+        include "race.asm"      ; RACE mode (the title's M): the parts that run in the race
+        endif
         include "armour.asm"    ; ARMOUR: every car's armour, the bar on the HUD, the tank's gun and the clown's wheels
         endif
         if OPT_RT = 0           ; (RACETRACK draws no tiles)
@@ -5370,6 +5394,9 @@ JIN_PART defl 0
         if OPT_CHOOSE
         include "choose_td.asm" ; CHOOSE: the choose screen's records, card and texts
         endif
+        if OPT_RACE
+        include "race_td.asm"   ; RACE mode: setting up a race, and the gaps in the race order
+        endif
 td_end2:
         if TD + td_end2 - td_src > 0x5E00
         .error the table block at TD runs into the stack's page
@@ -5382,6 +5409,12 @@ faces_mood equ TD + faces_mood_src - td_src
 faces_mood equ faces_mood_src
         endif
 pod_anim equ TD + pod_anim_src - td_src
+        if OPT_RACE
+rm_setup equ TD + rm_setup_src - td_src
+rg_force equ TD + rg_force_src - td_src
+rg_update equ TD + rg_update_src - td_src
+rg_gap  equ TD + rg_gap_src - td_src
+        endif
 pa_one  equ TD + pa_one_src - td_src
 pa_car  equ TD + pa_car_src - td_src
 pa_face equ TD + pa_face_src - td_src
@@ -5517,6 +5550,9 @@ row_index equ row_index_src         ; (in the program: the strips are 128 bytes 
 wp_tab    equ waypoints             ; (in the program: 46 of them outgrew BUFG)
 thrust_tab equ BUFD + thrust_tab_src - bufd_src
 ai_styles equ BUFD + ai_styles_src - bufd_src
+        if OPT_RACE
+ai_race   equ BUFD + ai_race_src - bufd_src
+        endif
 rev4      equ BUFD + rev4_src - bufd_src
 logo_bits equ logo_bits_src
 logo_attr equ logo_attr_src

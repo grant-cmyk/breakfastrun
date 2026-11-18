@@ -196,3 +196,27 @@ AI_W_SLIP  equ 16+AI_SK
 AI_W_NEAR  equ 0
 AI_W_PULL  equ 0
         endif
+; =====================================================================
+; RACE MODE (RACEMODE=1; Grant, 18 Nov 2026: "I would like to try a traditional race ... the idea is to make it competitive
+; so you don't run away with it"): the four computer drivers on the title's RACE. Every car is the racer on MAX's card
+; (CD_R_... in cards.asm), so the race is decided by driving - these numbers are how they drive it, the same for all four
+; (the luck of their lines and mistakes makes them differ). The numbers mean what they do above; SLIP is their margin into a
+; corner. Tuned with tests/race_measure.py (a good driver and a careful one, five races each, you from the back).
+; =====================================================================
+        if OPT_CARDS
+AI_R_REACH equ 48
+AI_R_LMASK equ 3
+AI_R_LHALF equ 2
+AI_R_EASE  equ 2
+AI_R_FUSS  equ 2
+AI_R_PACE  equ 16
+AI_R_REACT equ 0
+AI_R_ERR   equ 4
+AI_R_SLIP  equ 12
+; ELASTIC (ELASTIC=1: the second race tape) - a computer car behind the leader gets a push: one 64th of the plain push
+; (at 70% speed a 64th is 2.3% of the top speed) for every 2^EL_SH waypoints (32 pixels each, about half a second a waypoint) it is
+; behind, up to EL_MAX of them; one AHEAD of you eases off EL_EASE 64ths. Nothing once any car has finished.
+EL_SH      equ 1                ; (every 2 to the power EL_SH waypoints: 1 = every 2, about a second)
+EL_MAX     equ 3
+EL_EASE    equ 1
+        endif

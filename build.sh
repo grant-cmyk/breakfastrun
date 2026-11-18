@@ -136,6 +136,15 @@ printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the 
 # tools/make_cards.py), and the few other numbers that go with speed (GAME_SPEED in the code). 100 (the default): as it was.
 # NOS=1 (or 2): a GENTLER NOS - the push and top speed up a half (or a quarter) where they double today; NOS_FR=100: it burns
 # that many TV frames (50 today). tools/build_slow.sh builds the slow trial tapes.
+# RACEMODE=1 with ARMOUR=1 (Grant, 18 Nov 2026: "I need a game option - combat or race ... a traditional race"): one tape, two
+# games, chosen on the title with M - COMBAT (the armour tape's game, exactly) or RACE (every car the racer in its own colour
+# with a number on its roof, the same card for all, no armour and no weapons, the gap to the car ahead in the race order).
+# src/race.asm, src/ai_tune.asm (the RACE drivers). ELASTIC=1 with it: the computer cars behind the leader get a small push.
+# tools/build_race.sh builds the two tapes.
+printf 'OPT_RACE equ %s                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)\n' "${RACEMODE:-0}" >> "$ROOT/src/options.asm"
+printf 'OPT_ELASTIC equ %s              ; 1: RACE mode - a computer car behind the leader gets a small push (ELASTIC=1 RACEMODE=1)\n' "${ELASTIC:-0}" >> "$ROOT/src/options.asm"
+[ "${RACEMODE:-0}" = "1" ] && [ "${ARMOUR:-0}" != "1" ] && { echo "RACEMODE=1 needs ARMOUR=1 (tools/build_race.sh)"; exit 1; }
+[ "${ELASTIC:-0}" = "1" ] && [ "${RACEMODE:-0}" != "1" ] && { echo "ELASTIC=1 needs RACEMODE=1 (tools/build_race.sh)"; exit 1; }
 GS=${GAME_SPEED:-100}
 [ "$GS" != "100" ] && { [ "${CARDS:-0}" != "1" ] || [ -z "${BDIR:-}" ]; } && { echo "GAME_SPEED needs CARDS=1 and a BDIR= (tools/build_slow.sh)"; exit 1; }
 printf 'GAME_SPEED equ %s             ; the whole game'"'"'s speed, percent of today'"'"'s (GAME_SPEED=60 CARDS=1: tools/build_slow.sh)\n' "$GS" >> "$ROOT/src/options.asm"

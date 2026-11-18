@@ -37,7 +37,7 @@ cdp_1:
         add a,a
         ld e,a
         ld d,0
-        ld hl,cd_tab-8
+cdp_tab: ld hl,cd_tab-8         ; (RACE mode: race.asm points it at race_low.asm's rows)
         add hl,de
         ld e,(hl)               ; GRIP: where it starts to slide
         inc hl
