@@ -334,9 +334,6 @@ da_show:
         else
         if OPT_RT
         call rt_car             ; RACETRACK: the car by the clash rule (racetrack.asm)
-        if OPT_RACE
-        call num_draw           ; RACE mode: its number on its roof (race.asm)
-        endif
         else
         call draw_car
         endif

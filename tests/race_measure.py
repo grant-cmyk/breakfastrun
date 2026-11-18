@@ -6,7 +6,8 @@ YOUR car driven by a stand-in for a person:
 Usage: python3 tests/race_measure.py <tape name in build/> [good|careful] [races, default 5] [try=...] [jobs=5]
   try=  the RACE drivers' numbers poked in before the lights (no tape need be built), all four cars the same:
         reach,line,half,ease,fuss,err,brake - e.g. try=48,3,2,2,2,4,61  (brake: the speed it brakes down to for a corner,
-        cd_race's third byte, quarter-pixels a frame; - for any number to leave it as built)
+        cd_race's third byte, quarter-pixels a frame; - for any number to leave it as built), and an eighth, slide: the
+        speed above which the car slides when it steers (cd_race's first word, 256 = 1 px a frame) - MAX's card's grip
 Prints a line a race - the finishing order (Y you, C cyan, G yellow, P magenta, W white), your place, the gaps at the flag to
 the winner (seconds), how many times the order changed (and how many of those moved YOU), each car's flying laps - and a
 summary: your wins, your mean place, your mean gap to the winner when not winning, the slowest car's mean flying lap
@@ -24,13 +25,15 @@ def one(args):
     g.poke(S['seed'], [(0x34 + 37 * race) & 255, 0x12 + race])
     g.go()
     if tune:
-        reach, line, half, ease, fuss, err, brake = tune
+        reach, line, half, ease, fuss, err, brake = tune[:7]
+        slide = tune[7] if len(tune) > 7 else None
         for k in range(4):
             cur = list(g.mem(S['ai_race'] + 5 * k, 5))
             new = [v if v is not None else c for v, c in zip((reach, line, half, ease, fuss), cur)]
             g.poke(S['ai_race'] + 5 * k, new)
             if err is not None: g.poke(S['cars'] + (k + 1) * CS + 21, [err])
             if brake is not None: g.poke(S['cd_race'] + 8 * k + 2, [brake])
+            if slide is not None: g.poke(S['cd_race'] + 8 * k, [slide & 255, slide >> 8])
     steer = rt_ace.ace(g, 104, 30) if driver == 'good' else g.steer
     t = [[] for _ in range(5)]; last = [None] * 5; prev = None; changes = you_moves = 0
     for f in range(int(os.environ.get('RACE_SECS', '160')) * 50):

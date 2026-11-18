@@ -199,24 +199,37 @@ AI_W_PULL  equ 0
 ; =====================================================================
 ; RACE MODE (RACEMODE=1; Grant, 18 Nov 2026: "I would like to try a traditional race ... the idea is to make it competitive
 ; so you don't run away with it"): the four computer drivers on the title's RACE. Every car is the racer on MAX's card
-; (CD_R_... in cards.asm), so the race is decided by driving - these numbers are how they drive it, the same for all four
-; (the luck of their lines and mistakes makes them differ). The numbers mean what they do above; SLIP is their margin into a
-; corner. Tuned with tests/race_measure.py (a good driver and a careful one, five races each, you from the back).
-; =====================================================================
+; (CD_R_... in cards.asm: his top speed and acceleration), so the race is decided by driving - these numbers are how they
+; drive it, the same for all four (the luck of their lines and mistakes makes them differ). The numbers mean what they do
+; above. Tuned with tests/race_measure.py (18 Nov 2026, 70% speed, 10 races of 3 laps, you from the back of the grid):
+;   - their best driving alone (REACH 60 - the most that still counts every waypoint - flat out, EASE 0, few mistakes)
+;     lapped in 24.7 s at best against the good driver's 23.7: on MAX's card a computer car must slow to 0.82 px a frame
+;     for every bend (70% of its top speed) where your car's tyres hold far more. So:
+;   AI_R_GRIP  their GRIP in RACE, in 64ths of what MAX's card gives a computer car: 107 (x1.67) - on this track they then
+;              neither slide nor brake for a bend at their top speed (it is 1.18 px a frame; they slide above 1.37). Their
+;              top speed and acceleration stay MAX's. With it: the good driver won 6 of 10, mean place 1.9, 2.0 s behind
+;              the winner when beaten, the four of them within 2% of each other a lap, the order changing 32 times a race.
+;              (80/64: won 8 of 10; 64/64, MAX's card as it is: won 10 of 10 by 5 to 10 s.)
         if OPT_CARDS
-AI_R_REACH equ 48
+AI_R_REACH equ 60
 AI_R_LMASK equ 3
 AI_R_LHALF equ 2
-AI_R_EASE  equ 2
+AI_R_EASE  equ 0
 AI_R_FUSS  equ 2
 AI_R_PACE  equ 16
 AI_R_REACT equ 0
-AI_R_ERR   equ 4
+AI_R_ERR   equ 2
 AI_R_SLIP  equ 12
-; ELASTIC (ELASTIC=1: the second race tape) - a computer car behind the leader gets a push: one 64th of the plain push
-; (at 70% speed a 64th is 2.3% of the top speed) for every 2^EL_SH waypoints (32 pixels each, about half a second a waypoint) it is
-; behind, up to EL_MAX of them; one AHEAD of you eases off EL_EASE 64ths. Nothing once any car has finished.
-EL_SH      equ 1                ; (every 2 to the power EL_SH waypoints: 1 = every 2, about a second)
+AI_R_GRIP  equ 107
+; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
+; behind the leader gets one 64th more push (at 70% speed a 64th is 2.3% of its top speed) for every 2^EL_SH waypoints it
+; is behind (waypoints are 32 pixels apart, about half a second at speed), up to EL_MAX 64ths; and one more than EL_AHEAD
+; waypoints ahead of YOU eases off EL_EASE 64ths. Nothing pushes once any car has finished. As built: +2.3% a waypoint
+; behind the leader, up to +7% from 3 waypoints (about 1.6 s) behind; -2.3% for a car more than 4 waypoints (about 2 s)
+; ahead of you. Tried (tests/race_measure.py, 10 races each, the good driver): pushing every 2 waypoints and easing for any
+; car ahead of you - you won 8 of 10; easing only 2 s ahead - 5 of 10; this - 3 of 10, beaten by 0.9 s on average.
+EL_SH      equ 0                ; (every 2 to the power EL_SH waypoints: 1 = every 2, about a second)
 EL_MAX     equ 3
 EL_EASE    equ 1
+EL_AHEAD   equ 4                ; (more than this many waypoints ahead of you - about 2 seconds - before it eases off)
         endif
