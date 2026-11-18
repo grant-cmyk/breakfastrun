@@ -253,7 +253,11 @@ AI_RC_FUSS  equ 2
 AI_RC_PACE  equ 16
 AI_RC_REACT equ 0
 AI_RC_ERR   equ 1
-AI_RC_GRIP  equ 104
+AI_R_GRIPCUT equ 20               ; (all four cars' grip less this many 64ths: Grant, 19 Nov 2026, "with new drivers still too
+                                  ; tough. Make them skid more". tests/race_measure.py, good driver, 10 races each: cut 0 -
+                                  ; 20 of 40 wins at 75%; cut 12 - 5 of 10; cut 20 - 9 of 10 at 70% and 75%, 7 of 10 with the
+                                  ; catch-up; time in a slide C 11-13% G 25-32% P 7-13% W 28-37%)
+AI_RC_GRIP  equ 104-AI_R_GRIPCUT
 AI_RC_KA    equ 0
 AI_RC_KS    equ 0-2*AI_R75
 ; YELLOW - THE LATE BRAKER: cuts every corner as hard as it may (REACH 60), never lifts, twitchy hands (FUSS 3) - in a
@@ -267,7 +271,7 @@ AI_RY_FUSS  equ 3
 AI_RY_PACE  equ 16
 AI_RY_REACT equ 0
 AI_RY_ERR   equ 5
-AI_RY_GRIP  equ 76
+AI_RY_GRIP  equ 76-AI_R_GRIPCUT
 AI_RY_KA    equ 0
 AI_RY_KS    equ 2-AI_R75
 ; MAGENTA - THE WIDE ONE: keeps a little nearer the middle of the road (REACH 54), on its own line a few pixels to the
@@ -281,7 +285,7 @@ AI_RM_FUSS  equ 2
 AI_RM_PACE  equ 16
 AI_RM_REACT equ 0
 AI_RM_ERR   equ 2
-AI_RM_GRIP  equ 92
+AI_RM_GRIP  equ 92-AI_R_GRIPCUT
 AI_RM_KA    equ 6
 AI_RM_KS    equ 1-2*AI_R75
 ; WHITE - THE ERRATIC ONE: its line wanders the most (-8 to +7 px), twitchy hands, never lifts, the most mistakes (about
@@ -294,7 +298,7 @@ AI_RW_FUSS  equ 3
 AI_RW_PACE  equ 16
 AI_RW_REACT equ 0
 AI_RW_ERR   equ 10
-AI_RW_GRIP  equ 80
+AI_RW_GRIP  equ 80-AI_R_GRIPCUT
 AI_RW_KA    equ 0
 AI_RW_KS    equ 1-AI_R75
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car

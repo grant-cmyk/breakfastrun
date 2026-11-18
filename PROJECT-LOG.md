@@ -3260,3 +3260,16 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   other 12 times near you (`python3 tests/race_shots.py racer_race75 mix`).
 - NOT VERIFIED: nobody has driven it; whether the four styles read as different on a real screen at speed (yellow's and
   white's slides and lines, cyan's tidiness); whether the good-driver autopilot stands for a person at 75%; NOS's effect.
+
+## 2026-11-19 01:18 SAST - race mode: computer cars skid more, races easier (cloud session, Claude)
+- Grant: "with new drivers still too tough. Make them skid more".
+- src/ai_tune.asm: AI_R_GRIPCUT 20 - every RACE computer car's grip 20 64ths less (cyan 84, yellow 56, magenta 72,
+  white 60; MAX's card is 64), so they slide sooner and wider in the bends. COMBAT untouched.
+- MEASURED (tests/race_measure.py, good driver, 10 races each): cut 0 - 20 of 40 wins at 75% (baseline); cut 12 - 5 of 10;
+  cut 20 - 9 of 10 at 70% and at 75%, 7 of 10 on the 75% catch-up tape (was 13 of 40). Time in a slide: cyan 11-13%,
+  yellow 26-32%, magenta 10-13%, white 28-37%. Careful driver at 75%: 0 of 10 (it laps 16% slower than the good one).
+- TESTS: race_mode_test grip bound widened from 64-112 to 48-112 64ths of MAX's grip (two cars now have less than him, by
+  design). 18 of 18 racer_race75; 17 of 18 racer_race70, racer_race70_elastic, racer_race75_elastic - the same known
+  catch as before (the side panel half-repainted for one TV frame as two cars swap places), still for Grant to decide.
+- BYTE FOR BYTE: racer.tap, racer_track2/3/5 the same md5 after the rebuild; only the four race tapes changed.
+- NOT VERIFIED: nobody has driven it; whether 9 of 10 for the autopilot means "about right" for a person.

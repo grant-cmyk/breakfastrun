@@ -19,7 +19,7 @@ on the real tape. Usage: python3 tests/race_mode_test.py [tape name in build/, d
     and its PACE, REACT, ERR) and its car's row (grip, ACCEL and SPEED pushes) are the ones ai_tune.asm gives that colour
     (the tape's own numbers, from its symbols), no two drivers and no two cars alike - and the cars only SLIGHTLY
     different: each push within 2 64ths of MAX's card on the straight (KS; about 4.6% of the top speed at 70%) and 6 on
-    the way up (KA), the grip within 64-112 64ths of the card's (on the elastic tape the rubber band, kept in the row's
+    the way up (KA), the grip within 48-112 64ths of the card's (48 since 19 Nov 2026: Grant asked for more skids, so two cars now have less grip than MAX) (on the elastic tape the rubber band, kept in the row's
     eighth byte, taken off first)
   5 COMBAT: the health blocks are there (green on black, whole armour) and the code is as assembled (card_near, arm_bump,
     arm_tick, the cars' own pictures). The rest of COMBAT is tests/armour_test.py's (RT_MODE=combat on this tape)."""
@@ -150,7 +150,7 @@ ks16 = lambda v: v - 65536 if v > 32767 else v
 cdk = lambda n: ks16(S[n]) if S[n] > 32767 else S[n]
 have_c = [(r[0] + 256 * r[1], sgn((r[4] - r[7]) & 255), sgn((r[5] - r[7]) & 255)) for r in rows]
 want_c = [(S['cd_r_slide'] * S['ai_r%s_grip' % c] // 64, sgn((cdk('cd_r_ka') + ks16(S['ai_r%s_ka' % c])) & 255), sgn((cdk('cd_r_ks') + ks16(S['ai_r%s_ks' % c])) & 255)) for c in 'cymw']
-small = all(abs(ks - sgn(cdk('cd_r_ks') & 255)) <= 2 and abs(ka - sgn(cdk('cd_r_ka') & 255)) <= 6 and 64 * S['cd_r_slide'] // 64 <= gr <= 112 * S['cd_r_slide'] // 64 for gr, ka, ks in have_c)
+small = all(abs(ks - sgn(cdk('cd_r_ks') & 255)) <= 2 and abs(ka - sgn(cdk('cd_r_ka') & 255)) <= 6 and 48 * S['cd_r_slide'] // 64 <= gr <= 112 * S['cd_r_slide'] // 64 for gr, ka, ks in have_c)
 check(have_c == want_c and len(set(have_c)) == 4 and small, 'RACE: each computer car slightly different, as ai_tune.asm gives them (grip, ACCEL push, SPEED push; MAX\'s card %d, %d, %d): %s' % (S['cd_r_slide'], sgn(cdk('cd_r_ka') & 255), sgn(cdk('cd_r_ks') & 255), ' / '.join('%d,%d,%d' % c for c in have_c)))
 bad = []; gapbad = []; inkbad = []; colbad = []; hist = []; seen_gap = [0]; last_r = [None]; wrongs = [set()]
 def each(f):
