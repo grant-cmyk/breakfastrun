@@ -152,6 +152,9 @@ rt_code_end:
         if OPT_RTLAP
         include "lap_low.asm"   ; your laps when you go off the track a fair bit and come back on further round
         endif
+        if OPT_FACESLOW         ; the drivers' eyes, happy and sad looks (tools/make_faces.py): kept down here, where there is
+        include "faces_mood.asm" ; room for Grant's 18 Nov 2026 faces; the table block at TD keeps the earlier ones elsewhere
+        endif
 low_end:                        ; (the end of what is kept under 0x8000: the room left is LOWTAB-0xE8 less this)
         endif
         if OPT_MULTI
@@ -5355,8 +5358,8 @@ mu_ptab equ TD + mu_ptab_src - td_src
         else
 mu_tune equ 0
 mu_ptab equ 0
-        if 1-OPT_CHOOSE         ; (CHOOSE: seven drivers' lists, kept above the copy routine - hp.asm)
-        include "faces_mood.asm" ; each driver's eyes, happy and sad frames for the podium, as differences from the
+        if (1-OPT_CHOOSE) * (1-OPT_FACESLOW)   ; (CHOOSE: seven drivers' lists, kept above the copy routine - hp.asm; FACESLOW: below)
+        include "faces_mood_plain.asm" ; each driver's eyes, happy and sad frames for the podium, as differences from the
         endif
                                 ; everyday face (tools/make_faces.py, from Grant's drawings)
         endif
@@ -5370,8 +5373,11 @@ td_end2:
         .error the table block at TD runs into the stack's page
         endif
 t_name  equ TD + t_name_src - td_src
-        if 1-OPT_CHOOSE
+        if (1-OPT_CHOOSE) * (1-OPT_FACESLOW)
 faces_mood equ TD + faces_mood_src - td_src
+        endif
+        if OPT_FACESLOW
+faces_mood equ faces_mood_src
         endif
 pod_anim equ TD + pod_anim_src - td_src
 pa_one  equ TD + pa_one_src - td_src

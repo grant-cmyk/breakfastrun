@@ -3076,3 +3076,19 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   (112 frames in all). THE FIX (ARMOUR tapes, src/hud.asm hu_order): a row is drawn again EVERY picture (still one a picture
   at most); now the longest is 7 TV frames (a swap takes two pictures), 32 frames in all. 7 bytes. The same one-in-four rule
   is in the plain game and the other race-track tapes (not changed). Test: armour_test rows_same (fails on the old rule).
+
+## 2026-11-18 SAST - Grant's new faces in the race-track tapes; the faces editor
+- Faces editor (https://claude.ai/artifact/JXzX56aU6KkAgqKv15F3LE; tools/faces_page.template.html, tools/make_faces_page.py):
+  seven drivers, six looks each (now, eyes, happy, sad, idea1, idea2 - Grant: "two more face options for each face, I'm
+  exploring other face expressions"), click to swap a pixel, arrows to shift a face a pixel (wrapping), Mirror, Copy and
+  Paste between any two faces, Undo. tools/import_faces.py takes idea1/idea2 and WHITE.
+- Grant's paste: YOU eyes (the whole head a pixel over) and happy redrawn, and YOU idea1/idea2 (the idea slots of the
+  others were untouched copies and are not stored). The looks grew from 249 to 279 bytes; the table block at TD had about 4.
+  So on the race-track builds the looks now live under 0x8000 (OPT_FACESLOW, build.sh: race-track builds but track 3);
+  the plain game and track 3 keep the earlier looks (src/faces_mood_plain.asm, a frozen copy). The choose build's seven
+  looks (faces_mood7.asm) fit as they are (90 bytes free there).
+- All race-track, slow and choose tapes rebuilt; the plain game and tracks 2, 3, 5 unchanged. Armour GRIP1: 418 bytes free
+  in the program. Tests: faces_look_test PASS (it now reads the screen between pictures, as the others do: one sample in
+  200 had caught a face half-redrawn for one TV frame, the looks being read from slower memory); armour_test 29/29 (cards
+  md5s re-recorded); racetrack_test 19/19; two_player_test 19/19; lap_offtrack_test PASS; choose_test passed every check it
+  reached before its 10-minute limit.

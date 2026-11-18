@@ -105,6 +105,10 @@ printf 'OPT_RTPUP equ %s                ; RACETRACK: 1 - the place plate is draw
 # track 3, which has no room under 0x8000 for it (12 bytes free; it needs about 150): there the arrow stays yellow by the cars' rule.
 ARC=1; [ "${TRACK:-1}" = "3" ] && ARC=0
 printf 'OPT_ARROWC equ %s               ; RACETRACK: 1 - the corner arrow black over grass, green beside it (option C; not track 3)\n' "${RT_ARROWC:-$ARC}" >> "$ROOT/src/options.asm"
+# FACESLOW: the drivers' looks (src/faces_mood.asm, Grant's faces of 18 Nov 2026) kept under 0x8000 on the race-track builds,
+# where there is room; the plain game and track 3 have none and keep the earlier looks (src/faces_mood_plain.asm).
+FSL=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && FSL=1
+printf 'OPT_FACESLOW equ %s             ; RACETRACK: 1 - the drivers\x27 looks under 0x8000, Grant\x27s newest (not track 3, not the plain game)\n' "${RT_FACESLOW:-$FSL}" >> "$ROOT/src/options.asm"
 BAND=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TRACK:-1}" != "3" ] && BAND=1
 printf 'OPT_RTBAND equ %s               ; RACETRACK: 1 - a pair of the same banded picture is copied as it is (rt_sq: rt_c1; 87 bytes - track 3 has not the room)\n' "${RT_BANDED:-$BAND}" >> "$ROOT/src/options.asm"
 # RT_LAPFIX: your laps when you go off the track a fair bit and come back on further round (src/lap_low.asm; Grant, 18 Nov

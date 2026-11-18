@@ -42,6 +42,8 @@ seen = [dict() for _ in range(NC)]; wrong = [0] * NC; apart = 0; frames = 0
 want = [looks(c) if c < NC else None for c in order]
 while frames < 400:
     g.run(2); frames += 2
+    g.rpc('run', until_pc=S['snd_picture'], max_frames=40)   # (read between pictures, as the other tests do: a face caught half-redrawn
+                                                          #  for one TV frame is not a look - 18 Nov 2026, the looks now come from slower memory)
     now = []
     for p in range(NC):
         o = g.mem(S['shown_order'] + p, 1)[0]
