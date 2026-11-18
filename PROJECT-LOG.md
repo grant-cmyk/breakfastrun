@@ -3181,3 +3181,82 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   5, mean place 1.8, 1.1 s behind when beaten, laps 24.2-24.5 against 23.8. Elastic tape - in a slide 7-14%; won 4 of 5,
   mean place 1.2 (small samples: earlier runs of the same settings differed by two wins). 270/210 tried: won 5 of 5.
 - race_mode_test 16/16.
+
+## 2026-11-19 01:03 SAST - race mode: each computer driver its own style, each car a little different; 75% tapes
+- Grant (19 Nov 2026, after driving it): "the racers race too similarly - we need to mix it up a bit - so driving is
+  different and maybe cars are slightly different - at the moment it looks like a procession. Any chance of speed 75%?"
+- THE FOUR DRIVERS (src/ai_tune.asm, the RACE part: AI_RC_ cyan, AI_RY_ yellow, AI_RM_ magenta, AI_RW_ white; until now
+  one shared set, AI_R_). Their styles live in consts.asm's ai_race (four rows, no bigger than before), their PACE, REACT
+  and ERR in a 12-byte table in race_td.asm (rm_drv) that rm_setup copies into the cars, their cars' rows in
+  race_low.asm's cd_race (no bigger: four rows as before, now each its own):
+
+| colour | style | reach | line | ease | fuss | err | grip (64ths of the card) | its car against MAX's card |
+|---|---|---|---|---|---|---|---|---|
+| cyan | THE SMOOTH ONE: tight tidy line, lifts early, almost never wrong | 56 | 1,0 (0 to +1 px) | 2 | 2 | 1 | 104 (never slides) | best grip; MAX's top speed (the slowest on the straights) |
+| yellow | THE LATE BRAKER: cuts every corner, never lifts, twitchy, slides a third of the time, small mistakes | 60 | 7,7 (-7 to 0: its own line) | 0 | 3 | 5 | 76 (least) | +4.6% top speed (+2.3% at 75%) |
+| magenta | THE WIDE ONE: nearer the middle of the road, on its own line the other side, lifts for bends, steady | 54 | 7,0 (0 to +7) | 1 | 2 | 2 | 92 | +9% acceleration; +2.3% top speed (MAX's at 75%) |
+| white | THE ERRATIC ONE: wandering line, twitchy, about a mistake a lap, quick when it gets it right | 60 | 15,8 (-8 to +7) | 0 | 3 | 10 | 80 | +2.3% top speed (MAX's at 75%) |
+
+  All flat out (PACE 16), REACT 0. Until now: reach 60, line 3,2, ease 0, fuss 2, err 2, grip 88, MAX's speeds.
+- WHAT MIXES THEM (tests/race_measure.py; one knob at a time on all four, 20 races): the LINE. Cars on lines a few
+  pixels apart run side by side and pass; on one line they queue (yellow on 7,7, magenta on 7,0 and white on 15,8: the
+  computer cars changed places with each other 19 times a race; the same drivers with those three on 3,2 and 7,4: 8). Lap time: +1/64 of the speed
+  push is about 0.5 s a lap at 70% (0.6 at 75%) - the biggest lever; no slides (more grip) 0.1 s; REACH 56 +0.25 s, 50
+  +0.5 s; more mistakes or a wilder line very little; the ACCEL push nearly nothing at 70% (it only works under 0.94 px
+  a frame, which they seldom are). BRAKING FOR BENDS: tried on all four at 76, 74, 72 quarter-pixels (just under their top
+  speed) - every one 0.7 s a lap slower (they brake whenever they steer), so as before none brake (AI_R_BRAKEG, one for
+  all); the careful one lifts early instead (EASE 2).
+- 75% (Grant: "Any chance of speed 75%?"): `bash tools/build_race.sh` now also makes build/racer_race75.tap and
+  build/racer_race75_elastic.tap (GAME_SPEED=75, the gentler NOS, as the 70% pair; SPEEDS=70 for only the 70% pair). One
+  set of numbers does NOT serve both: at 75% the good driver's best clean lap is 22.8 s (3.5% quicker than at 70%) while
+  the computer cars, which hardly brake, gain 8% - with the 70% numbers (old or new) he won 0-1 of 20. So at 75% each car
+  is one or two 64ths slower on the straight (AI_R75 in each KS: cyan and magenta 2, yellow and white 1).
+- THE ELASTIC TAPES: the rubber band now goes on top of each car's own pushes (race.asm el_tick: the band now applied is
+  kept in the car row's eighth byte and only the change added; 7 bytes). The band itself as it was.
+- MEASURED (tests/race_measure.py: 3 laps, you from the back, the good driver rt_ace 104/30; "before" = the old shared
+  numbers poked into the new tapes with try=, the same races):
+
+| tape (races) | your wins | behind when beaten | computer cars' laps (slowest off quickest) | they swap places with each other, a race | nose-to-tail behind another car (cyan/yellow/magenta/white) | spread of the four at the lap lines |
+|---|---|---|---|---|---|---|
+| race70 before (20) | 11 | 1.0 s | 0.7% | 3.1 | 19/54/52/56% | 1.6, 1.8 s |
+| race70 now (40) | 19 | 1.8 s | 1.4% | 15.3 | 20/44/43/39% | 1.4, 1.6, 2.2 s |
+| race70_elastic before (20) | 15 | 1.9 s | 1.3% | 9.3 | 38/63/61/59% | 1.1, 1.0, 1.9 s |
+| race70_elastic now (40) | 16 | 2.1 s | 0.9% | 24.4 | 17/45/55/44% | 1.1, 1.1, 1.3 s |
+| race75, the 70% shared numbers (20) | 1 | 2.8 s | 1.9% | 2.3 | 7/45/62/44% | 1.4, 1.7, 3.1 s |
+| race75 now (40) | 20 | 1.8 s | 2.7% | 15.4 | 27/48/45/50% | 1.3, 1.6, 2.4 s |
+| race75_elastic, the 70% shared numbers (20) | 0 | 3.4 s | 0.5% | 9.7 | 16/64/62/60% | 1.0, 0.9, 1.8 s |
+| race75_elastic now (40) | 13 | 2.3 s | 1.6% | 26.8 | 24/36/54/47% | 1.0, 1.1, 1.6 s |
+
+  Mean flying laps now (good driver, 40 races): 70% - you 23.75, cyan 24.27, yellow 24.04, magenta 24.28, white 24.39;
+  75% - you 22.62, cyan 23.37, yellow 22.76, magenta 23.30, white 23.29. In a slide: cyan 0%, yellow 31%, magenta 8-11%,
+  white 31% of the time moving (all about 10% before). Each car's laps vary more (standard deviation 0.38-0.59 s against
+  0.29-0.40). The careful driver (10 races each): 0 wins on all four tapes, 11-13 s behind; the computer cars then 2.4%
+  (70%) and 4.0% (75%) apart a lap - at 75% yellow 22.5 against magenta 23.4. So: the computer cars change places with
+  each other three to five times as often; the pack stays about as close (1-2 s at the lap lines); less nose-to-tail
+  at 70% (a third of the time against nearly half), about the same at 75%. The elastic tapes stay the harder pair (won
+  16 and 13 of 40), as before. Five or ten races are few - the same settings measured twice gave 9 and 11 wins of 20.
+- tests/race_measure.py now also prints: the computer cars' swaps with EACH OTHER, the share of the time each is nose-to-
+  tail behind another car (its middle 0-32 px ahead along its line of travel, within 8 px to the side), the four's spread
+  at each lap line (the last lap's only when the fourth car finishes - the race stops when four have), each car's lap
+  spread, the four's slowest against quickest; tryC= tryG= tryP= tryW= poke one car's numbers (with pace, react, ka, ks).
+- MEMORY (all four tapes): program 371 bytes free (unchanged), 8 under 0x8000 (unchanged), the table block at TD 31 (47:
+  the drivers' table and its copy, 16 bytes); elastic tapes 286 in the program (293: the band on top, 7 bytes).
+- TESTS: tests/race_mode_test.py has two more checks (the four drivers' numbers and the four cars' rows are those
+  ai_tune.asm gives each colour, no two alike, each car within 2 64ths of MAX's top speed push, 6 of his acceleration
+  push, 64-112 64ths of his grip): 18 of 18 on racer_race70, racer_race70_elastic and racer_race75_elastic; 17 of 18 on
+  racer_race75 - "FAIL RACE: columns 29-31 in the row's own colour, as the place and the car (no health blocks) - 1
+  wrong, first (858, 1, [96, 96, 96, 120, 120, 120, 120, 120])": at TV frame 858 two cars had just changed places and
+  the emulator stopped half-way through the game painting place 2's row its new colour (frame by frame: 857 all 0x78,
+  858 half 0x60, 859 all 0x60 - right one frame later). The drawing is as it was; with five times the place changes
+  the test now catches one in the act. The test is NOT changed (a change to wait one frame was refused as loosening it):
+  for Grant or the next session to decide. armour_test 32 of 32 on racer_race75 (RT_MODE=combat); racetrack_test 19 of
+  19 on racer_race75 in RACE and in COMBAT (with the tape's switches: RACETRACK=1 RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1
+  RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 BDIR=racer_race75 TAPE=racer_race75 RT_MODE=race|combat).
+- BYTE FOR BYTE: racer.tap, racer_track2/3/5 rebuilt from nothing - the same md5 as before; every other tape rebuilt
+  (build_racetrack_tapes.sh, build_race.sh, build_slow.sh) - the same, bar the four race tapes. COMBAT's numbers are
+  untouched (cd_tab, ai_styles).
+- PICTURE: docs/design/racetrack/race_mode/race_mix_race75.mp4 - 12 s at real speed (every TV frame, 2x), race 6 at 75%
+  from 6 s after the lights: the pack in the first two bends of the race, the computer cars changing places with each
+  other 12 times near you (`python3 tests/race_shots.py racer_race75 mix`).
+- NOT VERIFIED: nobody has driven it; whether the four styles read as different on a real screen at speed (yellow's and
+  white's slides and lines, cyan's tidiness); whether the good-driver autopilot stands for a person at 75%; NOS's effect.
