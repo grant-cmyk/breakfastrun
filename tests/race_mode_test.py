@@ -14,6 +14,13 @@ on the real tape. Usage: python3 tests/race_mode_test.py [tape name in build/, d
     those squares are in the row's own colour (not the blocks' black), the gap shown for each place is the gap to the car
     ahead worked out from the game's checkpoint times (as it was at most a few pictures before), there is writing in the
     squares when there is a gap and none in the leader's row
+  6 RACE, EACH DRIVER ITS OWN (Grant, 19 Nov 2026: "the racers race too similarly ... maybe cars are slightly
+    different"): once the lights are green each computer car's driving numbers (its style row: reach, line, ease, fuss;
+    and its PACE, REACT, ERR) and its car's row (grip, ACCEL and SPEED pushes) are the ones ai_tune.asm gives that colour
+    (the tape's own numbers, from its symbols), no two drivers and no two cars alike - and the cars only SLIGHTLY
+    different: each push within 2 64ths of MAX's card on the straight (KS; about 4.6% of the top speed at 70%) and 6 on
+    the way up (KA), the grip within 64-112 64ths of the card's (on the elastic tape the rubber band, kept in the row's
+    eighth byte, taken off first)
   5 COMBAT: the health blocks are there (green on black, whole armour) and the code is as assembled (card_near, arm_bump,
     arm_tick, the cars' own pictures). The rest of COMBAT is tests/armour_test.py's (RT_MODE=combat on this tape)."""
 import sys, os
@@ -133,6 +140,18 @@ g.close()
 # ---- 3, 4 a whole RACE ----
 g = Game(TAPE, SRC); g.to_grid(); g.go(); S = g.sym; CS = S['c_size']
 check(combat_code(g)[:3] == (0xC9, 0xC9, 0xC9) and combat_code(g)[3:] == (0, 0), 'RACE: no line pulls, no armour lost, no weapons (card_near, arm_bump, arm_tick return at once), every car the racer (masks 0)')
+Y = S
+def sgn(v): return v - 256 if v > 127 else v
+want_d = [[Y['ai_r%s_%s' % (c, k)] for k in ('reach', 'lmask', 'lhalf', 'ease', 'fuss')] + [Y['ai_r%s_pace' % c], Y['ai_r%s_react' % c] + Y['opt_react1'], Y['ai_r%s_err' % c]] for c in 'cymw']
+have_d = [list(g.mem(S['ai_race'] + 5 * k, 5)) + list(g.mem(S['cars'] + (k + 1) * CS + S['c_pace'], 3)) for k in range(4)]
+check(have_d == want_d and len(set(map(tuple, have_d))) == 4, 'RACE: each computer driver its own numbers, as ai_tune.asm gives them (reach, line, half, ease, fuss, pace, react, err): %s' % ' / '.join(','.join(map(str, d)) for d in have_d))
+rows = [g.mem(S['cd_race'] + 8 * k, 8) for k in range(4)]
+ks16 = lambda v: v - 65536 if v > 32767 else v
+cdk = lambda n: ks16(S[n]) if S[n] > 32767 else S[n]
+have_c = [(r[0] + 256 * r[1], sgn((r[4] - r[7]) & 255), sgn((r[5] - r[7]) & 255)) for r in rows]
+want_c = [(S['cd_r_slide'] * S['ai_r%s_grip' % c] // 64, sgn((cdk('cd_r_ka') + ks16(S['ai_r%s_ka' % c])) & 255), sgn((cdk('cd_r_ks') + ks16(S['ai_r%s_ks' % c])) & 255)) for c in 'cymw']
+small = all(abs(ks - sgn(cdk('cd_r_ks') & 255)) <= 2 and abs(ka - sgn(cdk('cd_r_ka') & 255)) <= 6 and 64 * S['cd_r_slide'] // 64 <= gr <= 112 * S['cd_r_slide'] // 64 for gr, ka, ks in have_c)
+check(have_c == want_c and len(set(have_c)) == 4 and small, 'RACE: each computer car slightly different, as ai_tune.asm gives them (grip, ACCEL push, SPEED push; MAX\'s card %d, %d, %d): %s' % (S['cd_r_slide'], sgn(cdk('cd_r_ka') & 255), sgn(cdk('cd_r_ks') & 255), ' / '.join('%d,%d,%d' % c for c in have_c)))
 bad = []; gapbad = []; inkbad = []; colbad = []; hist = []; seen_gap = [0]; last_r = [None]; wrongs = [set()]
 def each(f):
     if g.mem(S['race_on'], 1)[0] and not g.mem(S['fin_count'], 1)[0]:     # the gap each place should show, every TV frame

@@ -5,8 +5,9 @@
 ; armour tape's game exactly. RACE:
 ;   - every car is the racer (MAX's car), told apart by its colour (a number on the roof was tried, 3 x 5 pixels in a
 ;     box: Grant, 18 Nov 2026, "Number won't be legible - that's fine" - so there are no numbers)
-;   - every computer car on MAX's top speed and acceleration, with more grip (race_low.asm; ai_tune.asm, AI_R_GRIP), and
-;     driven by the RACE drivers (ai_tune.asm, AI_R_...)
+;   - every computer car on MAX's card with its own small differences (race_low.asm; ai_tune.asm, AI_Rx_GRIP, _KA,
+;     _KS), and each driven by its own RACE driver (ai_tune.asm, AI_Rx_...: cyan the smooth one, yellow the late
+;     braker, magenta the wide one, white the erratic one)
 ;   - no armour lost, no shells, no wheels, no drivers steering at other cars: a bump is just a bump
 ;   - the race order shows, right of each car, its gap to the car ahead (rg_draw) where the health blocks were
 ;   - ELASTIC=1 (the second race tape): el_tick, below
@@ -14,10 +15,10 @@
 
         if OPT_ELASTIC
 ; EL_TICK (ELASTIC=1; every picture, after the places are worked out): RACE - each computer car's two pushes (its row in
-; race_low.asm) set afresh from the cars' progress (prog: laps x waypoints + waypoints passed): one 64th more for every
-; 2^EL_SH waypoints it is behind the leader, up to EL_MAX; EL_EASE less if it is more than EL_AHEAD waypoints
-; ahead of you. Once any car has finished,
-; no car is "behind" any more (only the easing is left).
+; race_low.asm: its own pushes plus the band, the band kept in the row's eighth byte) set afresh from the cars' progress
+; (prog: laps x waypoints + waypoints passed): one 64th more for every 2^EL_SH waypoints it is behind the leader, up to
+; EL_MAX; EL_EASE less if it is more than EL_AHEAD waypoints ahead of you. Once any car has finished, no car is
+; "behind" any more (only the easing is left).
 el_tick:
         ld a,(rmode)
         or a
@@ -55,20 +56,29 @@ el_2:
         jr c,el_3
         ld a,EL_MAX
 el_3:
-el_e:   add a,0
-        push af
-        add a,CD_R_KA
-        ld (de),a
-        inc de
-        pop af
-        add a,CD_R_KS
-        ld (de),a
-        ld a,e
-        add a,7
+el_e:   add a,0                 ; A = its rubber band now; the row's eighth byte holds the one in its pushes already
+        ex de,hl                ; (each car's pushes are its own since 19 Nov 2026: the band goes on top of them)
+        push de
+        ld d,a
+        inc hl
+        inc hl
+        inc hl
+        sub (hl)                ; the change
+        ld (hl),d
+        dec hl
+        dec hl
         ld e,a
-        jr nc,el_4
-        inc d
-el_4:   ld a,l
+        add a,(hl)
+        ld (hl),a               ; its SPEED push
+        dec hl
+        ld a,e
+        add a,(hl)
+        ld (hl),a               ; its ACCEL push
+        ld de,8
+        add hl,de               ; the next car's row
+        pop de
+        ex de,hl
+        ld a,l
         cp (prog+NCARS-1) AND 255
         jr nz,el_1
         ret

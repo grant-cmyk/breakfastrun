@@ -200,7 +200,7 @@ AI_W_PULL  equ 0
 ; RACE MODE (RACEMODE=1; Grant, 18 Nov 2026: "I would like to try a traditional race ... the idea is to make it competitive
 ; so you don't run away with it"): the four computer drivers on the title's RACE. Every car is the racer on MAX's card
 ; (CD_R_... in cards.asm: his top speed and acceleration), so the race is decided by driving - these numbers are how they
-; drive it, the same for all four (the luck of their lines and mistakes makes them differ). The numbers mean what they do
+; drive it - until 19 Nov 2026 the same for all four (now each its own: below). The numbers mean what they do
 ; above. Tuned with tests/race_measure.py (18 Nov 2026, 70% speed, 10 races of 3 laps, you from the back of the grid):
 ;   - their best driving alone (REACH 60 - the most that still counts every waypoint - flat out, EASE 0, few mistakes)
 ;     lapped in 24.7 s at best against the good driver's 23.7: on MAX's card a computer car must slow to 0.82 px a frame
@@ -210,21 +210,83 @@ AI_W_PULL  equ 0
 ;              top speed and acceleration stay MAX's. With it: the good driver won 6 of 10, mean place 1.9, 2.0 s behind
 ;              the winner when beaten, the four of them within 2% of each other a lap, the order changing 32 times a race.
 ;              (80/64: won 8 of 10; 64/64, MAX's card as it is: won 10 of 10 by 5 to 10 s.)
+;              Then 88 (Grant, 18 Nov 2026: "the computer cars need to skid a bit more": in a slide about 10% of the time).
+;              Since 19 Nov 2026 each car has its own (AI_Rx_GRIP, below).
         if OPT_CARDS
-AI_R_REACH equ 60
-AI_R_LMASK equ 3
-AI_R_LHALF equ 2
-AI_R_EASE  equ 0
-AI_R_FUSS  equ 2
-AI_R_PACE  equ 16
-AI_R_REACT equ 0
-AI_R_ERR   equ 2
-AI_R_SLIP  equ 12
-AI_R_GRIP  equ 88                ; (was 107: Grant, 18 Nov 2026, "the computer cars need to skid a bit more" - at 88 they slide
-                                  ; above 1.13 px a frame, just under their top speed: in a slide about 10% of the time they are
-                                  ; moving; the good driver still won 2 of 5, 2.2 s behind when beaten, laps unchanged. 270/210 = 82:
-                                  ; you won 5 of 5. tests/race_measure.py prints the share)
-AI_R_BRAKEG equ 107               ; ... the speed they brake down to for a bend stays as tuned (it went with AI_R_GRIP until then)
+AI_R_SLIP  equ 12                ; (all four: added to the card's corner speed before AI_R_BRAKEG)
+AI_R_BRAKEG equ 107               ; the speed they brake down to for a bend, in 64ths of the card's: at 107 over their top
+                                  ; speed, so they never brake - they lift instead (EASE). Braking even just under the top
+                                  ; speed (19 Nov 2026: at 76, 74, 72 quarter-pixels) cost every car about 0.7 s a lap -
+                                  ; they brake whenever they steer - so it is the same for all four
+; EACH DRIVER ITS OWN STYLE, EACH CAR A LITTLE DIFFERENT (Grant, 19 Nov 2026, after driving it: "the racers race too
+; similarly - we need to mix it up a bit - so driving is different and maybe cars are slightly different - at the moment
+; it looks like a procession"). Until then all four drove as one (REACH 60, line 3,2, EASE 0, FUSS 2, PACE 16, REACT 0,
+; ERR 2, grip 88, MAX's top speed and acceleration). Now each colour has its own numbers: the drivers' eight as above,
+; and three for the car itself:
+;   GRIP where it starts to slide when it steers, in 64ths of MAX's card (88 was the four's: smaller slides sooner)
+;   KS   its SPEED push, 64ths more or less than MAX's card: its top speed on the straights (at 70% speed one 64th is
+;        about 2.3% of the top speed; a lap about 0.5 s quicker on its own)
+;   KA   its ACCEL push, the same way: how quickly it gets back up to speed after a slow corner, a slide or a bump (only
+;        under about 0.94 px a frame at 70%, so it is worth much less than KS)
+; Measured (tests/race_measure.py, 20 races of 3 laps, the good driver from the back, 70%): what mixes them most is the
+; LINE - two cars on lines a few pixels either side of the others' (yellow's 7,7: -7 to 0; magenta's 7,0: 0 to +7) can
+; run side by side and pass, where on one line they queue. With these the computer cars changed places with EACH OTHER
+; about 17 times a race (3 with the four the same), and ran nose-to-tail behind another car about a third of the time
+; (about half). Their laps within 1.5% of each other; the good driver won 9 of 20, 1.9 s behind when beaten.
+; CYAN - THE SMOOTH ONE: a tight, tidy line (0 to +1 px off it), lifts early for a bend (EASE 2), almost never wrong;
+;        its car grips best (it never slides) but has MAX's top speed - the others are quicker on the straights
+AI_RC_REACH equ 56
+AI_RC_LMASK equ 1
+AI_RC_LHALF equ 0
+AI_RC_EASE  equ 2
+AI_RC_FUSS  equ 2
+AI_RC_PACE  equ 16
+AI_RC_REACT equ 0
+AI_RC_ERR   equ 1
+AI_RC_GRIP  equ 104
+AI_RC_KA    equ 0
+AI_RC_KS    equ 0
+; YELLOW - THE LATE BRAKER: cuts every corner as hard as it may (REACH 60), never lifts, twitchy hands (FUSS 3) - in a
+;        slide more than a quarter of the time - and more small mistakes; its own line, a few pixels to one side; its car
+;        the fastest on the straights (+4.6%) and the least grip
+AI_RY_REACH equ 60
+AI_RY_LMASK equ 7
+AI_RY_LHALF equ 7
+AI_RY_EASE  equ 0
+AI_RY_FUSS  equ 3
+AI_RY_PACE  equ 16
+AI_RY_REACT equ 0
+AI_RY_ERR   equ 5
+AI_RY_GRIP  equ 76
+AI_RY_KA    equ 0
+AI_RY_KS    equ 2
+; MAGENTA - THE WIDE ONE: keeps a little nearer the middle of the road (REACH 54), on its own line a few pixels to the
+;        other side, lifts for the bends (EASE 1), steady hands; its car is the quickest away from a slow corner (+9%
+;        acceleration), a touch quicker on the straights (+2.3%), grips a little better than MAX's computer car did
+AI_RM_REACH equ 54
+AI_RM_LMASK equ 7
+AI_RM_LHALF equ 0
+AI_RM_EASE  equ 1
+AI_RM_FUSS  equ 2
+AI_RM_PACE  equ 16
+AI_RM_REACT equ 0
+AI_RM_ERR   equ 2
+AI_RM_GRIP  equ 92
+AI_RM_KA    equ 6
+AI_RM_KS    equ 1
+; WHITE - THE ERRATIC ONE: its line wanders the most (-8 to +7 px), twitchy hands, never lifts, the most mistakes (about
+;        one a lap) - and quick when it gets it right: its car +2.3% on the straights, a little less grip
+AI_RW_REACH equ 60
+AI_RW_LMASK equ 15
+AI_RW_LHALF equ 8
+AI_RW_EASE  equ 0
+AI_RW_FUSS  equ 3
+AI_RW_PACE  equ 16
+AI_RW_REACT equ 0
+AI_RW_ERR   equ 10
+AI_RW_GRIP  equ 80
+AI_RW_KA    equ 0
+AI_RW_KS    equ 1
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
 ; behind the leader gets one 64th more push (at 70% speed a 64th is 2.3% of its top speed) for every 2^EL_SH waypoints it
 ; is behind (waypoints are 32 pixels apart, about half a second at speed), up to EL_MAX 64ths; and one more than EL_AHEAD

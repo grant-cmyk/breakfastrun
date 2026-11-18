@@ -16,17 +16,19 @@ rm_setup_src:
         inc a
         jr z,rms_p
         ld bc,0xC9C9            ; RACE: they return at once (no steering at other cars, no armour lost, no weapons)
-        ld hl,cars+C_SIZE+C_PACE
+        push bc
+        ld hl,TD+rm_drv_src-td_src
+        ld de,cars+C_SIZE+C_PACE
         ld a,4
-rms_1:  ld (hl),AI_R_PACE       ; the race drivers' throttle, thinking and mistakes
-        inc hl
-        ld (hl),AI_R_REACT+OPT_REACT1
-        inc hl
-        ld (hl),AI_R_ERR
-        ld de,C_SIZE-2
-        add hl,de
+rms_1:  ld bc,3                 ; each race driver's throttle, thinking and mistakes (rm_drv, below)
+        ldir
+        ex de,hl
+        ld bc,C_SIZE-3
+        add hl,bc
+        ex de,hl
         dec a
         jr nz,rms_1
+        pop bc
         ld hl,cd_race-8
         ld de,ai_race-5
 rms_p:  ld (cdp_tab+1),hl       ; the cars' card rows
@@ -37,6 +39,11 @@ rms_p:  ld (cdp_tab+1),hl       ; the cars' card rows
         ld a,c
         ld (arm_tick),a
         ret
+rm_drv_src:                     ; RACE: each computer driver's PACE, REACT and ERR (ai_tune.asm, AI_Rx_...)
+        db AI_RC_PACE, AI_RC_REACT+OPT_REACT1, AI_RC_ERR        ; CYAN    the smooth one
+        db AI_RY_PACE, AI_RY_REACT+OPT_REACT1, AI_RY_ERR        ; YELLOW  the late braker
+        db AI_RM_PACE, AI_RM_REACT+OPT_REACT1, AI_RM_ERR        ; MAGENTA the wide one
+        db AI_RW_PACE, AI_RW_REACT+OPT_REACT1, AI_RW_ERR        ; WHITE   the erratic one
 
 ; RG_UPDATE (tower_update, a picture when no row of the race order needed drawing): RACE - one place's gap brought up to
 ; date (place = renders MOD 5). RG_FORCE (arm_flag, RACE: the row has just been drawn): its gap drawn, A = its place.
