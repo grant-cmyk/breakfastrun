@@ -65,48 +65,6 @@ cn_row:                         ; A = a kind: HL = its card row (the rows card_p
         ld hl,(cdp_tab+1)
         add hl,de
         ret
-cn_ohit:                        ; (bumps_o, IX = a computer car that has just bounced off an O; HL kept): ON NOS, A CRASH - three
-        ld a,(cn_burn)          ; quarters of its speed gone, its NOS over (its row put back next picture) and it flickers as a hurt
-        or a                    ; car does (arm_tab byte 4: weight.asm)
-        ret z
-        ld a,(cn_who)
-        cp (ix+C_KIND)
-        ret nz
-        push hl
-        ld a,1
-        ld (cn_burn),a
-        push ix
-        pop hl
-        ld de,C_VX
-        add hl,de
-        call cno_q
-        call cno_q
-        ld a,(ix+C_KIND)
-        add a,a
-        add a,a
-        add a,a
-        add a,(arm_tab+4) AND 255
-        ld l,a
-        adc a,(arm_tab+4)/256
-        sub l
-        ld h,a
-        ld (hl),WT_FLASH
-        pop hl
-        ret
-cno_q:                          ; the word at HL a quarter (signed); HL on 2
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        sra d
-        rr e
-        sra d
-        rr e
-        ld (hl),d
-        dec hl
-        ld (hl),e
-        inc hl
-        inc hl
-        ret
 cn_burn: db 0                   ; pictures of NOS left (one car at a time)
 cn_wait: db 0                   ; pictures before the next may light
 cn_who:  db 0                   ; whose

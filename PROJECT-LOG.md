@@ -3747,3 +3747,10 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Grant: "There is some flickering of the cars, especially when they contact eachother". The hurt computer car's flicker
   (and the NOS crash's, the same) is left out on the breakfast tapes.
 - race_mode_test 12/12 on both fast tapes; plain tapes byte-identical. Not yet driven by Grant.
+
+## 2026-11-22 SAST - the panel's map bigger: 40 wide (cloud session, Claude)
+- Grant: "The map in the top right corner needs to be quite a big bigger". Both fast tapes now MAPW40=1 with MAPHUD: the
+  40 x 29 map (19/256, was 24 x 17 at 11/256) at columns 26-30, lines 6-34, above RACE; its ink (145 bytes) under 0x8000
+  (MAPDAT there when MAPHUD), copied to the screen as the 24-wide one was; colours over its 5 x 5 squares. Room on the
+  trial tape: cn_ohit/cno_q moved from cnos_low.asm to cnos.asm (program 11 bytes free, under 0x8000 27). Picture:
+  docs/design/map_on_panel.png.

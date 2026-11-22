@@ -181,6 +181,10 @@ low_end:                        ; (the end of what is kept under 0x8000: the roo
         if OPT_CNOS
         include "cnos_low.asm"  ; CNOS: the chasers' NOS - its helpers and data (the rule: cnos.asm)
         endif
+        if OPT_MAP40 * OPT_MAPHUD
+MAPDAT:                         ; MAPW40 with MAPHUD: the 40-wide map's ink here, under 0x8000 (Grant, 22 Nov 2026: "The map in the
+        include "minimap.asm"   ; top right corner needs to be quite a big bigger"); the cars' dots XORed into it
+        endif
 low_end:
         endif
         if OPT_MULTI
@@ -5033,7 +5037,7 @@ isr_x:
         if OPT_RT = 0           ; (RACETRACK: under 0x8000)
         include "title2.asm"    ; the title screen's car (the rest: title.asm, below the program)
         endif
-        if OPT_MAP40
+        if OPT_MAP40 * (1 - OPT_MAPHUD)
 MAPDAT:                         ; MAPW40: the mini-map's ink lives here, 5 bytes a line (the cars' dots are XORed into it: map_update)
         include "minimap.asm"
         endif
@@ -5394,8 +5398,13 @@ dl_attr:
         include "minimap.asm"   ; the mini-map's ink (start_once copies it to MAPDAT)
         endif
 MAP_ROW equ BUF_TOP+WIN_H-3-MAP_H       ; its first line in the back buffer: its last is 3 lines above the window's foot
+        if OPT_MAP40
+MAP_SY  equ 6                           ; MAPHUD: its first screen line - the panel's top right, above the race order (the 40-wide: 29 lines)
+MAP_SC  equ 26                          ;   its first column (26-30)
+        else
 MAP_SY  equ 12                          ; MAPHUD: its first screen line - the panel's top right, above the race order
 MAP_SC  equ 27                          ;   its first column (27-29)
+        endif
 MAP_ATTR equ 0x31                       ;   blue on the panel's yellow
 MAP_SCR equ 0x4000 + (MAP_SY AND 0xC0)*32 + (MAP_SY AND 7)*256 + (MAP_SY AND 0x38)*4 + MAP_SC
 MAP_BUF equ BUF + (MAP_ROW AND 0xC0)*32 + (MAP_ROW AND 7)*256 + (MAP_ROW AND 0x38)*4 + 2    ; ... and that line's address, the window's first byte

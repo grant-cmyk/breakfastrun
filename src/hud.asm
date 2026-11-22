@@ -1283,6 +1283,29 @@ map_blit:
         ld b,MAP_H
 mb_1:
         if OPT_MAP40            ; MAPW40: 5 bytes a line (about 200 T a line), the ink anywhere in the program (so INC HL)
+        if OPT_MAPHUD           ; (MAPHUD: to the screen - a copy)
+        ld c,e
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc e
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        ld e,c
+        else
         ld c,e
         ld a,(de)
         or (hl)
@@ -1309,6 +1332,7 @@ mb_1:
         ld (de),a
         inc hl
         ld e,c
+        endif
         else
         if OPT_MAPHUD           ; (the screen: a copy - the dots are in MAPDAT already)
         ld a,(hl)
@@ -1355,13 +1379,13 @@ mb_2:
         djnz mb_1
         if OPT_MAPHUD           ; (and its squares' colours: blue on the panel's yellow)
         ld hl,0x5800+(MAP_SY/8)*32+MAP_SC
-        ld de,32-3
+        ld de,32-MAP_W/8
         ld b,(MAP_SY+MAP_H+7)/8-MAP_SY/8
-mb_a:   ld (hl),MAP_ATTR
+mb_a:   ld c,MAP_W/8
+mb_a2:  ld (hl),MAP_ATTR
         inc l
-        ld (hl),MAP_ATTR
-        inc l
-        ld (hl),MAP_ATTR
+        dec c
+        jr nz,mb_a2
         add hl,de
         djnz mb_a
         endif
