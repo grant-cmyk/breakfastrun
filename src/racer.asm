@@ -2598,6 +2598,19 @@ dc_kmask: and 0xFF
         else
         ld l,(ix+C_KIND)
         endif
+        if OPT_HEAD32 = 2       ; HEAD32=all (the race-only tapes, 22 Nov 2026): every car at 32 headings - big_tab[kind * 32 + heading]
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld a,(ix+C_ANG)
+        rrca
+        and 31
+        or l
+        ld l,a
+        else
         if OPT_HEAD32           ; HEAD32 (Grant, 22 Nov 2026: 32 pictures for the racer): YOUR car's 32 headings come first in
         ld a,l                  ; big_tab (in RACE every car is yours), then the others' 16 each
         or a
@@ -2632,6 +2645,7 @@ dc_kt:
         and 15
         or l
         ld l,a
+        endif
         endif
         add hl,hl
         add hl,hl

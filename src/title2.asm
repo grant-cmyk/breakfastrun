@@ -62,6 +62,18 @@ zr_f:   ld a,0                  ; Carry: it is one of the card's bytes (column C
         ret
 ad_draw:
         ld a,(t_drv)            ; the frame: big_tab[car * 16 + heading]
+        if OPT_HEAD32 = 2       ; (HEAD32=all: big_tab[car * 32 + heading * 2] - the title's 16 headings of the 32)
+        rrca
+        rrca
+        rrca
+        ld l,a
+        ld a,(a_h)
+        add a,a
+        or l
+        ld l,a
+        ld h,0
+        jr ad_kk
+        endif
         if OPT_HEAD32           ; (HEAD32: YOUR car's 32 headings first, then the others' 16)
         or a
         jr nz,ad_k16
@@ -82,6 +94,9 @@ ad_k:
         endif
         ld l,a
         ld h,0
+        if OPT_HEAD32 = 2
+ad_kk:
+        endif
         add hl,hl
         add hl,hl
         ld de,big_tab

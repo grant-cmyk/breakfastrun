@@ -28,4 +28,10 @@ done
 T="NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 RACETRACK=1 NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=${STEADY:-5} GAME_SPEED=75"
 env $T OUT=racer_cars75 BDIR=racer_cars75 bash build.sh | tail -2
 env $T ELASTIC=1 OUT=racer_cars75_elastic BDIR=racer_cars75_elastic bash build.sh | tail -2
+# Grant, 22 Nov 2026 ("32 should be fine"; "that tap played better"): the race-only pair again at 32 headings for every car
+# (HEAD32=all), every car's left-facing headings mirrored as they are drawn (MIRROR=all - the room for it), 2,400 bytes of the
+# frames under 0x8000 and the rest in the program (BIG_LO_ROOM) - build/racer_cars75_h32.tap, racer_cars75_h32_elastic.tap
+T="$T HEAD32=all MIRROR=all BIG_LO_ROOM=2400"
+env $T OUT=racer_cars75_h32 BDIR=racer_cars75_h32 bash build.sh | tail -2
+env $T ELASTIC=1 OUT=racer_cars75_h32_elastic BDIR=racer_cars75_h32_elastic bash build.sh | tail -2
 bash build.sh > /dev/null && echo "the plain game built last: src/options.asm is the plain game's again"

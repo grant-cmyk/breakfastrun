@@ -36,8 +36,8 @@ OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapo
 OPT_RACE equ 0                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)
 OPT_NOSBOX equ 0               ; 1: the NOS you hold shown as a canister in a rounded box, one colour square each (NOSBOX=1)
 OPT_RACEONLY equ 0             ; 1: RACE only - no COMBAT, every car its own picture and driver card (RACEONLY=1 RACEMODE=1)
-OPT_HEAD32 equ 0               ; 1: the racer drawn at 32 headings, the computer cars pushed 32 ways (HEAD32=1: tools/build_race.sh)
-OPT_MIRROR equ 0               ; 1: a computer car's heading that is another's frame mirrored is not kept (MIRROR=1, with FLIP=1)
+OPT_HEAD32 equ 0               ; 1: the racer drawn at 32 headings (2, HEAD32=all: every car), the computer cars pushed 32 ways
+OPT_MIRROR equ 0               ; 1: a computer car's heading that is another's frame mirrored is not kept (MIRROR=1, with FLIP=1; 2, MIRROR=all: yours too)
 OPT_STEADY equ 0               ; 0: as before; 5: every picture 5 TV frames and the game moved 5 frames a picture (STEADY=5)
 OPT_ELASTIC equ 0              ; 1: RACE mode - a computer car behind the leader gets a small push (ELASTIC=1 RACEMODE=1)
 GAME_SPEED equ 100             ; the whole game's speed, percent of today's (GAME_SPEED=60 CARDS=1: tools/build_slow.sh)

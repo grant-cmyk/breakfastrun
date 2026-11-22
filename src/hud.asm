@@ -1128,6 +1128,15 @@ tower_b:
         if OPT_RACE
 tw_kmask: and 0xFF              ; (RACE mode: every car the racer - race.asm makes this AND 0)
         endif
+        if OPT_HEAD32 = 2       ; (HEAD32=all: every car 32 headings - its heading 8 faces right: big_tab + car * 128 + 32)
+        ld h,a
+        ld l,0
+        srl h
+        rr l
+        ld de,big_tab+32
+        add hl,de
+        jr tw_have
+        endif
         if OPT_HEAD32           ; (HEAD32: YOUR car's 32 headings first - its heading 8 faces right; then the others')
         ld hl,big_tab+32
         or a

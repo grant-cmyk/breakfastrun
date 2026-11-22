@@ -307,6 +307,7 @@ BIG_LO = 0x2100                                # room below the program for the 
 def big_layout():
     """Every frame's bytes, in order; those that fit below the program go there, the rest above."""
     lo, hi, tab, room = [], [], [], BIG_LO - (256 + 4 * 17 if MIRROR else 0)
+    if os.environ.get('BIG_LO_ROOM'): room = int(os.environ['BIG_LO_ROOM'])     # (HEAD32=all, 22 Nov 2026: only this many bytes of frames under 0x8000 - the rest go in the program)
     for k in range(len(KINDS)):
         fr = [big_bytes(g) for g in big_all[k]]
         N = len(big_all[k]); kept = set()

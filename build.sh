@@ -144,8 +144,10 @@ printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the 
 printf 'OPT_RACE equ %s                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)\n' "${RACEMODE:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_NOSBOX equ %s               ; 1: the NOS you hold shown as a canister in a rounded box, one colour square each (NOSBOX=1)\n' "${NOSBOX:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_RACEONLY equ %s             ; 1: RACE only - no COMBAT, every car its own picture and driver card (RACEONLY=1 RACEMODE=1)\n' "${RACEONLY:-0}" >> "$ROOT/src/options.asm"
-printf 'OPT_HEAD32 equ %s               ; 1: the racer drawn at 32 headings, the computer cars pushed 32 ways (HEAD32=1: tools/build_race.sh)\n' "${HEAD32:-0}" >> "$ROOT/src/options.asm"
-printf 'OPT_MIRROR equ %s               ; 1: a computer car'"'"'s heading that is another'"'"'s frame mirrored is not kept (MIRROR=1, with FLIP=1)\n' "${MIRROR:-0}" >> "$ROOT/src/options.asm"
+H32V=${HEAD32:-0}; [ "$H32V" = "all" ] && H32V=2
+printf 'OPT_HEAD32 equ %s               ; 1: the racer drawn at 32 headings (2, HEAD32=all: every car), the computer cars pushed 32 ways\n' "$H32V" >> "$ROOT/src/options.asm"
+MIRV=${MIRROR:-0}; [ "$MIRV" = "all" ] && MIRV=2
+printf 'OPT_MIRROR equ %s               ; 1: a computer car'"'"'s heading that is another'"'"'s frame mirrored is not kept (MIRROR=1, with FLIP=1; 2, MIRROR=all: yours too)\n' "$MIRV" >> "$ROOT/src/options.asm"
 printf 'OPT_STEADY equ %s               ; 0: as before; 5: every picture 5 TV frames and the game moved 5 frames a picture (STEADY=5)\n' "${STEADY:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_ELASTIC equ %s              ; 1: RACE mode - a computer car behind the leader gets a small push (ELASTIC=1 RACEMODE=1)\n' "${ELASTIC:-0}" >> "$ROOT/src/options.asm"
 [ "${RACEMODE:-0}" = "1" ] && [ "${ARMOUR:-0}" != "1" ] && { echo "RACEMODE=1 needs ARMOUR=1 (tools/build_race.sh)"; exit 1; }
