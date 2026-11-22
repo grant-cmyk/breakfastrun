@@ -159,8 +159,11 @@ if os.path.exists(_fm):
         for name in ORDER:
             for mood in ('eyes', 'happy', 'sad'):
                 f.write('; %s %s\n' % (name, mood))
+                mir = mood == 'eyes' and name in ('YOU', 'PINK', 'WHITE')   # (JFACE: their look is the face mirrored - jface.asm
+                if mir: f.write('        if OPT_JFACE = 0\n')               #  JF_MIRROR - so these rows are not kept: 22 Nov 2026)
                 for y in range(16):
                     if _all[(name, mood)][y] != _now[name][y]: f.write('        defb %d,%s\n' % (y, _b(_all[(name, mood)][y]))); _n += 3
+                if mir: f.write('        endif\n')
                 f.write('        defb 0xFF\n'); _n += 1
     print('faces_mood.asm: %d bytes' % _n)
 

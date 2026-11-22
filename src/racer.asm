@@ -54,6 +54,9 @@ HIMEM   equ COPIER + 152*40 + 3 ; 0xFFC3 .. 0xFFF3: 49 bytes above the screen-co
         if OPT_MAP40
 MAP_W   equ 40
 MAP_STRIP equ BUF+0x10A0        ; (the D0 strip: not used in this build)
+        if OPT_MAPHUD
+        include "vars_d0.asm"   ; (MAPHUD: some variables there instead)
+        endif
         else
 MAP_W   equ 24
 MAPDAT  equ BUF+0x10A0          ; D0: the mini-map's ink, 3 bytes a line (the cars' dots are XORed into it here: map_update)
@@ -180,6 +183,9 @@ low_end:                        ; (the end of what is kept under 0x8000: the roo
         endif
         if OPT_CNOS
         include "cnos_low.asm"  ; CNOS: the chasers' NOS - its helpers and data (the rule: cnos.asm)
+        endif
+        if OPT_LJ
+        include "linej.asm"     ; LINEJ: the finish line's judge
         endif
         if OPT_MAP40 * OPT_MAPHUD
 MAPDAT:                         ; MAPW40 with MAPHUD: the 40-wide map's ink here, under 0x8000 (Grant, 22 Nov 2026: "The map in the
@@ -325,6 +331,9 @@ cpu_move:
         endif
         if OPT_OIL
         call spill_tick         ; OIL: new spills each lap, who is on one (oil.asm)
+        endif
+        if OPT_LJ
+        call line_judge         ; LINEJ: who is over the line, in what order (linej.asm)
         endif
         if OPT_ARMOUR
         call arm_tick           ; ARMOUR: the cool-downs, the bars that flash, the tank's gun and the clown's wheels (armour.asm)
@@ -4048,14 +4057,24 @@ rp_all:
         ld a,(you_done)
         or a
         jr nz,rp_wait
+        if OPT_LJ               ; LINEJ: you are in when you cross the drawn line (linej.asm)
+        ld a,(line_at)
+        or a
+        jr z,rp_go_on
+        else
         ld a,(cars+C_LAPS)      ; you finished?  checked every picture
         cp LAPS+1
         jr c,rp_go_on
+        endif
         ld a,1
         ld (you_done),a
         ld hl,(race_time)       ; your time stays on the clock
         ld (you_time),hl
+        if OPT_LJ
+        ld a,(line_at)          ; your place: the order over the line
+        else
         ld a,(fin_at)           ; your place: the order you came in
+        endif
         ld (position),a
         call msg_finished
         ld a,(position)         ; and on the radio
@@ -4228,6 +4247,10 @@ car_in:
 ; progress (IX = car): A = laps * NWP + passed (stops at 255; a 3-lap race
 ; needs about 170), L = passed = waypoints since the line, 0..NWP-1
 progress:
+        if OPT_LJ               ; LINEJ: over the drawn line - in the order they crossed it (linej.asm)
+        call lj_prog
+        ret nz
+        endif
         ld a,(ix+C_LAPS)        ; finished: ahead of every car still racing,
         cp LAPS+1               ; in the order they came in
         jr c,pr_run
@@ -4235,7 +4258,11 @@ progress:
         ld d,0
         ld hl,fin_at
         add hl,de
+        if OPT_LJ
+        ld a,240                ; (LINEJ: counted in but not over the line yet - behind those over it)
+        else
         ld a,250
+        endif
         sub (hl)
         ld l,0
         ret
@@ -4674,6 +4701,7 @@ me_world:
         if OPT_JFACE
         include "jface.asm"     ; JFACE: the faces move with the music (in the program: the room under 0x8000 is full)
         endif
+
         endif
         include "armour.asm"    ; ARMOUR: every car's armour, the bar on the HUD, the tank's gun and the clown's wheels
         endif
@@ -6004,6 +6032,11 @@ faces     equ faces_src
         .error MIRROR needs FLIP=1
         endif
         if OPT_RACE
+        if OPT_MAPHUD
+        if C_SIZE - 28
+        .error vars_d0.asm: spill_rec is laid out for 28-byte car records
+        endif
+        endif
         if WS + FIN_RUN >= NWP
         .error FIN_RUN: the waypoints after the line must not wrap past the last one (racer.asm, tk_on and tk_ai)
         endif

@@ -175,3 +175,34 @@ cno_q:                          ; the word at HL a quarter (signed); HL on 2
         inc hl
         inc hl
         ret
+cn_set:                         ; HL = the burner's card row: NOS on it - its grip (the speed it slides from) three quarters,
+        ld e,(hl)               ; Jane's a half; Jane's brake off; both pushes CN_K 64ths more
+        inc hl
+        ld d,(hl)
+        ex de,hl
+        srl h
+        rr l
+        ld a,(cn_k)
+        cp CN_B
+        jr z,cs_1
+        ld b,h
+        ld c,l
+        srl b
+        rr c
+        add hl,bc
+        or a                    ; (NZ: A is Spike's kind)
+cs_1:   ex de,hl
+        ld (hl),d
+        dec hl
+        ld (hl),e
+        inc hl
+        inc hl
+        jr nz,cs_2              ; (Z: Jane - the flags are cp CN_B's still on her way: SRL/RR came before it)
+        ld (hl),255
+cs_2:   inc hl                  ; (the 4/5-top byte; cs_k: the ACCEL push, then the SPEED push)
+        call cs_k
+cs_k:   inc hl
+        ld a,(hl)
+        add a,CN_K
+        ld (hl),a
+        ret

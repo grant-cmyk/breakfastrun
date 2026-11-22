@@ -3754,3 +3754,22 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   (MAPDAT there when MAPHUD), copied to the screen as the 24-wide one was; colours over its 5 x 5 squares. Room on the
   trial tape: cn_ohit/cno_q moved from cnos_low.asm to cnos.asm (program 11 bytes free, under 0x8000 27). Picture:
   docs/design/map_on_panel.png.
+
+## 2026-11-22 SAST - THE FINISH ORDER: judged at the drawn line (cloud session, Claude)
+- Grant: "I definitely was second over the line and yet I was marked as third. So the game is not recording the finish
+  order correctly - this is not the first time I have seen this".
+- Cause (measured, tests: scratchpad lapx.py): a lap is counted when a car reaches the line's waypoint (x 327), not the
+  drawn line (x 288-295, middle 292). The computer cars are counted within REACH of their aim point - at x 274-287, before
+  the line; you within 40 px of the waypoint, looked at every other picture - at x 290-301. In a close finish a computer car
+  20-30 px behind you was in first. Worse: if your lap was not counted at the line (wide of the waypoint), you were not
+  "in" at all until later. Reproduced (scratchpad finorder.py, 12 close races, the computer cars 7/64 slower): without the
+  fix, race 9 - you over the line FIRST, the game had you LAST.
+- LINEJ=1 (both fast tapes; src/linej.asm, under 0x8000): each picture, a car on its last lap (heading for the line's
+  waypoint, or counted in already) whose middle has crossed x 292 on the bottom straight since the last picture is given
+  the next place (line_at); progress puts cars over the line in that order (those counted but not over yet behind them);
+  you are "in" - your place, the clock, FINISHED - when you cross it. With it: 20 of 20 races in the true order over the line.
+- Room: the trial tape was full. Its variables (the spill's, the NOS's, the judge's) moved to the D0 strip the 40-wide
+  map freed (src/vars_d0.asm: 66 of 90 bytes); the eyes rows of you, Bruno and Jane left out when JFACE (their look is the
+  mirror: 60 bytes; tools/make_faces.py); cn_set and cn_ohit moved into the program. The trial tape's program is now FULL
+  (0 bytes), 9 bytes under 0x8000; the main fast tape 53 and 64.
+- race_mode_test 12/12 on both fast tapes; plain tapes byte-identical.

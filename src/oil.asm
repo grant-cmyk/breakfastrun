@@ -270,8 +270,10 @@ spill_spots:                      ; top left of each spill (its middle - 8). ON 
         dw 150-8,424-8, 420-8,402-8     ; across). Right, right, left, left, top, top, bottom (before the grid), bottom (after the
                                         ; line: never on your first lap). A car on the line passes it; one a little off hits it.
                                         ; (The first spots, 8 on the line at the corner entries: docs/design/oil_spill_spots.png.)
+        if OPT_MAP40 * OPT_MAPHUD = 0   ; (the breakfast fast tapes: in the D0 strip - vars_d0.asm)
 spill_on:   db 0                  ; which of the 8 have a spill (bit 0 = S1)
 spill_lap:  db 0                  ; your lap when they were picked
 spill_spin: defs NCARS            ; each car (by kind): pictures of spin (and then immunity) left
 spill_rec:  defs C_SIZE           ; the record draw_car draws a spill from
+        endif
         include "oil_gfx.asm"

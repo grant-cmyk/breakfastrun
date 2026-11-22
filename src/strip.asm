@@ -41,6 +41,9 @@ srs_1:
         if OPT_OIL
         call spill_new          ; OIL: no spills yet, nobody spinning (oil.asm)
         endif
+        if OPT_LJ
+        call lj_new             ; LINEJ: nobody over the line (linej.asm)
+        endif
         xor a                   ; no damage, no oil can yet: the first comes 8 seconds in
         ld (dmg),a
         ld b,a

@@ -86,6 +86,9 @@ printf 'OPT_MAPHUD equ %s               ; 1: the mini-map on the panel (MAPHUD=1
 # JFACE=1 (breakfast race tapes; Grant, 22 Nov 2026): the faces move with the start and flag music; your other look is
 # your face mirrored (src/jface.asm). With RT_EYES=1 (the race order's faces look about before the start).
 printf 'OPT_JFACE equ %s                ; 1: the faces move with the music (JFACE=1 bash build.sh)\n' "${JFACE:-0}" >> "$ROOT/src/options.asm"
+# LINEJ=1 (breakfast fast tapes; Grant, 22 Nov 2026): the places at the finish by the drawn line itself (src/linej.asm).
+# Needs MAPW40=1 MAPHUD=1 (its variables are in the D0 strip those free).
+printf 'OPT_LJ equ %s                   ; 1: the finish line judges the places (LINEJ=1 bash build.sh)\n' "${LINEJ:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"
