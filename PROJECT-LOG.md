@@ -3301,5 +3301,12 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   RT_GRASS_YOU 2 on the race tapes): its push 1.75 times, 75% of the road's speed (was 1.5 times, 64%).
 - TEST FIX (not a loosening): tests/rt_lib.py settle() - when the emulator stopped inside ph_run (the computer cars' move,
   which keeps the place in registers until it writes it back), a car set down by put() was put back where it had been;
-  put() and car() now let that move finish first. race_mode_test 18 of 18 on racer_race75 (it was 17: this, and the
-  half-painted row before it, both the test catching the game mid-move).
+  put() and car() now let that move finish first.
+- FINAL (as pushed): race_mode_test 18 of 18 on all four race tapes (the one-frame half-painted row of 19 Nov did not
+  show in these runs - not proven gone). tests/race_measure.py, good driver, 10 races each: 75% - 9 of 10 wins, computer
+  laps C 23.35 Y 23.94 M 24.01 W 23.83 (2.8% apart; 2.6% before), places changing 21 times a race (about 17 before);
+  70% - 10 of 10; 75% catch-up - 9 of 10, beaten by 1.1 s. Lines at the bends 11.3 px apart on average (9.6 before).
+  Smoothness on racer_race75: 9.85 pictures a second, 430 of 471 at 5 frames; jump change 1.12 px (1.19 before), the car
+  alone 0.61 (0.78). The good-driver autopilot does not use NOS; the grass change only counts when it leaves the road.
+- NOT VERIFIED: nobody has driven it; whether a steady 10 a second feels smoother than an uneven 10.4; whether the lines
+  read as different on the screen; whether NOS and the grass now feel right.

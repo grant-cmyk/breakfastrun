@@ -3,6 +3,8 @@
 **Stamped:** 2026-11-19 22:06 SAST (wrap-up) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not merged to main) · commit: 4e7a7d1 (wrap-up; game change 96b7f86, race mode: computer cars skid more)
 **Lifecycle:** Active
 
+**LATEST (22 Nov 2026):** race tapes rebuilt - STEADY=5 (every picture 5 TV frames, same-size jumps; view lead 1 px a picture), each computer driver its own line (race.asm rl_line; ai_tune.asm AI_L0-3: cyan classic, yellow late, magenta a bit wide, white mixes them), NOS=1 (stronger), your car keeps 75% speed on grass. All four race tapes 18/18; autopilot wins 9 of 10 at 75%. Details: PROJECT-LOG, 22 Nov 2026. Next: Grant drives racer_race75.tap. Smoother still needs more pictures a second or a slower game.
+
 **START HERE (wrap-up, 19 Nov 2026 22:06 SAST):**
 - THE TAPES TO DRIVE: build/racer_race75.tap (Race/Combat title, M toggles mode, 75% speed) and racer_race75_elastic.tap (with catch-up); 70% twins racer_race70*.tap. Raw links: https://github.com/grant-cmyk/breakfastrun/raw/claude/breakfast-run-layout-ik0vpe/build/racer_race75.tap
 - LAST CHANGE (Grant: "with new drivers still too tough. Make them skid more"): src/ai_tune.asm AI_R_GRIPCUT 20 - all four RACE computer cars 20 64ths less grip (cyan 84, yellow 56, magenta 72, white 60; MAX 64). Good-driver autopilot now wins 9 of 10 at 70% and 75% (was 20 of 40), 7 of 10 with catch-up; yellow slides 26-32% of the time, white 28-37%. Cut 12 made no difference (5 of 10). If Grant says "too easy", try GRIPCUT 16. Rebuild: `bash tools/build_race.sh` then plain `bash build.sh` last; check racer.tap / racer_track2/3/5 md5 unchanged.
