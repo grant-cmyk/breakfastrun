@@ -25,7 +25,7 @@ done
 # different cars is their different behaviour"): RACEONLY=1 - the race only (no COMBAT, no M on the title), every car its own
 # picture and its own driver card (tools/driver_cards.txt), driven by the race drivers: build/racer_cars75.tap and
 # racer_cars75_elastic.tap. (HEAD32=1 / MIRROR=1 - 32 headings - are written and tested but not on these yet: stage 2.)
-T="NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 RACETRACK=1 NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=${STEADY:-5} GAME_SPEED=75"
+T="SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 RACETRACK=1 NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=${STEADY:-5} GAME_SPEED=75"
 env $T OUT=racer_cars75 BDIR=racer_cars75 bash build.sh | tail -2
 env $T ELASTIC=1 OUT=racer_cars75_elastic BDIR=racer_cars75_elastic bash build.sh | tail -2
 # Grant, 22 Nov 2026 ("32 should be fine"; "that tap played better"): the race-only pair again at 32 headings for every car

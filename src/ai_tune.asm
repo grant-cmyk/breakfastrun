@@ -339,10 +339,23 @@ AI_RW_KS    equ 1-AI_R75
 ; a race; then each one 64th slower (the 75% race tape Grant called "much better" had the cars at 23.4-24.0). Each still
 ; its card's grip (Jane slides most, Bruno least) and acceleration.
 AI_K_BRAKE equ 255              ; the speed it brakes down to for a corner (quarter-pixels a frame): 255 - never
+        if OPT_SCRUB = 0
 AI_KC_KS   equ 0-3              ; FRANK (cyan): his card's SPEED push less 3 64ths
 AI_KG_KS   equ 2                ; SPIKE (yellow): more 2
 AI_KP_KS   equ 1                ; BRUNO (magenta): more 1
 AI_KW_KS   equ 0-4              ; JANE (white): less 4
+        else
+; WITH SCRUB (Grant, 22 Nov 2026: "I need skidding to be more severe - forcing cars to slow down at the corners - or brake";
+; SCRUB=5: a slide costs your car 1/32 of its speed a TV frame, a computer car a quarter of its push - racer.asm skid,
+; grip.asm). The numbers above then lapped Frank 25.3, Spike 26.7, Bruno 25.2, Jane 24.8 (Spike in a slide 73% of the
+; time); braking for corners at their cards' speeds again, slower still (26.3-29.6). So still no braking, and more speed:
+; Frank 0, Spike +6, Bruno +3, Jane -2 gave 24.1, 25.1, 24.4, 24.6 (4% apart), the good driver only 3 of 8 (1.9 s behind
+; when beaten), 27 place changes a race; then each one 64th slower.
+AI_KC_KS   equ 0-1
+AI_KG_KS   equ 5
+AI_KP_KS   equ 2
+AI_KW_KS   equ 0-3
+        endif
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
 ; behind the leader gets one 64th more push (at 70% speed a 64th is 2.3% of its top speed) for every 2^EL_SH waypoints it
 ; is behind (waypoints are 32 pixels apart, about half a second at speed), up to EL_MAX 64ths; and one more than EL_AHEAD
