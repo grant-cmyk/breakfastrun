@@ -85,6 +85,13 @@ if _lt:                                     # a turn there?": a chicane into the
     PATH.append((100, 150)); PATH.append((100 + _lt, 180)); PATH.append((100 + _lt, 220)); PATH.append((100, 250))
 arc(100 + _r, 320 - _r, _r, 180, 90)        # bottom-left
 
+_sm = int(os.environ.get('RT_SMOOTH') or 0) if RT and TRACK == 1 else 0   # (RT_SMOOTH, Grant 22 Nov 2026: "The track is very angular -
+for _ in range(_sm):                        # the corners need to be more rounded, but sharp round turns": the centre line's
+    _q = []                                 # corners cut this many times over (Chaikin: each segment's quarter points), so
+    for _i in range(len(PATH)):             # the chicanes' Vs become round turns; the big corners are arcs already)
+        (_x0, _y0), (_x1, _y1) = PATH[_i], PATH[(_i + 1) % len(PATH)]
+        _q += [(0.75 * _x0 + 0.25 * _x1, 0.75 * _y0 + 0.25 * _y1), (0.25 * _x0 + 0.75 * _x1, 0.25 * _y0 + 0.75 * _y1)]
+    PATH = _q
 OFF = 32                          # the whole track moves this far in from the corner
 PATH = [(x + OFF, y + OFF) for x, y in PATH]
 # a little bigger all round (Grant, 10 Nov 2026: a wider road, so a longer race): scaled

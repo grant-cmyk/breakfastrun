@@ -3456,3 +3456,16 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   driver - B 7 of 8, computer laps 26.2-27.2 (4% apart); D 8 of 8, 26.6-28.8 (Spike 17% behind). race_mode_test 12 of 12
   on B, racer_cars75 and its catch-up tape; 11 of 12 on D and the two other 32-heading tapes - the known one-frame
   half-painted row in the race order (it shows more often now: still for Grant to decide).
+
+## 2026-11-22 SAST - round turns; the 256-picture limit; edge-pattern mock-up (cloud session, Claude)
+- Grant: "The track is very angular - the corners need to be more rounded, but sharp round turns. If this is an issue with
+  graphic design we could mockup some kind of outside track pattern - that can be shifted to avoid having to build various
+  turn graphics. This would be similar in principle to the breakfast style loops".
+- tools/make_world.py RT_SMOOTH: the centre line's corners cut n times (Chaikin) - the chicanes' Vs become round turns.
+  B (48/16) with RT_SMOOTH 3: 256 edge pictures - THE MOST ONE MAP HOLDS (a byte a square); RT_SMOOTH 4 needs 257 and stops
+  the build; RT_INROUND 12 with it does not fit the program. At 256 the generator merges look-alike pictures, so parts of
+  the edge line look dashed. Tape: build/racer_cars75_h32_round.tap (catch-up tape version fits too: 51 bytes free).
+  race_mode_test 12 of 12; 6 races, good driver 5 of 6, computer laps 26.1-27.0 (Spike's in a slide 70% of the time).
+- MOCK-UP (docs/design/edge_mock/edge_options.png): the same rounded track with its edge squares as whole patterned colour
+  squares - dithered, kerb checks, diagonal lines - against the pixel-exact edge. Whole squares need no edge pictures (any
+  shape, no limit) but every curve becomes an 8-pixel staircase. Picture: docs/design/head32/track_rounded.png.

@@ -43,4 +43,7 @@ env $T ELASTIC=1 OUT=racer_cars75_h32_elastic BDIR=racer_cars75_h32_elastic bash
 TT="RT_CHICANE=80 RT_CHW=16 RT_LEFT=40 RT_INROUND=6"
 env $T $TT RT_ROADW=48 RT_CORNER=16 OUT=racer_cars75_h32_w48 BDIR=racer_cars75_h32_w48 bash build.sh | tail -2
 env $T $TT RT_ROADW=40 RT_CORNER=12 OUT=racer_cars75_h32_w40 BDIR=racer_cars75_h32_w40 bash build.sh | tail -2
+# Then (Grant: "The track is very angular - the corners need to be more rounded, but sharp round turns"): B with its centre
+# line smoothed (RT_SMOOTH 3: every bend a round turn) - 256 edge pictures, the most one map can hold
+env $T $TT RT_ROADW=48 RT_CORNER=16 RT_SMOOTH=3 OUT=racer_cars75_h32_round BDIR=racer_cars75_h32_round bash build.sh | tail -2
 bash build.sh > /dev/null && echo "the plain game built last: src/options.asm is the plain game's again"
