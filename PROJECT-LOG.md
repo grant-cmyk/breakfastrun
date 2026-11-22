@@ -3685,3 +3685,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Not built yet. Needs: the graphic (one-bit-art), about 300 bytes (148 free under 0x8000 on the CNOS tape, 6 in the
   program - more room to find: the profiler's never-run list, scratchpad dead.txt), and a drawing cost per picture when
   one is on screen (one car's worth).
+
+## 2026-11-22 SAST - oil spill graphic: three options for Grant (cloud session, Claude)
+- Grant: "go ahead with the oil spill graphic". Method: the one-bit-art skill (key shapes and a value plan first; review
+  at 1x and 2x; checked on the real game screen). Oil is a dark liquid, so the pool is one solid key shape ringed by a
+  paper halo (the masked sprite's), not a line drawing like the cars.
+- Tried and dropped: an outline with dither inside (read as a bug), concentric sheen rings (a target), a dither rim and a
+  dither sheen (came out as stripes at this size), a long highlight arc (read as a shell or a leaf in the game).
+- Shown: docs/design/oil_spill_options.png - A glossy pool (one curved paper highlight), B splat (2x2 droplets thrown
+  round it), C splat with a short highlight. Grids: docs/design/oil_spill/option_*.txt (# ink). In the game it takes the
+  window's blue ink on the cloth's cyan, as the cars do. A mock-up pasted on a screenshot, not yet in the game.
