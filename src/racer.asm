@@ -374,7 +374,9 @@ draw_all:
         jr nz,da_next
 da_fm:
         endif
-        if OPT_WEIGHT           ; WEIGHT: a computer car just hurt flickers (its row of arm_tab, byte 4: weight.asm)
+        if 0                    ; (WEIGHT: a computer car just hurt flickered - its row of arm_tab, byte 4: weight.asm. Left
+                                ; out, 22 Nov 2026 - Grant: "There is some flickering of the cars, especially when they contact
+                                ; eachother, should avoid any flicker if possible")
         ld a,b
         dec a
         jr z,da_wf
@@ -4664,6 +4666,9 @@ me_world:
         endif
         if OPT_OIL
         include "oil.asm"       ; OIL: the oil spills on the line
+        endif
+        if OPT_JFACE
+        include "jface.asm"     ; JFACE: the faces move with the music (in the program: the room under 0x8000 is full)
         endif
         endif
         include "armour.asm"    ; ARMOUR: every car's armour, the bar on the HUD, the tank's gun and the clown's wheels

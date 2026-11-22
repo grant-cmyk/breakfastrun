@@ -3725,3 +3725,25 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   byte-identical.
 - Next on the list: Grant, "During the music - animate the faces - at the start and end of a race" (the jingle player runs
   with nothing else running - to look at).
+
+## 2026-11-22 20:30 SAST - faces move with the music; one spill a lap on a straight; the spill's border; no hurt flicker (cloud session, Claude)
+- Grant: "During the music - animate the faces - at the start and end of a race"; "at the chequered flag use the mirrored
+  picture of the player racer looking left and right and then the big smile - not the picture facing the front"; "Each
+  players image can basically have a horizontal mirror, a happy and a sad face". JFACE=1 + RT_EYES=1 (both fast tapes;
+  src/jface.asm, in the program): the jingle player calls jin_key each step (in place of jb_key - same size, nothing in the
+  player moved); every 8 steps (two beats) the faces take a step - at the start the race order's (tw_anim, plate_slow.asm,
+  now on), at the flag the podium's three. Measured: start - a change about every 1.3 s through the tune (0.1-5.9 s);
+  flag - every 0.8 s through the tune, then every 0.64 s after it as before. pa_face_y: a driver's "other look" is its
+  everyday face MIRRORED for you, Bruno and Jane (their faces change 52, 62 and 48 pixels mirrored); Frank's (14) and the
+  clown's (0 - the same both ways round) keep their own eyes drawings, or they would not move. Podium: look, other look,
+  look, happy (winner) or sad.
+- Grant: "One oil spill a lap is fine, and an oil spill somewhere on a straight just slightly off the racing path". Now
+  one spill a lap, at one of 8 spots on the straights 13 px to one side of the line (the line and the road measured:
+  right straight x 506, left 81, top y 95-97, bottom 411-415; road 72 px). 80 s: 3-5 spins among all five cars (35-37
+  before), each by a car a little off the line.
+- Grant: "The oil spill should have a mask around it so it doesn't merge with the table dithering". The clear border is 2
+  px, corners rounded (1 px before; the cloth's dots ran into the drops) - cut to 1 px where the 16 px frame ends.
+  Picture: docs/design/spill_mask_and_faces.png.
+- Grant: "There is some flickering of the cars, especially when they contact eachother". The hurt computer car's flicker
+  (and the NOS crash's, the same) is left out on the breakfast tapes.
+- race_mode_test 12/12 on both fast tapes; plain tapes byte-identical. Not yet driven by Grant.

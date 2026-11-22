@@ -65,7 +65,11 @@ pa_car_src:                     ; car A's face in cells B, C for step E (mood fr
         add a,d
 po_0:
         push de
+        if OPT_JFACE
+        call pa_face_y          ; (JFACE: YOUR other look is your face mirrored, not from the front - jface.asm)
+        else
         call pa_face
+        endif
         pop de
         ret
 pa_face_src:                    ; list A of faces_mood laid over the face in cells B, C

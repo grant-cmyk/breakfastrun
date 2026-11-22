@@ -4,9 +4,10 @@
 ; have 3 or 4 spots where a spill may appear during a lap ... around the race track line ... The oil spill should stay
 ; on the race track line but should appear randomly and in different places"; "The oil spill will be about the size of
 ; a car"; of the three drawings, "B").
-;   - EIGHT SPOTS on the line the cars drive (spill_spots: found from where the computer cars were over four races, near
-;     the corner entries - docs/design/oil_spill_spots.png). Each time YOU start a lap, 3 or 4 of them get a spill, picked
-;     at random (spill_pick); the others are dry.
+;   - EIGHT SPOTS on the straights, just off the line the cars drive (spill_spots). Each time YOU start a lap, ONE of
+;     them gets a spill, picked at random (spill_pick); the others are dry. (First built 3 or 4 a lap, on the line at the
+;     corner entries: every car spun on nearly every one - 12 spins a lap. Grant: "One oil spill a lap is fine, and an
+;     oil spill somewhere on a straight just slightly off the racing path".)
 ;   - A spill is drawn as a car is (draw_car, from a record of its own: spill_rec) - under the cars.
 ;   - A car whose top left comes within OIL_R - 1 px of a spill's, both ways, SPINS for OIL_T pictures (about a second):
 ;     no steering, no push - it slides on the way it was going, a sixteenth slower each picture, its picture turning
@@ -76,11 +77,8 @@ spill_row:                        ; IX = a car: HL = its spin count
         ld h,a
         ret
 
-spill_pick:                       ; 3 or 4 of the 8 spots, at random
-        call rnd
-        and 1
-        add a,3
-        ld b,a
+spill_pick:                       ; ONE of the 8 spots, at random (Grant, 22 Nov 2026: "One oil spill a lap is fine"; 3 or 4 before)
+        ld b,1
         ld c,0
 slop_1:   call rnd
         and 7
@@ -90,7 +88,7 @@ slop_1:   call rnd
 slop_2:   rlc d
         dec e
         jr nz,slop_2              ; D = bit (r) of 8
-        ld a,(cars+C_LAPS)      ; (not S8 on your first lap: it is just in front of the grid)
+        ld a,(cars+C_LAPS)      ; (not S8 on your first lap: it is just ahead of the grid)
         cp 2
         jr nc,slop_3
         bit 7,d
@@ -265,9 +263,13 @@ dc_oil:                         ; (draw_car: the spill's frame)
         ld a,OIL_ROWS
         jp dc_frame
 
-spill_spots:                      ; top left of each spill (its middle - 8): S1..S8 on docs/design/oil_spill_spots.png
-        dw 492-8,364-8, 500-8,164-8, 436-8,92-8, 324-8,116-8
-        dw 220-8,100-8, 124-8,92-8, 76-8,356-8, 260-8,404-8
+spill_spots:                      ; top left of each spill (its middle - 8). ON THE STRAIGHTS, 13 px to one side of the line the
+        dw 519-8,230-8, 493-8,300-8     ; computer cars drive (Grant, 22 Nov 2026: "an oil spill somewhere on a straight just
+        dw 68-8,200-8, 94-8,290-8       ; slightly off the racing path"; the line measured from four races: the right straight
+        dw 180-8,110-8, 420-8,82-8      ; at x 506, the left at 81, the top at y 95-97, the bottom at 411-415 - each road 72 px
+        dw 150-8,424-8, 420-8,402-8     ; across). Right, right, left, left, top, top, bottom (before the grid), bottom (after the
+                                        ; line: never on your first lap). A car on the line passes it; one a little off hits it.
+                                        ; (The first spots, 8 on the line at the corner entries: docs/design/oil_spill_spots.png.)
 spill_on:   db 0                  ; which of the 8 have a spill (bit 0 = S1)
 spill_lap:  db 0                  ; your lap when they were picked
 spill_spin: defs NCARS            ; each car (by kind): pictures of spin (and then immunity) left

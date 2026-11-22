@@ -1,7 +1,7 @@
 """The oil spill's picture for the game (Grant, 22 Nov 2026, of three options: "B") from docs/design/oil_spill/option_b_splat.txt
 (# ink): src/oil_gfx.asm - the rows draw_car reads for the breakfast tapes' (small) cars: mask, ink, mask, ink - 16 px a
-row (6-byte rows of 24 px, the big cars', were tried first and drew as stripes), the mask the ink and a 1px halo round
-it, cut at the frame's edges. Grid column 0 is the frame's pixel 0 and grid row 0 is OIL_B - 6 rows from the record's y,
+row (6-byte rows of 24 px, the big cars', were tried first and drew as stripes), the mask the ink and a 2px halo round
+it (1px at first: the cloth's dots ran into it), cut at the frame's edges. Grid column 0 is the frame's pixel 0 and grid row 0 is OIL_B - 6 rows from the record's y,
 as a car's frame is, so that the spill's top left is the record's (x, y)."""
 import os
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -9,8 +9,9 @@ g = [l.rstrip('\n') for l in open(os.path.join(ROOT, 'docs/design/oil_spill/opti
 H, W = len(g), len(g[0])
 ink = lambda x, y: 0 <= y < H and 0 <= x < W and g[y][x] == '#'
 rows = []
-for y in range(-1, H + 1):
-    m = [any(ink(x + i, y + j) for i in (-1, 0, 1) for j in (-1, 0, 1)) for x in range(16)]
+HALO = [(i, j) for i in range(-2, 3) for j in range(-2, 3) if i * i + j * j <= 5]   # a 2px halo, its corners rounded (Grant,
+for y in range(-2, H + 2):                                                          # 22 Nov 2026: "should have a mask around it so it
+    m = [any(ink(x + i, y + j) for i, j in HALO) for x in range(16)]                 # doesn't merge with the table dithering")
     k = [ink(x, y) for x in range(16)]
     rows.append((y, m, k))
 rows = [r for r in rows if any(r[1])]

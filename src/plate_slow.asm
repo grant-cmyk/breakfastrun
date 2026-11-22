@@ -107,6 +107,7 @@ tw_anim:
         ret nz
         call pa_step            ; E = the step
         ret z
+twa_go:                         ; (JFACE: from the jingle, E its step - jface.asm)
         ld hl,shown_order       ; the car each row shows (0xFF: not drawn yet - left alone)
         ld b,TOWER_Y            ; B = its first character row
 twa_1:

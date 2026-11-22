@@ -83,6 +83,9 @@ printf 'OPT_CNOS equ %s                 ; 1: the chasers'"'"' NOS (CNOS=1 bash b
 printf 'OPT_OIL equ %s                  ; 1: the oil spills (OIL=1 bash build.sh)\n' "${OIL:-0}" >> "$ROOT/src/options.asm"
 # MAPHUD=1 (breakfast race tapes; Grant, 22 Nov 2026): the mini-map on the panel, top right, not in the window.
 printf 'OPT_MAPHUD equ %s               ; 1: the mini-map on the panel (MAPHUD=1 bash build.sh)\n' "${MAPHUD:-0}" >> "$ROOT/src/options.asm"
+# JFACE=1 (breakfast race tapes; Grant, 22 Nov 2026): the faces move with the start and flag music; your other look is
+# your face mirrored (src/jface.asm). With RT_EYES=1 (the race order's faces look about before the start).
+printf 'OPT_JFACE equ %s                ; 1: the faces move with the music (JFACE=1 bash build.sh)\n' "${JFACE:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"
