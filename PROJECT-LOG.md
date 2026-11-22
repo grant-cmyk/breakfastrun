@@ -3429,3 +3429,14 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   30 place changes. race_mode_test 12 of 12 on both. (racer_cars75, 16 headings: 8 of 10 - 10-race samples vary by about
   two wins either way.) Every other tape byte for byte the same.
 - NOT VERIFIED: nobody has driven it.
+
+## 2026-11-22 SAST - two tighter tracks to choose from (cloud session, Claude)
+- Grant: "okay that smoothness works much better. Now I want that track narrower with more severe corners - more difficult turns".
+- tools/make_world.py RT_CHICANE (track 1, RACETRACK): the chicane's depth (40 as it was). Built (32-heading race-only tape):
+  A 48/16/40, B 48/16/64, C 44/16/64, D 40/12/64 (road width / corner radius / chicane depth; track 1 was 56/27/40).
+  Picture: docs/design/head32/track_options.png. Every one fits (the track's map partly in the program).
+- MEASURED: pictures a second, the rhythm let free - track 1 9.81 (23% of pictures over 5 TV frames), B 9.73 (31%), D 9.30
+  (42% - more grass edges in view). 8 races, good driver: B 6 of 8, computer laps 25.9-27.0; D 4 of 8, 27.0-28.0 (3.5%
+  apart). race_mode_test 12 of 12 on both.
+- Tapes: build/racer_cars75_h32_w48.tap (B), racer_cars75_h32_w40.tap (D) - tools/build_race.sh. For Grant to choose; then
+  balance that one and make it the race tape.
