@@ -163,6 +163,16 @@ yg_p0:
         ld a,(BOOST_T)          ; NOS: twice the push (and the top speed)
         or a
         jr z,yg_p1
+        if OPT_NOS = 3          ; (NOS=3, Grant 22 Nov 2026: "make the NOS a bit stronger" - three quarters more, between 1 and 0)
+        ld d,h
+        ld e,l
+        srl d
+        rr e
+        add hl,de
+        srl d
+        rr e
+        add hl,de
+        else
         if OPT_NOS              ; (NOS=1 or 2, the GENTLER NOS - Grant, 18 Nov 2026, for the slow game: "gentler NOS is fine"):
         ld d,h                  ; a half more (1) or a quarter more (2), so that your car's jump from one picture to the next
         ld e,l                  ; stays small while it burns
@@ -173,6 +183,7 @@ yg_p0:
         add hl,de
         else
         add hl,hl
+        endif
         endif
 yg_p1:
         if OPT_BRIDGE
@@ -251,10 +262,9 @@ yg_arm:
         else
         ld a,(dmg)              ; (less DMG_SLOW for each point of damage: Grant, 14 Nov
         if OPT_MUG              ; 2026, "with damage the car slows down a bit")
-        add a,a                 ; (MUG - the breakfast race tape, at 75%: 6 a point, so that all 8 points still take a
-        ld c,a                  ; seventh off the top speed - 8 a point took a fifth there: tests/damage_test.py, 22 Nov 2026)
-        add a,a
-        add a,c
+        ld c,a                  ; (MUG - the breakfast race tape: 3 a point - Grant, 22 Nov 2026, "my car gets damaged too
+        add a,a                 ; easily ... make damage have less of an impact": all 8 points take about a fourteenth off
+        add a,c                 ; the top speed; it was 6, a seventh - and 8 at full speed had taken a fifth at 75%)
         else
         add a,a
         add a,a
@@ -268,6 +278,16 @@ yg_arm:
         ld a,(BOOST_T)          ; pushes harder than its top speed needs, and is
         or a                    ; held to it here
         jr z,yg_d3
+        if OPT_NOS = 3          ; (NOS=3: the top speed three quarters more, as its push)
+        ld b,h
+        ld c,l
+        srl b
+        rr c
+        add hl,bc
+        srl b
+        rr c
+        add hl,bc
+        else
         if OPT_NOS              ; (the gentler NOS: the top speed up a half or a quarter, as its push)
         ld b,h
         ld c,l
@@ -278,6 +298,7 @@ yg_arm:
         add hl,bc
         else
         add hl,hl
+        endif
         endif
 yg_d3:
         if OPT_BRIDGE

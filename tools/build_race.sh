@@ -54,5 +54,6 @@ env WEIGHT=1 FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB:-5} NOSBO
 # (LOOP=0 since 22 Nov 2026 - Grant: "improve the performance speed/smoothness ... I don't want to compromise smoothness": the
 # table has room for the unrolled screen copy at COPIER, 6,500 T a picture quicker than the loop the race track needs.) And a
 # TRIAL of the quicker rhythm: every picture 4 TV frames (STEADY=4), 12.5 a second - build/racer_cars75_breakfast_fast.tap
-env WEIGHT=1 FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=4 GAME_SPEED=75 TILE1=1 FLIP=1 TOWER=1 LOOP=0 RT_FACESLOW=1 HEAD32=all MIRROR=all BIG_LO_ROOM=3000 OUT=racer_cars75_breakfast_fast BDIR=racer_cars75_breakfast_fast bash build.sh | tail -2
+# (Grant, 22 Nov 2026: "still too slow, but it is smooth ... make the NOS a bit stronger": this one at 85% (BF_SPEED), NOS=3 - THE TAPE NOW)
+env WEIGHT=1 FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} NOS=3 NOS_FR=${NOS_FR:-100} STEADY=4 GAME_SPEED=${BF_SPEED:-85} TILE1=1 FLIP=1 TOWER=1 LOOP=0 RT_FACESLOW=1 HEAD32=all MIRROR=all BIG_LO_ROOM=3000 OUT=racer_cars75_breakfast_fast BDIR=racer_cars75_breakfast_fast bash build.sh | tail -2
 bash build.sh > /dev/null && echo "the plain game built last: src/options.asm is the plain game's again"
