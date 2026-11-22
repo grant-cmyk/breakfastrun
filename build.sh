@@ -130,7 +130,7 @@ printf 'OPT_CARDS equ %s                ; 1: the driver cards - each car its own
 # car with none left limps; the computer's tank shoots and its clown car pushes its wheels out (src/armour_tune.asm has every
 # number). tools/build_armour.sh -> build/racer_armour.tap
 printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)\n' "${ARMOUR:-0}" >> "$ROOT/src/options.asm"
-[ "${ARMOUR:-0}" = "1" ] && [ "${CARDS:-0}${RACETRACK:-0}" != "11" ] && { echo "ARMOUR=1 needs CARDS=1 and RACETRACK=1 (tools/build_armour.sh)"; exit 1; }
+[ "${ARMOUR:-0}" = "1" ] && { [ "${CARDS:-0}" != "1" ] || [ "${RACETRACK:-0}${RACEONLY:-0}" = "00" ]; } && { echo "ARMOUR=1 needs CARDS=1 and RACETRACK=1 (or RACEONLY=1: the breakfast table race-only tape) (tools/build_armour.sh)"; exit 1; }
 # GAME_SPEED=60 (with CARDS=1 and BDIR=...): A TRIAL - THE WHOLE GAME SLOWER (Grant, 18 Nov 2026: "the game plays too fast, I
 # want it slower and smoother"): every car's top speed, push, tyres and corner speeds at that percent of today's (the top of
 # tools/make_cards.py), and the few other numbers that go with speed (GAME_SPEED in the code). 100 (the default): as it was.

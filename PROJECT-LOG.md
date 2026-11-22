@@ -3479,3 +3479,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   24 place changes a race; careful driver last, 14.3 s behind (9.3 on track 1: the twisty track is harder on a cautious
   driver); catch-up tape: good driver 4 of 10, the four within 0.3%, 37 place changes. race_mode_test 12 of 12 on both.
 - THE RACE TAPE NOW: build/racer_cars75_h32_round.tap. Every other tape byte for byte the same.
+
+## 2026-11-22 SAST - the race-only game on the breakfast table (cloud session, Claude)
+- Grant: "So in a much earlier release we use the breakfast look and feel with loops of the edges and a table look and feel.
+  Can we try this with that in place. I want to see if it is any more fun compared to this. The track just feels bland".
+- build/racer_cars75_breakfast.tap (tools/build_race.sh): the race-only game - every car its own look and card, 32
+  headings, skids that cost speed, the NOS gauge, finished cars clear of the line - on the breakfast table (track 1 as it
+  was: the tablecloth, the cereal O's, the 72 px road), without RACETRACK. build.sh: ARMOUR=1 now also with RACEONLY=1;
+  racer.asm: on such a tape the armour, race and 32-heading helpers and the drivers' looks go under 0x8000 (its room is free
+  there); all the frames under 0x8000 (BIG_LO_ROOM 3000). 247 bytes free in the program.
+- In this look the cars are drawn in the window's own ink (blue), as the breakfast game always was - not in their colours.
+- CHECKED: race_mode_test 12 of 12; pictures a second (the rhythm let free) 11.58 - quicker than the round-turn track (~10);
+  6 races: computer laps 23.4-24.6 (5% apart). The good-driver autopilot (made for the race track) did not finish some races -
+  not looked into: its numbers mean nothing here. Not balanced. Every other tape byte for byte the same.
+- NOT VERIFIED: nobody has driven it.

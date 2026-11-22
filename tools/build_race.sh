@@ -47,4 +47,8 @@ env $T $TT RT_ROADW=40 RT_CORNER=12 OUT=racer_cars75_h32_w40 BDIR=racer_cars75_h
 # line smoothed (RT_SMOOTH 3: every bend a round turn) - 256 edge pictures, the most one map can hold
 env $T $TT RT_ROADW=48 RT_CORNER=16 RT_SMOOTH=3 OUT=racer_cars75_h32_round BDIR=racer_cars75_h32_round bash build.sh | tail -2
 env $T $TT RT_ROADW=48 RT_CORNER=16 RT_SMOOTH=3 ELASTIC=1 OUT=racer_cars75_h32_round_elastic BDIR=racer_cars75_h32_round_elastic bash build.sh | tail -2   # (Grant: "B rounded is good" - THE RACE TAPE now, balanced)
+# Grant, 22 Nov 2026 ("in a much earlier release we use the breakfast look and feel with loops of the edges and a table look
+# and feel. Can we try this with that in place. I want to see if it is any more fun compared to this. The track just feels
+# bland"): the same game on the breakfast table (track 1 as it was, the cereal O's): build/racer_cars75_breakfast.tap
+env SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=${STEADY:-5} GAME_SPEED=75 TILE1=1 FLIP=1 TOWER=1 LOOP=1 RT_FACESLOW=1 HEAD32=all MIRROR=all BIG_LO_ROOM=3000 OUT=racer_cars75_breakfast BDIR=racer_cars75_breakfast bash build.sh | tail -2
 bash build.sh > /dev/null && echo "the plain game built last: src/options.asm is the plain game's again"

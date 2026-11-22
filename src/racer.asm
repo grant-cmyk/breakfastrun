@@ -164,6 +164,19 @@ rt_code_end:
         endif
 low_end:                        ; (the end of what is kept under 0x8000: the room left is LOWTAB-0xE8 less this)
         endif
+        if (1 - OPT_RT) * OPT_RACEONLY  ; THE BREAKFAST TABLE, RACE ONLY (Grant, 22 Nov 2026: "in a much earlier release we use the
+        if OPT_ARMOUR           ; breakfast look and feel ... Can we try this with that in place. I want to see if it is any more
+        include "armour_low.asm" ; fun compared to this"): the race's helpers in the room under 0x8000 that the race track's
+        endif                   ; code takes on its tapes
+        include "race_low.asm"
+        if OPT_HEAD32 + OPT_MIRROR
+        include "head32_low.asm"
+        endif
+        if OPT_FACESLOW
+        include "faces_mood.asm"
+        endif
+low_end:
+        endif
         if OPT_MULTI
 lp_src: incbin "lp.bin"         ; MULTI: packed tracks that do not fit above the copy routine (tools/make_multi.py) - read once, at the title
         endif
