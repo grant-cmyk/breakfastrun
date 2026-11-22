@@ -76,7 +76,8 @@ _r = 40                           # the corners' radius here, before the track i
 if RT_CORNER != 54.0: _r = RT_CORNER / 1.35     # (RT_CORNER: the straights stay at x = 100 and 420, y = 80 and 320)
 arc(420 - _r, 320 - _r, _r, 90, 0)          # bottom-right corner (going anticlockwise on screen)
 arc(420 - _r, 80 + _r, _r, 0, -90)         # top-right
-PATH.append((300, 80)); PATH.append((270, 120)); PATH.append((230, 120)); PATH.append((200, 80))
+_ch = float(os.environ.get('RT_CHICANE') or 40) if RT and TRACK == 1 else 40   # (RT_CHICANE, Grant 22 Nov 2026: "more severe corners -
+PATH.append((300, 80)); PATH.append((270, 80 + _ch)); PATH.append((230, 80 + _ch)); PATH.append((200, 80))   # more difficult turns": the chicane's depth, 40 as it was)
 arc(100 + _r, 80 + _r, _r, -90, -180)      # top-left
 arc(100 + _r, 320 - _r, _r, 180, 90)        # bottom-left
 
