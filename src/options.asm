@@ -41,6 +41,7 @@ OPT_RACE equ 0                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 
 RT_SMOOTHN equ 0               ; the track's centre line smoothed this many times (RT_SMOOTH: the round-turn track - ai_tune.asm balances its cars)
 OPT_SCRUB equ 0                ; 0: as before; n: a slide costs speed - yours 1/2^n of it a TV frame, a computer car twice the drag (SCRUB=n)
 OPT_CLOTHPLAIN equ 0           ; 1: the tablecloth one plain colour, no dots (CLOTHPLAIN=1: quicker)
+OPT_NOSTURN equ 0              ; 1: on NOS you steer half as fast, and while you steer no NOS push or top speed (NOSTURN=1)
 OPT_WEIGHT equ 0               ; 1: bumps and damage by the cars' weights (WEIGHT=1: the breakfast race tape; needs ARMOUR=1 MUG=1)
 OPT_FLASHME equ 0              ; 1: your car flashes on the grid until the lights go green (FLASHME=1)
 OPT_MUG equ 0                  ; 1: the coffee mug - your damage - on an ARMOUR tape (MUG=1: the breakfast table race tape)

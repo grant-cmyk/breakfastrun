@@ -168,7 +168,13 @@ yg_p0:
         ld e,l
         srl d
         rr e
+        if OPT_NOSTURN          ; (NOSTURN, Grant 22 Nov 2026: "If hit the NOS and then turn at a corner, I almost seem to accelerate
+        ld a,(ix+C_CTRL)        ; with the skidding effect ... I go flying into barriers": while you steer, only a quarter more)
+        and CT_L+CT_R
+        jr nz,yg_nq
+        endif
         add hl,de
+yg_nq:
         srl d
         rr e
         add hl,de
@@ -283,7 +289,13 @@ yg_arm:
         ld c,l
         srl b
         rr c
+        if OPT_NOSTURN          ; (NOSTURN: while you steer only a quarter more, as the push - tried first, 22 Nov 2026: no NOS
+        ld a,(ix+C_CTRL)        ; top speed at all while you steer cut 2.3 px a frame to 1.3 in 5 TV frames, a brake; no NOS push
+        and CT_L+CT_R           ; but the NOS top speed let the plain push climb back to 2.15)
+        jr nz,yg_tq
+        endif
         add hl,bc
+yg_tq:
         srl b
         rr c
         add hl,bc
@@ -343,6 +355,9 @@ yg_g2:
         jr z,yg_ng
         ld a,e
         srl a
+        if OPT_NOSTURN          ; (NOSTURN: a quarter more, not a half - "with NOS a turn should still result in skidding")
+        srl a
+        endif
         add a,e
         ld e,a
 yg_ng:

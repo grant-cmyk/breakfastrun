@@ -569,6 +569,15 @@ tk_free:
         ld a,(cars+C_CTRL)      ; the computer cars (main: cpu_move), and its grip sums are done once a picture (grip.asm)
         ld e,a
         ld hl,cars+C_ANG
+        if OPT_NOSTURN          ; (NOSTURN: while the NOS burns you steer on every fourth TV frame - "with NOS a turn ... should
+        ld a,(BOOST_T)          ; result in a slight turn"; every other frame, tried first, swung the car 130 degrees a second
+        or a                    ; and it slid sideways, down to 0.7 px a frame when it straightened)
+        jr z,tk_st
+        ld a,(ticks)
+        and 3
+        jr nz,tk_yn
+tk_st:
+        endif
         bit 0,e
         jr z,tk_ys
         ld a,(hl)

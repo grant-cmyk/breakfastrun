@@ -3592,3 +3592,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   Without NOS, into Frank: both 0.64 back, you 2 quarters, he 4.
 - TESTS: race_mode_test 12 of 12 on racer_cars75_breakfast_fast, _plain and racer_cars75_h32_round. Careful driver, 10
   races: last, 9.1 s behind (8.1 before).
+
+## 2026-11-22 SAST - NOS in a turn: a slight turn that skids, not a launch (cloud session, Claude)
+- Grant: "there is still a slight glitch with the NOS, If hit the NOS and then turn at a corner, I almost seem to accelerate
+  with the skidding effect ... As a result I go flying into barriers, so with NOS a turn should still result in skidding
+  but should result in a slight turn".
+- Measured (your car at full NOS speed on the start straight, then P held a second): before, the speed stayed 2.25-2.36 px a
+  frame - and grew - while the car swung through more than a full turn: the NOS push and its raised top speed went on
+  through the slide.
+- NOSTURN=1 (breakfast tapes; racer.asm tick, grip.asm): while the NOS burns you steer on every fourth TV frame; while you
+  steer the push and the top speed are a quarter more, not three quarters; your tyres a quarter more grip (a half before).
+  Tried on the way: no NOS top speed while steering - 2.3 to 1.3 in 5 frames, a brake; no NOS push only - the plain push
+  climbed back to 2.15; steering every other frame - the car swung 130 degrees a second and slid sideways (0.7 when it
+  straightened). Now: straight 2.5; steering, the heading 12 steps (67 degrees) in a second, the speed 1.55-1.72 (it skids
+  and sheds speed); straightened, back to 2.2 at once.
