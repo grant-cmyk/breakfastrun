@@ -239,7 +239,7 @@ yg_d1:
 yg_d2:
         ex de,hl                ; never over the top speed for your set-up (twice
         ld hl,(yg_topv)         ; it with NOS): a car set up for acceleration
-        if OPT_ARMOUR           ; ARMOUR: damage does not slow your car bit by bit - like every car, with no armour left
+        if OPT_ARMOUR * (1 - OPT_MUG)   ; ARMOUR: damage does not slow your car bit by bit - like every car, with no armour left
         ld a,(arm_tab+1)        ; it LIMPS: half its top speed (ARM_LIMP_SHIFT, armour.asm)
         or a
         jr nz,yg_arm

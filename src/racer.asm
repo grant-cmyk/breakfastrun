@@ -390,7 +390,8 @@ rt_nomap:
         if OPT_RTEYES
         call tw_anim            ; (before the race, the race order's faces look about: plate_slow.asm)
         endif
-        else
+        endif
+        if (1 - OPT_ARMOUR) + OPT_MUG   ; (MUG, Grant 22 Nov 2026: "add the coffee gauge back as coffee is back on the table")
         call dmg_anim           ; and your car's damage, in the other corner
         endif
         call pl_draw            ; and your place, on its plate, top right
@@ -2202,7 +2203,7 @@ bp_you:
         ld (snd_bump),a
         ld hl,10*256+2          ; a crash: the border red for a fifth of a second
         call flash
-        if OPT_ARMOUR = 0       ; (ARMOUR: your damage is your car's armour, lost like every car's - arm_bump, above)
+        if (1 - OPT_ARMOUR) + OPT_MUG   ; (ARMOUR: your damage is your car's armour, lost like every car's - arm_bump, above; MUG: damage)
         if OPT_2P               ; TWOP: no damage in a two-player race - player 2's car has no gauge, and it would not be fair
         ld a,(two_p)
         or a
@@ -3149,7 +3150,7 @@ dmg_hit:
         ret nc
         inc (hl)
         ret
-        if OPT_ARMOUR = 0       ; (ARMOUR: no mug)
+        if (1 - OPT_ARMOUR) + OPT_MUG   ; (ARMOUR: no mug; MUG: the mug)
 dmg_draw:                       ; the gauge is composed only when the damage changes (dmg_make,
         ld a,(dmg)              ; plate_slow.asm: 48 bytes at dmg_bmp); each picture it is just copied
         ld hl,dmg_sh            ; in - every byte of its 3 x 2 cells, which are the icon's alone, so

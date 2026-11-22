@@ -175,7 +175,7 @@ HP_PUT  macro
         endm
         endif
 hud_pre:
-        if OPT_ARMOUR = 0       ; (ARMOUR: no mug - its squares are the window's, as an empty spoon's are)
+        if (1 - OPT_ARMOUR) + OPT_MUG   ; (ARMOUR: no mug - its squares are the window's, as an empty spoon's are; MUG: the mug)
         if OPT_RT               ; RACETRACK: the mug goes to the screen afresh only when it has changed - its steam (every 8th
         ld hl,rt_fx             ; picture: dmg_anim), the damage, a new race. If not, its squares are left as they are on the
         ld a,(renders)          ; screen (RT_LEAVE: rt_hud, racetrack.asm)
@@ -306,7 +306,7 @@ pl_key:  dw 0                   ; the place and lap pl_bmp was composed for
 pl_lin:  db 0                   ; pl_down's rows: 1 in pl_bmp, 0 in the buffer
 pl_bmp:  defs PL_W*PL_H          ; the plate, composed
 
-        if OPT_ARMOUR = 0       ; (ARMOUR: no mug - the health blocks in the race order show the armour)
+        if (1 - OPT_ARMOUR) + OPT_MUG   ; (ARMOUR: no mug - the health blocks in the race order show the armour; MUG: the mug)
 ; DMG_MAKE: the health gauge composed for damage A (HL = dmg_sh) into dmg_bmp: DMG_ROWS rows of 3
 ; bytes - the outline, and the fill in every row but the first C (dmg_emp: it empties from the top).
 dmg_make:

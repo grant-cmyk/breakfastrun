@@ -11,9 +11,19 @@ def ace(g, look=72, lift=60, dead=6):
     for (x0, y0), (x1, y1) in zip(w, w[1:] + w[:1]):
         n = max(1, int(math.hypot(x1 - x0, y1 - y0) / 4))
         pts += [(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n) for k in range(n)]
-    N = len(pts); st = {'i': None}
+    N = len(pts); st = {'i': None, 'hist': [], 'back': 0}
     def steer():
         x, y, ang = g.car(); x += 8; y += 8
+        # (22 Nov 2026, the breakfast-table race tape: the autopilot drove into a cereal O at the top chicane and pushed
+        # against it for the rest of the race. A person backs off: so does it - not 6 px further on in a second (50 TV
+        # frames) with Q held: A (back) and the wheel the other way for 25 frames)
+        st['hist'].append((x, y)); del st['hist'][:-50]
+        if st['back']:
+            st['back'] -= 1; g.key('Q', False); g.key('A', True); g.key('O', st['bo']); g.key('P', not st['bo'])
+            if not st['back']: g.key('A', False); st['hist'] = []
+            return
+        if len(st['hist']) == 50 and math.hypot(x - st['hist'][0][0], y - st['hist'][0][1]) < 6 and g.mem(g.sym['race_on'], 1)[0]:
+            st['back'] = 25; st['bo'] = 'P' in g.held; return
         rng = range(N) if st['i'] is None else [(st['i'] + k) % N for k in range(-5, 30)]
         st['i'] = i = min(rng, key=lambda k: (pts[k][0] - x) ** 2 + (pts[k][1] - y) ** 2)
         tx, ty = pts[(i + look // 4) % N]
