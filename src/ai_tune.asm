@@ -352,6 +352,12 @@ AI_KW_KS   equ 0-4              ; JANE (white): less 4
 ; time); braking for corners at their cards' speeds again, slower still (26.3-29.6). So still no braking, and more speed:
 ; Frank 0, Spike +6, Bruno +3, Jane -2 gave 24.1, 25.1, 24.4, 24.6 (4% apart), the good driver only 3 of 8 (1.9 s behind
 ; when beaten), 27 place changes a race; then each one 64th slower.
+        if RT_SMOOTHN           ; THE ROUND-TURN TRACK (Grant, 22 Nov 2026: "B rounded is good" - build/racer_cars75_h32_round.tap):
+AI_KC_KS   equ 0-1              ; corners decide the lap here. With the 32-heading numbers below the good driver won 9 of 10;
+AI_KG_KS   equ 8                ; Spike +2 (in a slide 74% of the time, the slowest) and every car one 64th more: 7 of 10,
+AI_KP_KS   equ 3                ; laps Frank 26.1, Jane 26.5, Bruno 26.5, Spike 26.8 (3% apart), 24 place changes a race
+AI_KW_KS   equ 0-2
+        else
         if OPT_HEAD32 = 2       ; (the 32-heading tape, Grant 22 Nov 2026: "the 32 tape looks smoother, balance that one": with the
 AI_KC_KS   equ 0-2              ; drivers judging by the nearest of the 16 - AI_H16R - Frank was the quickest, and won 7 of 10)
         else
@@ -360,6 +366,7 @@ AI_KC_KS   equ 0-1
 AI_KG_KS   equ 5
 AI_KP_KS   equ 2
 AI_KW_KS   equ 0-3
+        endif
         endif
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
 ; behind the leader gets one 64th more push (at 70% speed a 64th is 2.3% of its top speed) for every 2^EL_SH waypoints it

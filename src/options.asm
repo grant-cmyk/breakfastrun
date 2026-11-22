@@ -34,6 +34,7 @@ OPT_RTROWS equ 19              ; the race track trial: how many of the window's 
 OPT_CARDS equ 0                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)
 OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)
 OPT_RACE equ 0                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)
+RT_SMOOTHN equ 0               ; the track's centre line smoothed this many times (RT_SMOOTH: the round-turn track - ai_tune.asm balances its cars)
 OPT_SCRUB equ 0                ; 0: as before; n: a slide costs speed - yours 1/2^n of it a TV frame, a computer car twice the drag (SCRUB=n)
 OPT_NOSBOX equ 0               ; 1: the NOS you hold shown as a canister in a rounded box, one colour square each (NOSBOX=1)
 OPT_RACEONLY equ 0             ; 1: RACE only - no COMBAT, every car its own picture and driver card (RACEONLY=1 RACEMODE=1)
