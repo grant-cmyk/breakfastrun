@@ -3800,3 +3800,18 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   two cars swap) - cosmetic, and NOT the finish order; open.
 - Next, Grant: "we need a memory hunt. A deep one ... rules I have given about the dynamics of the game and movement could
   be simplified".
+
+## 2026-11-22 21:02 SAST - THE MEMORY HUNT: findings, for Grant to choose (cloud session, Claude)
+- Grant: "go ahead with the memory hunt". Method: pasmo -d's listing of the trial tape (every byte, its source file and
+  routine) joined to the profiler's executed addresses over 8 races (both autopilots, the music, NOS, the podium);
+  scratchpad hunt.py. 21,871 bytes kept while racing (start-up area not counted); 1,047 bytes of code never ran (some of
+  it needed and rare: the title's return, lap recovery, NOS crashes).
+- The report, ranked (published: https://claude.ai/artifact/111aiTs7iBWP7aryC9HS6L):
+  A, no change to play: A1 the screen copy as a loop (LOOP=1) 5,571 bytes - its copy 51,369 -> 58,170 T a picture;
+  pictures a second within the noise (tearlap 11.3 -> 10.9, smooth3 11.54 -> 11.91, both measured today); lower rows of
+  the window late from row 13 (from row 18 today). A2 the main tape's multiply table 733. A3 big_tab's mirrored headings
+  worked out, ~320 (estimate). A4 code that cannot run on race-only breakfast tapes, ~150-250 (estimate).
+  B, features: B1 the title's lapping car 459; B2 redefine keys ~300; B3 pick 2 upgrades ~190; B4 the trial features 841.
+  C, simpler rules: C1 your car on the computer cars' card-and-slide model, ~1,100 of grip.asm's 1,150; C2 one bump rule
+  (a weight table of 5 for the two 6x6), ~200-300.
+- Nothing changed in the game for this; waiting on Grant's choices.
