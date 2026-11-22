@@ -354,6 +354,9 @@ draw_all:
         ld a,(race_on)
         or a
         jr nz,da_fm
+        ld a,(lt_on)            ; (only once the lights are up - Grant, 22 Nov 2026: "sometimes in the grid my car during the intro
+        or a                    ; music does not actually show": the jingle holds the pictures up, and one drawn without the car
+        jr z,da_fm              ; stayed on the screen all through it)
         ld a,(renders)
         and 4
         jr nz,da_next

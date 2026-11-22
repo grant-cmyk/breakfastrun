@@ -66,11 +66,14 @@ wb_k2:  ld (wk_kb),a
         inc hl
         ld d,(hl)
         ld (wk_b),de
-        call wt_hit             ; b hurt by a
         ld a,b
-        ld b,c
-        ld c,a
-wt_hit:                         ; C = the car hurt, B = the other: its damage, once in DMG_COOL pictures
+        ld (wk_ca),a            ; (the kinds, for the damage - wt_kick works out who hit whom first)
+        ld a,c
+        ld (wk_cb),a
+        ret
+wt_hit:                         ; C = the car hurt, B = the other, D = 0 (all of it) or 2 (a quarter): its damage, once in DMG_COOL pictures
+        ld a,d
+        ld (wh_sc),a
         ld a,c
         cp 5                    ; (you on NOS: your own row)
         jr c,wh_0
@@ -100,6 +103,13 @@ wh_0:
         ld a,(hl)
         pop hl
         ld e,a
+        ld a,(wh_sc)            ; (a quarter: the car that did the hitting)
+        or a
+        ld a,e
+        jr z,wh_q
+        srl a
+        srl a
+wh_q:   ld e,a
         ld a,c
         or a
         jr z,wh_you
@@ -112,8 +122,9 @@ wh_0:
         pop hl
         ld a,e
         jr wh_add
-wh_you: ld a,e                  ; (yours: half - Grant, 22 Nov 2026, "my damage still goes too fast")
-        inc a
+wh_you: ld a,e                  ; (yours: a quarter - Grant, 22 Nov 2026, "my damage still goes too fast", then "reduce the
+        add a,3                 ; damage again my car gets"; a half before)
+        srl a
         srl a
 wh_add: add a,(hl)
         cp 33
@@ -139,40 +150,153 @@ wt_pair:                        ; A = C x 6 + B
         add a,a
         add a,b
         ret
-wt_kick:                        ; BC = KICK or -KICK, the way car a goes, A = the axis (C_VX or C_VY): BC = a's kick by the weights
-        ld (wk_ax),a            ; that way, HL = b's the other way - but a car that is you on NOS keeps its own speed
-        call wt_kick0
-        push de
-        ld a,(wk_ka)
-        or a
-        jr z,wkt_b
-        push hl
-        push ix
-        pop hl
-        ld a,(wk_ax)
-        ld e,a
-        ld d,0
-        add hl,de
-        ld c,(hl)
+wt_kick:                        ; BC = KICK or -KICK, the way car a goes, A = the axis (C_VX or C_VY): BC = a's new speed that way,
+        ld (wk_ax),a            ; HL = b's - BY HOW THE HIT HAPPENED (Grant, 22 Nov 2026: "if I hit the side of another car from
+        call wt_kick0           ; the front of my car that that car shifts sideways - so more impact on them, a small impact on
+        ld (wk_kav),bc          ; me ... If someone hits you from behind you actually don't get damage and actually get pushed
+        ld (wk_kbv),hl          ; forward ... I can basically therefore ram a car off the road by aiming into their side"):
+        push ix                 ;   each car's speed TOWARDS the other along the axis (ta, tb). Both over WK_TH: head-on - both
+        pop hl                  ;   kicked by the weights and both hurt in full, as before. Else the quicker one is the HITTER:
+        ld a,(wk_ax)            ;   it keeps three quarters of its own speed (all of it on NOS) and takes a quarter of its
+        ld e,a                  ;   damage; the one hit, if it was moving away (hit from behind), is pushed on by its kick and
+        ld d,0                  ;   not hurt; if not (hit in the side, or standing), it is kicked away and hurt in full.
+        add hl,de               ;   You on NOS are always the hitter.
+        ld e,(hl)
         inc hl
-        ld b,(hl)               ; BC = a's own speed that way
-        pop hl
-wkt_b:  ld a,(wk_kb)
-        or a
-        jr z,wkt_x
+        ld d,(hl)
+        ld (wk_va),de
         ld a,(wk_ax)
         add a,(tb-1) AND 255
-        ld e,a
+        ld l,a
         adc a,(tb-1)/256
-        sub e
-        ld d,a
-        ex de,hl
-        ld a,(hl)
+        sub l
+        ld h,a
+        ld e,(hl)
         inc hl
-        ld h,(hl)
-        ld l,a                  ; HL = b's own speed that way
-wkt_x:  pop de
+        ld d,(hl)
+        ld (wk_vb),de
+        ld a,(wk_kav+1)         ; a's kick < 0: b lies the + way of a - ta = va, tb = -vb; else ta = -va, tb = vb
+        rla
+        ld hl,(wk_va)
+        call nc,wk_neg
+        ld (wk_ta),hl
+        ld a,(wk_kav+1)
+        rla
+        ld hl,(wk_vb)
+        call c,wk_neg
+        ld (wk_tb),hl
+        ld a,(wk_ka)
+        or a
+        jr nz,wk_ahit
+        ld a,(wk_kb)
+        or a
+        jr nz,wk_bhit
+        ld hl,(wk_ta)           ; head-on?
+        ld de,WK_TH
+        call wk_lt
+        jr c,wk_roles
+        ld hl,(wk_tb)
+        ld de,WK_TH
+        call wk_lt
+        jr c,wk_roles
+        ld d,0                  ; head-on: both hurt in full, both kicked
+        call wk_hurt_b
+        ld d,0
+        call wk_hurt_a
+        ld bc,(wk_kav)
+        ld hl,(wk_kbv)
         ret
+wk_roles:
+        ld hl,(wk_ta)
+        ld de,(wk_tb)
+        call wk_lt
+        jr c,wk_bhit
+wk_ahit:                        ; a hit b
+        ld hl,(wk_va)
+        ld a,(wk_ka)
+        or a
+        call z,wk_q34
+        push hl                 ; (a's speed)
+        ld d,2
+        call wk_hurt_a          ; a: a quarter
+        ld hl,(wk_tb)
+        bit 7,h
+        jr z,wka_s
+        ld hl,(wk_vb)           ; b was moving away: pushed on, not hurt
+        ld de,(wk_kbv)
+        add hl,de
+        pop bc
+        ret
+wka_s:  ld d,0                  ; b hit in the side (or standing, or slower towards a): kicked away, hurt in full
+        call wk_hurt_b
+        ld hl,(wk_kbv)
+        pop bc
+        ret
+wk_bhit:                        ; b hit a
+        ld hl,(wk_vb)
+        ld a,(wk_kb)
+        or a
+        call z,wk_q34
+        push hl                 ; (b's speed)
+        ld d,2
+        call wk_hurt_b
+        ld hl,(wk_ta)
+        bit 7,h
+        jr z,wkb_s
+        ld hl,(wk_va)
+        ld de,(wk_kav)
+        add hl,de
+        ld b,h
+        ld c,l
+        pop hl
+        ret
+wkb_s:  ld d,0
+        call wk_hurt_a
+        ld bc,(wk_kav)
+        pop hl
+        ret
+wk_hurt_a:                      ; a hurt by b (D: 0 all, 2 a quarter)
+        ld a,(wk_ca)
+        ld c,a
+        ld a,(wk_cb)
+        ld b,a
+        jp wt_hit
+wk_hurt_b:
+        ld a,(wk_cb)
+        ld c,a
+        ld a,(wk_ca)
+        ld b,a
+        jp wt_hit
+wk_neg:                         ; HL = -HL
+        ld a,h
+        cpl
+        ld h,a
+        ld a,l
+        cpl
+        ld l,a
+        inc hl
+        ret
+wk_q34:                         ; HL = HL less a quarter of it (signed)
+        ld d,h
+        ld e,l
+        sra d
+        rr e
+        sra d
+        rr e
+        or a
+        sbc hl,de
+        ret
+wk_lt:                          ; carry: HL < DE, signed (HL, DE changed)
+        ld a,h
+        xor 0x80
+        ld h,a
+        ld a,d
+        xor 0x80
+        ld d,a
+        or a
+        sbc hl,de
+        ret
+WK_TH   equ 64                  ; (a quarter of a pixel a TV frame towards the other: under it a car is not driving into it)
 wt_kick0:
         push de
         ld a,b
@@ -265,6 +389,15 @@ wk_a:   dw 0
 wk_ka:  db 0
 wk_kb:  db 0
 wk_ax:  db 0
+wh_sc:  db 0
+wk_ca:  db 0
+wk_cb:  db 0
+wk_kav: dw 0
+wk_kbv: dw 0
+wk_va:  dw 0
+wk_vb:  dw 0
+wk_ta:  dw 0
+wk_tb:  dw 0
 wk_b:   dw 0
 wk_tab:                         ; car a's kick from car b (a x 6 + b; 5 is YOU ON NOS - 3 x your weight)
         dw (2*KICK*CD_ARM_0+(CD_ARM_0+CD_ARM_0)/2)/(CD_ARM_0+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_0+CD_ARM_1)/2)/(CD_ARM_0+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_0+CD_ARM_2)/2)/(CD_ARM_0+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_0+CD_ARM_3)/2)/(CD_ARM_0+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_0+CD_ARM_4)/2)/(CD_ARM_0+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_0+(3*CD_ARM_0))/2)/(CD_ARM_0+(3*CD_ARM_0))   ; car 0 kicked by 0-5
