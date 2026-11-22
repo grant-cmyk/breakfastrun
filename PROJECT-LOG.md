@@ -3273,3 +3273,33 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   catch as before (the side panel half-repainted for one TV frame as two cars swap places), still for Grant to decide.
 - BYTE FOR BYTE: racer.tap, racer_track2/3/5 the same md5 after the rebuild; only the four race tapes changed.
 - NOT VERIFIED: nobody has driven it; whether 9 of 10 for the autopilot means "about right" for a person.
+
+## 2026-11-22 SAST - smoother movement, each driver its own line, stronger NOS, softer grass (cloud session, Claude)
+- Grant: "Need to find a way to make movement and turning smoother. Also need the other cars to try different tracks - so
+  their route around the track is not identical - some take a corner a bit wide, some late"; then "75% was tough, I came
+  4th. The NOS needs to have a bigger impact, and the riding into the green outside the track slightly less impact".
+- MEASURED FIRST (a probe: every picture's camera jump, the car's own move, the view's lead; racer_race75, the good
+  driver, 2,500 TV frames): 10.4 pictures a second, each 4, 5, 6 or 7 TV frames (151 / 304 / 40 / 4); the view jumps 5-7
+  px a picture; the jump changes 1.19 px from one picture to the next, of which the car's own move 0.78 and the view's
+  lead (it leads the car the way it goes, moving 2 px a picture) most of the rest.
+- STEADY=5 (build.sh; on in tools/build_race.sh): every picture 5 TV frames and the game moved 5 frames a picture, never
+  more, never less (a picture that runs late slows the game for that moment instead of jumping further); the old
+  3-or-4 rhythm logic is left out. With it the view's lead moves 1 px a picture (plateco.asm, LEAD_STEP). Result: the
+  car's own move 0.60 px uneven (was 0.78), the view 1.13 (1.19); 9.8 pictures a second (10.4: a picture that would have
+  taken 4 now waits for 5). THE LIMIT: about 10 pictures a second at 75% is a 6 px jump; under 4 px needs more pictures a
+  second or a slower game - not changed by this.
+- RACE LINES (race.asm rl_line, numbers in ai_tune.asm AI_L0-3 and AI_Rx_LINE): at each waypoint a computer car picks,
+  the bend of the track there (2W - P - N from the waypoints, pointing outside) and at the waypoints either side, weighted
+  by its line, moves its aim point (held to 14 px): cyan THE CLASSIC (out - in - out), yellow LATE (deep on the outside,
+  inside on the way out; REACH 56), magenta a bit WIDE, white one of the four (classic, late, wide, EARLY) at random,
+  picked again on each straight. Their random offsets now small (3,1; white 7,3). A fourth weight (to one side on the
+  straights) was written and left out - the catch-up tape had no room (11 bytes left). Measured (3,600 frames): at the
+  bends the four cars are on average 13.6 px apart across the road (9.6 before), none off the road. The first, stronger
+  lines cost yellow and magenta 2.4 s a lap; softened, and magenta +1/64 top speed (the middle and outside of this road
+  are slower than the inside).
+- NOS=1 on the race tapes (was 2): a half more push and top speed, not a quarter. YOUR car on the grass (racetrack.asm
+  RT_GRASS_YOU 2 on the race tapes): its push 1.75 times, 75% of the road's speed (was 1.5 times, 64%).
+- TEST FIX (not a loosening): tests/rt_lib.py settle() - when the emulator stopped inside ph_run (the computer cars' move,
+  which keeps the place in registers until it writes it back), a car set down by put() was put back where it had been;
+  put() and car() now let that move finish first. race_mode_test 18 of 18 on racer_race75 (it was 17: this, and the
+  half-painted row before it, both the test catching the game mid-move).

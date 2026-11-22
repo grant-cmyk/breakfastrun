@@ -58,11 +58,23 @@ class Game:
         # car - between writing the low and the high byte of where it is - the place read here is half old, half new, and
         # 256 pixels out: seen once, 17 Nov 2026, as a car "at x 763" on a 576-pixel world. So the move is let finish first.)
         S = self.sym
-        if 'ph_yok' in S and S['physics'] <= self.rpc('regs')['pc'] < S['ph_yok']: self.rpc('run', until_pc=S['ph_yok'], max_frames=2)
+        self.settle()
         c = self.mem(self.sym['cars'] + i * self.sym['c_size'], 14)
         return c[1] + 256 * c[2], c[4] + 256 * c[5], c[10]
+    def settle(self):
+        """if the emulator stopped inside the game's move of a car (physics, or ph_run - which it calls, and which keeps the
+        place in registers until it writes it back), let that move finish (22 Nov 2026: ph_run was not covered, and a car
+        set down by put() was put back where it had been)"""
+        S = self.sym
+        if 'ph_yok' not in S: return
+        pc = self.rpc('regs')['pc']
+        if S['physics'] <= pc < S['ph_yok'] or ('ph_run' in S and S['ph_run'] <= pc < S.get('phr_tab', S['ph_run'])):
+            self.rpc('run', until_pc=S['ph_yok'], max_frames=2)
     def put(self, x, y, ang=None, i=0, stop=True):
         """a car set down at (x, y) (its 16 x 16 box's top-left), standing still"""
+        # (as in car(): if the emulator stopped inside the game's own move of the cars, the move would write the old place
+        # back over this one - seen 22 Nov 2026 in race_mode_test once every picture moved 5 TV frames - so it finishes first)
+        self.settle()
         a = self.sym['cars'] + i * self.sym['c_size']
         self.poke(a, [0, x & 255, x >> 8, 0, y & 255, y >> 8] + ([0, 0, 0, 0] if stop else list(self.mem(a + 6, 4))))
         if ang is not None: self.poke(a + 10, [ang])

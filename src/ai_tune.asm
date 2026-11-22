@@ -252,18 +252,18 @@ AI_R75     equ 0
 ;   1 LATE         stays out wide and deep into the bend, cuts to the inside only on the way out
 ;   2 WIDE         the outside all the way round
 ;   3 EARLY        turns in early to the inside and runs wide on the way out
-AI_L0_OUT  equ 16
-AI_L0_NOW  equ 0-40
-AI_L0_IN   equ 32
-AI_L1_OUT  equ 0-40
-AI_L1_NOW  equ 24
-AI_L1_IN   equ 40
-AI_L2_OUT  equ 24
-AI_L2_NOW  equ 40
-AI_L2_IN   equ 24
-AI_L3_OUT  equ 32
-AI_L3_NOW  equ 0-32
-AI_L3_IN   equ 0-24
+AI_L0_OUT  equ 12
+AI_L0_NOW  equ 0-28
+AI_L0_IN   equ 20
+AI_L1_OUT  equ 0-24
+AI_L1_NOW  equ 8
+AI_L1_IN   equ 24
+AI_L2_OUT  equ 12
+AI_L2_NOW  equ 16
+AI_L2_IN   equ 12
+AI_L3_OUT  equ 20
+AI_L3_NOW  equ 0-24
+AI_L3_IN   equ 0-16
 ; which line each drives (255: one of the four at random, bend by bend)
 AI_RC_LINE equ 0
 AI_RY_LINE equ 1
@@ -289,7 +289,7 @@ AI_RC_KS    equ 0-2*AI_R75
 ; YELLOW - THE LATE BRAKER: cuts every corner as hard as it may (REACH 60), never lifts, twitchy hands (FUSS 3) - in a
 ;        slide more than a quarter of the time - and more small mistakes; its own line, a few pixels to one side; its car
 ;        the fastest on the straights (+4.6%) and the least grip
-AI_RY_REACH equ 48               ; (22 Nov 2026: 60 until its LATE line - it turns in later)
+AI_RY_REACH equ 56               ; (22 Nov 2026: 60 until its LATE line - it turns in later)
 AI_RY_LMASK equ 3                ; (22 Nov 2026: 7, 7 - a fixed shift - until each had its own line, rl_line)
 AI_RY_LHALF equ 1
 AI_RY_EASE  equ 0
@@ -313,7 +313,7 @@ AI_RM_REACT equ 0
 AI_RM_ERR   equ 2
 AI_RM_GRIP  equ 92-AI_R_GRIPCUT
 AI_RM_KA    equ 6
-AI_RM_KS    equ 1-2*AI_R75
+AI_RM_KS    equ 2-2*AI_R75           ; (22 Nov 2026: 1-2*AI_R75 until its WIDE line - the middle and outside of the road are slower here)
 ; WHITE - THE ERRATIC ONE: its line wanders the most (-8 to +7 px), twitchy hands, never lifts, the most mistakes (about
 ;        one a lap) - and quick when it gets it right: its car +2.3% on the straights, a little less grip
 AI_RW_REACH equ 60
