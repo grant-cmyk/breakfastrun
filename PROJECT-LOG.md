@@ -3493,3 +3493,26 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   6 races: computer laps 23.4-24.6 (5% apart). The good-driver autopilot (made for the race track) did not finish some races -
   not looked into: its numbers mean nothing here. Not balanced. Every other tape byte for byte the same.
 - NOT VERIFIED: nobody has driven it.
+
+## 2026-11-22 16:34 SAST - breakfast race tape: the mug back; the full sweep (cloud session, Claude)
+- Grant: "that is just a lot more fun for some reason. The racing is closer - lots of bumping. Can you do a full sweep
+  testing all the components here - add the coffee gauge back as coffee is back on the table".
+- MUG=1 (on racer_cars75_breakfast): the mug - your damage - back (plate_slow.asm hud_pre / dmg_make, racer.asm dmg_hit in
+  the bumps and dmg_draw / dmg_anim, grip.asm the slowdown; ARMOUR's limp left out). A point of damage takes 6 off your top
+  speed there (8 at full speed: at 75% that took a fifth, not a seventh). The oil can mends it.
+- tests/rt_ace.py: the good-driver autopilot backs out (A and the wheel the other way, half a second) when it has not moved
+  6 px in a second - it drove into a cereal O at the top chicane and pushed there for the rest of the race.
+- THE SWEEP (racer_cars75_breakfast, the zx-package tests with ZTAP/ZSYM/ZMAP/TSRC, and race_mode_test):
+  PASS whole - finish_test 18/18, crew_test 9/9, lapcount_test 7/7, o_test 2/2, plate_test 3/3, skip_test 2/2,
+  stuck_test 1/1, copy_check 1/1, race_mode_test 12/12.
+  FAILS BY DESIGN (the tests hold the game as it was before the 18-22 Nov changes): drive_test 7 (the spoon/mug layout,
+  12 pictures a second - STEADY is 10, top speeds at 100%, computer cars "not all the same speed", the old finish flags
+  where RACE shows gaps); nos_test 5 (NOS 1.5x for 2 s, not 2x for 1 s; the box stays while it burns); setup_test 4 (the
+  numbers at 100% and the old grip scale - the set-up keys still work); title_test 2 (the menu's rows; N fires the NOS but
+  the box stays while it burns); arrow_test 2 (the spoons' cells); lead_test 1 (the lead moves 1 px a picture now);
+  damage_test 1 (the top speed at 100% - the share lost is right now: 85%).
+  FOR GRANT: drift_test 5 (with 32 pictures taught to it) - after a sharp turn your car slides 1.5-2 s before it runs
+  true to its picture; the 14 Nov rule said about 1 s; it comes of the poor grip Grant asked for (17 Nov) and SCRUB.
+- BALANCE: not changed. 10 races: the good autopilot last every time (laps 28.0 - it cuts corners into the O's), the careful
+  one last too, 7 s behind (laps 25.4 against the computer cars' 23.5-24.8); 16-20 place changes a race. The autopilots do
+  not stand for a person on this track; Grant found it close ("lots of bumping").
