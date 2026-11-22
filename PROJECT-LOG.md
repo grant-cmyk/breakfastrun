@@ -3640,3 +3640,10 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   O_YOU_CLK pictures (25, 2 s - the count starts again every 2 s, so it does not open the O's in normal driving); O_FREE 4
   (was 6) so a computer car slips through sooner. After: no car stuck 1.5 s in 16 races; careful autopilot 8.2 s behind,
   good 5.5 s; race_mode_test 12/12; only the two breakfast tapes changed.
+
+## 2026-11-22 SAST - a larger track map: trial tape (cloud session, Claude)
+- Grant: "are you able to make the race track map slightly larger?"
+- The mini-map is 24 px wide on the breakfast tapes. The 40 px map (MAPW40, Grant's "C wide please" of 16 Nov) builds on the
+  fast tape: build/racer_cars75_breakfast_fast_map40.tap (tools/build_race.sh), the program 42 bytes from full (code_end
+  0xBFD6). Speed: no measurable cost (11.57 pictures a second against 11.51, autopilot 60 s). Picture:
+  docs/design/racetrack/race_mode/map_24_vs_40.png (24 left, 40 right). Not yet the main tape: Grant to choose.
