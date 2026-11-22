@@ -178,6 +178,9 @@ low_end:                        ; (the end of what is kept under 0x8000: the roo
         if OPT_WEIGHT
         include "weight.asm"    ; WEIGHT: the cars' weights in the bumps and their damage
         endif
+        if OPT_CNOS
+        include "cnos_low.asm"  ; CNOS: the chasers' NOS - its helpers and data (the rule: cnos.asm)
+        endif
 low_end:
         endif
         if OPT_MULTI
@@ -312,6 +315,9 @@ cpu_move:
         call bumps_o
         if OPT_WEIGHT
         call wt_tick            ; WEIGHT: the cars' damage cool-downs
+        endif
+        if OPT_CNOS
+        call cn_tick            ; CNOS: the chasers' NOS (cnos.asm)
         endif
         if OPT_ARMOUR
         call arm_tick           ; ARMOUR: the cool-downs, the bars that flash, the tank's gun and the clown's wheels (armour.asm)
@@ -667,6 +673,9 @@ tk_o:
         call o_check
         pop hl
         jr nc,tk_o1
+        if OPT_CNOS
+        call cn_ohit            ; CNOS: on NOS into the O's - a crash (cnos_low.asm)
+        endif
         inc (hl)
         jr tk_o1
 tk_o0:
@@ -774,6 +783,9 @@ physics:
         jr nz,ph_st
         ld d,a
 ph_st:
+        endif
+        if OPT_CNOS
+        call cn_steer           ; CNOS: Jane on NOS turns half as fast (cnos.asm)
         endif
         bit 0,e
         jr z,ph_nl
@@ -4619,6 +4631,9 @@ me_world:
         if OPT_ARMOUR
         if OPT_RACE
         include "race.asm"      ; RACE mode (the title's M): the parts that run in the race
+        if OPT_CNOS
+        include "cnos.asm"      ; CNOS: the chasers' NOS - Spike and Jane, when you lead by 3 s
+        endif
         endif
         include "armour.asm"    ; ARMOUR: every car's armour, the bar on the HUD, the tank's gun and the clown's wheels
         endif

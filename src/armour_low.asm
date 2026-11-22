@@ -46,6 +46,9 @@ afl_bar:
         ld a,e
         jp nz,rg_force
         endif
+        if OPT_RACEONLY
+        ret                     ; (race-only: the health blocks below are left out - arm_tick returns at once there; 22 Nov
+        else                    ;  2026, about 200 bytes for the chasers' NOS and the oil spills)
 ; ARM_BAR (A = a place, 0 to 4): THE HEALTH BLOCKS of the car that row shows (Grant, 18 Nov 2026, option C: "when health
 ; is good all bars are green, when 2 bars the 2 bars are yellow and 1 bar the 1 bar is red, when 0 - all three bars
 ; flash red"). The row's last three squares (columns 29-31, both its character rows) black, a block in each: 6 pixels
@@ -210,6 +213,7 @@ abr_put:                        ; A into the line at HL; HL to the line below
         sub 8
         ld h,a
         ret
+        endif                   ; (OPT_RACEONLY: the health blocks)
 
 ; ARM_NEW: a new race - every car's armour whole, nothing flashing, nobody spinning; the weapons wait ARM_START pictures.
 ; ARM_MEND: your armour whole again (the oil can).

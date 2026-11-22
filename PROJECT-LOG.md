@@ -3647,3 +3647,27 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   fast tape: build/racer_cars75_breakfast_fast_map40.tap (tools/build_race.sh), the program 42 bytes from full (code_end
   0xBFD6). Speed: no measurable cost (11.57 pictures a second against 11.51, autopilot 60 s). Picture:
   docs/design/racetrack/race_mode/map_24_vs_40.png (24 left, 40 right). Not yet the main tape: Grant to choose.
+
+## 2026-11-22 SAST - the hitter takes no damage; THE CHASERS' NOS (trial tape); 209 bytes found (cloud session, Claude)
+- Grant: "If you hit the side of a car with the front, you get no damage" - weight.asm: the hitter (side or behind) takes none
+  (a quarter before); head-on still hurts both. The dead quarter code went with it.
+- Grant: "if you get ahead the other cars can speed up to catchup. But not a full catchup ... 2 of the cars can benefit
+  from NOS at different times ... they also may have difficulty controlling NOS ... a deterministic rule ... not ... a
+  cheat elastic catchup with no explanation". CNOS=1 (src/cnos.asm, cnos_low.asm) -> build/racer_cars75_breakfast_fast_cnos.tap.
+  THE RULE: Spike (yellow, the late braker) and Jane (white, the erratic one) carry a NOS can each, one a lap. One may
+  light it only when you lead, nobody has finished, it is 3 s or more behind you (the race order's gap), its can is unused
+  this lap, nothing else is burning and 5 s have gone since the last burn (so never both at once); Spike only on a
+  straight (his next two waypoints' bends under 10). A burn is as long as yours: pushes +32/64 (1.5x - 1.75x took them to
+  3.3 px a frame, past your NOS), grip three quarters (Jane a half), Jane does not brake and turns half as fast. A car on
+  NOS that hits the O's CRASHES: three quarters of its speed gone, its NOS over, it flickers. The crew chief: "NOS LIT BY
+  <name>" (on this tape only, in place of the random "ON A CHARGE"). Nothing random.
+- Measured (tests: scratchpad cnos_m.py - you on the good autopilot given a lead, every computer car 10/64 slower; 12 races):
+  your margin at the flag 4.8 s without, 3.3 s with (you still win every race: not a full catch-up); Spike 33 burns, 0
+  crashes; Jane 21 burns, 4 crashes (about 1 in 5). Spike with Jane's half steering never crashed either, only lost time
+  (dropped).
+- ROOM: the tape was full. Found by running the profiler over four whole races and listing code that never ran: the
+  race order's health blocks (armour_low.asm arm_bar, 209 bytes under 0x8000) cannot run on a race-only tape (arm_tick
+  returns at once) - left out there. Program 6 bytes free, under 0x8000 148 on the CNOS tape.
+- race_mode_test: CNOS tape 12/12; racer_cars75_h32_round 12/12; racer_cars75_breakfast_fast 11/12 - the known glitch (a
+  race-order row caught half repainted, one picture, as two cars swap: Grant's open question of 19 Nov) now falls in this
+  race; with the changes stashed it passed. Plain tapes byte-identical.

@@ -35,6 +35,9 @@ srs_1:
         if OPT_ARMOUR
         call arm_new            ; ARMOUR: every car's armour whole (armour.asm)
         endif
+        if OPT_CNOS
+        call cn_new             ; CNOS: the chasers' NOS cans full (cnos.asm)
+        endif
         xor a                   ; no damage, no oil can yet: the first comes 8 seconds in
         ld (dmg),a
         ld b,a

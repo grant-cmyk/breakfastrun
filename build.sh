@@ -75,6 +75,9 @@ printf 'OPT_ROADW equ %s                ; 1: the road white (ROADW=1 bash build.
 # MAPW40=1: the mini-map 40 pixels wide, not 24 (Grant, 16 Nov 2026: "C wide please"). Its ink no longer fits the spare strip it
 # lives in, so it needs room in the program: build it with TILE1=1 FLIP=1 TOWER=1. It builds in its own folder (build/map40_tN)
 # -> build/racer_map40.tap (track 1) or build/racer_map40_trackN.tap; tools/make_world.py reads MAPW40 too.
+# CNOS=1 (breakfast race tape; Grant, 22 Nov 2026): the chasers' NOS - when you lead by 3 s, Spike and Jane may light a can
+# a lap, one at a time; Jane does not lift for corners on it (src/cnos.asm). Needs RACEONLY=1 and WEIGHT=1 (its room).
+printf 'OPT_CNOS equ %s                 ; 1: the chasers'"'"' NOS (CNOS=1 bash build.sh)\n' "${CNOS:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

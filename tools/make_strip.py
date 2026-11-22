@@ -77,7 +77,11 @@ MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light
 # the tape with the choose screen (CHOOSE=1, tools/build_choose.sh) has no set-up keys: there the chief says this on the grid
 # (no longer than the text it stands in for, so that everything after it stays where it is)
 CHOOSE_TEXT = {'M_SETUP': 'ON THE GRID|WAIT FOR GREEN'}
+# the chasers' NOS tape (CNOS=1, src/cnos.asm): one of the random remarks becomes what the chief says when Spike or Jane
+# lights a can (M_CNOS; trg_rand then never picks it at random)
+CNOS_TEXT = {'M_OTH2': 'NOS LIT BY|@'}
 assert all(len(l) <= 15 for _, t in MSGS for l in t.split('|')), 'a bubble line is 15 letters at most'
+assert all(len(v) <= len(dict(MSGS)[k]) for k, v in CNOS_TEXT.items())
 assert all(len(v) <= len(dict(MSGS)[k]) and all(len(l) <= 15 for l in v.split('|')) for k, v in CHOOSE_TEXT.items())
 # the data goes in the free ends of the buffer's bottom-row strips: BUFF and BUFH
 # whole, the ends of BUFE (after the row index) and BUFG (after the waypoints)
@@ -102,6 +106,8 @@ where = {}
 for i, (n, t) in enumerate(MSGS):
     for k, _, cap in AREAS:
         if used[k] + len(t) + 1 <= cap:
+            if n in CNOS_TEXT:
+                put(k, '%s equ %d\n%s_t:\n        if OPT_CNOS\n        db "%s",0\n        else\n        db "%s",0\n        endif\n' % (n, i, n, CNOS_TEXT[n], t), len(t) + 1); where[n] = k; break
             if n in CHOOSE_TEXT:
                 put(k, '%s equ %d\n%s_t:\n        if OPT_CHOOSE\n        db "%s",0\n        else\n        db "%s",0\n        endif\n' % (n, i, n, CHOOSE_TEXT[n], t), len(t) + 1); where[n] = k; break
             put(k, '%s equ %d\n%s_t:\n        db "%s",0\n' % (n, i, n, t), len(t) + 1); where[n] = k; break

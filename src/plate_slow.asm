@@ -655,6 +655,12 @@ trg_rand:                       ; when he has nothing else to say: one picture i
         ld (ms_car),a
         call rnd
         and 3
+        if OPT_CNOS             ; (CNOS: M_OTH2 is "NOS LIT BY" - never said at random)
+        cp 2
+        jr nz,trr_1
+        dec a
+trr_1:
+        endif
         add a,M_OTH0
         call msg_say
         xor a

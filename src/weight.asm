@@ -71,9 +71,7 @@ wb_k2:  ld (wk_kb),a
         ld a,c
         ld (wk_cb),a
         ret
-wt_hit:                         ; C = the car hurt, B = the other, D = 0 (all of it) or 2 (a quarter): its damage, once in DMG_COOL pictures
-        ld a,d
-        ld (wh_sc),a
+wt_hit:                         ; C = the car hurt, B = the other: its damage, once in DMG_COOL pictures (the hitter's quarter went: 22 Nov 2026)
         ld a,c
         cp 5                    ; (you on NOS: your own row)
         jr c,wh_0
@@ -103,13 +101,6 @@ wh_0:
         ld a,(hl)
         pop hl
         ld e,a
-        ld a,(wh_sc)            ; (a quarter: the car that did the hitting)
-        or a
-        ld a,e
-        jr z,wh_q
-        srl a
-        srl a
-wh_q:   ld e,a
         ld a,c
         or a
         jr z,wh_you
@@ -162,8 +153,8 @@ wt_kick1:
         ld (wk_kbv),hl          ; forward ... I can basically therefore ram a car off the road by aiming into their side"):
         push ix                 ;   each car's speed TOWARDS the other along the axis (ta, tb). Both over WK_TH: head-on - both
         pop hl                  ;   kicked by the weights and both hurt in full, as before. Else the quicker one is the HITTER:
-        ld a,(wk_ax)            ;   it keeps three quarters of its own speed (all of it on NOS) and takes a quarter of its
-        ld e,a                  ;   damage; the one hit, if it was moving away (hit from behind), is pushed on by its kick and
+        ld a,(wk_ax)            ;   it keeps three quarters of its own speed (all of it on NOS) and takes no damage (a quarter of its
+        ld e,a                  ;   damage until Grant, 22 Nov 2026 evening); the one hit, if it was moving away (hit from behind), is pushed on by its kick and
         ld d,0                  ;   not hurt; if not (hit in the side, or standing), it is kicked away and hurt in full.
         add hl,de               ;   You on NOS are always the hitter.
         ld e,(hl)
@@ -217,9 +208,7 @@ wk_h1:  ld (wk_big),hl          ; head-on? the slower one also over WK_TH toward
         ld de,(wk_big)
         call wk_lt
         jr c,wk_roles
-        ld d,0                  ; head-on: both hurt in full, both kicked
-        call wk_hurt_b
-        ld d,0
+        call wk_hurt_b          ; head-on: both hurt in full, both kicked
         call wk_hurt_a
         ld bc,(wk_kav)
         ld hl,(wk_kbv)
@@ -233,9 +222,8 @@ wk_ahit:                        ; a hit b
         ld a,(wk_ka)
         or a
         call z,wk_q34
-        push hl                 ; (a's speed)
-        ld d,2
-        call wk_hurt_a          ; a: a quarter
+        push hl                 ; (a's speed - the hitter takes NO damage: Grant, 22 Nov 2026, "If you hit the side of a car with
+                                ; the front, you get no damage"; a quarter before)
         ld hl,(wk_tb)           ; (moving away means faster than WK_TH: a car crossing in front of you with a little drift
         ld de,0x10000-WK_TH     ; away from you is hit in the side - 22 Nov 2026)
         call wk_lt
@@ -245,7 +233,7 @@ wk_ahit:                        ; a hit b
         add hl,de
         pop bc
         ret
-wka_s:  ld d,0                  ; b hit in the side (or standing, or slower towards a): kicked away, hurt in full
+wka_s:                          ; b hit in the side (or standing, or slower towards a): kicked away, hurt in full
         call wk_hurt_b
         ld hl,(wk_kbv)
         pop bc
@@ -255,9 +243,8 @@ wk_bhit:                        ; b hit a
         ld a,(wk_kb)
         or a
         call z,wk_q34
-        push hl                 ; (b's speed)
-        ld d,2
-        call wk_hurt_b
+        push hl                 ; (b's speed - the hitter takes NO damage: Grant, 22 Nov 2026, "If you hit the side of a car with
+                                ; the front, you get no damage"; a quarter before)
         ld hl,(wk_ta)
         ld de,0x10000-WK_TH
         call wk_lt
@@ -269,12 +256,12 @@ wk_bhit:                        ; b hit a
         ld c,l
         pop hl
         ret
-wkb_s:  ld d,0
+wkb_s:
         call wk_hurt_a
         ld bc,(wk_kav)
         pop hl
         ret
-wk_hurt_a:                      ; a hurt by b (D: 0 all, 2 a quarter)
+wk_hurt_a:                      ; a hurt by b
         ld a,(wk_ca)
         ld c,a
         ld a,(wk_cb)
@@ -408,7 +395,6 @@ wk_a:   dw 0
 wk_ka:  db 0
 wk_kb:  db 0
 wk_ax:  db 0
-wh_sc:  db 0
 wk_ca:  db 0
 wk_cb:  db 0
 wk_kav: dw 0

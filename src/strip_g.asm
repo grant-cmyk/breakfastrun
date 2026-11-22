@@ -17,7 +17,11 @@ M_OTH1_t:
         db "WATCH OUT FOR|@",0
 M_OTH2 equ 16
 M_OTH2_t:
+        if OPT_CNOS
+        db "NOS LIT BY|@",0
+        else
         db "ON A CHARGE|@",0
+        endif
 M_OTH3 equ 17
 M_OTH3_t:
         db "LOOKING QUICK|@",0

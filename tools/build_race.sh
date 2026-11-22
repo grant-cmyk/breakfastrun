@@ -59,6 +59,9 @@ env NOSTURN=1 WEIGHT=1 FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB
 # TRIAL (Grant, 22 Nov 2026: "are you able to make the race track map slightly larger?"): the same tape with the mini-map
 # 40 px wide, not 24 (MAPW40, as chosen 16 Nov) - build/racer_cars75_breakfast_fast_map40.tap
 env NOSTURN=1 WEIGHT=1 FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} NOS=3 NOS_FR=${NOS_FR:-100} STEADY=4 GAME_SPEED=${BF_SPEED:-85} TILE1=1 FLIP=1 TOWER=1 LOOP=0 RT_FACESLOW=1 HEAD32=all MIRROR=all BIG_LO_ROOM=3000 MAPW40=1 OUT=racer_cars75_breakfast_fast_map40 BDIR=racer_cars75_breakfast_fast_map40 bash build.sh | tail -2
+# TRIAL (Grant, 22 Nov 2026: "If you are several seconds ahead, then 2 of the cars can benefit from NOS at different
+# times ... a deterministic rule"): the chasers' NOS - build/racer_cars75_breakfast_fast_cnos.tap (src/cnos.asm)
+env NOSTURN=1 WEIGHT=1 FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} NOS=3 NOS_FR=${NOS_FR:-100} STEADY=4 GAME_SPEED=${BF_SPEED:-85} TILE1=1 FLIP=1 TOWER=1 LOOP=0 RT_FACESLOW=1 HEAD32=all MIRROR=all BIG_LO_ROOM=3000 CNOS=1 OUT=racer_cars75_breakfast_fast_cnos BDIR=racer_cars75_breakfast_fast_cnos bash build.sh | tail -2
 # (A plain-tablecloth version - CLOTHPLAIN=1, about 6,000 T a picture quicker - was built and tried; Grant, 22 Nov 2026: "fast
 # tape, dotted cloth ... happy with that - lets stick to that".)
 bash build.sh > /dev/null && echo "the plain game built last: src/options.asm is the plain game's again"
