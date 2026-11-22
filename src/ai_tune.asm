@@ -338,6 +338,7 @@ AI_RW_KS    equ 1-AI_R75
 ; -2, Spike +3, Bruno +2, Jane -3 gave laps 23.2, 23.6, 23.5, 22.9 (2.7% apart), the good driver 8 of 10, 23 place changes
 ; a race; then each one 64th slower (the 75% race tape Grant called "much better" had the cars at 23.4-24.0). Each still
 ; its card's grip (Jane slides most, Bruno least) and acceleration.
+AI_H16R    equ 2                ; HEAD32: the driver judges its heading by the nearest of the 16 (0: the one below - racer.asm ai_decide)
 AI_K_BRAKE equ 255              ; the speed it brakes down to for a corner (quarter-pixels a frame): 255 - never
         if OPT_SCRUB = 0
 AI_KC_KS   equ 0-3              ; FRANK (cyan): his card's SPEED push less 3 64ths
@@ -351,7 +352,11 @@ AI_KW_KS   equ 0-4              ; JANE (white): less 4
 ; time); braking for corners at their cards' speeds again, slower still (26.3-29.6). So still no braking, and more speed:
 ; Frank 0, Spike +6, Bruno +3, Jane -2 gave 24.1, 25.1, 24.4, 24.6 (4% apart), the good driver only 3 of 8 (1.9 s behind
 ; when beaten), 27 place changes a race; then each one 64th slower.
+        if OPT_HEAD32 = 2       ; (the 32-heading tape, Grant 22 Nov 2026: "the 32 tape looks smoother, balance that one": with the
+AI_KC_KS   equ 0-2              ; drivers judging by the nearest of the 16 - AI_H16R - Frank was the quickest, and won 7 of 10)
+        else
 AI_KC_KS   equ 0-1
+        endif
 AI_KG_KS   equ 5
 AI_KP_KS   equ 2
 AI_KW_KS   equ 0-3

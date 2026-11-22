@@ -1406,7 +1406,8 @@ ai_have_target:
         push de
         push bc
         if OPT_HEAD32           ; (HEAD32: the driver still judges its heading by the 16 - with the 32 it steered at every
-        call hp_16              ; small miss, in a slide two thirds of the time; it moves and is drawn by the 32)
+        add a,AI_H16R           ; small miss, in a slide two thirds of the time; it moves and is drawn by the 32. AI_H16R 2:
+        call hp_16              ; the nearest of the 16, not the one below)
         else
         call heading_push
         endif
