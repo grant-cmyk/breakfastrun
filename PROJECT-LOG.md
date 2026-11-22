@@ -3390,3 +3390,28 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - TESTS: race_mode_test 12 of 12 on racer_cars75_elastic, 11 of 12 on racer_cars75 (the known one-frame half-painted row in
   the race order as two cars swap). Every other tape byte for byte the same.
 - NOT VERIFIED: nobody has driven it; NOS (which the autopilot does not use) and its gauge only seen in pictures.
+
+## 2026-11-22 12:02 SAST - 32 headings for every car (trial tape); skids that cost speed (cloud session, Claude)
+- Grant: "that tap played better" (racer_cars75). Then "I need skidding to be more severe - forcing cars to slow down at
+  the corners - or brake".
+- HEAD32=all, MIRROR=all (build.sh; tools/make_data.py; racer.asm draw_car, hud.asm tower_b, title2.asm ad_draw): every car
+  at 32 headings (big_tab[kind * 32 + heading]); every left-facing picture mirrored as drawn, yours too (MIRROR=1, yours
+  kept, fitted with 1 byte to spare - too tight); BIG_LO_ROOM=2400: 2,368 bytes of frames under 0x8000, 392 in the program.
+  Tapes: build/racer_cars75_h32.tap, racer_cars75_h32_elastic.tap (tools/build_race.sh). Free: 276 bytes (program, catch-up
+  tape), 133 under 0x8000. CHECKED: each car 32 different pictures (Spike's round clown car 31); its old 16 exactly as on
+  racer_cars75 (the art compared directly - the screen check's 4 differences for Jane were the white start line beside
+  her); pictures a second (free) 10.97 against 10.66 - no cost. Sheet of all five: docs/design/head32/all_cars_32_headings.png
+  (the in-between drawings drafted by tools/turn_car.py, for Grant to touch up). With 32 the drivers steered at every small
+  miss (in a slide up to 72%): they now judge their heading by the 16 (ai_decide calls hp_16) - 44% at most, as before.
+  OPEN: on the 32-heading tape the computer cars lap about 0.7 s slower than on racer_cars75 (24.5-26.2 against 24.5-25.6).
+- SCRUB=5 (build.sh; on the race-only tapes): a slide costs speed - your car loses 1/32 of its forward speed each TV frame it
+  slides (grip.asm, yg_g5); a computer car turning too fast keeps three quarters of its push and all its drag (racer.asm
+  skid: it had half of each, so a slide kept its speed). Tried first: half the push and twice the drag - laps 27-35 s. The
+  cards' corner braking again on top: slower still (26.3-29.6) - left off; the slides now do the slowing. Re-balanced (ai_tune.asm
+  AI_K*_KS under OPT_SCRUB: Frank -1, Spike +5, Bruno +2, Jane -3 64ths on their cards).
+- MEASURED (10 races each, as pushed): racer_cars75 - good driver 8 of 10 (0.4 s behind when beaten), laps you 23.5 (22.5
+  before: your slides cost you too), Frank 24.5, Bruno 24.7, Jane 24.6, Spike 25.6, 22 place changes a race; careful
+  driver last, 9.1 s behind; catch-up tape - good driver 7 of 10, the four within 1.5%, 31 place changes; 32-heading tape -
+  good driver 10 of 10, Frank 24.5, Jane 25.3, Bruno 25.4, Spike 26.2. race_mode_test 12 of 12 on racer_cars75 and
+  racer_cars75_h32. Every other tape byte for byte the same.
+- NOT VERIFIED: nobody has driven the skids or the 32 headings.
