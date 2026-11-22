@@ -235,7 +235,13 @@ wk_ahit:                        ; a hit b
         ret
 wka_s:                          ; b hit in the side (or standing, or slower towards a): kicked away, hurt in full
         call wk_hurt_b
+        if OPT_MAPHUD           ; (the breakfast fast tapes - Grant, 22 Nov 2026: "If I hit one of the other cars on its side, it
+        call wk_slowb           ; should move more to the side and be temporarily slowed": kicked twice as hard, and its speed
+        ld hl,(wk_kbv)          ; the other way - along the road - halved; it pushes back up to speed as ever)
+        add hl,hl
+        else
         ld hl,(wk_kbv)
+        endif
         pop bc
         ret
 wk_bhit:                        ; b hit a
@@ -258,9 +264,42 @@ wk_bhit:                        ; b hit a
         ret
 wkb_s:
         call wk_hurt_a
+        if OPT_MAPHUD
+        call wk_slowa
+        ld hl,(wk_kav)          ; (twice the kick: through HL, 2 bytes shorter - the tape was full)
+        add hl,hl
+        ld b,h
+        ld c,l
+        else
         ld bc,(wk_kav)
+        endif
         pop hl
         ret
+        if OPT_MAPHUD
+wk_slowb:                       ; car b's speed across the bump's axis (along the road) halved
+        ld a,(wk_ax)
+        xor C_VX XOR C_VY
+        add a,(tb-1) AND 255
+        ld l,a
+        adc a,(tb-1)/256
+        sub l
+        ld h,a
+        jr wks_h
+wk_slowa:                       ; car a's
+        push ix
+        pop hl
+        ld a,(wk_ax)
+        xor C_VX XOR C_VY
+        add a,l
+        ld l,a
+        jr nc,wks_h
+        inc h
+wks_h:  inc hl
+        sra (hl)
+        dec hl
+        rr (hl)
+        ret
+        endif
 wk_hurt_a:                      ; a hurt by b
         ld a,(wk_ca)
         ld c,a
@@ -392,6 +431,7 @@ wsl_1:  push af
         jr nz,wsl_1
         ret
 wk_a:   dw 0
+        if OPT_MAP40 * OPT_MAPHUD = 0   ; (the breakfast fast tapes: in the D0 strip - vars_d0.asm)
 wk_ka:  db 0
 wk_kb:  db 0
 wk_ax:  db 0
@@ -406,6 +446,7 @@ wk_tb:  dw 0
 wk_big: dw 0
 wk_sm:  dw 0
 wk_who: db 0
+        endif
 wk_b:   dw 0
 wk_tab:                         ; car a's kick from car b (a x 6 + b; 5 is YOU ON NOS - 3 x your weight)
         dw (2*KICK*CD_ARM_0+(CD_ARM_0+CD_ARM_0)/2)/(CD_ARM_0+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_0+CD_ARM_1)/2)/(CD_ARM_0+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_0+CD_ARM_2)/2)/(CD_ARM_0+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_0+CD_ARM_3)/2)/(CD_ARM_0+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_0+CD_ARM_4)/2)/(CD_ARM_0+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_0+(3*CD_ARM_0))/2)/(CD_ARM_0+(3*CD_ARM_0))   ; car 0 kicked by 0-5

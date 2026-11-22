@@ -17,4 +17,20 @@ cn_k      equ VD0+54
 cn_sv     equ VD0+55             ;   6 bytes
 cn_used   equ VD0+61             ;   5 bytes
 cn_end    equ VD0+66
+wk_ka     equ VD0+66             ; WEIGHT (weight.asm): the bump's working values
+wk_kb     equ VD0+67
+wk_ax     equ VD0+68
+wk_ca     equ VD0+69
+wk_cb     equ VD0+70
+wk_kav    equ VD0+71             ;   (2 bytes each from here)
+wk_kbv    equ VD0+73
+wk_va     equ VD0+75
+wk_vb     equ VD0+77
+wk_ta     equ VD0+79
+wk_tb     equ VD0+81
+wk_big    equ VD0+83
+wk_sm     equ VD0+85
+wk_who    equ VD0+87
+jf_hm     equ VD0+88             ; JFACE: your happy face this time mirrored or not (bit 0)
+; (VD0+89 is the last of the 90)
 ; (spill_rec is laid out for 28-byte car records: racer.asm's C_SIZE - checked at the end of racer.asm)

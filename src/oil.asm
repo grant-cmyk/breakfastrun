@@ -20,6 +20,15 @@ OIL_IMM equ 12                  ; then this many it cannot spin again
 OIL_ROT equ 2                   ; heading steps (of 64) a TV frame while it spins: about 1.5 turns
 
 spill_new:                        ; a new race: no spills yet (the first come with the green light), nobody spinning
+        if OPT_LJ * OPT_MAPHUD  ; (with LINEJ: the judge's 16 bytes before these cleared too - lj_new's work: vars_d0.asm)
+        ld hl,line_at
+        ld b,spill_spin+NCARS-line_at
+slon_1:   ld (hl),0
+        inc hl
+        djnz slon_1
+        ld a,0xFF
+        ld (spill_lap),a
+        else
         ld hl,spill_on
         ld (hl),0
         inc hl
@@ -28,6 +37,7 @@ spill_new:                        ; a new race: no spills yet (the first come wi
 slon_1:   inc hl
         ld (hl),0
         djnz slon_1
+        endif
         ld a,OIL_KIND
         ld (spill_rec+C_KIND),a
         ret
@@ -257,11 +267,6 @@ slod_n:   pop hl
         add hl,de
         pop af
         jr slod_1
-dc_oil:                         ; (draw_car: the spill's frame)
-        ld de,oil_gfx
-        ld b,OIL_B
-        ld a,OIL_ROWS
-        jp dc_frame
 
 spill_spots:                      ; top left of each spill (its middle - 8). ON THE STRAIGHTS, 13 px to one side of the line the
         dw 519-8,230-8, 493-8,300-8     ; computer cars drive (Grant, 22 Nov 2026: "an oil spill somewhere on a straight just

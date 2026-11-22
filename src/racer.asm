@@ -187,6 +187,7 @@ low_end:                        ; (the end of what is kept under 0x8000: the roo
         if OPT_LJ
         include "linej.asm"     ; LINEJ: the finish line's judge
         endif
+
         if OPT_MAP40 * OPT_MAPHUD
 MAPDAT:                         ; MAPW40 with MAPHUD: the 40-wide map's ink here, under 0x8000 (Grant, 22 Nov 2026: "The map in the
         include "minimap.asm"   ; top right corner needs to be quite a big bigger"); the cars' dots XORed into it
@@ -4034,10 +4035,14 @@ rp_k2:
         if OPT_RTLAP            ; RACETRACK: none near - off the road a fair bit? (lap_low.asm: the time it allows)
         jp nc,rp_far
         else
+        if OPT_LAPFIX           ; (LAPFIX: the same, from the stack's page)
+        jp nc,rp_far_lf
+        else
         if OPT_2P
         ret nc
         else
         jr nc,rp_pos
+        endif
         endif
         endif
         inc b                   ; the ones missed, then the one reached
@@ -4057,7 +4062,10 @@ rp_all:
         ld a,(you_done)
         or a
         jr nz,rp_wait
-        if OPT_LJ               ; LINEJ: you are in when you cross the drawn line (linej.asm)
+        if OPT_LJ               ; LINEJ: you are in when you have crossed the drawn line (linej.asm) - and your lap is counted,
+        ld a,(cars+C_LAPS)      ; so that its time is kept (the race can end the moment you are in: 22 Nov 2026, the test's
+        cp LAPS+1               ; careful driver's last lap went unrecorded)
+        jr c,rp_go_on
         ld a,(line_at)
         or a
         jr z,rp_go_on
@@ -5100,6 +5108,12 @@ start_once:                     ; (start, from the start-up area)
         ld bc,p2c_end-p2c_src
         ldir
         endif
+        if OPT_LAPFIX
+        ld hl,stk_src           ; LAPFIX: rp_far to the stack's page
+        ld de,LF_AT
+        ld bc,stk_end-stk_src
+        ldir
+        endif
         ld hl,high_src          ; the data that lives at the top of memory,
         ld de,TOPMEM            ; out of the way: copied up there first,
         ld bc,high_end-high_src ; before the back buffer it loads into is used
@@ -5839,6 +5853,21 @@ jc_b    equ TD + jc_b_src - td_src
         if td_end2 - td_src > 0x5E00 - TD
         .error the title's tables run past 0x5E00 (the stack is below 0x5F00: 50 bytes deep at most)
         endif
+        if OPT_LAPFIX
+; LAPFIX (the breakfast fast tapes): lap_low.asm's rp_far - YOUR LAPS WHEN THE GAME HAS LOST WHERE YOU ARE - copied by start to
+; the stack's page, 0x5E00 (free on track 1: the TD block ends below it; the stack keeps 0x5EA0-0x5EFF - checked deepest 56).
+; Its jumps are relative but for those out of it, so it runs there. Grant, 22 Nov 2026: second over the line, marked third -
+; a lap of yours had gone uncounted (your waypoint left at the top chicane while you drove on), so the game had you a lap
+; behind.
+stk_src:
+        include "lap_low.asm"
+stk_end:
+LF_AT   equ 0x5E00
+rp_far_lf equ LF_AT + rp_far - stk_src
+        if stk_end - stk_src > 0xA0
+        .error LAPFIX: rp_far is over 160 bytes - into the stack
+        endif
+        endif
 ; data kept at the top of memory (TOPMEM, above the generated copy routine),
 ; loaded here and copied up by start; use the names below, not the _src ones
 high_src:
@@ -5896,6 +5925,9 @@ cars_init_src:
         dw 0,0
         db STARTA,0,3, CPU3WP,0,2, 0,0,0, AI_W_PACE,AI_W_REACT+OPT_REACT1,AI_W_ERR, 4,0,0, 0, 0,0     ; WHITE: Slim Jane, the fastest - full throttle, hardly ever wrong
 cars_init_src_end:
+        if OPT_JFACE
+        include "jface_low.asm" ; JFACE: your happy face mirrored in turn (pa_face_h)
+        endif
 high_end:
 ; and two blocks kept in the back buffer's bottom rows (152..191 - never drawn
 ; or shown: cars reach row 151 at most), copied there by start too
@@ -5959,6 +5991,9 @@ rev4      equ BUFD + rev4_src - bufd_src
 logo_bits equ logo_bits_src
 logo_attr equ logo_attr_src
 txt_places equ TOPMEM + txt_places_src - high_src
+        if OPT_JFACE
+pa_face_h equ TOPMEM + pa_face_h_src - high_src
+        endif
         if 1-OPT_TALL
 txt_flag  equ TOPMEM + txt_flag_src - high_src
 txt_youfin equ TOPMEM + txt_youfin_src - high_src

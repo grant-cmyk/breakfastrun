@@ -89,6 +89,8 @@ printf 'OPT_JFACE equ %s                ; 1: the faces move with the music (JFAC
 # LINEJ=1 (breakfast fast tapes; Grant, 22 Nov 2026): the places at the finish by the drawn line itself (src/linej.asm).
 # Needs MAPW40=1 MAPHUD=1 (its variables are in the D0 strip those free).
 printf 'OPT_LJ equ %s                   ; 1: the finish line judges the places (LINEJ=1 bash build.sh)\n' "${LINEJ:-0}" >> "$ROOT/src/options.asm"
+# LAPFIX=1 (breakfast fast tapes; Grant, 22 Nov 2026): lap_low.asm's catch-up for your waypoint, kept in the stack's page.
+printf 'OPT_LAPFIX equ %s               ; 1: your lap is not lost when the game loses your waypoint (LAPFIX=1 bash build.sh)\n' "${LAPFIX:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

@@ -12,6 +12,7 @@
 ; =====================================================================
 LJ_X    equ 292-8               ; the line's middle, as the car's left edge (its middle is x + 8)
 
+        if OPT_OIL = 0          ; (OIL: spill_new clears these too)
 lj_new:                         ; a new race: nobody over (line_px from the grid: all before the line)
         ld hl,line_at
         ld b,16
@@ -19,6 +20,7 @@ ljn_1:  ld (hl),0
         inc hl
         djnz ljn_1
         ret
+        endif
 
 line_judge:                     ; each picture, with the cars moved
         ld ix,cars
@@ -54,9 +56,12 @@ lj_1:   push bc
         jr nc,lj_y
         cp LAPS
         jr nz,lj_n
-        ld a,(ix+C_WP)
-        cp WS
-        jr nz,lj_n
+        ld a,(ix+C_WP)          ; (heading for a waypoint in the second half of the lap: your waypoint can lag well behind
+        sub WS+1                ; where you are when you cut corners - 22 Nov 2026, you over the line second and not seen,
+        jr nc,lj_w              ; when only the line's own waypoint, then the last four, counted. Just over the line at the
+        add a,NWP               ; START of the last lap a car heads for WS+1: passed 0)
+lj_w:   cp NWP/2
+        jr c,lj_n
 lj_y:   ld a,(ix+C_KIND)
         ld hl,line_at
         add a,l
@@ -89,3 +94,10 @@ lj_prog:                        ; (progress, IX = a car): NZ and A = its progres
         sub (hl)
         ld l,0
         ret                     ; (NZ: 245 to 249)
+        if OPT_OIL
+dc_oil:                         ; (draw_car: the spill's frame - oil.asm; down here, the program is full)
+        ld de,oil_gfx
+        ld b,OIL_B
+        ld a,OIL_ROWS
+        jp dc_frame
+        endif

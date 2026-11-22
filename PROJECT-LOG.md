@@ -3773,3 +3773,30 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   mirror: 60 bytes; tools/make_faces.py); cn_set and cn_ohit moved into the program. The trial tape's program is now FULL
   (0 bytes), 9 bytes under 0x8000; the main fast tape 53 and 64.
 - race_mode_test 12/12 on both fast tapes; plain tapes byte-identical.
+
+## 2026-11-22 SAST - finish order, part 2: your lost lap; the winner's smile mirrored; side hits push further and slow (cloud session, Claude)
+- Still wrong in 3 of 24 close races after the line judge: in each, the game had your car on LAP 2 as you crossed the line
+  to finish - a lap of yours had gone uncounted. Traced (scratchpad youlap.py): your waypoint was left at 21 (the top
+  chicane) while you drove on - you cut it by more than the four waypoints the game looks ahead - so the game waited a
+  whole lap for you to come back to it. The same fault Grant reported on 15 and 18 Nov ("I seemed to lose a lap"), fixed
+  then on the race-track tapes only (lap_low.asm rp_far: when you are well away from your waypoint it looks further ahead,
+  never further than you could have driven).
+- LAPFIX=1 (both fast tapes): rp_far on the breakfast tapes too - kept in the stack's page at 0x5E00 (copied there by
+  start; 102 bytes; free on track 1 - the stack measured never deeper than 0x5EC8 through a race with the music and the
+  podium; the code checked intact after it). The line judge's last-lap test widened as well: heading for any waypoint in
+  the second half of the lap (it was the line's own, then the last four).
+- After: 32 of 32 close races in the true order over the line (both tapes); full races all finish.
+- Grant: "If the player wins then play the happy face horizontally mirrored" - your happy face is shown as it is and
+  mirrored in turn each time it comes round (pa_face_h, in the TOPMEM block - jface_low.asm).
+- Grant: "If I hit one of the other cars on its side, it should move more to the side and be temporarily slowed" -
+  weight.asm (MAPHUD tapes): the car hit in the side is kicked twice as hard, and its speed along the road halved (it pushes
+  back up to speed as ever). Staged: kicked 1.27 sideways (0.64 before), along the road 0.38 (0.77 before); you keep
+  three quarters, no damage.
+- Room (the trial tape was full): the weight bump's variables to the D0 strip (vars_d0.asm, now 89 of 90); RACE mode's old
+  card rows (cd_race, 32 bytes) left out on the breakfast race tapes - every car drives its own card; lj_new folded into
+  spill_new; dc_oil under 0x8000; pa_face_h at TOPMEM. Trial tape: program 13 bytes free, under 0x8000 15; main fast
+  tape 53 and 69.
+- race_mode_test 11/12 on each fast tape: the race order's half-repainted row (a row's colours or gap a picture behind as
+  two cars swap) - cosmetic, and NOT the finish order; open.
+- Next, Grant: "we need a memory hunt. A deep one ... rules I have given about the dynamics of the game and movement could
+  be simplified".

@@ -53,14 +53,14 @@ pfy_1:  inc d                   ; face"); the two whose faces are near alike bot
         jr nc,pfy_1             ; (D = the car, A = its mood - 3)
         cp 0xFD
         ld a,e
-        jp nz,pa_face
+        jp nz,pa_face_h         ; (happy or sad: pa_face_h, jface_low.asm)
         ld a,JF_MIRROR
 pfy_2:  rrca
         dec d
         jp p,pfy_2              ; (CY: the car's bit)
         ld a,e
         jp nc,pa_face
-        push bc
+pfy_m:  push bc                 ; (pa_face_h: the happy face just laid over, mirrored)
         call fm_cell
         pop bc
         push bc
