@@ -3606,3 +3606,26 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   climbed back to 2.15; steering every other frame - the car swung 130 degrees a second and slid sideways (0.7 when it
   straightened). Now: straight 2.5; steering, the heading 12 steps (67 degrees) in a second, the speed 1.55-1.72 (it skids
   and sheds speed); straightened, back to 2.2 at once.
+
+## 2026-11-22 18:41 SAST - bumps by how the hit happens; your damage a quarter; the grid flash with the lights (cloud session, Claude)
+- Grant: "reduce the damage again my car gets ... if I hit the side of another car from the front of my car that that car
+  shifts sideways - so more impact on them, a small impact on me ... If someone hits you from behind you actually don't get
+  damage and actually get pushed forward ... I can basically therefore ram a car off the road by aiming into their side";
+  "sometimes in the grid my car during the intro music does not actually show, only when the lights appear"; and "fast tape,
+  dotted cloth - happy with that - lets stick to that".
+- weight.asm wt_kick (breakfast tapes, WEIGHT=1): along the axis of the bump, each car's speed TOWARDS the other. HEAD-ON
+  only when both drive at each other (the slower over a quarter-pixel a frame AND at least half the quicker's): both
+  bounce and both take full damage, by weight, as before. Otherwise the quicker is the HITTER: it keeps three quarters of
+  its speed (all of it on NOS) and takes a quarter of its damage. The car hit: moving away faster than a quarter-pixel a
+  frame (hit from behind) - pushed on, no damage; else (hit in the side, standing, crossing) - kicked away, full damage
+  and the hurt flicker. Your own share of any damage is now a quarter (a half before).
+- Grid flash (FLASHME): your car flashes only once the lights are up (it could be off for the whole intro tune).
+- TWO BUGS FOUND ON THE WAY, fixed: (1) wt_kick lost racer.asm's 2-pixel "nudge apart" - after a bump the two cars were
+  thrown up to 160 px (one off the table, one into the middle, stuck): the careful autopilot did not finish 7 of 8 races.
+  (2) a car crossing your path with the slightest drift away or towards you counted as hit-from-behind or head-on.
+- Staged crashes (fast tape, your car at 1.5 px a frame into Spike, same weight): SIDE (you coming down onto him on the
+  straight) - you keep 1.07 down, he is kicked 0.64 sideways, he takes 4 quarters and flickers, you 1; FROM BEHIND (he at
+  0.5) - you 1.07, he is pushed to 1.38, no damage to him, you 1; HEAD-ON - both bounce back 0.64, he 4, you 1.
+- Careful autopilot, 10 races: all finish (one computer car still on its last lap when the race ended after you - the race
+  ends a little after you cross the line), last 9 of 10, 8.3 s behind (9.1 before the change), order changes 19.7 a race
+  (14.8 before - more bumping). race_mode_test 12/12. Plain tapes byte-identical.

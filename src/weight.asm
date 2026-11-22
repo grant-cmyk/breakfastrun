@@ -151,6 +151,11 @@ wt_pair:                        ; A = C x 6 + B
         add a,b
         ret
 wt_kick:                        ; BC = KICK or -KICK, the way car a goes, A = the axis (C_VX or C_VY): BC = a's new speed that way,
+        push de                 ; (DE, racer.asm's 2-pixel nudge apart, kept: without it the cars were thrown up to 160 px)
+        call wt_kick1
+        pop de
+        ret
+wt_kick1:
         ld (wk_ax),a            ; HL = b's - BY HOW THE HIT HAPPENED (Grant, 22 Nov 2026: "if I hit the side of another car from
         call wt_kick0           ; the front of my car that that car shifts sideways - so more impact on them, a small impact on
         ld (wk_kav),bc          ; me ... If someone hits you from behind you actually don't get damage and actually get pushed
@@ -191,12 +196,25 @@ wt_kick:                        ; BC = KICK or -KICK, the way car a goes, A = th
         ld a,(wk_kb)
         or a
         jr nz,wk_bhit
-        ld hl,(wk_ta)           ; head-on?
+        ld hl,(wk_ta)           ; who hit whom: the quicker towards the other (wk_who FF: b)
+        ld de,(wk_tb)
+        call wk_lt
+        sbc a,a
+        ld (wk_who),a
+        ld hl,(wk_ta)
+        ld de,(wk_tb)
+        or a
+        jr z,wk_h1
+        ex de,hl
+wk_h1:  ld (wk_big),hl          ; head-on? the slower one also over WK_TH towards the other AND at least half the quicker's
+        ex de,hl                ; speed - a car crossing your path with a little drift towards you is hit in the side
+        ld (wk_sm),hl           ; (22 Nov 2026: it was head-on, and you bounced back off it)
         ld de,WK_TH
         call wk_lt
         jr c,wk_roles
-        ld hl,(wk_tb)
-        ld de,WK_TH
+        ld hl,(wk_sm)
+        add hl,hl
+        ld de,(wk_big)
         call wk_lt
         jr c,wk_roles
         ld d,0                  ; head-on: both hurt in full, both kicked
@@ -207,10 +225,9 @@ wt_kick:                        ; BC = KICK or -KICK, the way car a goes, A = th
         ld hl,(wk_kbv)
         ret
 wk_roles:
-        ld hl,(wk_ta)
-        ld de,(wk_tb)
-        call wk_lt
-        jr c,wk_bhit
+        ld a,(wk_who)
+        or a
+        jr nz,wk_bhit
 wk_ahit:                        ; a hit b
         ld hl,(wk_va)
         ld a,(wk_ka)
@@ -219,9 +236,10 @@ wk_ahit:                        ; a hit b
         push hl                 ; (a's speed)
         ld d,2
         call wk_hurt_a          ; a: a quarter
-        ld hl,(wk_tb)
-        bit 7,h
-        jr z,wka_s
+        ld hl,(wk_tb)           ; (moving away means faster than WK_TH: a car crossing in front of you with a little drift
+        ld de,0x10000-WK_TH     ; away from you is hit in the side - 22 Nov 2026)
+        call wk_lt
+        jr nc,wka_s
         ld hl,(wk_vb)           ; b was moving away: pushed on, not hurt
         ld de,(wk_kbv)
         add hl,de
@@ -241,8 +259,9 @@ wk_bhit:                        ; b hit a
         ld d,2
         call wk_hurt_b
         ld hl,(wk_ta)
-        bit 7,h
-        jr z,wkb_s
+        ld de,0x10000-WK_TH
+        call wk_lt
+        jr nc,wkb_s
         ld hl,(wk_va)
         ld de,(wk_kav)
         add hl,de
@@ -398,6 +417,9 @@ wk_va:  dw 0
 wk_vb:  dw 0
 wk_ta:  dw 0
 wk_tb:  dw 0
+wk_big: dw 0
+wk_sm:  dw 0
+wk_who: db 0
 wk_b:   dw 0
 wk_tab:                         ; car a's kick from car b (a x 6 + b; 5 is YOU ON NOS - 3 x your weight)
         dw (2*KICK*CD_ARM_0+(CD_ARM_0+CD_ARM_0)/2)/(CD_ARM_0+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_0+CD_ARM_1)/2)/(CD_ARM_0+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_0+CD_ARM_2)/2)/(CD_ARM_0+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_0+CD_ARM_3)/2)/(CD_ARM_0+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_0+CD_ARM_4)/2)/(CD_ARM_0+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_0+(3*CD_ARM_0))/2)/(CD_ARM_0+(3*CD_ARM_0))   ; car 0 kicked by 0-5
