@@ -3557,3 +3557,15 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   track needed): copy 51,500 - the tape now shows 99% of its pictures on the 5-frame rhythm (578: 573 at 5, 5 at 6).
 - TRIAL build/racer_cars75_breakfast_fast.tap (STEADY=4): 11.8 pictures a second, 76% on the 4-frame rhythm, 23% a frame
   late; the view's jump 4.2 px a picture (4.8 on the 5-frame tape). race_mode_test 12 of 12 on both. For Grant to judge.
+
+## 2026-11-22 17:30 SAST - the fast breakfast tape is the game: 85%, a stronger NOS, damage that hurts less (cloud session, Claude)
+- Grant: "still too slow, but it is smooth. Also - my car gets damaged too easily, so make it more resistant to damage, or
+  rather make damage have less of an impact. Also - make the NOS a bit stronger".
+- build/racer_cars75_breakfast_fast.tap - THE TAPE NOW: STEADY=4 (12.5 pictures a second as the rhythm), GAME_SPEED 85
+  (tools/build_race.sh BF_SPEED), NOS=3 (grip.asm: the push and the top speed three quarters more - 1.5x was NOS=1, 2x NOS=0).
+- MUG damage: 3 off the top speed a point, not 6 - all 8 points take about a fourteenth (grip.asm); both breakfast tapes.
+- BALANCE at 85% (ai_tune.asm AI_K85, AI_KF85 - only above 80%): with the 75% numbers the computer cars gained 13% a lap,
+  the careful driver 6% (12.9 s behind); each 64th slower (Frank 2): 9.8 s; each two (Frank three): 8.1 s behind, last, laps
+  Jane 21.8, Bruno 22.2, Frank 22.3, Spike 23.2, you 23.9 - as at 75% (7.9 s). race_mode_test 12 of 12.
+- SMOOTHNESS (the pack): 11.9 pictures a second, 82% on the 4-frame rhythm (558 of 690; 116 at 5, 16 at 6-7); the view
+  jumps 4.9 px a picture. Every other tape byte for byte as before.

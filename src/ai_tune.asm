@@ -358,14 +358,22 @@ AI_KG_KS   equ 8                ; Spike +2 (in a slide 74% of the time, the slow
 AI_KP_KS   equ 3                ; laps Frank 26.1, Jane 26.5, Bruno 26.5, Spike 26.8 (3% apart), 24 place changes a race
 AI_KW_KS   equ 0-2
         else
+        if GAME_SPEED > 80      ; (the breakfast tape at 85% - Grant, 22 Nov 2026, "still too slow": there the computer cars gained 13%
+AI_K85     equ 2                ; a lap and the careful driver only 6% - 12.9 s behind, 7.9 at 75%; each a 64th slower (Frank 2): 9.8;
+                                ; each two (Frank three): 8.1 s behind, laps Jane 21.8, Bruno 22.2, Frank 22.3, Spike 23.2
+AI_KF85    equ 1
+        else
+AI_K85     equ 0
+AI_KF85    equ 0
+        endif
         if OPT_HEAD32 = 2       ; (the 32-heading tape, Grant 22 Nov 2026: "the 32 tape looks smoother, balance that one": with the
-AI_KC_KS   equ 0-2              ; drivers judging by the nearest of the 16 - AI_H16R - Frank was the quickest, and won 7 of 10)
+AI_KC_KS   equ 0-2-AI_K85-AI_KF85     ; drivers judging by the nearest of the 16 - AI_H16R - Frank was the quickest, and won 7 of 10)
         else
 AI_KC_KS   equ 0-1
         endif
-AI_KG_KS   equ 5
-AI_KP_KS   equ 2
-AI_KW_KS   equ 0-3
+AI_KG_KS   equ 5-AI_K85
+AI_KP_KS   equ 2-AI_K85
+AI_KW_KS   equ 0-3-AI_K85
         endif
         endif
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
