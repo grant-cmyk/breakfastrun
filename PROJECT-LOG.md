@@ -3516,3 +3516,9 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - BALANCE: not changed. 10 races: the good autopilot last every time (laps 28.0 - it cuts corners into the O's), the careful
   one last too, 7 s behind (laps 25.4 against the computer cars' 23.5-24.8); 16-20 place changes a race. The autopilots do
   not stand for a person on this track; Grant found it close ("lots of bumping").
+
+## 2026-11-22 SAST - difficulty accepted as level 1
+- Grant, on racer_cars75_breakfast: "This was about right - remember that it will get harder in later levels".
+- So: the breakfast race tape's balance (ai_tune.asm RACE ONLY, SCRUB) is the FIRST LEVEL's. Later levels are to be harder
+  (not designed yet: e.g. the computer cars' top speed or grip up a step a level, tighter tracks 2 and 3, fewer NOS). The
+  slide length after a sharp turn (1.5-2 s) stays as it is unless Grant says otherwise.
