@@ -8,13 +8,16 @@
 #                                 build/racer_race75.tap, racer_race75_elastic.tap   the same two at 75% speed
 #                                 then the plain game, last
 # What RACE is: src/race.asm (the top); the computer drivers in it: src/ai_tune.asm, the RACE part.
+# Grant, 22 Nov 2026 ("75% was tough, I came 4th. The NOS needs to have a bigger impact ... Need to find a way to make
+# movement and turning smoother"): NOS=1 (a half more push and top speed; it was 2, a quarter) and STEADY=5 (every picture
+# 5 TV frames, the game moved 5 frames a picture: every jump the same size). NOS=2 STEADY=0 builds them as before.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
 # Grant, 19 Nov 2026: "Any chance of speed 75%?" - the same two at 75% too (the same computer drivers' numbers serve both):
 #                                 build/racer_race75.tap, build/racer_race75_elastic.tap
 # SPEEDS="70" bash tools/build_race.sh builds only the 70% pair.
 for SP in ${SPEEDS:-70 75}; do
-T="RACEMODE=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 RACETRACK=1 NOS=${NOS:-2} NOS_FR=${NOS_FR:-100} GAME_SPEED=$SP"
+T="RACEMODE=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} RT_ROADW=56 RT_CORNER=27 RT_PIN_GAP=1 RT_PIN_W=1 RT_PIN=solid RT_NOLINE=1 RACETRACK=1 NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=${STEADY:-5} GAME_SPEED=$SP"
 env $T OUT=racer_race$SP BDIR=racer_race$SP bash build.sh | tail -2
 env $T ELASTIC=1 OUT=racer_race${SP}_elastic BDIR=racer_race${SP}_elastic bash build.sh | tail -2
 done

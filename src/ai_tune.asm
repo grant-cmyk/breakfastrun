@@ -243,6 +243,32 @@ AI_R75     equ 1
         else
 AI_R75     equ 0
         endif
+; EACH ITS OWN LINE (Grant, 22 Nov 2026: "need the other cars to try different tracks - so their route around the track is
+; not identical - some take a corner a bit wide, some late"): race.asm's rl_line moves each car's aim point by the bends of
+; the track around it. Four lines, each three weights in 64ths (OUT: the bend it has just come out of; NOW: the bend at the
+; waypoint it aims at; IN: the bend it is going into - plus to the outside, minus to the inside). On track 1 a corner waypoint's bend is 24-44 pixels, so a
+; weight of 32 is 12-22 pixels before RL_MAX (14) holds it; the road is 56 wide (the middle +-20 keeps a car on it).
+;   0 THE CLASSIC  in from the outside, the inside at the middle of the bend, out to the outside again
+;   1 LATE         stays out wide and deep into the bend, cuts to the inside only on the way out
+;   2 WIDE         the outside all the way round
+;   3 EARLY        turns in early to the inside and runs wide on the way out
+AI_L0_OUT  equ 16
+AI_L0_NOW  equ 0-40
+AI_L0_IN   equ 32
+AI_L1_OUT  equ 0-40
+AI_L1_NOW  equ 24
+AI_L1_IN   equ 40
+AI_L2_OUT  equ 24
+AI_L2_NOW  equ 40
+AI_L2_IN   equ 24
+AI_L3_OUT  equ 32
+AI_L3_NOW  equ 0-32
+AI_L3_IN   equ 0-24
+; which line each drives (255: one of the four at random, bend by bend)
+AI_RC_LINE equ 0
+AI_RY_LINE equ 1
+AI_RM_LINE equ 2
+AI_RW_LINE equ 255
 ; CYAN - THE SMOOTH ONE: a tight, tidy line (0 to +1 px off it), lifts early for a bend (EASE 2), almost never wrong;
 ;        its car grips best (it never slides) but has MAX's top speed - the others are quicker on the straights
 AI_RC_REACH equ 56
@@ -263,9 +289,9 @@ AI_RC_KS    equ 0-2*AI_R75
 ; YELLOW - THE LATE BRAKER: cuts every corner as hard as it may (REACH 60), never lifts, twitchy hands (FUSS 3) - in a
 ;        slide more than a quarter of the time - and more small mistakes; its own line, a few pixels to one side; its car
 ;        the fastest on the straights (+4.6%) and the least grip
-AI_RY_REACH equ 60
-AI_RY_LMASK equ 7
-AI_RY_LHALF equ 7
+AI_RY_REACH equ 48               ; (22 Nov 2026: 60 until its LATE line - it turns in later)
+AI_RY_LMASK equ 3                ; (22 Nov 2026: 7, 7 - a fixed shift - until each had its own line, rl_line)
+AI_RY_LHALF equ 1
 AI_RY_EASE  equ 0
 AI_RY_FUSS  equ 3
 AI_RY_PACE  equ 16
@@ -278,8 +304,8 @@ AI_RY_KS    equ 2-AI_R75
 ;        other side, lifts for the bends (EASE 1), steady hands; its car is the quickest away from a slow corner (+9%
 ;        acceleration), a touch quicker on the straights (+2.3%), grips a little better than MAX's computer car did
 AI_RM_REACH equ 54
-AI_RM_LMASK equ 7
-AI_RM_LHALF equ 0
+AI_RM_LMASK equ 3                ; (22 Nov 2026: 7, 0 until its WIDE line)
+AI_RM_LHALF equ 1
 AI_RM_EASE  equ 1
 AI_RM_FUSS  equ 2
 AI_RM_PACE  equ 16
@@ -291,8 +317,8 @@ AI_RM_KS    equ 1-2*AI_R75
 ; WHITE - THE ERRATIC ONE: its line wanders the most (-8 to +7 px), twitchy hands, never lifts, the most mistakes (about
 ;        one a lap) - and quick when it gets it right: its car +2.3% on the straights, a little less grip
 AI_RW_REACH equ 60
-AI_RW_LMASK equ 15
-AI_RW_LHALF equ 8
+AI_RW_LMASK equ 7                ; (22 Nov 2026: 15, 8 until it took a line bend by bend)
+AI_RW_LHALF equ 3
 AI_RW_EASE  equ 0
 AI_RW_FUSS  equ 3
 AI_RW_PACE  equ 16

@@ -203,6 +203,13 @@ yg_padd:
         ld l,e
         sra h
         rr l
+        if RT_GRASS_YOU > 1     ; (2: and a quarter more - 1.75 times, 5.25 pushes, 75% of the road's speed)
+        push hl
+        sra h
+        rr l
+        add hl,de
+        pop de
+        endif
         add hl,de
         ex de,hl
         pop hl

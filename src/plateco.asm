@@ -254,7 +254,11 @@ pw_1:
 ; ---------------------------------------------------------------------
 LEAD_X    equ 20                ; (halved, Grant 14 Nov 2026: "half on each - its a little too much")
 LEAD_Y    equ 16
+        if OPT_STEADY           ; (STEADY, Grant, 22 Nov 2026, "smoother": the view's lead moves 1 pixel a picture, not 2 - measured,
+LEAD_STEP equ 1                 ; its moving was most of what was left uneven in the scrolling once every picture moved 5 frames)
+        else
 LEAD_STEP equ 2
+        endif
 cam_lead:
         ld hl,(cars+C_VX)
         ld c,LEAD_X

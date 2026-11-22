@@ -142,6 +142,7 @@ printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the 
 # src/race.asm, src/ai_tune.asm (the RACE drivers). ELASTIC=1 with it: the computer cars behind the leader get a small push.
 # tools/build_race.sh builds the two tapes.
 printf 'OPT_RACE equ %s                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)\n' "${RACEMODE:-0}" >> "$ROOT/src/options.asm"
+printf 'OPT_STEADY equ %s               ; 0: as before; 5: every picture 5 TV frames and the game moved 5 frames a picture (STEADY=5)\n' "${STEADY:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_ELASTIC equ %s              ; 1: RACE mode - a computer car behind the leader gets a small push (ELASTIC=1 RACEMODE=1)\n' "${ELASTIC:-0}" >> "$ROOT/src/options.asm"
 [ "${RACEMODE:-0}" = "1" ] && [ "${ARMOUR:-0}" != "1" ] && { echo "RACEMODE=1 needs ARMOUR=1 (tools/build_race.sh)"; exit 1; }
 [ "${ELASTIC:-0}" = "1" ] && [ "${RACEMODE:-0}" != "1" ] && { echo "ELASTIC=1 needs RACEMODE=1 (tools/build_race.sh)"; exit 1; }

@@ -238,7 +238,10 @@ main_go:
         halt
         jr main
 have_dt:
-        if OPT_RT               ; RACETRACK: a picture takes 6 or 7 TV frames (not 4), and the game must not run slow for it:
+        if OPT_STEADY           ; STEADY (Grant, 22 Nov 2026: "Need to find a way to make movement and turning smoother"): every
+        ld a,OPT_STEADY         ; picture moves the game the same OPT_STEADY TV frames, however long it took - so every jump
+        else                    ; on the screen is the same size (a picture that runs late slows the game for its moment
+        if OPT_RT               ; instead of jumping further). RACETRACK: a picture takes 6 or 7 TV frames (not 4), and the game must not run slow for it:
         cp 9                    ; up to 8 frames of moving a picture
         jr c,dt_ok
         ld a,8
@@ -246,6 +249,7 @@ have_dt:
         cp 5
         jr c,dt_ok
         ld a,4
+        endif
         endif
 dt_ok:
         ld (dt),a
@@ -373,6 +377,7 @@ rt_nomap:
         call dmg_anim           ; and your car's damage, in the other corner
         endif
         call pl_draw            ; and your place, on its plate, top right
+        if OPT_STEADY = 0       ; (STEADY: one rhythm, OPT_STEADY TV frames a picture, never changed)
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
         ld a,(FRAMES)
@@ -399,6 +404,7 @@ ws_in_time:
         ld (pace_hold),a
         jr nz,wait_show
         ld (hl),PACE_FR
+        endif
 wait_show:
         call snd_wait           ; wait - playing the engine meanwhile, or HALT
         ld a,(last_shown)       ; since the last picture went up
@@ -1547,6 +1553,9 @@ next_waypoint:
         and c
         sub b
         ld (ix+C_OFFY),a
+        if OPT_RACE
+        call rl_line            ; RACE: each driver its own line through the bends - wide, late, ... (race.asm)
+        endif
         if OPT_CARDS
         call card_near          ; CARDS: a driver who goes looking for the other cars moves its line towards one
         endif
@@ -4003,7 +4012,11 @@ save_sp:  dw 0
 cf_sp:    dw 0
 cf_y0:    db 0
 cf_kk:    db 0
+        if OPT_STEADY
+pace:     db OPT_STEADY   ; (STEADY: the one rhythm)
+        else
 pace:     db PACE_FR      ; TV frames a picture: 3, or 4 for a while when busy
+        endif
 pace_hold: db 0
 pace_skip: db 0          ; 1: this picture does not set the pace (GO's)
 ph_steps: db 1

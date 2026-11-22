@@ -34,6 +34,7 @@ OPT_RTROWS equ 19              ; the race track trial: how many of the window's 
 OPT_CARDS equ 0                ; 1: the driver cards - each car its own speed, acceleration and grip (CARDS=1; tools/build_cards.sh)
 OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapons (ARMOUR=1 CARDS=1; tools/build_armour.sh)
 OPT_RACE equ 0                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)
+OPT_STEADY equ 0               ; 0: as before; 5: every picture 5 TV frames and the game moved 5 frames a picture (STEADY=5)
 OPT_ELASTIC equ 0              ; 1: RACE mode - a computer car behind the leader gets a small push (ELASTIC=1 RACEMODE=1)
 GAME_SPEED equ 100             ; the whole game's speed, percent of today's (GAME_SPEED=60 CARDS=1: tools/build_slow.sh)
 OPT_NOS equ 0                  ; NOS: 0 twice the push and top speed; 1 a half more; 2 a quarter more (NOS=1 bash build.sh)
