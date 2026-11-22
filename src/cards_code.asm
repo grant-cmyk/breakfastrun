@@ -120,6 +120,9 @@ cdp_sc:                         ; HL = a push (-64 to 64) -> HL = that push x (6
 ; Only when it reaches a waypoint (about 3 times a second), so it costs next to nothing: 300 to 1,000 T each time.
 ; ---------------------------------------------------------------------
 card_near:
+        if OPT_RACEONLY         ; (RACEONLY, 22 Nov 2026: no driver goes looking for the other cars - it returns, as RACE made it)
+        ret
+        else
         ld a,(ix+C_KIND)
         add a,a
         ld e,a
@@ -242,6 +245,7 @@ cdn_c1:
         call cdn_p
         neg
         ret
+        endif
 cd_v:   db 0                    ; the car's speed / 4
 cd_k:   db 0                    ; its push's number
 cd_near:                        ; NEAR, PULL for CYAN, GREEN, PINK, WHITE (ai_tune.asm)

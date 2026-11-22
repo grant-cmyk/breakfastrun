@@ -77,8 +77,12 @@ if RT_CORNER != 54.0: _r = RT_CORNER / 1.35     # (RT_CORNER: the straights stay
 arc(420 - _r, 320 - _r, _r, 90, 0)          # bottom-right corner (going anticlockwise on screen)
 arc(420 - _r, 80 + _r, _r, 0, -90)         # top-right
 _ch = float(os.environ.get('RT_CHICANE') or 40) if RT and TRACK == 1 else 40   # (RT_CHICANE, Grant 22 Nov 2026: "more severe corners -
-PATH.append((300, 80)); PATH.append((270, 80 + _ch)); PATH.append((230, 80 + _ch)); PATH.append((200, 80))   # more difficult turns": the chicane's depth, 40 as it was)
+_cw = float(os.environ.get('RT_CHW') or 40) / 2 if RT and TRACK == 1 else 20   # (RT_CHW: the chicane's width at its foot, 40 as it was -
+PATH.append((300, 80)); PATH.append((250 + _cw, 80 + _ch)); PATH.append((250 - _cw, 80 + _ch)); PATH.append((200, 80))   # more difficult turns": its depth)
 arc(100 + _r, 80 + _r, _r, -90, -180)      # top-left
+_lt = float(os.environ.get('RT_LEFT') or 0) if RT and TRACK == 1 else 0   # (RT_LEFT, Grant 22 Nov 2026: "The roads on the left, could you add
+if _lt:                                     # a turn there?": a chicane into the infield on the left straight, this deep)
+    PATH.append((100, 150)); PATH.append((100 + _lt, 180)); PATH.append((100 + _lt, 220)); PATH.append((100, 250))
 arc(100 + _r, 320 - _r, _r, 180, 90)        # bottom-left
 
 OFF = 32                          # the whole track moves this far in from the corner
@@ -109,7 +113,15 @@ def road_mask(width):
     d.line(pts, fill=1, width=width, joint='curve')
     for x, y in pts:
         d.ellipse([x - width / 2, y - width / 2, x + width / 2, y + width / 2], fill=1)
+    if RT_INROUND:                  # (RT_INROUND, Grant 22 Nov 2026: "Its internal corners are square, can you make them slightly
+        import numpy as _n          # rounded": the road's inside corners - the infield's points - rounded off to this radius,
+        from scipy import ndimage as _nd    # every width alike, so the road, its line and the grass agree)
+        R = RT_INROUND; a = _n.pad(_n.array(im, dtype=bool), R + 1)
+        yy, xx = _n.ogrid[-R:R + 1, -R:R + 1]
+        a = _nd.binary_closing(a, structure=(xx * xx + yy * yy <= R * R))[R + 1:-R - 1, R + 1:-R - 1]
+        im = Image.fromarray(a)
     return im
+RT_INROUND = int(os.environ.get('RT_INROUND') or 0) if RT and TRACK == 1 else 0
 
 road = road_mask(ROAD).load()
 # THE MINI-MAP (Grant, 15 Nov 2026, of the sizes mocked up: "c (2)4 is good, and the inside parts could be blue - so
