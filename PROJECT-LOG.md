@@ -3536,3 +3536,24 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - GRID_PLACE=3 (make_world.py, build.sh GRID_ORD, hudtext_gfx.asm): you start 3rd (x 216: 248, 232 ahead of you), the
   others in their order round you. (On the table you had started on pole - GRID_BACK is the race track's.)
 - race_mode_test 12 of 12. Pictures: docs/design/head32/breakfast_grid_nos.png, breakfast_flash.png.
+
+## 2026-11-22 SAST - car weights; speed: the quicker screen copy and a 12.5-a-second trial (cloud session, Claude)
+- Grant: "Damage and impact of cars depends on the type of car ... if I hit her, my car is heavier so impact to me is small
+  and damage small but higher to her. The tank has a bigger impact as it is the heaviest, but is also slightly slower ...
+  tracking the specific strengths and weaknesses of each car"; "we need to see if there is anyway to improve the performance
+  speed/smoothness ... I don't want to compromise smoothness"; "If there is simplification or changes to tablecloth drawing,
+  I am open to that".
+- WEIGHT=1 (src/weight.asm, under 0x8000; racer.asm bump / dmg_hit / physics / main; the breakfast race tape): a car's
+  weight is its card's armour (CD_ARM: Jane 26, Spike 34, Max and Frank 38, Bruno 77). A bump kicks each away by
+  2 x KICK x the other's weight / both (you into Jane: you 117, she 171; Bruno 95 against anyone's 193); each takes damage
+  4 x the other's weight / its own in quarter points (you into Jane 3, she 6; into Bruno you 8, he 2) - once in DMG_COOL
+  pictures a car, up to 8 points; yours is the mug; a computer car's push is a 64th less for every 8 quarters (a 32nd,
+  tried first, made the race easier: the careful driver 4th). Staged crashes checked (into Jane: you back 0.46, she on 0.67
+  px a frame; into Bruno: you 0.75, he 0.37). Careful driver, 10 races: last, 7.9 s behind (as before); laps Frank 23.6,
+  Bruno 23.9, Jane 24.5, Spike 25.6 (Jane and Spike, the light ones, slowed most by their knocks).
+- SPEED (tests/stage_profile.py, the pack): 290,000 T of work a picture; a picture of 5 TV frames has 349,000, of 4 has
+  279,000. Screen copy 58,000, tiles 34,000, cars 34,000, cloth 31,500 (already filled 2 bytes at a time with PUSH: a plain
+  cloth would save about 7,500). LOOP=0 on the breakfast tape (the unrolled screen copy - the table has the room the race
+  track needed): copy 51,500 - the tape now shows 99% of its pictures on the 5-frame rhythm (578: 573 at 5, 5 at 6).
+- TRIAL build/racer_cars75_breakfast_fast.tap (STEADY=4): 11.8 pictures a second, 76% on the 4-frame rhythm, 23% a frame
+  late; the view's jump 4.2 px a picture (4.8 on the 5-frame tape). race_mode_test 12 of 12 on both. For Grant to judge.

@@ -8,8 +8,8 @@
 ;     lighter one goes; two alike, KICK each, as before
 ;   - each takes damage - 4 x the other's weight / its own, in quarter points (wq_tab): Max hitting Jane takes 3 quarters, she
 ;     takes 6; Bruno's tank takes 1-2 from anyone and gives up to 12 - once in DMG_COOL pictures a car, up to 32 (8 points)
-;   - your damage is the mug's (dmg = quarters / 4: it slows you as before); a computer car's takes up to an eighth off its
-;     push, an extra 64th-ish for every 8 quarters (wt_slow)
+;   - your damage is the mug's (dmg = quarters / 4: it slows you as before); a computer car's takes up to a sixteenth off its
+;     push, a 64th for every 8 quarters (wt_slow)
 ; Kept in each car's row of arm_tab (its third byte the quarters, its fourth the cool-down); arm_new clears them each race,
 ; and the oil can (arm_mend) mends yours. Only on the breakfast race tape (WEIGHT=1).
 ; =====================================================================
@@ -129,7 +129,8 @@ wtk_1:  ld a,(hl)
 wtk_2:  add hl,de
         djnz wtk_1
         ret
-wt_slow:                        ; (physics, IX = a computer car, DE and BC its push): less by a 32nd for every 8 quarters
+wt_slow:                        ; (physics, IX = a computer car, DE and BC its push): less by a 64th for every 8 quarters (a 32nd, tried first, made
+                                ; the race easier - the careful driver 4th, not last: 22 Nov 2026)
         ld a,(ix+C_KIND)
         add a,a
         add a,a
@@ -148,7 +149,7 @@ wt_slow:                        ; (physics, IX = a computer car, DE and BC its p
 wsl_1:  push af
         ld h,d
         ld l,e
-        rept 5
+        rept 6
         sra h
         rr l
         endm
@@ -158,7 +159,7 @@ wsl_1:  push af
         ex de,hl
         ld h,b
         ld l,c
-        rept 5
+        rept 6
         sra h
         rr l
         endm
