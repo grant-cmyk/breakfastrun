@@ -175,6 +175,9 @@ low_end:                        ; (the end of what is kept under 0x8000: the roo
         if OPT_FACESLOW
         include "faces_mood.asm"
         endif
+        if OPT_WEIGHT
+        include "weight.asm"    ; WEIGHT: the cars' weights in the bumps and their damage
+        endif
 low_end:
         endif
         if OPT_MULTI
@@ -307,6 +310,9 @@ cpu_move:
         pop bc
         djnz cpu_move
         call bumps_o
+        if OPT_WEIGHT
+        call wt_tick            ; WEIGHT: the cars' damage cool-downs
+        endif
         if OPT_ARMOUR
         call arm_tick           ; ARMOUR: the cool-downs, the bars that flash, the tank's gun and the clown's wheels (armour.asm)
         endif
@@ -817,6 +823,9 @@ ph_cpu:
         endif
         if OPT_ARMOUR
         call arm_limp           ; ARMOUR: no armour left - it limps (armour.asm)
+        endif
+        if OPT_WEIGHT
+        call wt_slow            ; WEIGHT: a damaged computer car's push a little less (weight.asm)
         endif
         if OPT_RT               ; RACETRACK: on the grass the push is halved RT_GRASS_PUSH times (racetrack.asm: grass is slow)
         ld a,(ix+C_FSH)
@@ -2201,6 +2210,9 @@ bump:
         if OPT_ARMOUR
         call arm_bump           ; ARMOUR: both cars lose armour, by how fast they met and each one's rating (armour.asm)
         endif
+        if OPT_WEIGHT
+        call wt_bump            ; WEIGHT: this pair's kicks and both cars' damage, by their weights (weight.asm)
+        endif
         push ix                 ; your car in it?  a crunch
         pop hl
         ld de,cars
@@ -2215,7 +2227,7 @@ bp_you:
         ld (snd_bump),a
         ld hl,10*256+2          ; a crash: the border red for a fifth of a second
         call flash
-        if (1 - OPT_ARMOUR) + OPT_MUG   ; (ARMOUR: your damage is your car's armour, lost like every car's - arm_bump, above; MUG: damage)
+        if ((1 - OPT_ARMOUR) + OPT_MUG) * (1 - OPT_WEIGHT)   ; (ARMOUR: your damage is your car's armour, lost like every car's - arm_bump, above; MUG: damage; WEIGHT: wt_bump has done it)
         if OPT_2P               ; TWOP: no damage in a two-player race - player 2's car has no gauge, and it would not be fair
         ld a,(two_p)
         or a
@@ -2245,12 +2257,19 @@ bp_snd:
         ld de,0xFFFE
         ld bc,0x10000-KICK
 bu_y1:
+        if OPT_WEIGHT
+        call wt_kick            ; (WEIGHT: each its own kick, by the weights)
+        ld (ix+C_VY),c
+        ld (ix+C_VY+1),b
+        ld (TB_VY),hl
+        else
         ld (ix+C_VY),c          ; a: kicked away
         ld (ix+C_VY+1),b
         ld hl,0                 ; b: kicked the other way
         or a
         sbc hl,bc
         ld (TB_VY),hl
+        endif
         ld l,(ix+C_Y)           ; and nudged apart
         ld h,(ix+C_Y+1)
         add hl,de
@@ -2270,12 +2289,19 @@ bu_x:
         ld de,0xFFFE
         ld bc,0x10000-KICK
 bu_x1:
+        if OPT_WEIGHT
+        call wt_kick
+        ld (ix+C_VX),c
+        ld (ix+C_VX+1),b
+        ld (TB_VX),hl
+        else
         ld (ix+C_VX),c
         ld (ix+C_VX+1),b
         ld hl,0
         or a
         sbc hl,bc
         ld (TB_VX),hl
+        endif
         ld l,(ix+C_X)
         ld h,(ix+C_X+1)
         add hl,de
@@ -3156,6 +3182,20 @@ dmg_hit:
         or a
         ret nz
         ld (hl),DMG_COOL
+        if OPT_WEIGHT           ; (WEIGHT: an O is a point - 4 quarters - on your row of arm_tab, and the mug shows it)
+        ld hl,arm_tab+2
+        ld a,(hl)
+        add a,4
+        cp 33
+        jr c,dh_w
+        ld a,32
+dh_w:   ld (hl),a
+        rrca
+        rrca
+        and 63
+        ld (dmg),a
+        ret
+        endif
         dec hl                  ; (dmg is the byte before)
         ld a,(hl)
         cp DMG_MAX

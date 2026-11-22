@@ -50,5 +50,5 @@ env $T $TT RT_ROADW=48 RT_CORNER=16 RT_SMOOTH=3 ELASTIC=1 OUT=racer_cars75_h32_r
 # Grant, 22 Nov 2026 ("in a much earlier release we use the breakfast look and feel with loops of the edges and a table look
 # and feel. Can we try this with that in place. I want to see if it is any more fun compared to this. The track just feels
 # bland"): the same game on the breakfast table (track 1 as it was, the cereal O's): build/racer_cars75_breakfast.tap
-env FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=${STEADY:-5} GAME_SPEED=75 TILE1=1 FLIP=1 TOWER=1 LOOP=1 RT_FACESLOW=1 HEAD32=all MIRROR=all BIG_LO_ROOM=3000 OUT=racer_cars75_breakfast BDIR=racer_cars75_breakfast bash build.sh | tail -2
+env WEIGHT=1 FLASHME=1 GRID_PLACE=${GRID_PLACE:-3} MUG=1 SCRUB=${SCRUB:-5} NOSBOX=1 RACEMODE=1 RACEONLY=1 ARMOUR=1 CARDS=1 PACEFIX=1 GRIP1=1 AI=${AI:-1} NOS=${NOS:-1} NOS_FR=${NOS_FR:-100} STEADY=${STEADY:-5} GAME_SPEED=75 TILE1=1 FLIP=1 TOWER=1 LOOP=1 RT_FACESLOW=1 HEAD32=all MIRROR=all BIG_LO_ROOM=3000 OUT=racer_cars75_breakfast BDIR=racer_cars75_breakfast bash build.sh | tail -2
 bash build.sh > /dev/null && echo "the plain game built last: src/options.asm is the plain game's again"

@@ -40,6 +40,7 @@ OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapo
 OPT_RACE equ 0                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)
 RT_SMOOTHN equ 0               ; the track's centre line smoothed this many times (RT_SMOOTH: the round-turn track - ai_tune.asm balances its cars)
 OPT_SCRUB equ 0                ; 0: as before; n: a slide costs speed - yours 1/2^n of it a TV frame, a computer car twice the drag (SCRUB=n)
+OPT_WEIGHT equ 0               ; 1: bumps and damage by the cars' weights (WEIGHT=1: the breakfast race tape; needs ARMOUR=1 MUG=1)
 OPT_FLASHME equ 0              ; 1: your car flashes on the grid until the lights go green (FLASHME=1)
 OPT_MUG equ 0                  ; 1: the coffee mug - your damage - on an ARMOUR tape (MUG=1: the breakfast table race tape)
 OPT_NOSBOX equ 0               ; 1: the NOS you hold shown as a canister in a rounded box, one colour square each (NOSBOX=1)
