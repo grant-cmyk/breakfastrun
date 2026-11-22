@@ -38,6 +38,13 @@ rms_p:  ld (cdp_tab+1),hl       ; the cars' card rows
         ld (arm_bump),a
         ld a,c
         ld (arm_tick),a
+        if OPT_RACEONLY         ; RACEONLY (Grant, 22 Nov 2026: "lets exclude the 'combat' style game, but make use of the core
+        ld a,0xFF               ; car graphics from that ... the joy of the different cars is their different behaviour"):
+        ld (dc_kmask+1),a       ; every car its own picture (in the race order too) and its own DRIVER CARD - speed,
+        ld (tw_kmask+1),a       ; acceleration and grip, tools/driver_cards.txt - driven by the race drivers (ai_race)
+        ld hl,cd_tab-8
+        ld (cdp_tab+1),hl
+        endif
         ret
 rm_drv_src:                     ; RACE: each computer driver's PACE, REACT and ERR (ai_tune.asm, AI_Rx_...)
         db AI_RC_PACE, AI_RC_REACT+OPT_REACT1, AI_RC_ERR        ; CYAN    the smooth one

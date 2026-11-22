@@ -92,17 +92,21 @@ def ideal(cx, cy):
 def car_masks(g, cx, cy):
     """each car's picture where it falls in the window: (body, ink) - read from the game's own frames, as draw_car reads them"""
     S = g.sym; out = []
-    if not hasattr(g, 'frames'): g.frames = g.mem(0x5F00, 0x2000); g.tab = g.mem(S['big_tab'], 320)   # (the cars' pictures do not change)
+    if not hasattr(g, 'frames'): g.frames = g.mem(0x5F00, 0x2000); g.tab = g.mem(S['big_tab'], 384)   # (the cars' pictures do not change)
+    h32 = 'hp_avg' in S                                                   # (HEAD32 tapes: YOUR car's 32 headings first in big_tab, 22 Nov 2026)
+    rev = lambda v: int('{:08b}'.format(v)[::-1], 2)
     allc = g.mem(S['cars'], 5 * S['c_size'])
     for i in range(5):
         c = allc[i * S['c_size']:(i + 1) * S['c_size']]
         x, y, ang, kind = c[1] + 256 * c[2], c[4] + 256 * c[5], c[10], c[22]
         if 'dc_kmask' in S: kind &= g.mem(S['dc_kmask'] + 1, 1)[0]     # (RACE or COMBAT tapes: in RACE draw_car makes every car the racer)
-        e = g.tab[4 * (kind * 16 + ((ang >> 2) & 15)):][:4]
-        addr, first, n = e[0] + 256 * e[1], e[2], e[3] & 0x7F; flip = e[3] & 0x80
+        k = ((ang >> 1) & 31) if h32 and kind == 0 else (16 * (kind + 1 if h32 else kind) + ((ang >> 2) & 15))
+        e = g.tab[4 * k:][:4]
+        addr, first, n = e[0] + 256 * e[1], e[2], e[3] & 0x3F; flip = e[3] & 0x80; mirror = e[3] & 0x40   # (MIRROR: turned left for right)
         body = np.zeros((152, 192), bool); ink = np.zeros((152, 192), bool)
         for r in range(n):
             o = (addr - 4 * r if flip else addr + 4 * r) - 0x5F00; d = g.frames[o:o + 4]
+            if mirror: d = [rev(d[2]), rev(d[3]), rev(d[0]), rev(d[1])]
             wy = y - cy - 6 + first + r
             for b in range(16):
                 wx = x - cx + b

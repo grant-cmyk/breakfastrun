@@ -130,7 +130,8 @@ def hand_drawn():
     for m in re.finditer(r'== (\w+) heading ([\d.]+) ==\n((?:[Xo.]{16}\n){16})', text):
         if m.group(1) not in NAMES: continue
         g = [[INK if c == 'X' else PAPER if c == 'o' else NONE for c in r] for r in m.group(3).split()]
-        got.setdefault(NAMES.index(m.group(1)), {})[['0', '22.5', '45'].index(m.group(2))] = g
+        if m.group(2) not in ('0', '22.5', '45', '11.25', '33.75'): continue
+        got.setdefault(NAMES.index(m.group(1)), {})[{'0': 0, '22.5': 1, '45': 2, '11.25': 3, '33.75': 4}[m.group(2)]] = g
     for k in range(5, len(NAMES)):               # (CHOOSE) a car drawn nose up only: its angled headings drafted from that (tools/turn_car.py)
         assert k in got and 0 in got[k], 'no "== %s heading 0 ==" drawing for the car in tools/choose_cars.txt' % NAMES[k]
         if len(got[k]) < 3:
@@ -142,12 +143,27 @@ HAND = hand_drawn()
 def frames_of(k):
     f = frames_for(k)
     if k in HAND:
-        assert len(HAND[k]) == 3, 'car %s needs all three headings drawn' % NAMES[k]
+        assert all(i in HAND[k] for i in (0, 1, 2)), 'car %s needs all three headings drawn' % NAMES[k]
         n, nne, ne = HAND[k][0], HAND[k][1], HAND[k][2]
         f = [n, nne, ne, mirror_diag(nne)]
         for i in range(4, 16): f.append(rot90cw(f[i - 4]))
     return f
 all_frames = [frames_of(k) for k in range(len(KINDS))]
+# HEAD32=1 (Grant, 22 Nov 2026: "smoothness can be improved with more angles of drawing ... what if we compromised to 32?"):
+# the racer (YOU - in RACE mode every car) is drawn at 32 headings, 11.25 degrees apart. Grant's 0, 22.5 and 45 drawings as
+# before; the two between (11.25 and 33.75) from tools/car_art.txt if drawn there, else drafted from heading 0 by
+# tools/turn_car.py (turned to the middle of the slopes either side: 13.3 and 35.8 degrees, as 22.5 is drawn on a 2:1 slope).
+HEAD32 = os.environ.get('HEAD32') in ('1', 'all')
+H32K = range(len(KINDS)) if os.environ.get('HEAD32') == 'all' else [0]    # (HEAD32=all, the race-only tape: every car at 32)
+def frames32_of(k):
+    import turn_car
+    n, nne, ne = HAND[k][0], HAND[k][1], HAND[k][2]
+    up = [''.join('X' if v == INK else 'o' if v == PAPER else '.' for v in r) for r in n]
+    tg = lambda d: [[INK if c == 'X' else PAPER if c == 'o' else NONE for c in r] for r in turn_car.raster_ss(up, d)]
+    a = HAND[k].get(3) or tg(13.28); b = HAND[k].get(4) or tg(35.78)
+    f = [n, a, nne, b, ne, mirror_diag(b), mirror_diag(nne), mirror_diag(a)]
+    for i in range(8, 32): f.append(rot90cw(f[i - 8]))
+    return f
 
 # ---- the big cars. Grant draws each car once, facing up, 20 x 20 (tools/big_car_art.txt: its
 # 19 x 19 top-left part is used). The angled headings are that drawing TURNED AT FULL SIZE in a
@@ -253,7 +269,7 @@ def big_frames(k):
 SMALL_CARS = os.environ.get('CARS', 'big') == 'small'
 def small_frames(k):
     out = []
-    for g in all_frames[k]:
+    for g in (frames32_of(k) if HEAD32 and k in H32K else all_frames[k]):
         G = [[NONE] * GN for _ in range(GN)]
         for y in range(16):
             for x in range(16):
@@ -262,8 +278,17 @@ def small_frames(k):
         out.append(G)
     return out
 big_all = [small_frames(k) if SMALL_CARS else big_frames(k) for k in range(len(KINDS))]
+assert not HEAD32 or (SMALL_CARS and not CHOOSE), 'HEAD32 is for the small cars, without the choose screen'
+# MIRROR=1 (22 Nov 2026, room for HEAD32): a computer car's heading that is another's frame turned left for right (or that,
+# upside down too) is not kept either - draw_car makes it from the other, mirrored, into a small buffer (dc_mirror, bit 6 of
+# the rows). Not YOUR car (kind 0): in RACE mode every car is yours, so RACE never pays for the mirroring.
+MIRROR = os.environ.get('MIRROR') in ('1', 'all')
+MIRK = (lambda k: True) if os.environ.get('MIRROR') == 'all' else (lambda k: k > 0)
+REV = [int('{:08b}'.format(v)[::-1], 2) for v in range(256)]
+def mir(r): return [REV[r[2]], REV[r[3]], REV[r[0]], REV[r[1]]]
 FLIP = os.environ.get('FLIP') == '1'            # FLIP=1 bash build.sh: headings that are another heading upside down are not kept (draw_car reads the rows last to first)
 FLIP_OF = {5: 3, 6: 2, 7: 1, 8: 0, 9: 15, 10: 14, 11: 13}
+assert not MIRROR or (SMALL_CARS and FLIP), 'MIRROR is for the small cars, with FLIP'
 ROWB = 4 if SMALL_CARS else 6                  # bytes a frame row: a small car's third pair is always empty, so it is not kept (14 Nov 2026)
 def big_bytes(g):
     """The frame: grid columns 2..25 (24 wide), grid row r is frame row r + 1 (room for the halo
@@ -281,13 +306,23 @@ def big_bytes(g):
 BIG_LO = 0x2100                                # room below the program for the big cars (0x5F00-0x7FFF)
 def big_layout():
     """Every frame's bytes, in order; those that fit below the program go there, the rest above."""
-    lo, hi, tab, room = [], [], [], BIG_LO
+    lo, hi, tab, room = [], [], [], BIG_LO - (256 + 4 * 17 if MIRROR else 0)
     for k in range(len(KINDS)):
         fr = [big_bytes(g) for g in big_all[k]]
+        N = len(big_all[k]); kept = set()
         for h, g in enumerate(big_all[k]):
             first, rows = fr[h]; n = ROWB * len(rows)
-            src = FLIP_OF.get(h) if FLIP else None
-            if src is not None and fr[src][1][::-1] == rows:      # FLIP=1: this heading is heading `src` upside down, pixel for pixel:
+            src = FLIP_OF.get(h) if FLIP and N == 16 and not (MIRROR and MIRK(k)) else None
+            if FLIP and (N == 32 or (MIRROR and MIRK(k))):      # (HEAD32 / MIRROR: any kept heading it is upside down, mirrored, or both)
+                last = lambda s: 'bf_%d_%d+%d' % (k, s, ROWB * (len(fr[s][1]) - 1))
+                for s in sorted(kept):
+                    rs = fr[s][1]
+                    if rs[::-1] == rows: tab.append((k, h, first, len(rows) | 0x80, last(s))); break
+                    if MIRROR and MIRK(k) and [mir(r) for r in rs] == rows: tab.append((k, h, first, len(rows) | 0x40, 'bf_%d_%d' % (k, s))); break
+                    if MIRROR and MIRK(k) and [mir(r) for r in rs[::-1]] == rows: tab.append((k, h, first, len(rows) | 0xC0, last(s))); break
+                else: src = None; kept.add(h)
+                if h not in kept: continue
+            elif src is not None and fr[src][1][::-1] == rows:      # FLIP=1: this heading is heading `src` upside down, pixel for pixel:
                 tab.append((k, h, first, len(rows) | 0x80, 'bf_%d_%d+%d' % (k, src, ROWB * (len(rows) - 1)))); continue   # not kept - drawn from src's last row up
             if k >= 5: hi.append((k, h, rows)); tab.append((k, h, first, len(rows), 'bf_%d_%d' % (k, h))); continue   # (CHOOSE: the two extra cars)
             dest = lo if n <= room else hi
@@ -340,9 +375,13 @@ if __name__ == '__main__':
     with open(os.path.join(HERE, '..', 'src', 'bigcars.asm'), 'w') as f:
         f.write('; GENERATED by tools/make_data.py - do not edit by hand\n')
         f.write('; the big-car frames, below the program (0x5F00-0x7FFF): %d bytes of %d\n' % (sum(ROWB * len(r) for _, _, r in lo), BIG_LO))
+        if MIRROR:
+            f.write('rev_tab:                        ; MIRROR: each byte with its bits the other way round (dc_mirror; at 0x5F00, on its own page)\n')
+            for i in range(0, 256, 16): f.write('        defb ' + ','.join('0x%02X' % v for v in REV[i:i + 16]) + '\n')
+            f.write('dm_buf:  defs 4*17                ; MIRROR: the mirrored frame, made by dc_mirror\n')
         write_frames(f, lo)
     print(('SMALL' if SMALL_CARS else 'big') + ' cars: %d bytes below the program, %d above, table %d; tallest frame %d rows' % (
-        sum(ROWB * len(r) for _, _, r in lo), sum(ROWB * len(r) for k, _, r in hi if k < 5), 4 * len([v for v in tab if v[0] < 5]), max(n & 0x7F for _, _, _, n, _ in tab)))
+        sum(ROWB * len(r) for _, _, r in lo), sum(ROWB * len(r) for k, _, r in hi if k < 5), 4 * len([v for v in tab if v[0] < 5]), max(n & 0x3F for _, _, _, n, _ in tab)))
     with open(os.path.join(HERE, '..', 'src', 'sqtab.asm'), 'w') as f:
         f.write('; GENERATED by tools/make_data.py - do not edit by hand\n')
         f.write('; quarter squares / 32: n * n / 128 for n = 0..383, 2 bytes each (grip.asm:\n')

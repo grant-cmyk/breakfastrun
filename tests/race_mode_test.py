@@ -93,65 +93,82 @@ def race(g, each):
         if g.mem(S['race_over'], 1)[0]: break
     return f
 
-# ---- 1 the title ----
-g = Game(TAPE, SRC); S = g.sym
-to_title(g)
-check(text(g, 12, 6, 15) == 'M  MODE: RACE  ' and g.mem(S['rmode'], 1)[0] == 1, 'the title: row 12 reads "%s" (RACE to start with), rmode %d' % (text(g, 12, 6, 15), g.mem(S['rmode'], 1)[0]))
-g.rpc('press', keys='M', frames=6, after=10)
-check(text(g, 12, 6, 15) == 'M  MODE: COMBAT' and g.mem(S['rmode'], 1)[0] == 0, 'M: "%s", rmode %d' % (text(g, 12, 6, 15), g.mem(S['rmode'], 1)[0]))
-g.rpc('press', keys='M', frames=6, after=10)
-check(text(g, 12, 6, 15) == 'M  MODE: RACE  ' and g.mem(S['rmode'], 1)[0] == 1, 'M again: "%s"' % text(g, 12, 6, 15))
-g.rpc('press', keys='M', frames=6, after=10)          # COMBAT, and a race in it
-g.to_grid(); g.go()
 def combat_code(g):
     S = g.sym
     return (g.mem(S['card_near'], 1)[0], g.mem(S['arm_bump'], 1)[0], g.mem(S['arm_tick'], 1)[0], g.mem(S['dc_kmask'] + 1, 1)[0], g.mem(S['tw_kmask'] + 1, 1)[0])
-check(combat_code(g) == (0xDD, 0xDD, 0xCD, 0xFF, 0xFF), 'COMBAT chosen on the title: the code as assembled (card_near %02X, arm_bump %02X, arm_tick %02X, picture masks %02X %02X)' % combat_code(g))
-g.run(150)                                            # (the race order's rows drawn for the race)
-blocks = [g.mem(0x5800 + (TOWER_Y + 2 * p) * 32 + 29, 3) for p in range(5)]
-check(all(b[0] & 0x38 == 0 and b[0] & 7 == 4 for b in blocks), 'COMBAT: the health blocks - columns 29-31 black, green ink, in every row (%s)' % ' '.join(b.hex() for b in blocks))
-f = race(g, lambda f: None)
-check(g.mem(S['race_over'], 1)[0] != 0, 'COMBAT: the race run to the flag (%.0f s)' % (f / 50))
-g.key('Q', False); g.key('O', False); g.key('P', False); g.run(100)
-g.rpc('press', keys='X', frames=6, after=10)
-to_title(g)
-check(text(g, 12, 6, 15) == 'M  MODE: COMBAT' and g.mem(S['rmode'], 1)[0] == 0, 'back at the title after the race: still "%s"' % text(g, 12, 6, 15))
-g.rpc('press', keys='1', frames=10, after=5)
-n = 0
-while g.mem(S['race_on'], 1)[0] == 0 and n < 2000: g.key('Q', True); g.run(1); n += 1
-check(combat_code(g) == (0xDD, 0xDD, 0xCD, 0xFF, 0xFF), 'the next race: COMBAT again (card_near %02X, arm_bump %02X, arm_tick %02X, masks %02X %02X)' % combat_code(g))
-g.close()
+# ---- 1 the title ----
+g = Game(TAPE, SRC); S = g.sym
+RO = S.get('opt_raceonly', 0) == 1                    # RACEONLY tapes (Grant, 22 Nov 2026: "lets exclude the 'combat' style game,
+to_title(g)                                           # but make use of the core car graphics from that"): no COMBAT, no M
+if RO:
+    check(text(g, 12, 6, 15) == ' ' * 15 and g.mem(S['rmode'], 1)[0] == 1, 'RACEONLY, the title: row 12 empty ("%s"), rmode %d (RACE)' % (text(g, 12, 6, 15), g.mem(S['rmode'], 1)[0]))
+    g.rpc('press', keys='M', frames=6, after=10)
+    check(text(g, 12, 6, 15) == ' ' * 15 and g.mem(S['rmode'], 1)[0] == 1, 'RACEONLY: M does nothing ("%s", rmode %d)' % (text(g, 12, 6, 15), g.mem(S['rmode'], 1)[0]))
+    g.close()
+if not RO:
+  check(text(g, 12, 6, 15) == 'M  MODE: RACE  ' and g.mem(S['rmode'], 1)[0] == 1, 'the title: row 12 reads "%s" (RACE to start with), rmode %d' % (text(g, 12, 6, 15), g.mem(S['rmode'], 1)[0]))
+  g.rpc('press', keys='M', frames=6, after=10)
+  check(text(g, 12, 6, 15) == 'M  MODE: COMBAT' and g.mem(S['rmode'], 1)[0] == 0, 'M: "%s", rmode %d' % (text(g, 12, 6, 15), g.mem(S['rmode'], 1)[0]))
+  g.rpc('press', keys='M', frames=6, after=10)
+  check(text(g, 12, 6, 15) == 'M  MODE: RACE  ' and g.mem(S['rmode'], 1)[0] == 1, 'M again: "%s"' % text(g, 12, 6, 15))
+  g.rpc('press', keys='M', frames=6, after=10)          # COMBAT, and a race in it
+  g.to_grid(); g.go()
+  check(combat_code(g) == (0xDD, 0xDD, 0xCD, 0xFF, 0xFF), 'COMBAT chosen on the title: the code as assembled (card_near %02X, arm_bump %02X, arm_tick %02X, picture masks %02X %02X)' % combat_code(g))
+  g.run(150)                                            # (the race order's rows drawn for the race)
+  blocks = [g.mem(0x5800 + (TOWER_Y + 2 * p) * 32 + 29, 3) for p in range(5)]
+  check(all(b[0] & 0x38 == 0 and b[0] & 7 == 4 for b in blocks), 'COMBAT: the health blocks - columns 29-31 black, green ink, in every row (%s)' % ' '.join(b.hex() for b in blocks))
+  f = race(g, lambda f: None)
+  check(g.mem(S['race_over'], 1)[0] != 0, 'COMBAT: the race run to the flag (%.0f s)' % (f / 50))
+  g.key('Q', False); g.key('O', False); g.key('P', False); g.run(100)
+  g.rpc('press', keys='X', frames=6, after=10)
+  to_title(g)
+  check(text(g, 12, 6, 15) == 'M  MODE: COMBAT' and g.mem(S['rmode'], 1)[0] == 0, 'back at the title after the race: still "%s"' % text(g, 12, 6, 15))
+  g.rpc('press', keys='1', frames=10, after=5)
+  n = 0
+  while g.mem(S['race_on'], 1)[0] == 0 and n < 2000: g.key('Q', True); g.run(1); n += 1
+  check(combat_code(g) == (0xDD, 0xDD, 0xCD, 0xFF, 0xFF), 'the next race: COMBAT again (card_near %02X, arm_bump %02X, arm_tick %02X, masks %02X %02X)' % combat_code(g))
+  g.close()
 
 # ---- 2 the cars' pictures, RACE and COMBAT ----
-os.environ['RT_MODE'] = 'combat'
-g = Game(TAPE, SRC); g.to_grid(); g.go(alone=True)
-nc = same_pictures(g); g.close()
+if not RO:
+    os.environ['RT_MODE'] = 'combat'
+    g = Game(TAPE, SRC); g.to_grid(); g.go(alone=True)
+    nc = same_pictures(g); g.close()
 os.environ['RT_MODE'] = 'race'
 g = Game(TAPE, SRC); g.to_grid(); g.go(alone=True); S = g.sym
 nr = same_pictures(g)
-check(nr == 16 and nc < 4, 'the five cars at each of 16 headings: the same picture at %d of 16 in RACE (in COMBAT: %d - the test tells cars apart)' % (nr, nc))
+if RO:
+    check(nr < 4, 'RACEONLY: the five cars at each of 16 headings - each its own picture (the same at only %d of 16)' % nr)
+else:
+    check(nr == 16 and nc < 4, 'the five cars at each of 16 headings: the same picture at %d of 16 in RACE (in COMBAT: %d - the test tells cars apart)' % (nr, nc))
 rows = []
 for p in range(5):
     r = TOWER_Y + 2 * p; scr = g.mem(0x4000, 6144)
     rows.append(tuple(scr[(((r + k // 8) & 0x18) << 8) | ((k & 7) << 8) | (((r + k // 8) & 7) << 5) | c] for k in range(16) for c in (27, 28)))
-check(all(x == rows[0] for x in rows) and any(rows[0]), 'RACE: the race order\'s five car pictures (columns 27-28) the same')
+if RO:
+    check(len(set(rows)) == 5 and all(any(x) for x in rows), 'RACEONLY: the race order\'s five car pictures (columns 27-28) all different')
+else:
+    check(all(x == rows[0] for x in rows) and any(rows[0]), 'RACE: the race order\'s five car pictures (columns 27-28) the same')
 g.close()
 
 # ---- 3, 4 a whole RACE ----
 g = Game(TAPE, SRC); g.to_grid(); g.go(); S = g.sym; CS = S['c_size']
-check(combat_code(g)[:3] == (0xC9, 0xC9, 0xC9) and combat_code(g)[3:] == (0, 0), 'RACE: no line pulls, no armour lost, no weapons (card_near, arm_bump, arm_tick return at once), every car the racer (masks 0)')
+check(combat_code(g)[:3] == (0xC9, 0xC9, 0xC9) and combat_code(g)[3:] == ((0xFF, 0xFF) if RO else (0, 0)), 'RACE: no line pulls, no armour lost, no weapons (card_near, arm_bump, arm_tick return at once), every car the racer (masks 0)')
 Y = S
 def sgn(v): return v - 256 if v > 127 else v
 want_d = [[Y['ai_r%s_%s' % (c, k)] for k in ('reach', 'lmask', 'lhalf', 'ease', 'fuss')] + [Y['ai_r%s_pace' % c], Y['ai_r%s_react' % c] + Y['opt_react1'], Y['ai_r%s_err' % c]] for c in 'cymw']
 have_d = [list(g.mem(S['ai_race'] + 5 * k, 5)) + list(g.mem(S['cars'] + (k + 1) * CS + S['c_pace'], 3)) for k in range(4)]
 check(have_d == want_d and len(set(map(tuple, have_d))) == 4, 'RACE: each computer driver its own numbers, as ai_tune.asm gives them (reach, line, half, ease, fuss, pace, react, err): %s' % ' / '.join(','.join(map(str, d)) for d in have_d))
+if RO:
+    tab = g.w16(S['cdp_tab'] + 1) + 8
+    check(tab == S['cd_tab'], 'RACEONLY: the computer cars drive by their own driver cards (card rows at %04X, cd_tab %04X)' % (tab, S['cd_tab']))
 rows = [g.mem(S['cd_race'] + 8 * k, 8) for k in range(4)]
 ks16 = lambda v: v - 65536 if v > 32767 else v
 cdk = lambda n: ks16(S[n]) if S[n] > 32767 else S[n]
 have_c = [(r[0] + 256 * r[1], sgn((r[4] - r[7]) & 255), sgn((r[5] - r[7]) & 255)) for r in rows]
 want_c = [(S['cd_r_slide'] * S['ai_r%s_grip' % c] // 64, sgn((cdk('cd_r_ka') + ks16(S['ai_r%s_ka' % c])) & 255), sgn((cdk('cd_r_ks') + ks16(S['ai_r%s_ks' % c])) & 255)) for c in 'cymw']
 small = all(abs(ks - sgn(cdk('cd_r_ks') & 255)) <= 2 and abs(ka - sgn(cdk('cd_r_ka') & 255)) <= 6 and 48 * S['cd_r_slide'] // 64 <= gr <= 112 * S['cd_r_slide'] // 64 for gr, ka, ks in have_c)
-check(have_c == want_c and len(set(have_c)) == 4 and small, 'RACE: each computer car slightly different, as ai_tune.asm gives them (grip, ACCEL push, SPEED push; MAX\'s card %d, %d, %d): %s' % (S['cd_r_slide'], sgn(cdk('cd_r_ka') & 255), sgn(cdk('cd_r_ks') & 255), ' / '.join('%d,%d,%d' % c for c in have_c)))
+if not RO: check(have_c == want_c and len(set(have_c)) == 4 and small, 'RACE: each computer car slightly different, as ai_tune.asm gives them (grip, ACCEL push, SPEED push; MAX\'s card %d, %d, %d): %s' % (S['cd_r_slide'], sgn(cdk('cd_r_ka') & 255), sgn(cdk('cd_r_ks') & 255), ' / '.join('%d,%d,%d' % c for c in have_c)))
 bad = []; gapbad = []; inkbad = []; colbad = []; hist = []; seen_gap = [0]; last_r = [None]; wrongs = [set()]
 def each(f):
     if g.mem(S['race_on'], 1)[0] and not g.mem(S['fin_count'], 1)[0]:     # the gap each place should show, every TV frame

@@ -35,7 +35,11 @@ el_tick:
         ld c,d
 el_0:   ld hl,prog
         ld b,(hl)               ; B = yours
+        if OPT_RACEONLY         ; (RACEONLY: the band goes on each car's own card row)
+        ld de,cd_tab+4
+        else
         ld de,cd_race+4
+        endif
 el_1:   inc hl
         ld a,b
         add a,EL_AHEAD

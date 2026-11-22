@@ -62,6 +62,14 @@ zr_f:   ld a,0                  ; Carry: it is one of the card's bytes (column C
         ret
 ad_draw:
         ld a,(t_drv)            ; the frame: big_tab[car * 16 + heading]
+        if OPT_HEAD32           ; (HEAD32: YOUR car's 32 headings first, then the others' 16)
+        or a
+        jr nz,ad_k16
+        ld a,(a_h)
+        add a,a
+        jr ad_k
+ad_k16: inc a
+        endif
         add a,a
         add a,a
         add a,a
@@ -69,6 +77,9 @@ ad_draw:
         ld l,a
         ld a,(a_h)
         or l
+        if OPT_HEAD32
+ad_k:
+        endif
         ld l,a
         ld h,0
         add hl,hl
@@ -84,6 +95,10 @@ ad_draw:
         ld (a_oy),a             ; its first row
         inc hl
         ld a,(hl)
+        if OPT_MIRROR           ; (MIRROR: made turned left for right in dm_buf - racer.asm, dc_mirror)
+        bit 6,a
+        call nz,dc_mirror
+        endif
         if OPT_FLIP             ; FLIP: bit 7 = the frame is read upside down (racer.asm, draw_car)
         ld c,a
         and 0x7F

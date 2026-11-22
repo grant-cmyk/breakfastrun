@@ -153,6 +153,9 @@ rt_code_end:
         if OPT_RACE
         include "race_low.asm"  ; RACE mode: the computer cars' card rows (written as they drive)
         endif
+        if OPT_HEAD32 + OPT_MIRROR
+        include "head32_low.asm" ; HEAD32 / MIRROR: the in-between push and the mirrored frames (32 headings for the racer)
+        endif
         if OPT_RTLAP
         include "lap_low.asm"   ; your laps when you go off the track a fair bit and come back on further round
         endif
@@ -1047,7 +1050,11 @@ ph_snap:
 ph_sn1:
         ld a,(ix+C_ANG)
         ld d,a
+        if OPT_HEAD32
+        and 1                   ; (HEAD32: a picture every 2 of the 64)
+        else
         and 3
+        endif
         jp z,ph_push_set        ; on a pictured heading already
         ld a,(ph_dir)
         add a,d
@@ -1127,6 +1134,11 @@ sks_1:
 
 ; heading_push: A = heading 0..63 -> DE = push x, BC = push y (8.8)
 heading_push:
+        if OPT_HEAD32           ; (HEAD32: a heading half-way between two of the table's 16 is pushed their average - hp_avg)
+        bit 1,a
+        jp nz,hp_avg
+hp_16:
+        endif
         rrca
         rrca
         and 15
@@ -2583,6 +2595,29 @@ dc_kmask: and 0xFF
         else
         ld l,(ix+C_KIND)
         endif
+        if OPT_HEAD32           ; HEAD32 (Grant, 22 Nov 2026: 32 pictures for the racer): YOUR car's 32 headings come first in
+        ld a,l                  ; big_tab (in RACE every car is yours), then the others' 16 each
+        or a
+        ld a,(ix+C_ANG)
+        jr nz,dc_k16
+        rrca
+        and 31
+        ld l,a
+        ld h,0
+        jr dc_kt
+dc_k16: inc l
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        rrca
+        rrca
+        and 15
+        or l
+        ld l,a
+dc_kt:
+        else
         ld h,0
         add hl,hl
         add hl,hl
@@ -2594,6 +2629,7 @@ dc_kmask: and 0xFF
         and 15
         or l
         ld l,a
+        endif
         add hl,hl
         add hl,hl
         ld de,big_tab
@@ -2605,6 +2641,10 @@ dc_kmask: and 0xFF
         ld b,(hl)               ; B = its first row
         inc hl
         ld a,(hl)
+        if OPT_MIRROR           ; MIRROR: bit 6 = this heading is another's frame turned left for right: made in dm_buf
+        bit 6,a
+        call nz,dc_mirror
+        endif
         if OPT_FLIP             ; FLIP: bit 7 of the rows = this heading is another's frame upside down: DE is its last row,
         ld c,a                  ; read upwards (dc_step, after each row; the rows skipped above the buffer, below)
         and 0x7F
@@ -5648,6 +5688,12 @@ faces     equ faces_src
         endif
         if NCARS*C_SIZE - (cars_init_src_end - cars_init_src)
         .error cars_init does not hold NCARS records
+        endif
+        if OPT_HEAD32 * OPT_CHOOSE
+        .error HEAD32 does not go with the choose screen (its cars' table is 16 headings a car)
+        endif
+        if OPT_MIRROR * (1 - OPT_FLIP)
+        .error MIRROR needs FLIP=1
         endif
         if OPT_RACE
         if WS + FIN_RUN >= NWP

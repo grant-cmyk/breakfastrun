@@ -3329,3 +3329,33 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - TESTS: race_mode_test 18 of 18 on racer_race75 and racer_race75_elastic; 17 of 18 on racer_race70 and _elastic - the
   known one-frame half-painted row in the race order as two cars swap (19 Nov 2026; still for Grant to decide).
 - NOT VERIFIED: nobody has driven it.
+
+## 2026-11-22 SAST (later still) - 32 headings written; then RACE ONLY with every car its own (cloud session, Claude)
+- Grant: "smoothness can be improved with more angles of drawing ... what if we compromised to 32? ... lets do a space search
+  then ... 32 should be fine ... If there is a space issue, then we can make the combat game version a separate tape".
+- SPACE SEARCH (racer_race75): the whole 48K is in use in a race (0xC000-0xD7FF back buffer and its tables, 0xD800-0xE7FF
+  the shift tables, 0xE800-0xFFC3 the copy routine and the track's data, the program to 0xBF98, 8 bytes under 0x8000).
+  The car pictures were already halved by FLIP (49 of 80 kept, 2,880 bytes). Found: MIRROR - a computer car's heading
+  that is another's frame turned left for right is made as it is drawn (tools/make_data.py MIRROR=1; dc_mirror in the new
+  src/head32_low.asm, a 256-byte bit-reversing table at 0x5F00, a 68-byte buffer): the frames 2,880 -> 1,772 bytes.
+- HEAD32=1 (tools/make_data.py, racer.asm draw_car, title2.asm, hud.asm tower_b): the racer at 32 headings (YOU's two new
+  in-between drawings, 11.25 and 33.75, drafted from heading 0 by tools/turn_car.py - in tools/car_art.txt for Grant to
+  touch up; sheet: docs/design/head32/racer_32_headings.png), the computer cars pushed 32 ways (hp_avg: the average of the
+  table's two either side), your car's snap every 2 of the 64. Built (racer_race75_h32): fits with COMBAT still on the tape
+  (98 / 13 bytes free in the program, 136 under 0x8000). CHECKED: every car at the 16 old headings pixel for pixel the same
+  as racer_race75 in COMBAT (80 of 80 - the mirroring exact); MIRROR costs COMBAT 0.8% (11.35 -> 11.26 pictures a second,
+  the rhythm let free). In RACE the check was spoilt by the computer cars' small steering while held (to finish). The race
+  measure on it: computer laps within 3% of each other, 33 place changes a race, but "in a slide" 53-72% (from ~28%) -
+  NOT explained yet. tests/racetrack_test.py reads HEAD32 / MIRROR tables. Not on any tape yet (stage 2).
+- THEN Grant: "It would be great to get back to non-combat racing, but using the different car styles that we had
+  previously. The same car look and feel is monotonous. So lets exclude the 'combat' style game, but make use of the core
+  car graphics from that ... the joy of the different cars is their different behaviour".
+- RACEONLY=1 (build.sh; tools/build_race.sh -> build/racer_cars75.tap, racer_cars75_elastic.tap): no COMBAT, no M on the
+  title (row 12 empty); every car its own picture (race order too) and its own DRIVER CARD (tools/driver_cards.txt: Frank's
+  coupe, Spike's clown car, Bruno's tank, Jane's dragster), driven by the race drivers (lines, FIN_RUN, the catch-up band
+  on the card rows). race_td.asm rm_setup; race.asm el_tick. tests/race_mode_test.py knows RACEONLY: 12 of 12 on both;
+  18 of 18 on racer_race75 still. Every other tape byte for byte the same.
+- MEASURED (racer_cars75, 10 races each): good driver 10 of 10, laps you 22.5, Frank 26.0, Bruno 25.9, Jane 28.1, Spike
+  28.4 (26% apart); careful driver mean place 3.0, 2.2 s behind the winner. Next: balance - the cards' cars are far slower
+  under the race drivers than the race cars were (Jane's grip 1 and Spike's speed 2 most).
+- NOT VERIFIED: nobody has driven racer_cars75.

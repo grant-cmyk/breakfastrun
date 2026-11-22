@@ -119,7 +119,7 @@ t_redraw:
         call t_ging
         ld hl,t_script
         call ds_run
-        if OPT_RACE
+        if OPT_RACE * (1 - OPT_RACEONLY)
         call t_mode             ; RACE or COMBAT, after "M  MODE:"
         endif
 t_logo: ld de,0                 ; the logo twice the size: 14 x 4 cells, centred on the card
@@ -253,7 +253,7 @@ t_keys:
         endif
         endif                   ; (CHOOSE)
 t_k:
-        if OPT_RACE
+        if OPT_RACE * (1 - OPT_RACEONLY)  ; (RACEONLY: no COMBAT, no M)
         cp 37                   ; M: RACE or COMBAT
         jr nz,t_k1
         ld hl,rmode
@@ -621,7 +621,9 @@ t_script:                       ; layout B, the menu card (Grant, 15 Nov 2026: "
         db 10,6,"1  ONE PLAYER",0   ; the four choices on four rows (Grant, 15 Nov 2026: "condense the menu, add a menu
         db 11,6,"2  TWO PLAYERS",0  ; option 'choose your player' ... we will build that later but you can show the
         if OPT_RACE             ; RACE or COMBAT (Grant, 18 Nov 2026: "I need a game option - combat or race"): M changes
+        if OPT_RACEONLY = 0     ; (RACEONLY, 22 Nov 2026: the race only - nothing on this row)
         db 12,6,"M  MODE:",0    ; it - t_mode writes which after it (the row "3 CHOOSE YOUR PLAYER", which did nothing, is gone)
+        endif
         else
         db 12,6,"3  CHOOSE YOUR PLAYER",0   ; menu option for now": 3 does nothing yet)
         endif
