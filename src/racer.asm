@@ -1383,7 +1383,11 @@ ai_have_target:
         ld a,(ix+C_ANG)         ; heading vector: hx = E, hy = C (-64..64)
         push de
         push bc
+        if OPT_HEAD32           ; (HEAD32: the driver still judges its heading by the 16 - with the 32 it steered at every
+        call hp_16              ; small miss, in a slide two thirds of the time; it moves and is drawn by the 32)
+        else
         call heading_push
+        endif
         ld a,e
         ld (hx),a
         ld a,c
