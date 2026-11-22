@@ -3440,3 +3440,19 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   apart). race_mode_test 12 of 12 on both.
 - Tapes: build/racer_cars75_h32_w48.tap (B), racer_cars75_h32_w40.tap (D) - tools/build_race.sh. For Grant to choose; then
   balance that one and make it the race tape.
+
+## 2026-11-22 15:25 SAST - the tighter tracks: a turn on the left, a sharper chicane, rounded inside corners (cloud session, Claude)
+- Grant (on B / D): "Its internal corners are square, can you make them slightly rounded. The roads on the left, could you
+  add a turn there?" and "also make the chicane at the top middle more severe".
+- tools/make_world.py (track 1, RACETRACK): RT_INROUND 6 - the road's inside corners rounded to 6 px (binary closing of every
+  road mask, so road, line and grass agree; +7 pictures); RT_LEFT 40 - a chicane into the infield on the left straight (+55
+  pictures, +240 bytes of map: did not fit); RT_CHW 16 - the top chicane's foot 16 wide (was 40), RT_CHICANE 80 deep (64).
+- ROOM (race-only tapes): card_near (the COMBAT drivers going for other cars, 226 bytes) left out under OPT_RACEONLY, as
+  RACE returned from it at once; rl_line's helpers (src/race_lines.asm, new) under 0x8000 on the 32-heading tapes (OPT_MIRROR).
+  Catch-up 32-heading tape: 70 bytes free in the program, 29 under 0x8000.
+- Picture: docs/design/head32/track_options2.png. Tapes (tools/build_race.sh): build/racer_cars75_h32_w48.tap (B, road 48,
+  corners 16) and racer_cars75_h32_w40.tap (D, road 40, corners 12), both with the three changes.
+- MEASURED: pictures a second, the rhythm let free - B 10.69 (13% of pictures over 5 TV frames), D 9.78 (30%); 8 races, good
+  driver - B 7 of 8, computer laps 26.2-27.2 (4% apart); D 8 of 8, 26.6-28.8 (Spike 17% behind). race_mode_test 12 of 12
+  on B, racer_cars75 and its catch-up tape; 11 of 12 on D and the two other 32-heading tapes - the known one-frame
+  half-painted row in the race order (it shows more often now: still for Grant to decide).

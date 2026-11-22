@@ -37,6 +37,10 @@ env $T ELASTIC=1 OUT=racer_cars75_h32_elastic BDIR=racer_cars75_h32_elastic bash
 # Grant, 22 Nov 2026 ("I want that track narrower with more severe corners - more difficult turns"): the 32-heading tape on
 # two tighter tracks to choose from - B: the road 48 px, the corners 16, the chicane 64 deep (racer_cars75_h32_w48.tap);
 # D: 40, 12, 64 (racer_cars75_h32_w40.tap). (Track 1 as it was: 56, 27, 40.)
-env $T RT_ROADW=48 RT_CORNER=16 RT_CHICANE=64 OUT=racer_cars75_h32_w48 BDIR=racer_cars75_h32_w48 bash build.sh | tail -2
-env $T RT_ROADW=40 RT_CORNER=12 RT_CHICANE=64 OUT=racer_cars75_h32_w40 BDIR=racer_cars75_h32_w40 bash build.sh | tail -2
+# Then (Grant: "Its internal corners are square, can you make them slightly rounded. The roads on the left, could you add a
+# turn there? ... also make the chicane at the top middle more severe"): both with the inside corners rounded (RT_INROUND 6),
+# a turn on the left straight (RT_LEFT 40) and the chicane 80 deep and 16 wide at its foot (RT_CHICANE, RT_CHW)
+TT="RT_CHICANE=80 RT_CHW=16 RT_LEFT=40 RT_INROUND=6"
+env $T $TT RT_ROADW=48 RT_CORNER=16 OUT=racer_cars75_h32_w48 BDIR=racer_cars75_h32_w48 bash build.sh | tail -2
+env $T $TT RT_ROADW=40 RT_CORNER=12 OUT=racer_cars75_h32_w40 BDIR=racer_cars75_h32_w40 bash build.sh | tail -2
 bash build.sh > /dev/null && echo "the plain game built last: src/options.asm is the plain game's again"

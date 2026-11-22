@@ -182,6 +182,6 @@ rl_each:
         add a,(ix+C_OFFY)
         ld (ix+C_OFFY),a
         ret
-        if OPT_RACEONLY = 0     ; (RACEONLY: these are under 0x8000, in race_low.asm - the program had no room for the new tracks)
+        if OPT_RACEONLY * OPT_MIRROR = 0  ; (RACEONLY with MIRROR - the 32-heading tapes: these are under 0x8000, in race_low.asm - the program had no room for the new tracks)
         include "race_lines.asm"
         endif

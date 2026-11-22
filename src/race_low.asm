@@ -14,6 +14,6 @@ cd_race:
         RROW AI_RY_GRIP, AI_RY_KA, AI_RY_KS     ; YELLOW  the late braker
         RROW AI_RM_GRIP, AI_RM_KA, AI_RM_KS     ; MAGENTA the wide one
         RROW AI_RW_GRIP, AI_RW_KA, AI_RW_KS     ; WHITE   the erratic one
-        if OPT_RACEONLY         ; (RACEONLY, 22 Nov 2026: rl_line's helpers down here - three times a second a car, so the slower
+        if OPT_RACEONLY * OPT_MIRROR    ; (RACEONLY with MIRROR, 22 Nov 2026: rl_line's helpers down here - three times a second a car, so the slower
         include "race_lines.asm" ; memory costs little; the program's room went to the tighter tracks)
         endif
