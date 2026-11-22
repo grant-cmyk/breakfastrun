@@ -3671,3 +3671,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - race_mode_test: CNOS tape 12/12; racer_cars75_h32_round 12/12; racer_cars75_breakfast_fast 11/12 - the known glitch (a
   race-order row caught half repainted, one picture, as two cars swap: Grant's open question of 19 Nov) now falls in this
   race; with the changes stashed it passed. Plain tapes byte-identical.
+
+## 2026-11-22 SAST - oil spills: where they would go (investigation; cloud session, Claude)
+- Grant: "have oil spills appear. If a car hits an oil spill they spin in the direction they were going in without being
+  able to change direction for a brief period - a second or so ... 3 or 4 spots where a spill may appear during a lap ...
+  around the race track line ... appear randomly and in different places"; "Will need a graphic for that. The oil spill
+  will be about the size of a car".
+- Where the cars drive: the computer cars' positions over 4 races, on the track's own O and off-road maps:
+  docs/design/oil_spill_spots.png. The line is a narrow ribbon (8-16 px) hugging the inside; 8 candidate spots S1-S8 at
+  the densest point near the corner entries (world px): S1 492,364  S2 500,164  S3 436,92  S4 324,116  S5 220,100
+  S6 124,92  S7 76,356  S8 260,404. Plan: each lap 3 or 4 of the 8 picked at random, a spill (16 x 16, car-sized) drawn
+  as a sprite; a car whose middle crosses it spins on the way it was going, no steering and no push, about a second.
+- Not built yet. Needs: the graphic (one-bit-art), about 300 bytes (148 free under 0x8000 on the CNOS tape, 6 in the
+  program - more room to find: the profiler's never-run list, scratchpad dead.txt), and a drawing cost per picture when
+  one is on screen (one car's worth).
