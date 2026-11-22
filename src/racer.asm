@@ -341,6 +341,18 @@ cpu_move:
         ld b,NCARS
 draw_all:
         push bc
+        if OPT_FLASHME          ; FLASHME (Grant, 22 Nov 2026: "When the game is about to start, flash my car, so the player
+        ld a,b                  ; knows which car is theirs"): until the lights go green your car is left out of every
+        dec a                   ; other four pictures
+        jr nz,da_fm
+        ld a,(race_on)
+        or a
+        jr nz,da_fm
+        ld a,(renders)
+        and 4
+        jr nz,da_next
+da_fm:
+        endif
         if OPT_2P               ; TWOP: a car just put back by the leash flashes - it is left out of every other picture
         ld a,(lsh_car)
         cp b

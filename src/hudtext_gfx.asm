@@ -24,9 +24,15 @@ clock_top_src:                      ; a little clock: the best lap is this car's
 clock_bot_src:
         db %10001101,%10000001,%01000010,%00111100
         db 0,0,0,0
+        if OPT_GRIDPLACE        ; (GRID_PLACE: you at that place, the others in their order - build.sh writes GRID_ORD)
+grid_order_src:
+        GRID_ORD
+        endif
+        if OPT_GRIDPLACE = 0
         if OPT_GRIDBACK
 grid_order_src:   db 1, 4, 3, 2, 0  ; the starting grid with you at the back (GRID_BACK, tools/make_world.py): CYAN, WHITE, PINK, GREEN, YOU
         else
 grid_order_src:   db 0, 1, 4, 3, 2  ; the starting grid: YOU, CYAN, WHITE, PINK, GREEN
+        endif
         endif
 car_colours_src:  db A_MSG, 0x68, 0x60, 0x58, 0x78  ; you red; cyan, green, magenta, white

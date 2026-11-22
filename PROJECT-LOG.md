@@ -3522,3 +3522,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - So: the breakfast race tape's balance (ai_tune.asm RACE ONLY, SCRUB) is the FIRST LEVEL's. Later levels are to be harder
   (not designed yet: e.g. the computer cars' top speed or grip up a step a level, tighter tracks 2 and 3, fewer NOS). The
   slide length after a sharp turn (1.5-2 s) stays as it is unless Grant says otherwise.
+
+## 2026-11-22 SAST - breakfast race tape: the NOS display fixed; your car flashes; you start 3rd (cloud session, Claude)
+- Grant: "I came last so tough enough. Note that the image for the NOS glitches - black and red mess - I am not sure what it
+  is doing but the NOS HUD in game display does not work. When the game is about to start, flash my car, so the player
+  knows which car is theirs. Have the car start 3rd".
+- NOS: hp_slot (NOSBOX) was written for the race track, where every square's colours are set again each picture; on the
+  table nothing does, so a used slot (and the gauge's square after a burn) kept its red-on-black colours over the cloth.
+  Now, on the table: an empty slot's two squares and a held slot's upper square get the cloth's colours back (WIN_ATTR2);
+  the box is red on the cloth's cyan, flashing black while it burns. The race-track tapes byte for byte the same.
+- FLASHME=1 (racer.asm draw_all): until the lights go green your car is left out of every other four pictures - checked:
+  the pixels at your place on the grid go 98, 16, 16, 16, 16, 98 ... (16: the cloth's dots).
+- GRID_PLACE=3 (make_world.py, build.sh GRID_ORD, hudtext_gfx.asm): you start 3rd (x 216: 248, 232 ahead of you), the
+  others in their order round you. (On the table you had started on pole - GRID_BACK is the race track's.)
+- race_mode_test 12 of 12. Pictures: docs/design/head32/breakfast_grid_nos.png, breakfast_flash.png.

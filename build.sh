@@ -93,6 +93,9 @@ printf 'OPT_2P equ %s                   ; 1: two players in one view (TWOP=1 RAC
 # GRID_BACK: on the race-track builds you start last on the grid (Grant, 18 Nov 2026); not with two players. GRID_BACK=0: on pole.
 GB=0; [ "${RACETRACK:-0}" = "1" ] && [ "${TWOP:-0}" != "1" ] && [ "${GRID_BACK:-1}" != "0" ] && GB=1
 printf 'OPT_GRIDBACK equ %s             ; 1: you start last on the grid (race-track builds; GRID_BACK=0 bash build.sh for pole)\n' "$GB" >> "$ROOT/src/options.asm"
+GPL=${GRID_PLACE:-0}; GOR="0,1,4,3,2"; [ "$GB" = "1" ] && GOR="1,4,3,2,0"
+if [ "$GPL" != "0" ]; then GOR=$(python3 -c "o=[1,4,3,2]; o.insert($GPL-1,0); print(','.join(map(str,o)))"); fi
+printf 'OPT_GRIDPLACE equ %s            ; GRID_PLACE=1..5: your place on the grid (0: pole, or last with GRID_BACK)\nGRID_ORD macro\n        db %s\n        endm\n' "$GPL" "$GOR" >> "$ROOT/src/options.asm"
 printf 'OPT_2PPTS equ %s                ; two players, the POINTS rule: first to this many points (0: the LEASH rule; TWOP_PTS=3)\n' "${TWOP_PTS:-0}" >> "$ROOT/src/options.asm"
 # REACT1=1: A TRIAL SWITCH - each computer car decides how to steer every 8th TV frame, not every 4th (their REACT setting
 # one higher). Quicker in the pack, but they turn in a little later: off unless asked for (PROJECT-LOG, 17 Nov 2026).
@@ -144,6 +147,7 @@ printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the 
 printf 'OPT_RACE equ %s                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)\n' "${RACEMODE:-0}" >> "$ROOT/src/options.asm"
 printf 'RT_SMOOTHN equ %s               ; the track'"'"'s centre line smoothed this many times (RT_SMOOTH: the round-turn track - ai_tune.asm balances its cars)\n' "${RT_SMOOTH:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_SCRUB equ %s                ; 0: as before; n: a slide costs speed - yours 1/2^n of it a TV frame, a computer car twice the drag (SCRUB=n)\n' "${SCRUB:-0}" >> "$ROOT/src/options.asm"
+printf 'OPT_FLASHME equ %s              ; 1: your car flashes on the grid until the lights go green (FLASHME=1)\n' "${FLASHME:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MUG equ %s                  ; 1: the coffee mug - your damage - on an ARMOUR tape (MUG=1: the breakfast table race tape)\n' "${MUG:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_NOSBOX equ %s               ; 1: the NOS you hold shown as a canister in a rounded box, one colour square each (NOSBOX=1)\n' "${NOSBOX:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_RACEONLY equ %s             ; 1: RACE only - no COMBAT, every car its own picture and driver card (RACEONLY=1 RACEMODE=1)\n' "${RACEONLY:-0}" >> "$ROOT/src/options.asm"

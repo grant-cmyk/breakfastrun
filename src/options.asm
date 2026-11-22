@@ -22,6 +22,10 @@ OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: no
 OPT_GRIP1 equ 0                ; 1: your car moved, and its grip worked out, once a picture (GRIP1=1 bash build.sh)
 OPT_2P equ 0                   ; 1: two players in one view (TWOP=1 RACETRACK=1 bash build.sh)
 OPT_GRIDBACK equ 0             ; 1: you start last on the grid (race-track builds; GRID_BACK=0 bash build.sh for pole)
+OPT_GRIDPLACE equ 0            ; GRID_PLACE=1..5: your place on the grid (0: pole, or last with GRID_BACK)
+GRID_ORD macro
+        db 0,1,4,3,2
+        endm
 OPT_2PPTS equ 0                ; two players, the POINTS rule: first to this many points (0: the LEASH rule; TWOP_PTS=3)
 OPT_REACT1 equ 0               ; 1: the computer cars decide every 8th TV frame, not every 4th (REACT1=1 bash build.sh)
 OPT_RTPUP equ 0                ; RACETRACK: 1 - the place plate is drawn from the program, not from under 0x8000 (tracks 1 and 2)
@@ -36,6 +40,7 @@ OPT_ARMOUR equ 0               ; 1: armour, the bar on the HUD and the two weapo
 OPT_RACE equ 0                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)
 RT_SMOOTHN equ 0               ; the track's centre line smoothed this many times (RT_SMOOTH: the round-turn track - ai_tune.asm balances its cars)
 OPT_SCRUB equ 0                ; 0: as before; n: a slide costs speed - yours 1/2^n of it a TV frame, a computer car twice the drag (SCRUB=n)
+OPT_FLASHME equ 0              ; 1: your car flashes on the grid until the lights go green (FLASHME=1)
 OPT_MUG equ 0                  ; 1: the coffee mug - your damage - on an ARMOUR tape (MUG=1: the breakfast table race tape)
 OPT_NOSBOX equ 0               ; 1: the NOS you hold shown as a canister in a rounded box, one colour square each (NOSBOX=1)
 OPT_RACEONLY equ 0             ; 1: RACE only - no COMBAT, every car its own picture and driver card (RACEONLY=1 RACEMODE=1)

@@ -228,22 +228,40 @@ hpr_g:
 ; (in rt_sh), DE = in the buffer. Held: the box's square (the lower) red on black, its lines cleared - the upper square is
 ; the track's. Burning: the box red and yellow by turns (4 pictures each), and the square above it - the gauge's, nd_gauge
 ; - in the same colours and cleared too. Empty: nothing (the track's).
-hp_slot:
+        if OPT_RT
+NB_HELD  equ 0x02               ; (the race track: red on black, flashing yellow)
+NB_FLASH equ 0x06
+        else
+NB_HELD  equ 0x2A               ; (the breakfast table, 22 Nov 2026 - Grant: "the image for the NOS glitches - black and red
+NB_FLASH equ 0x28               ; mess": red on the cloth's cyan, flashing black; and on the table nothing puts a square's
+        endif                   ; colours back each picture - an empty slot, and the gauge's square once the burn is over,
+hp_slot:                        ; get the cloth's again here: hpb_e, hpb_h)
         or a
+        if OPT_RT
         ret z
+        else
+        jr z,hpb_e
+        endif
         ld c,a
-        ld a,0x02
+        ld a,NB_HELD
         dec c
-        jr z,hpb_0
+        jr z,hpb_h
         ld a,(renders)
         and 4
-        ld a,0x02
+        ld a,NB_HELD
         jr z,hpb_1
-        ld a,0x06
+        ld a,NB_FLASH
 hpb_1:  ld (hl),a               ; the gauge's square
         ex de,hl
         call hpb_wipe
         ex de,hl
+        if OPT_RT = 0
+        jr hpb_0
+        endif
+hpb_h:
+        if OPT_RT = 0
+        ld (hl),WIN_ATTR2       ; (held: the square above is the cloth's)
+        endif
 hpb_0:  ld bc,32
         add hl,bc               ; the box's square
         ld (hl),a
@@ -257,6 +275,14 @@ hpw_1:  ld (hl),0
         djnz hpw_1
         pop hl
         ret
+        if OPT_RT = 0
+hpb_e:  ld a,WIN_ATTR2          ; (empty, on the table: both squares the cloth's again)
+        ld (hl),a
+        ld bc,32
+        add hl,bc
+        ld (hl),a
+        ret
+        endif
         else
 hp_slot:                        ; A = the slot (0: empty), HL = its upper cell on the screen, DE = in the buffer
         or a
