@@ -99,12 +99,10 @@ rl_line:
         ld a,(rmode)
         or a
         ret z
-        ld a,(ix+C_KIND)
-        add a,rl_driver-1 AND 255
-        ld l,a
-        ld a,0
-        adc a,(rl_driver-1)/256
-        ld h,a
+        ld e,(ix+C_KIND)
+        ld d,0
+        ld hl,rl_driver-1
+        add hl,de
         ld a,(hl)               ; A = the line it drives (0-3), or 255: one of them, bend by bend
         cp 255
         jr nz,rl_have
@@ -131,11 +129,10 @@ rl_have:
         ld l,a
         add a,a
         add a,l
-        add a,rl_lines AND 255
-        ld l,a
-        ld a,0
-        adc a,rl_lines/256
-        ld h,a
+        ld e,a
+        ld d,0
+        ld hl,rl_lines
+        add hl,de
         ld (rl_w),hl
         ld hl,0
         ld (rl_ox),hl
@@ -152,7 +149,7 @@ rl_each:
         ld a,(hl)               ; the weight
         inc hl
         ld (rl_w),hl
-        ld (rl_c),a
+        push af
         push de
         ld b,a
         ld c,d
@@ -161,7 +158,7 @@ rl_each:
         add hl,de
         ld (rl_ox),hl
         pop de
-        ld a,(rl_c)
+        pop af
         ld b,a
         ld c,e
         call mul8s
@@ -251,7 +248,6 @@ rl_lines:                       ; the bend it came out of, the bend here, the be
         db AI_L3_OUT, AI_L3_NOW, AI_L3_IN       ; 3 EARLY: in early, wide on the way out
 rl_wsel: db 0
 rl_k:   db 0
-rl_c:   db 0
 rl_w:   dw 0
 rl_ox:  dw 0
 rl_oy:  dw 0

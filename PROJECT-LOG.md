@@ -3310,3 +3310,22 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   alone 0.61 (0.78). The good-driver autopilot does not use NOS; the grass change only counts when it leaves the road.
 - NOT VERIFIED: nobody has driven it; whether a steady 10 a second feels smoother than an uneven 10.4; whether the lines
   read as different on the screen; whether NOS and the grass now feel right.
+
+## 2026-11-22 SAST (later) - finished cars drive clear of the line; what the gap times cost (cloud session, Claude)
+- Grant: "much better" (the 22 Nov race tapes). "When the cars finish, they need to go a few columns over the end line so
+  that other cars don't stop and get stuck behind and don't finish."
+- racer.asm FIN_RUN 3 (RACE / COMBAT tapes only, OPT_RACE; the plain game byte for byte the same): a car that has
+  finished - yours too - keeps its buttons (you) or its driver (a computer car) until it has passed 3 more waypoints, then
+  rolls to a stop as before. The line is drawn at x 288-295. Measured on racer_race75, 3 races (seeds 0, 777, 4242), the
+  good driver: before, the finished cars stopped with their boxes at x 268-301 - across the line; now the first two at
+  x 368-393, 9-12 columns past it, still on the straight (the build stops if FIN_RUN would run past the last waypoint).
+  To make room on the catch-up tape (it had 11 bytes): rl_line's table lookups and its weight kept on the stack, not in a
+  variable (8 bytes). Catch-up tapes now 19 bytes free.
+- GAP TIMES (Grant: "Would it speed things up if the time for each car in the HUD did not have to be updated"): measured
+  with the picture rhythm let free (pace 1), racer_race75, 3,000 TV frames - 10.69 pictures a second as it is; 10.87 with
+  the gap times off (rg_update returning at once), about 2%; 10.73 with the whole race order frozen (tower_update) - within
+  the noise. A steady 4 TV frames a picture needs 12.5 a second; the gap times (one row brought up to date a picture) are
+  not where the time goes - drawing the track and the cars is. Not changed.
+- TESTS: race_mode_test 18 of 18 on racer_race75 and racer_race75_elastic; 17 of 18 on racer_race70 and _elastic - the
+  known one-frame half-painted row in the race order as two cars swap (19 Nov 2026; still for Grant to decide).
+- NOT VERIFIED: nobody has driven it.

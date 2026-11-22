@@ -35,6 +35,7 @@ PACE_FR equ 3           ; show a new picture every 3 TV frames, steadily
 NCARS   equ 5           ; you + 4 computer cars
 LAPS    equ 3           ; laps in a race
 REACH   equ 24          ; a computer car has reached a waypoint within this (|dx|+|dy|)
+FIN_RUN equ 3           ; RACE / COMBAT tapes: a car that has finished drives on this many waypoints (32 px each) past the line before it stops (Grant, 22 Nov 2026)
 COPIER  equ 0xE800      ; the screen-copy code is WRITTEN HERE at start-up (5.6 KB)
 ; THE MINI-MAP IS IN THE WINDOW, bottom left (Grant, 15 Nov 2026: "have the track map on the bottom left inside
 ; of play"; then, of the sizes mocked up, "c (2)4 is good, and the inside parts could be blue - so no masking
@@ -481,6 +482,12 @@ tk_on:
         ld a,(cars+C_LAPS)      ; finished: no more buttons - your car rolls
         cp LAPS+1               ; to a stop a little over the line
         jr c,tk_you
+        if OPT_RACE             ; (the RACE / COMBAT tapes, Grant, 22 Nov 2026: "When the cars finish, they need to go a few
+        ld a,(cars+C_WP)        ; columns over the end line so that other cars don't stop and get stuck behind and don't
+        sub WS+1                ; finish": your buttons still work until you have passed FIN_RUN more waypoints - about
+        cp FIN_RUN              ; ten columns past the line - then you roll to a stop there)
+        jr c,tk_you
+        endif
         xor a
         ld (cars+C_CTRL),a
 tk_you:
@@ -538,7 +545,16 @@ tk_cpu:
         endif
         ld a,(ix+C_LAPS)        ;
         cp LAPS+1               ; A computer car that has finished rolls to a
-        jr nc,tk_in             ; stop too, while the others come in
+        if OPT_RACE             ; stop too, while the others come in (RACE / COMBAT tapes: once it has driven FIN_RUN
+        jr c,tk_drive           ; waypoints on past the line, as you do above, so that it is not in the way of the cars
+        ld a,(ix+C_WP)          ; still to finish)
+        sub WS+1
+        cp FIN_RUN
+        jr nc,tk_in
+tk_drive:
+        else
+        jr nc,tk_in
+        endif
         ld a,(ticks)
         add a,(ix+C_KIND)
         and 1
@@ -5632,6 +5648,11 @@ faces     equ faces_src
         endif
         if NCARS*C_SIZE - (cars_init_src_end - cars_init_src)
         .error cars_init does not hold NCARS records
+        endif
+        if OPT_RACE
+        if WS + FIN_RUN >= NWP
+        .error FIN_RUN: the waypoints after the line must not wrap past the last one (racer.asm, tk_on and tk_ai)
+        endif
         endif
         if code_end > BUF_HI*256
         .error code and data run into the back buffer
