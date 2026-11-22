@@ -250,9 +250,16 @@ yg_d2:
 yg_arm:
         else
         ld a,(dmg)              ; (less DMG_SLOW for each point of damage: Grant, 14 Nov
-        add a,a                 ; 2026, "with damage the car slows down a bit")
+        if OPT_MUG              ; 2026, "with damage the car slows down a bit")
+        add a,a                 ; (MUG - the breakfast race tape, at 75%: 6 a point, so that all 8 points still take a
+        ld c,a                  ; seventh off the top speed - 8 a point took a fifth there: tests/damage_test.py, 22 Nov 2026)
+        add a,a
+        add a,c
+        else
         add a,a
         add a,a
+        add a,a
+        endif
         ld c,a
         ld b,0
         or a

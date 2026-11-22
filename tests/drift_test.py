@@ -15,7 +15,8 @@ def ok(c, m):
 def slip(sp):
     c = car(sp, 0); v = math.hypot(c['vx'], c['vy'])
     if v < 0.05: return 0.0
-    return (math.degrees(math.atan2(c['vx'], -c['vy'])) % 360 - (c['ang'] >> 2) * 22.5 + 540) % 360 - 180
+    pic = (c['ang'] >> 1) * 11.25 if 'hp_avg' in SYM else (c['ang'] >> 2) * 22.5   # (HEAD32 tapes, 22 Nov 2026: a picture every 11.25 degrees)
+    return (math.degrees(math.atan2(c['vx'], -c['vy'])) % 360 - pic + 540) % 360 - 180
 with Racer(headless=True) as sp:
     sp.load_tape(TAP); t = 0
     while g(sp, 'renders') == 0 and t < 60: sp.run(duration=0.1, fast_forward=True); t += 0.1
