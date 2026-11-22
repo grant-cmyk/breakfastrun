@@ -3415,3 +3415,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   good driver 10 of 10, Frank 24.5, Jane 25.3, Bruno 25.4, Spike 26.2. race_mode_test 12 of 12 on racer_cars75 and
   racer_cars75_h32. Every other tape byte for byte the same.
 - NOT VERIFIED: nobody has driven the skids or the 32 headings.
+
+## 2026-11-22 12:08 SAST - the 32-heading tape balanced (cloud session, Claude)
+- Grant: "the 32 tape looks smoother, balance that one".
+- On racer_cars75_h32 the computer cars lapped about 0.7 s slower than on racer_cars75 and the good driver won 10 of 10.
+  More top speed did little (Frank, Bruno, Jane +1: 0.0-0.4 s; Spike +1: nothing; Spike braking at 76: 1.4 s slower) - they
+  lost the time sliding (Jane 66-79% of the time). The cause: the drivers judged their heading by the 16 BELOW it while the
+  car moves 32 ways - up to 11 degrees wrong on half the headings, so they kept correcting, and a correction at speed is a
+  slide. Now the NEAREST of the 16 (ai_tune.asm AI_H16R 2, racer.asm ai_decide): every car 0.4-0.5 s a lap quicker; then
+  Frank, the quickest, one 64th slower on this tape (AI_KC_KS -2 under HEAD32=all).
+- MEASURED (10 races each, as pushed): good driver 5 of 10 (0.8 s behind when beaten), laps you 24.0, Jane 24.8, Frank 25.0,
+  Bruno 25.1, Spike 26.1, 25 place changes a race; careful driver last, 9.3 s behind; catch-up tape: good driver 8 of 10,
+  30 place changes. race_mode_test 12 of 12 on both. (racer_cars75, 16 headings: 8 of 10 - 10-race samples vary by about
+  two wins either way.) Every other tape byte for byte the same.
+- NOT VERIFIED: nobody has driven it.

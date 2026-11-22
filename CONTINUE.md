@@ -3,6 +3,8 @@
 **Stamped:** 2026-11-19 22:06 SAST (wrap-up) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not merged to main) · commit: 4e7a7d1 (wrap-up; game change 96b7f86, race mode: computer cars skid more)
 **Lifecycle:** Active
 
+**LATEST (22 Nov 2026, 12:08 SAST) - THE GAME GRANT PLAYS NOW:** build/racer_cars75_h32.tap (race only, every car its own look and driver card, 32 headings, skids cost speed - SCRUB=5, NOS gauge, finished cars drive clear of the line). Grant: "the 32 tape looks smoother, balance that one" - balanced (PROJECT-LOG, 22 Nov 2026, last entries). Build: `bash tools/build_race.sh` (plain `bash build.sh` last). Tune: src/ai_tune.asm RACE ONLY part (AI_K_*, AI_H16R). Open: Spike the slowest (~1 s); the in-between drawings are machine drafts (tools/car_art.txt for YOU; the others drafted at build time); the race-order half-painted-row test question; merge to main.
+
 **LATEST (22 Nov 2026):** race tapes rebuilt - STEADY=5 (every picture 5 TV frames, same-size jumps; view lead 1 px a picture), each computer driver its own line (race.asm rl_line; ai_tune.asm AI_L0-3: cyan classic, yellow late, magenta a bit wide, white mixes them), NOS=1 (stronger), your car keeps 75% speed on grass. All four race tapes 18/18; autopilot wins 9 of 10 at 75%. Details: PROJECT-LOG, 22 Nov 2026. Next: Grant drives racer_race75.tap. Smoother still needs more pictures a second or a slower game.
 
 **START HERE (wrap-up, 19 Nov 2026 22:06 SAST):**
