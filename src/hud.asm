@@ -828,6 +828,37 @@ su_reset:
         ld (hl),2
 ; SU_APPLY: the levels -> the numbers grip.asm drives your car by, then the row
 su_apply:
+        if OPT_SIMPLE           ; SIMPLE (C1): the levels into your card row (you_card, cards_code.asm) - SPEED s: its SPEED push
+        ld a,(su_lv+1)          ; 4 (s - 1) 64ths more (as the grip model's top speed: +6% a level); ACCEL a: its ACCEL push
+        dec a                   ; 10 (a - 1) more as well; GRIP g: where it slides, an eighth more a level
+        add a,a
+        add a,a
+        ld c,a
+        add a,YOU_KS AND 255
+        ld (you_card+5),a
+        ld a,(su_lv+2)
+        dec a
+        ld e,a
+        add a,a
+        add a,a
+        add a,e
+        add a,a
+        add a,c
+        add a,YOU_KA AND 255
+        ld (you_card+4),a
+        ld a,(su_lv)
+        dec a
+        ld e,a
+        ld d,0
+        ld hl,YOU_SL
+        jr z,sua_g
+sua_1:  ld bc,YOU_SL/8
+        add hl,bc
+        dec e
+        jr nz,sua_1
+sua_g:  ld (you_card),hl
+        ret
+        endif
         ld a,(su_lv+1)          ; SPEED s: top = 448 + 28 (s - 1) (8.8: 1.75 + 0.11)
         dec a
         add a,a

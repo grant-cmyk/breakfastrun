@@ -33,6 +33,8 @@ G_QSLIDE equ 5                  ; ... both (it was 9)
 G_PUSH   equ 64                 ; 0.25 a frame (with drag 1/8: top speed 1.75)
 G_TOP    equ 448                ; 1.75 px a frame
         endif
+        if OPT_SIMPLE = 0       ; (SIMPLE, Grant 22 Nov 2026, the memory hunt's C1: your car on the computer cars' card and slide -
+                                ;  this model left out but for trig, which the title's car uses)
 you_grip:
         ld a,(ix+C_ANG)         ; this heading's sine and cosine (/128), worked
         inc a                   ; out again only when the heading changes
@@ -688,6 +690,7 @@ mul_c:                          ; HL = HL - HL/256 - HL/1024
         sbc hl,de
         ret
 
+        endif
 ; TRIG: A = heading 0..63 (0 = up, clockwise) -> C = |sin| / 128, B = 1 if negative
 trig:
         and 63
@@ -712,6 +715,7 @@ tg_2:
         ret
 trig_t: db 0,13,25,37,49,60,71,81,91,99,106,113,118,122,126,127,128   ; 128 sin(n x 5.625)
 
+        if OPT_SIMPLE = 0
 ; SMUL: HL (signed 8.8) x (C / 128), negated if B = 1 -> HL
 smul:
         bit 7,h
@@ -804,4 +808,5 @@ qm_1:
         sbc hl,de
         pop bc
         ret
+        endif
         endif

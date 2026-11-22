@@ -839,9 +839,11 @@ ph_nl:
         and 63
         ld (ix+C_ANG),a
 ph_nr:
+        if OPT_SIMPLE = 0       ; (SIMPLE: you are pushed by your buttons and your card as a computer car is)
         ld a,(ix+C_KIND)        ; you: no push here (the grip model has its own)
         or a
         jp z,ph_snap
+        endif
         push de
         ld a,(ix+C_ANG)         ; BC, DE = push for the way the car faces
         call heading_push
@@ -901,6 +903,7 @@ ph_s4:
 ph_surf_kept:
         ld a,(ix+C_FSH)
         ld (fshift),a
+        if OPT_SIMPLE = 0
         ld a,(ix+C_KIND)        ; you: the grip model works out your speed
         or a                    ; (grip.asm); below only moves the car - no
         jr nz,ph_cpu            ; push here, and no friction (fshift 0)
@@ -912,6 +915,7 @@ ph_surf_kept:
         ld b,a
         ld c,a
         jr ph_nb
+        endif
 ph_cpu:
         if OPT_CARDS            ; CARDS: the car's own push for its speed, and the brake for a corner (card_push, below)
         call card_push
@@ -946,10 +950,32 @@ ph_road:
         ld a,(BOOST_T)
         or a
         jr z,ph_nb
+        if OPT_SIMPLE * (OPT_NOS = 3)   ; (SIMPLE, NOS=3: three quarters more push - and top speed - as the grip model gave)
+        push de
+        ld h,b
+        ld l,c
+        call ph_34
+        ld b,h
+        ld c,l
+        pop hl
+        call ph_34
+        ex de,hl
+        jr ph_nb
+ph_34:  ld d,h                  ; HL = HL x 1.75
+        ld e,l
+        sra d
+        rr e
+        add hl,de
+        sra d
+        rr e
+        add hl,de
+        ret
+        else
         sla e
         rl d
         sla c
         rl b
+        endif
 ph_nb:
         if OPT_RT               ; RACETRACK (the smoothness pass, 17 Nov 2026): the same sums, step for step, in ph_run -
         ld a,(fshift)           ; the friction's halvings are chosen once for the car, not asked about at every step

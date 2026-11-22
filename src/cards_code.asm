@@ -250,4 +250,14 @@ cd_v:   db 0                    ; the car's speed / 4
 cd_k:   db 0                    ; its push's number
 cd_near:                        ; NEAR, PULL for CYAN, GREEN, PINK, WHITE (ai_tune.asm)
         db AI_C_NEAR,AI_C_PULL, AI_G_NEAR,AI_G_PULL, AI_P_NEAR,AI_P_PULL, AI_W_NEAR,AI_W_PULL
+        if OPT_SIMPLE           ; SIMPLE (C1): YOUR card row - card_push reads row kind 0 at cd_tab - 8: MAX's racer as the computer
+you_card:                       ; cars' rows are (where it slides; no braking; ACCEL to SPEED at 4/5 top; its two pushes) - su_apply
+        dw YOU_SL               ; raises them for the set-up you pick. Tuned 22 Nov 2026 so that the careful autopilot does as it
+        db 255, CD_R_VSW, YOU_KA AND 255, YOU_KS AND 255, 0, 0  ; did on the grip model (laps 24.4 s, last, ~8 s behind):
+        endif                   ; it slides sooner than the computer cars' MAX card (tyres poor to start, as yours were),
         include "cards.asm"     ; the cards' numbers (tools/make_cards.py)
+        if OPT_SIMPLE           ; and both its pushes 8 64ths less. (These EQUs AFTER cards.asm: pasmo takes an EQU's value where
+YOU_SL  equ CD_R_SLIDE*45/64    ; it stands - before it, CD_R_SLIDE was 0: slide 0, sliding always. 22 Nov 2026)
+YOU_KA  equ CD_R_KA-8
+YOU_KS  equ CD_R_KS-8
+        endif

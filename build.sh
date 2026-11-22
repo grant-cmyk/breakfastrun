@@ -99,6 +99,9 @@ if [ "${UPPER:-0}" = "1" ]; then
   UPF="${UPFILES:-data.asm omap.asm waypoints.asm rowidx.asm faces.asm faces_mood.asm dmgicon.asm minimap.asm}"
   [ "${OIL:-0}" = "1" ] && UPF="$UPF oil_gfx.asm"
 fi                      # (make_up runs just before assembling, in the build's own copy of src/ - below)
+# SIMPLE=1 (the memory hunt's group C, a trial; Grant, 22 Nov 2026: "try c"): your car on the computer cars' card and slide
+# (grip.asm left out); one bump rule (weight.asm).
+printf 'OPT_SIMPLE equ %s               ; 1: group C - your car on the card model, one bump rule (SIMPLE=1 bash build.sh)\n' "${SIMPLE:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

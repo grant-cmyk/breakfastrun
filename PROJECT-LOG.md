@@ -3841,3 +3841,23 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   row); finish order 8/8 true; full races as before (careful driver 8.9 and 9.1 s behind). SPEED: 11.36 pictures a
   second (11.54 before; smooth3), the lap 11.0 (11.3; tearlap) - about 2-3% slower, the looped copy's 6,800 T; torn
   frames the same (20.4%), more of the window's lower rows a TV frame late.
+
+## 2026-11-22 SAST - GROUP C as a trial tape: your car on the card model (C1), one bump rule (C2) (cloud session, Claude)
+- Grant: "leave b but try c". SIMPLE=1 -> build/racer_cars75_breakfast_fast_c.tap (the trial tape - chasers' NOS, oil -
+  with group C; the main and trial tapes unchanged).
+- C1: your car goes through the computer cars' physics (racer.asm: no ph_snap / you_grip for you): your buttons push,
+  your card row scales it (you_card, cards_code.asm, row kind 0 at cd_tab - 8), the cards' slide (skid), the road's and
+  the damage's slow-down (surface, wt_slow) as theirs; NOS 1.75x push (ph_34); the set-up keys raise your card (su_apply,
+  SIMPLE part). grip.asm is left out but for trig (the title's car). Tuned so the careful autopilot does as it did on the
+  grip model: your card slides from 45/64 of the computer cars' MAX card's slide speed and both pushes 8/64 less.
+  Measured (8 races): careful autopilot laps 24.66 s, last, 10.8 s behind (grip model: 24.49, 4.9th, 9.1). The
+  corner-cutting autopilot (rt_ace, tuned on the grip model) cannot drive it: laps 32 s (24.5 on the grip model) -
+  the handling is different; only Grant's drive can say how.
+- C2: weight.asm (SIMPLE): four weight classes (Jane 0; Max, Frank, Spike 1; Bruno 2; you on NOS 3); a bump's kick and
+  damage by the other's class less your own, two tables of 7 (each class 1.6 times the one below: kick 2r/(1+r) of KICK,
+  damage 4r quarters) in place of the two 6 x 6; no head-on rule (the quicker towards the other is the hitter). The staged
+  crashes (scratchpad crash.py) were made for the grip model and do not stage cleanly on C1's car - not shown here.
+- ROOM on the C tape: program 2,703 bytes free (trial 1,645), under 0x8000 583 (466): C1 1,058, C2 117.
+- pasmo's EQU trap twice more (an EQU takes its value where it stands): YOU_SL/KA/KS first came out 0-based (slide 0:
+  always sliding) - now after cards.asm.
+- Checked: no reset in 80 s; race_mode_test 12/12; finish order 8/8.

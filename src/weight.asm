@@ -134,6 +134,26 @@ wh_y:   ld a,e                  ; yours: the mug's points
         and 63
         ld (dmg),a
         ret
+        if OPT_SIMPLE           ; SIMPLE (C2: ONE BUMP RULE): the cars in four WEIGHT CLASSES (wt_cls) - Jane 0; Max, Frank, Spike 1;
+wt_pair:                        ; Bruno 2; you on NOS 3 - and a bump looked up by the class of the other car less your own,
+        ld a,b                  ; 3 + (B's - C's), 0-6, in two tables of 7 (wk_tab, wq_tab) in place of the 6 x 6 pairs
+        call wt_cl
+        ld e,a
+        ld a,c
+        call wt_cl
+        cpl
+        add a,e
+        add a,4
+        ret
+wt_cl:  add a,wt_cls AND 255
+        ld l,a
+        adc a,wt_cls/256
+        sub l
+        ld h,a
+        ld a,(hl)
+        ret
+wt_cls: db 1, 1, 1, 2, 0, 3     ; each kind's class (kinds 0-4, 5 = you on NOS)
+        else
 wt_pair:                        ; A = C x 6 + B
         ld a,c
         add a,a
@@ -141,6 +161,7 @@ wt_pair:                        ; A = C x 6 + B
         add a,a
         add a,b
         ret
+        endif
 wt_kick:                        ; BC = KICK or -KICK, the way car a goes, A = the axis (C_VX or C_VY): BC = a's new speed that way,
         push de                 ; (DE, racer.asm's 2-pixel nudge apart, kept: without it the cars were thrown up to 160 px)
         call wt_kick1
@@ -192,6 +213,7 @@ wt_kick1:
         call wk_lt
         sbc a,a
         ld (wk_who),a
+        if OPT_SIMPLE = 0       ; (SIMPLE, the memory hunt's C2: no head-on rule - the quicker towards the other hit it)
         ld hl,(wk_ta)
         ld de,(wk_tb)
         or a
@@ -213,6 +235,7 @@ wk_h1:  ld (wk_big),hl          ; head-on? the slower one also over WK_TH toward
         ld bc,(wk_kav)
         ld hl,(wk_kbv)
         ret
+        endif
 wk_roles:
         ld a,(wk_who)
         or a
@@ -448,6 +471,10 @@ wk_sm:  dw 0
 wk_who: db 0
         endif
 wk_b:   dw 0
+        if OPT_SIMPLE           ; (SIMPLE: by the classes' difference, -3 to 3: each class 1.6 times the one below - the kick
+wk_tab: dw KICK*25/64, KICK*36/64, KICK*49/64, KICK, KICK*79/64, KICK*92/64, KICK*103/64   ; 2r/(1+r) of KICK, r = 1.6 to the
+wq_tab: db 1, 2, 3, 4, 6, 10, 16                ; difference; the damage 4r quarters)
+        else
 wk_tab:                         ; car a's kick from car b (a x 6 + b; 5 is YOU ON NOS - 3 x your weight)
         dw (2*KICK*CD_ARM_0+(CD_ARM_0+CD_ARM_0)/2)/(CD_ARM_0+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_0+CD_ARM_1)/2)/(CD_ARM_0+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_0+CD_ARM_2)/2)/(CD_ARM_0+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_0+CD_ARM_3)/2)/(CD_ARM_0+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_0+CD_ARM_4)/2)/(CD_ARM_0+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_0+(3*CD_ARM_0))/2)/(CD_ARM_0+(3*CD_ARM_0))   ; car 0 kicked by 0-5
         dw (2*KICK*CD_ARM_0+(CD_ARM_1+CD_ARM_0)/2)/(CD_ARM_1+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_1+CD_ARM_1)/2)/(CD_ARM_1+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_1+CD_ARM_2)/2)/(CD_ARM_1+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_1+CD_ARM_3)/2)/(CD_ARM_1+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_1+CD_ARM_4)/2)/(CD_ARM_1+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_1+(3*CD_ARM_0))/2)/(CD_ARM_1+(3*CD_ARM_0))   ; car 1 kicked by 0-5
@@ -462,3 +489,4 @@ wq_tab:                         ; car v's damage from car o, quarters (v x 6 + o
         db (4*CD_ARM_0+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_1+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_2+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_3+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_4+CD_ARM_3/2)/CD_ARM_3, (4*(3*CD_ARM_0)+CD_ARM_3/2)/CD_ARM_3   ; car 3 hurt by 0-5
         db (4*CD_ARM_0+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_1+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_2+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_3+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_4+CD_ARM_4/2)/CD_ARM_4, (4*(3*CD_ARM_0)+CD_ARM_4/2)/CD_ARM_4   ; car 4 hurt by 0-5
         db (4*CD_ARM_0+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_1+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_2+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_3+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_4+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*(3*CD_ARM_0)+(3*CD_ARM_0)/2)/(3*CD_ARM_0)   ; car 5 hurt by 0-5
+        endif
