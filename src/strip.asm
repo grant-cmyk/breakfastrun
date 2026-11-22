@@ -727,7 +727,11 @@ nf_1:
         djnz nf_1
         ret                     ; none
 nf_2:
+        if OPT_NOSBOX
+        ld (hl),2               ; (NOSBOX: its box stays, flashing, with the gauge above it, until it has burnt - nos_out)
+        else
         ld (hl),0
+        endif
         ld a,BOOST_FR
         ld (BOOST_T),a
         ld hl,BOOST_FR*256+7    ; the border white while it burns (the layout review)

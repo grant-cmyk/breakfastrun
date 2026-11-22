@@ -238,6 +238,7 @@ anw_2:
         jr nz,anw_2
         ret
 ; ARM_FIRE (IX = the car that fires): a shell leaves it, straight along its heading.
+        if OPT_RACEONLY = 0     ; (RACEONLY: no shells)
 arm_fire:
         ld hl,sh_ammo           ; (one shell fewer)
         dec (hl)
@@ -270,3 +271,4 @@ arm_fire:
         ld a,SHELL_LIFE
         ld (sh_life),a
         ret
+        endif

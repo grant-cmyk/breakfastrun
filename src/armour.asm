@@ -17,6 +17,9 @@ arm_row_a:
 ; ARM_BUMP (from bump, when two cars touch: IX = one, bump_b = the other, tb = the other's copy): both lose armour by
 ; how fast they were closing, each by its own rating.
 arm_bump:
+        if OPT_RACEONLY         ; (RACEONLY, 22 Nov 2026: no COMBAT - it returns at once, as RACE made it)
+        ret
+        else
         ld l,(ix+C_VX)
         ld h,(ix+C_VX+1)
         ld de,(TB_VX)
@@ -117,10 +120,15 @@ arm_stun:
         pop bc
         pop hl
         jr arm_hurt
+        endif
 
 ; ARM_PHYS (from physics, IX = a car): is it spinning? Then it turns on the spot - SPIN_RATE headings for each of this
 ; move's TV frames - with no speed at all, and physics does nothing else for it (NZ). Z: it is not.
 arm_phys:
+        if OPT_RACEONLY         ; (RACEONLY, 22 Nov 2026: no COMBAT - it returns at once, as RACE made it)
+        xor a
+        ret
+        else
         call arm_row
         inc hl
         inc hl
@@ -152,10 +160,14 @@ aph_1:
         ld (ix+C_VY+1),a
         inc a
         ret
+        endif
 
 ; ARM_LIMP (from physics, IX = a computer car, DE and BC its push): no armour left - the push halved, and with it the
 ; car's top speed. (Your car: grip.asm, yg_d2.)
 arm_limp:
+        if OPT_RACEONLY         ; (RACEONLY, 22 Nov 2026: no COMBAT - it returns at once, as RACE made it)
+        ret
+        else
         call arm_row
         ld a,(hl)
         or a
@@ -167,11 +179,15 @@ arm_limp:
         rr c
         endm
         ret
+        endif
 
 ; ARM_TICK: once a picture, after the cars have moved and bumped. The tank and the clown look for somebody (first, so
 ; that a piece they knock off flashes in this same picture); the cool-downs run down; a row whose health blocks are flashing is drawn
 ; again (a car with none left: all the time - its red outlines flash).
 arm_tick:
+        if OPT_RACEONLY         ; (RACEONLY, 22 Nov 2026: no COMBAT - it returns at once, as RACE made it)
+        ret
+        else
         call arm_tank
         call arm_clown_t
         ld b,NCARS
@@ -534,10 +550,14 @@ abx_1:
         add hl,hl
         ld a,h
         ret
+        endif
 
 ; ARM_DRAW: once a picture, after the cars are drawn and before the fixed boxes: the shell and the clown's wheels.
 ; Each is made of DOTS (arm_dot), which go by the cars' rule for the colour squares - see arm_dot.
 arm_draw:
+        if OPT_RACEONLY         ; (RACEONLY, 22 Nov 2026: no COMBAT - it returns at once, as RACE made it)
+        ret
+        else
         ld a,(sh_life)
         or a
         jr z,adr_w
@@ -725,6 +745,7 @@ ado_5:
         or e
         ld (hl),a
         ret
+        endif
 
 ; each car's row (arm_row): what a piece of its armour takes - from its card (cd_arm, src/cards.asm) - and the 7 bytes the
 ; game keeps for it

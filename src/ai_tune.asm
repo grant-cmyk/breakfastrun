@@ -327,6 +327,22 @@ AI_RW_ERR   equ 10
 AI_RW_GRIP  equ 80-AI_R_GRIPCUT
 AI_RW_KA    equ 0
 AI_RW_KS    equ 1-AI_R75
+; RACE ONLY (RACEONLY=1, the race-only tapes - Grant, 22 Nov 2026: "lets exclude the 'combat' style game, but make use of
+; the core car graphics from that ... the joy of the different cars is their different behaviour"; "go ahead with the
+; balancing"): every computer car on its OWN driver card (tools/driver_cards.txt - its grip, acceleration and speed), driven
+; by the race drivers above. On their cards as COMBAT has them they braked down to the card's corner speed for every bend
+; and lapped 26-28.4 s against the good driver's 22.5 (tests/race_measure.py, racer_cars75, 10 races). Measured (10 races
+; each, the good driver): no braking at all - Jane 21.6, Frank 22.3, Spike 24.5, Bruno 24.4 (Jane's dragster flat out,
+; in a slide half the time); braking a little (68, 64) - 24.7 and 26.7, too much: the brake is all or nothing on this
+; track. So none of them brakes and each card's TOP SPEED is moved (64ths of the plain push, on top of its card's): Frank
+; -2, Spike +3, Bruno +2, Jane -3 gave laps 23.2, 23.6, 23.5, 22.9 (2.7% apart), the good driver 8 of 10, 23 place changes
+; a race; then each one 64th slower (the 75% race tape Grant called "much better" had the cars at 23.4-24.0). Each still
+; its card's grip (Jane slides most, Bruno least) and acceleration.
+AI_K_BRAKE equ 255              ; the speed it brakes down to for a corner (quarter-pixels a frame): 255 - never
+AI_KC_KS   equ 0-3              ; FRANK (cyan): his card's SPEED push less 3 64ths
+AI_KG_KS   equ 2                ; SPIKE (yellow): more 2
+AI_KP_KS   equ 1                ; BRUNO (magenta): more 1
+AI_KW_KS   equ 0-4              ; JANE (white): less 4
 ; ELASTIC (ELASTIC=1: the second race tape, tools/build_race.sh) - the rubber band, in race.asm's el_tick. A computer car
 ; behind the leader gets one 64th more push (at 70% speed a 64th is 2.3% of its top speed) for every 2^EL_SH waypoints it
 ; is behind (waypoints are 32 pixels apart, about half a second at speed), up to EL_MAX 64ths; and one more than EL_AHEAD

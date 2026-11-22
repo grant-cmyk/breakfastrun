@@ -3369,3 +3369,24 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   (tools/make_lights.py -> src/lights.asm nos_can; racer.asm nos_draw; plate_slow.asm hp_slot: only the lower square is
   cleared and coloured - the one above is the track's again). The 8 x 10 sugar spoon took two squares.
 - Pictures: docs/design/head32/nosbox_race.png, nosbox_zoom.png. Every other tape byte for byte the same.
+
+## 2026-11-22 SAST - race-only tape balanced; COMBAT's code left out of it; the NOS gauge (cloud session, Claude)
+- Grant: "go ahead with the balancing"; then "The NOS - when pressed, need a measure somewhere visible of it being used up,
+  so when you press fire the NOS icon flashes in a different colour, and a little gauge drains - some bars - showing its use".
+- BALANCE (ai_tune.asm RACE ONLY part, AI_K_; tools/make_cards.py writes each card row's race-only numbers under
+  OPT_RACEONLY - no bytes added): none of the four brakes for a corner (on their cards they braked to the card's corner
+  speed and lapped 26-28.4 s); each card's top speed moved - Frank -3, Spike +2, Bruno +1, Jane -4 64ths. Each keeps its
+  card's grip and acceleration. (pasmo reads "-16+X" as "-(16+X)": the card's number goes last in the sum.) Measured,
+  racer_cars75, 10 races each: good driver 8 of 10, 0.5 s behind when beaten, laps Jane 23.2 Frank 23.6 Bruno 24.0
+  Spike 24.1 (3.8% apart), 22 place changes a race, in a slide Jane 42% Spike 22% Frank 19% Bruno 15%; careful driver
+  last every time, 9.3 s behind (racer_race75's was 11-13 s); catch-up tape: good driver 9 of 10, the four within 2%.
+- COMBAT OUT of the race-only tapes (armour.asm: arm_bump, arm_phys, arm_limp, arm_tick, arm_draw are stubs under
+  OPT_RACEONLY that return as RACE made them; armour_low.asm arm_fire left out): 1,044 / 1,063 bytes free in the program
+  (catch-up tape), 115 under 0x8000 - the room HEAD32 needs.
+- NOS GAUGE (NOSBOX, racer.asm nd_gauge / nos_out, plate_slow.asm hp_slot, strip.asm nos_fire): firing keeps that box
+  (INV 2) until the burn ends; it flashes red and yellow (4 pictures each); the square above it is the gauge's - four bars
+  (6 pixels, lines 0, 2, 4, 6), one for each quarter of the burn left, draining from the top; at the end the box goes and the
+  square is the track's again. Pictures: docs/design/head32/nos_burn_strip.png.
+- TESTS: race_mode_test 12 of 12 on racer_cars75_elastic, 11 of 12 on racer_cars75 (the known one-frame half-painted row in
+  the race order as two cars swap). Every other tape byte for byte the same.
+- NOT VERIFIED: nobody has driven it; NOS (which the autopilot does not use) and its gauge only seen in pictures.

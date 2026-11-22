@@ -98,13 +98,29 @@ CD_ARM_4 equ 26      ; JANE, armour 2
 ;      1 while it is braking (the game writes it), and a byte to make the row 8 ----
 cd_tab:
         dw 300
+        if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
+        db AI_K_BRAKE, 89, 0, (AI_KC_KS+0) AND 255, 0, 0
+        else
         db 75+AI_C_SLIP, 89, 0, 0, 0, 0      ; CYAN: FRANK (COUPE) - acceleration 5, speed 5, grip 4
+        endif
         dw 270
+        if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
+        db AI_K_BRAKE, 84, 5, (AI_KG_KS-4) AND 255, 0, 0
+        else
         db 67+AI_G_SLIP, 84, 5, 252, 0, 0      ; GREEN: SPIKE (CLOWN CAR) - acceleration 6, speed 2, grip 3
+        endif
         dw 420
+        if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
+        db AI_K_BRAKE, 84, 251, (AI_KP_KS-4) AND 255, 0, 0
+        else
         db 105+AI_P_SLIP, 84, 251, 252, 0, 0      ; PINK: BRUNO (TANK) - acceleration 4, speed 2, grip 8
+        endif
         dw 210
+        if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
+        db AI_K_BRAKE, 98, 10, (AI_KW_KS+6) AND 255, 0, 0
+        else
         db 52+AI_W_SLIP, 98, 10, 6, 0, 0      ; WHITE: JANE (DRAGSTER) - acceleration 7, speed 8, grip 1
+        endif
 ; ---- RACE mode (RACEMODE=1): every computer car on MAX's card (acceleration 5, speed 4, grip 4) - the same row, as numbers ----
 CD_R_SLIDE equ 300
 CD_R_BRAKE equ 75+AI_R_SLIP

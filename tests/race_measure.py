@@ -26,6 +26,7 @@ def one(args):
     S = g.sym; CS = S['c_size']
     g.poke(S['seed'], [(0x34 + 37 * race) & 255, 0x12 + race])
     g.go()
+    CDR = g.w16(S['cdp_tab'] + 1) + 8 if 'cdp_tab' in S else S['cd_race']   # (the card rows the game drives by: RACEONLY's own cards, 22 Nov 2026)
     for k in range(4):
         tk = (tune or {}).get(k) or (tune or {}).get('all')
         if not tk: continue
@@ -36,11 +37,11 @@ def one(args):
         g.poke(S['ai_race'] + 5 * k, new)
         for v, off in ((pace, 19), (react, 20), (err, 21)):
             if v is not None: g.poke(S['cars'] + (k + 1) * CS + off, [v])
-        if brake is not None: g.poke(S['cd_race'] + 8 * k + 2, [brake])
-        if slide is not None: g.poke(S['cd_race'] + 8 * k, [slide & 255, slide >> 8])
+        if brake is not None: g.poke(CDR + 8 * k + 2, [brake])
+        if slide is not None: g.poke(CDR + 8 * k, [slide & 255, slide >> 8])
         for v, off in ((ka, 4), (ks, 5)):      # (the car's ACCEL and SPEED pushes, 64ths more or less: on the elastic tape
             if v is not None:                  #  its rubber band, kept in the row's eighth byte, is added on top)
-                g.poke(S['cd_race'] + 8 * k + off, [(v + g.mem(S['cd_race'] + 8 * k + 7, 1)[0]) & 255])
+                g.poke(CDR + 8 * k + off, [(v + g.mem(CDR + 8 * k + 7, 1)[0]) & 255])
     steer = rt_ace.ace(g, 104, 30) if driver == 'good' else g.steer
     t = [[] for _ in range(5)]; last = [None] * 5; prev = None; changes = you_moves = 0
     # THE PROCESSION (19 Nov 2026, Grant: "the racers race too similarly ... at the moment it looks like a procession"):
@@ -61,7 +62,7 @@ def one(args):
             lap = c[i * CS + 25]
             if last[i] is not None and lap != last[i]: t[i].append(f / 50)
             last[i] = lap
-        sl = [None] + [g.mem(S['cd_race'] + 8 * k, 2) for k in range(4)]
+        sl = [None] + [g.mem(CDR + 8 * k, 2) for k in range(4)]
         for i in range(1, 5):
             vx, vy = abs(s16(c[i * CS + 6], c[i * CS + 7])), abs(s16(c[i * CS + 8], c[i * CS + 9]))
             sp = max(vx, vy) + min(vx, vy) // 2

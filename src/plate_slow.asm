@@ -223,6 +223,41 @@ hpr_g:
         ld a,(INV+2)
         ld hl,HP_AT + WIN_W - 6
         ld de,HP_NB - 5
+        if OPT_NOSBOX
+; HP_SLOT (NOSBOX - Grant, 22 Nov 2026): A = the slot (0 empty, 1 held, 2 burning), HL = its upper square on the screen
+; (in rt_sh), DE = in the buffer. Held: the box's square (the lower) red on black, its lines cleared - the upper square is
+; the track's. Burning: the box red and yellow by turns (4 pictures each), and the square above it - the gauge's, nd_gauge
+; - in the same colours and cleared too. Empty: nothing (the track's).
+hp_slot:
+        or a
+        ret z
+        ld c,a
+        ld a,0x02
+        dec c
+        jr z,hpb_0
+        ld a,(renders)
+        and 4
+        ld a,0x02
+        jr z,hpb_1
+        ld a,0x06
+hpb_1:  ld (hl),a               ; the gauge's square
+        ex de,hl
+        call hpb_wipe
+        ex de,hl
+hpb_0:  ld bc,32
+        add hl,bc               ; the box's square
+        ld (hl),a
+        ex de,hl
+        add hl,bc
+hpb_wipe:                       ; HL = a square's top line in the buffer: its 8 lines cleared (A, HL kept)
+        push hl
+        ld b,8
+hpw_1:  ld (hl),0
+        inc h
+        djnz hpw_1
+        pop hl
+        ret
+        else
 hp_slot:                        ; A = the slot (0: empty), HL = its upper cell on the screen, DE = in the buffer
         or a
         if OPT_RT
@@ -231,17 +266,6 @@ hp_slot:                        ; A = the slot (0: empty), HL = its upper cell o
         ld a,WIN_ATTR2
         jr z,hp_2
         ex de,hl                ; held: its two cells cleared (16 lines of the one byte)
-        if OPT_NOSBOX           ; (NOSBOX: the boxed canister is in the lower square alone - the upper one is the track's)
-        ld a,l
-        add a,32
-        ld l,a
-        ld a,e
-        add a,32
-        ld e,a
-        jr nc,hp_nb
-        inc d
-hp_nb:
-        else
         xor a
         ld b,8
 hp_0:
@@ -254,7 +278,6 @@ hp_0:
         ld a,l
         add a,32
         ld l,a
-        endif
         xor a
         ld b,8
 hp_1:
@@ -271,16 +294,13 @@ hp_2:
         add hl,de
         HP_PUT
         else
-        if OPT_NOSBOX
-        ld (hl),a               ; (NOSBOX: HL is the lower square already)
-        else
         ld (hl),a
         ld bc,32
         add hl,bc
         ld (hl),a
         endif
-        endif
         ret
+        endif
 WIN_ATTR2 equ 0x29              ; the window's own colours: blue on cyan
 pl_key:  dw 0                   ; the place and lap pl_bmp was composed for
 pl_lin:  db 0                   ; pl_down's rows: 1 in pl_bmp, 0 in the buffer

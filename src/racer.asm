@@ -474,6 +474,9 @@ tk_clock:
         or a
         jr z,tk_nb
         dec (hl)
+        if OPT_NOSBOX           ; (NOSBOX: burnt out - its box, kept while it burned (INV 2), goes)
+        call z,nos_out
+        endif
 tk_nb:
         call auto_go            ; the ditty over: the start lights come on by themselves
         call read_keys          ; your buttons -> your car's C_CTRL
@@ -3007,6 +3010,11 @@ nd_1:
         call nd_col
         endif
         pop hl
+        if OPT_NOSBOX
+        ld a,(hl)
+        cp 2
+        call z,nd_gauge         ; (the one burning: its gauge above it)
+        endif
 nd_next:
         inc hl
         inc c
@@ -3021,6 +3029,40 @@ nd_col:
         inc h
         djnz nd_col
         ret
+        if OPT_NOSBOX
+; ND_GAUGE (NOSBOX, slot C burning - Grant, 22 Nov 2026: "when you press fire the NOS icon flashes in a different colour,
+; and a little gauge drains - some bars - showing its use"): in the square above its box, one bar for each quarter of the
+; burn left (BOOST_T), from the bottom up - so it drains from the top. The box's flashing: hp_slot (plate_slow.asm).
+nd_gauge:
+        push hl
+        ld a,(BOOST_T)
+        ld b,0
+ng_1:   inc b
+        sub BOOST_FR/4
+        jr z,ng_2
+        jr nc,ng_1
+ng_2:   ld hl,NOS_BB-32+6*256   ; the square above, its line 6 (line 7 left clear: the box's top edge is just below)
+        ld a,l
+        sub c
+        ld l,a
+ng_3:   ld (hl),0x7E            ; a bar, 6 pixels, on lines 6, 4, 2 and 0
+        dec h
+        dec h
+        djnz ng_3
+        pop hl
+        ret
+; NOS_OUT (NOSBOX, tick: the burn has just ended): the slot it burned in (INV 2) empty again
+nos_out:
+        ld hl,INV
+        ld b,3
+no_1:   ld a,(hl)
+        cp 2
+        jr nz,no_2
+        ld (hl),0
+no_2:   inc hl
+        djnz no_1
+        ret
+        endif
         include "lights.asm"    ; the lamps, the rail, the canister
 
 ; ---------------------------------------------------------------------
