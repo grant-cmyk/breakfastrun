@@ -3469,3 +3469,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - MOCK-UP (docs/design/edge_mock/edge_options.png): the same rounded track with its edge squares as whole patterned colour
   squares - dithered, kerb checks, diagonal lines - against the pixel-exact edge. Whole squares need no edge pictures (any
   shape, no limit) but every curve becomes an 8-pixel staircase. Picture: docs/design/head32/track_rounded.png.
+
+## 2026-11-22 15:38 SAST - the round-turn track is the race tape, balanced (cloud session, Claude)
+- Grant: "B rounded is good".
+- build.sh writes RT_SMOOTHN (the track's RT_SMOOTH) to options.asm; ai_tune.asm's race-only numbers for it: Frank -1,
+  Spike +8, Bruno +3, Jane -2 64ths on their cards (with the 32-heading track-1 numbers the good driver won 9 of 10; Spike
+  +2 then every car +1). New tape: build/racer_cars75_h32_round_elastic.tap (catch-up).
+- MEASURED (10 races each): good driver 7 of 10, 0.7 s behind when beaten, laps Frank 26.1, Bruno 26.5, Jane 26.5, Spike 26.8,
+  24 place changes a race; careful driver last, 14.3 s behind (9.3 on track 1: the twisty track is harder on a cautious
+  driver); catch-up tape: good driver 4 of 10, the four within 0.3%, 37 place changes. race_mode_test 12 of 12 on both.
+- THE RACE TAPE NOW: build/racer_cars75_h32_round.tap. Every other tape byte for byte the same.
