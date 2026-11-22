@@ -3569,3 +3569,26 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   Jane 21.8, Bruno 22.2, Frank 22.3, Spike 23.2, you 23.9 - as at 75% (7.9 s). race_mode_test 12 of 12.
 - SMOOTHNESS (the pack): 11.9 pictures a second, 82% on the 4-frame rhythm (558 of 690; 116 at 5, 16 at 6-7); the view
   jumps 4.9 px a picture. Every other tape byte for byte as before.
+
+## 2026-11-22 17:29 SAST - plain-cloth speed trial; the finish flag; damage, NOS in bumps (cloud session, Claude)
+- Grant: "go ahead with the drawing speed-ups"; then "at the end of the game the chequered flag cuts off half the car in the
+  HUD. Also - my damage still goes too fast. I hit another car - like the clown car and it does not seem to take damage.
+  Also - when in NOS and turning, the car can spin and go out of control, especially if hit, so if hitting NOS and you hit
+  another car, the impact should be more on them that you, so hitting a car in NOS should keep you on your path but knock
+  them".
+- SPEED (stage_profile, the pack, racer_cars75_breakfast_fast): 271,600 T of work a picture against ~279,000 in 4 TV
+  frames; 25% of pictures late. The screen copy (POP/PUSH, 51,600) is as quick as it goes; the 8 tile routines (TILE1=0)
+  do not fit; rnd's 2,300 is the crash noise, in the waiting. CLOTHPLAIN=1 (racer.asm cloth_fill: every line cleared with
+  PUSH, no dots; the dotted code left out): work 260,800, 98% of pictures on the 4-frame rhythm (120 of 123). Trial tape
+  build/racer_cars75_breakfast_plain.tap (picture: docs/design/head32/plain_cloth.png). Not yet Grant's choice.
+- FINISH FLAG (armour_low.asm arm_flag, race-only tapes): the flag and the best lap's clock were drawn in column 28 - the
+  right half of the car's picture in RACE; now column 29, and that row draws no gap. tests/race_mode_test.py: the best-lap
+  car's row may show the clock there. Picture: docs/design/head32/finish_flag_fixed.png.
+- DAMAGE (weight.asm): yours half - (quarters + 1) / 2 from a car, 2 for an O (was 4); a computer car that is hurt
+  flickers for WT_FLASH (12) pictures (racer.asm draw_all) - so the clown car's damage shows.
+- NOS (weight.asm, grip.asm): while it burns you are kind 5 in the weight tables - three times your weight - and your own
+  speed is kept in a bump (wt_kick, by axis); your tyres hold half as much again. Staged crashes: into Frank on NOS you go on
+  at 2.32 px a frame, he is knocked 0.96 and takes 12 quarters, you 1; into Jane 1.04 and 18; into Bruno 0.76 and 6.
+  Without NOS, into Frank: both 0.64 back, you 2 quarters, he 4.
+- TESTS: race_mode_test 12 of 12 on racer_cars75_breakfast_fast, _plain and racer_cars75_h32_round. Careful driver, 10
+  races: last, 9.1 s behind (8.1 before).

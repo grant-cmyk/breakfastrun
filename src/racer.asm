@@ -359,6 +359,27 @@ draw_all:
         jr nz,da_next
 da_fm:
         endif
+        if OPT_WEIGHT           ; WEIGHT: a computer car just hurt flickers (its row of arm_tab, byte 4: weight.asm)
+        ld a,b
+        dec a
+        jr z,da_wf
+        ld a,(ix+C_KIND)
+        add a,a
+        add a,a
+        add a,a
+        add a,(arm_tab+4) AND 255
+        ld l,a
+        adc a,(arm_tab+4)/256
+        sub l
+        ld h,a
+        ld a,(hl)
+        or a
+        jr z,da_wf
+        ld a,(renders)
+        and 2
+        jr nz,da_next
+da_wf:
+        endif
         if OPT_2P               ; TWOP: a car just put back by the leash flashes - it is left out of every other picture
         ld a,(lsh_car)
         cp b
@@ -2258,6 +2279,7 @@ bp_snd:
         ld bc,0x10000-KICK
 bu_y1:
         if OPT_WEIGHT
+        ld a,C_VY
         call wt_kick            ; (WEIGHT: each its own kick, by the weights)
         ld (ix+C_VY),c
         ld (ix+C_VY+1),b
@@ -2290,6 +2312,7 @@ bu_x:
         ld bc,0x10000-KICK
 bu_x1:
         if OPT_WEIGHT
+        ld a,C_VX
         call wt_kick
         ld (ix+C_VX),c
         ld (ix+C_VX+1),b
@@ -3185,7 +3208,7 @@ dmg_hit:
         if OPT_WEIGHT           ; (WEIGHT: an O is a point - 4 quarters - on your row of arm_tab, and the mug shows it)
         ld hl,arm_tab+2
         ld a,(hl)
-        add a,4
+        add a,2                 ; (2 quarters, not 4, since Grant, 22 Nov 2026: "my damage still goes too fast")
         cp 33
         jr c,dh_w
         ld a,32
@@ -3571,6 +3594,33 @@ CL_PUSH macro                     ; bytes 25..0 of a line from the pairs BC, DE,
         endm
         if OPT_RT = 0           ; (RACETRACK: no cloth - cloth_fill and cloth_pats are left out)
 cloth_fill:
+        if OPT_CLOTHPLAIN       ; CLOTHPLAIN (Grant, 22 Nov 2026: "If there is simplification or changes to tablecloth drawing, I am
+        ld (cf_sp),sp           ; open to that" - for speed): the cloth one plain colour, no dots - every line of the window
+        ld ixh,BUF_HI           ; cleared with PUSH, 8 lines a character row (about 7,600 T a picture less than the dots)
+        ld ixl,CL_L0
+        ld hl,0
+        ld b,WIN_H/8
+cp_row:
+        rept 8
+        ld sp,ix
+        rept 13
+        push hl
+        endm
+        inc ixh
+        endm
+        ld a,ixl
+        add a,32
+        ld ixl,a
+        jp c,cp_third
+        ld a,ixh
+        sub 8
+        ld ixh,a
+cp_third:
+        dec b
+        jp nz,cp_row
+        ld sp,(cf_sp)
+        ret
+        else
         call cloth_pats
         ld a,(camy)             ; (buffer row 16 is the window's first line: world
         ld (cf_y0),a            ; y = camy) - the low byte of line 0's world y
@@ -3706,6 +3756,7 @@ cl_load:                        ; HL' = 8 bytes -> IY, HL, DE, BC (bytes 0-1, 2-
         pop hl
         ret
 
+        endif
 ; CLOTH_PATS: the 4 kinds of buffer line for this camera, 8 bytes each, into
 ; cloth_pat + 16 * dither phase + 8 * check row. Byte j of a line covers world
 ; x = camx - 16 + 8j .. +7 (and every 8th byte after it is the same).

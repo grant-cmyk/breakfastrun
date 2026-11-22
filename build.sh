@@ -147,6 +147,7 @@ printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the 
 printf 'OPT_RACE equ %s                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)\n' "${RACEMODE:-0}" >> "$ROOT/src/options.asm"
 printf 'RT_SMOOTHN equ %s               ; the track'"'"'s centre line smoothed this many times (RT_SMOOTH: the round-turn track - ai_tune.asm balances its cars)\n' "${RT_SMOOTH:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_SCRUB equ %s                ; 0: as before; n: a slide costs speed - yours 1/2^n of it a TV frame, a computer car twice the drag (SCRUB=n)\n' "${SCRUB:-0}" >> "$ROOT/src/options.asm"
+printf 'OPT_CLOTHPLAIN equ %s           ; 1: the tablecloth one plain colour, no dots (CLOTHPLAIN=1: quicker)\n' "${CLOTHPLAIN:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_WEIGHT equ %s               ; 1: bumps and damage by the cars'"'"' weights (WEIGHT=1: the breakfast race tape; needs ARMOUR=1 MUG=1)\n' "${WEIGHT:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_FLASHME equ %s              ; 1: your car flashes on the grid until the lights go green (FLASHME=1)\n' "${FLASHME:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MUG equ %s                  ; 1: the coffee mug - your damage - on an ARMOUR tape (MUG=1: the breakfast table race tape)\n' "${MUG:-0}" >> "$ROOT/src/options.asm"

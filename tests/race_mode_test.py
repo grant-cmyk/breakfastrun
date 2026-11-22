@@ -189,6 +189,7 @@ def each(f):
         ink = sum(scr[(((r0 + k // 8) & 0x18) << 8) | ((k & 7) << 8) | (((r0 + k // 8) & 7) << 5) | c] != 0 for k in range(16) for c in (29, 30, 31))
         if shown[p]: seen_gap[0] += 1
         wrong = (shown[p] != 0) != (ink != 0)
+        if RO and g.mem(S['order'] + p, 1)[0] == g.mem(S['best_car'], 1)[0]: wrong = False   # (race-only, 22 Nov 2026: the best lap's clock is in column 29 now, in that car's row, not its gap - armour_low.asm arm_flag)
         if wrong and (p, shown[p]) in prevwrong: inkbad.append((f, p, shown[p], ink))     # (wrong at two pictures running: not one caught half drawn)
         if wrong: nowwrong.add((p, shown[p]))
         at = [scr[6144 + (r0 + k) * 32 + c] for k in (0, 1) for c in (26, 29, 30, 31)]

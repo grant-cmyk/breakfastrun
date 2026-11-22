@@ -9,6 +9,10 @@ arm_flag:
         and 0x18
         jr z,afl_bar
         ld c,28
+        if OPT_RACEONLY         ; (the race-only tapes, Grant 22 Nov 2026: "at the end of the game the chequered flag cuts off half
+        ld c,29                 ; the car in the HUD" - the car's picture is in columns 27-28: the flag and the clock go in column
+        endif                   ; 29, where the gap was, and no gap is drawn for that row - a car in has its place; the best
+                                ; lap's time is under the race order as well. The old RACE / COMBAT tapes have no room for it.)
         ld de,clock_top
         cp 0x10
         jr z,afl_2
@@ -24,9 +28,13 @@ arm_flag:
         inc b
         ld de,CLOCK8
         call tr_glyph
-        jr afl_bar
+        jr afl_done
 afl_2:
         call tr_glyph16
+afl_done:
+        if OPT_RACEONLY         ; (race-only: flag or clock, nothing more for this row)
+        ret
+        endif
 afl_bar:
         ld a,(tr_row)
         sub TOWER_Y

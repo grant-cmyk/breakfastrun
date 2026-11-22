@@ -19,6 +19,29 @@ wt_bump:                        ; (bump, IX = car a touching car b at bump_b): t
         ld de,C_KIND
         add hl,de
         ld b,(hl)               ; C = a's kind, B = b's
+        ld a,(BOOST_T)          ; (NOS - Grant, 22 Nov 2026: "hitting a car in NOS should keep you on your path but knock them":
+        or a                    ; while it burns YOU are kind 5 in the tables, three times your weight; your own speed is kept in the bump - wt_kick)
+        jr z,wb_n
+        ld a,c
+        or a
+        jr nz,wb_b
+        ld c,5
+wb_b:   ld a,b
+        or a
+        jr nz,wb_n
+        ld b,5
+wb_n:   ld a,c
+        cp 5
+        ld a,0
+        jr nz,wb_k
+        inc a
+wb_k:   ld (wk_ka),a            ; (1: car a is you on NOS - its speed kept)
+        ld a,b
+        cp 5
+        ld a,0
+        jr nz,wb_k2
+        inc a
+wb_k2:  ld (wk_kb),a
         ld a,c
         call wt_pair
         add a,a
@@ -49,6 +72,10 @@ wt_bump:                        ; (bump, IX = car a touching car b at bump_b): t
         ld c,a
 wt_hit:                         ; C = the car hurt, B = the other: its damage, once in DMG_COOL pictures
         ld a,c
+        cp 5                    ; (you on NOS: your own row)
+        jr c,wh_0
+        xor a
+wh_0:
         add a,a
         add a,a
         add a,a
@@ -72,7 +99,23 @@ wt_hit:                         ; C = the car hurt, B = the other: its damage, o
         add hl,de
         ld a,(hl)
         pop hl
-        add a,(hl)
+        ld e,a
+        ld a,c
+        or a
+        jr z,wh_you
+        cp 5
+        jr z,wh_you
+        push hl                 ; (a computer car: it flickers for WT_FLASH pictures - Grant, 22 Nov 2026: "I hit another car -
+        inc hl                  ; like the clown car and it does not seem to take damage")
+        inc hl
+        ld (hl),WT_FLASH
+        pop hl
+        ld a,e
+        jr wh_add
+wh_you: ld a,e                  ; (yours: half - Grant, 22 Nov 2026, "my damage still goes too fast")
+        inc a
+        srl a
+wh_add: add a,(hl)
         cp 33
         jr c,wh_1
         ld a,32
@@ -80,21 +123,57 @@ wh_1:   ld (hl),a
         ld e,a
         ld a,c
         or a
+        jr z,wh_y
+        cp 5
         ret nz
-        ld a,e                  ; yours: the mug's points
+wh_y:   ld a,e                  ; yours: the mug's points
         rrca
         rrca
         and 63
         ld (dmg),a
         ret
-wt_pair:                        ; A = C x 5 + B
+wt_pair:                        ; A = C x 6 + B
         ld a,c
         add a,a
-        add a,a
         add a,c
+        add a,a
         add a,b
         ret
-wt_kick:                        ; BC = KICK or -KICK, the way car a goes: BC = a's kick by the weights that way, HL = b's the other way
+wt_kick:                        ; BC = KICK or -KICK, the way car a goes, A = the axis (C_VX or C_VY): BC = a's kick by the weights
+        ld (wk_ax),a            ; that way, HL = b's the other way - but a car that is you on NOS keeps its own speed
+        call wt_kick0
+        push de
+        ld a,(wk_ka)
+        or a
+        jr z,wkt_b
+        push hl
+        push ix
+        pop hl
+        ld a,(wk_ax)
+        ld e,a
+        ld d,0
+        add hl,de
+        ld c,(hl)
+        inc hl
+        ld b,(hl)               ; BC = a's own speed that way
+        pop hl
+wkt_b:  ld a,(wk_kb)
+        or a
+        jr z,wkt_x
+        ld a,(wk_ax)
+        add a,(tb-1) AND 255
+        ld e,a
+        adc a,(tb-1)/256
+        sub e
+        ld d,a
+        ex de,hl
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a                  ; HL = b's own speed that way
+wkt_x:  pop de
+        ret
+wt_kick0:
         push de
         ld a,b
         rla
@@ -118,7 +197,7 @@ wkk_n:  ld a,c
         ex de,hl
         pop de
         ret
-wt_tick:                        ; each picture: the five cool-downs run down
+wt_tick:                        ; each picture: the five cool-downs and hit flashes run down
         ld hl,arm_tab+3
         ld de,8
         ld b,5
@@ -126,9 +205,16 @@ wtk_1:  ld a,(hl)
         or a
         jr z,wtk_2
         dec (hl)
-wtk_2:  add hl,de
+wtk_2:  inc hl
+        ld a,(hl)
+        or a
+        jr z,wtk_3
+        dec (hl)
+wtk_3:  dec hl
+        add hl,de
         djnz wtk_1
         ret
+WT_FLASH equ 12                 ; pictures a computer car flickers after it is hurt (about a second at 12.5 a second)
 wt_slow:                        ; (physics, IX = a computer car, DE and BC its push): less by a 64th for every 8 quarters (a 32nd, tried first, made
                                 ; the race easier - the careful driver 4th, not last: 22 Nov 2026)
         ld a,(ix+C_KIND)
@@ -176,16 +262,21 @@ wsl_1:  push af
         jr nz,wsl_1
         ret
 wk_a:   dw 0
+wk_ka:  db 0
+wk_kb:  db 0
+wk_ax:  db 0
 wk_b:   dw 0
-wk_tab:                         ; car a's kick from car b (a x 5 + b)
-        dw (2*KICK*CD_ARM_0+(CD_ARM_0+CD_ARM_0)/2)/(CD_ARM_0+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_0+CD_ARM_1)/2)/(CD_ARM_0+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_0+CD_ARM_2)/2)/(CD_ARM_0+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_0+CD_ARM_3)/2)/(CD_ARM_0+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_0+CD_ARM_4)/2)/(CD_ARM_0+CD_ARM_4)   ; car 0 kicked by 0-4
-        dw (2*KICK*CD_ARM_0+(CD_ARM_1+CD_ARM_0)/2)/(CD_ARM_1+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_1+CD_ARM_1)/2)/(CD_ARM_1+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_1+CD_ARM_2)/2)/(CD_ARM_1+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_1+CD_ARM_3)/2)/(CD_ARM_1+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_1+CD_ARM_4)/2)/(CD_ARM_1+CD_ARM_4)   ; car 1 kicked by 0-4
-        dw (2*KICK*CD_ARM_0+(CD_ARM_2+CD_ARM_0)/2)/(CD_ARM_2+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_2+CD_ARM_1)/2)/(CD_ARM_2+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_2+CD_ARM_2)/2)/(CD_ARM_2+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_2+CD_ARM_3)/2)/(CD_ARM_2+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_2+CD_ARM_4)/2)/(CD_ARM_2+CD_ARM_4)   ; car 2 kicked by 0-4
-        dw (2*KICK*CD_ARM_0+(CD_ARM_3+CD_ARM_0)/2)/(CD_ARM_3+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_3+CD_ARM_1)/2)/(CD_ARM_3+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_3+CD_ARM_2)/2)/(CD_ARM_3+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_3+CD_ARM_3)/2)/(CD_ARM_3+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_3+CD_ARM_4)/2)/(CD_ARM_3+CD_ARM_4)   ; car 3 kicked by 0-4
-        dw (2*KICK*CD_ARM_0+(CD_ARM_4+CD_ARM_0)/2)/(CD_ARM_4+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_4+CD_ARM_1)/2)/(CD_ARM_4+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_4+CD_ARM_2)/2)/(CD_ARM_4+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_4+CD_ARM_3)/2)/(CD_ARM_4+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_4+CD_ARM_4)/2)/(CD_ARM_4+CD_ARM_4)   ; car 4 kicked by 0-4
-wq_tab:                         ; car v's damage from car o, quarters (v x 5 + o)
-        db (4*CD_ARM_0+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_1+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_2+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_3+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_4+CD_ARM_0/2)/CD_ARM_0   ; car 0 hurt by 0-4
-        db (4*CD_ARM_0+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_1+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_2+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_3+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_4+CD_ARM_1/2)/CD_ARM_1   ; car 1 hurt by 0-4
-        db (4*CD_ARM_0+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_1+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_2+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_3+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_4+CD_ARM_2/2)/CD_ARM_2   ; car 2 hurt by 0-4
-        db (4*CD_ARM_0+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_1+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_2+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_3+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_4+CD_ARM_3/2)/CD_ARM_3   ; car 3 hurt by 0-4
-        db (4*CD_ARM_0+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_1+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_2+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_3+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_4+CD_ARM_4/2)/CD_ARM_4   ; car 4 hurt by 0-4
+wk_tab:                         ; car a's kick from car b (a x 6 + b; 5 is YOU ON NOS - 3 x your weight)
+        dw (2*KICK*CD_ARM_0+(CD_ARM_0+CD_ARM_0)/2)/(CD_ARM_0+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_0+CD_ARM_1)/2)/(CD_ARM_0+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_0+CD_ARM_2)/2)/(CD_ARM_0+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_0+CD_ARM_3)/2)/(CD_ARM_0+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_0+CD_ARM_4)/2)/(CD_ARM_0+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_0+(3*CD_ARM_0))/2)/(CD_ARM_0+(3*CD_ARM_0))   ; car 0 kicked by 0-5
+        dw (2*KICK*CD_ARM_0+(CD_ARM_1+CD_ARM_0)/2)/(CD_ARM_1+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_1+CD_ARM_1)/2)/(CD_ARM_1+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_1+CD_ARM_2)/2)/(CD_ARM_1+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_1+CD_ARM_3)/2)/(CD_ARM_1+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_1+CD_ARM_4)/2)/(CD_ARM_1+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_1+(3*CD_ARM_0))/2)/(CD_ARM_1+(3*CD_ARM_0))   ; car 1 kicked by 0-5
+        dw (2*KICK*CD_ARM_0+(CD_ARM_2+CD_ARM_0)/2)/(CD_ARM_2+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_2+CD_ARM_1)/2)/(CD_ARM_2+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_2+CD_ARM_2)/2)/(CD_ARM_2+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_2+CD_ARM_3)/2)/(CD_ARM_2+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_2+CD_ARM_4)/2)/(CD_ARM_2+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_2+(3*CD_ARM_0))/2)/(CD_ARM_2+(3*CD_ARM_0))   ; car 2 kicked by 0-5
+        dw (2*KICK*CD_ARM_0+(CD_ARM_3+CD_ARM_0)/2)/(CD_ARM_3+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_3+CD_ARM_1)/2)/(CD_ARM_3+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_3+CD_ARM_2)/2)/(CD_ARM_3+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_3+CD_ARM_3)/2)/(CD_ARM_3+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_3+CD_ARM_4)/2)/(CD_ARM_3+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_3+(3*CD_ARM_0))/2)/(CD_ARM_3+(3*CD_ARM_0))   ; car 3 kicked by 0-5
+        dw (2*KICK*CD_ARM_0+(CD_ARM_4+CD_ARM_0)/2)/(CD_ARM_4+CD_ARM_0), (2*KICK*CD_ARM_1+(CD_ARM_4+CD_ARM_1)/2)/(CD_ARM_4+CD_ARM_1), (2*KICK*CD_ARM_2+(CD_ARM_4+CD_ARM_2)/2)/(CD_ARM_4+CD_ARM_2), (2*KICK*CD_ARM_3+(CD_ARM_4+CD_ARM_3)/2)/(CD_ARM_4+CD_ARM_3), (2*KICK*CD_ARM_4+(CD_ARM_4+CD_ARM_4)/2)/(CD_ARM_4+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+(CD_ARM_4+(3*CD_ARM_0))/2)/(CD_ARM_4+(3*CD_ARM_0))   ; car 4 kicked by 0-5
+        dw (2*KICK*CD_ARM_0+((3*CD_ARM_0)+CD_ARM_0)/2)/((3*CD_ARM_0)+CD_ARM_0), (2*KICK*CD_ARM_1+((3*CD_ARM_0)+CD_ARM_1)/2)/((3*CD_ARM_0)+CD_ARM_1), (2*KICK*CD_ARM_2+((3*CD_ARM_0)+CD_ARM_2)/2)/((3*CD_ARM_0)+CD_ARM_2), (2*KICK*CD_ARM_3+((3*CD_ARM_0)+CD_ARM_3)/2)/((3*CD_ARM_0)+CD_ARM_3), (2*KICK*CD_ARM_4+((3*CD_ARM_0)+CD_ARM_4)/2)/((3*CD_ARM_0)+CD_ARM_4), (2*KICK*(3*CD_ARM_0)+((3*CD_ARM_0)+(3*CD_ARM_0))/2)/((3*CD_ARM_0)+(3*CD_ARM_0))   ; car 5 kicked by 0-5
+wq_tab:                         ; car v's damage from car o, quarters (v x 6 + o)
+        db (4*CD_ARM_0+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_1+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_2+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_3+CD_ARM_0/2)/CD_ARM_0, (4*CD_ARM_4+CD_ARM_0/2)/CD_ARM_0, (4*(3*CD_ARM_0)+CD_ARM_0/2)/CD_ARM_0   ; car 0 hurt by 0-5
+        db (4*CD_ARM_0+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_1+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_2+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_3+CD_ARM_1/2)/CD_ARM_1, (4*CD_ARM_4+CD_ARM_1/2)/CD_ARM_1, (4*(3*CD_ARM_0)+CD_ARM_1/2)/CD_ARM_1   ; car 1 hurt by 0-5
+        db (4*CD_ARM_0+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_1+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_2+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_3+CD_ARM_2/2)/CD_ARM_2, (4*CD_ARM_4+CD_ARM_2/2)/CD_ARM_2, (4*(3*CD_ARM_0)+CD_ARM_2/2)/CD_ARM_2   ; car 2 hurt by 0-5
+        db (4*CD_ARM_0+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_1+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_2+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_3+CD_ARM_3/2)/CD_ARM_3, (4*CD_ARM_4+CD_ARM_3/2)/CD_ARM_3, (4*(3*CD_ARM_0)+CD_ARM_3/2)/CD_ARM_3   ; car 3 hurt by 0-5
+        db (4*CD_ARM_0+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_1+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_2+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_3+CD_ARM_4/2)/CD_ARM_4, (4*CD_ARM_4+CD_ARM_4/2)/CD_ARM_4, (4*(3*CD_ARM_0)+CD_ARM_4/2)/CD_ARM_4   ; car 4 hurt by 0-5
+        db (4*CD_ARM_0+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_1+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_2+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_3+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*CD_ARM_4+(3*CD_ARM_0)/2)/(3*CD_ARM_0), (4*(3*CD_ARM_0)+(3*CD_ARM_0)/2)/(3*CD_ARM_0)   ; car 5 hurt by 0-5

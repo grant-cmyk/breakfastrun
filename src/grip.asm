@@ -337,6 +337,16 @@ yg_g1:
 yg_g2:
         ld e,(hl)
         ld d,0                  ; DE = the grip this frame
+        if OPT_WEIGHT           ; (NOS - Grant, 22 Nov 2026: "when in NOS and turning, the car can spin and go out of control":
+        ld a,(BOOST_T)          ; while it burns your tyres hold half as much again)
+        or a
+        jr z,yg_ng
+        ld a,e
+        srl a
+        add a,e
+        ld e,a
+yg_ng:
+        endif
         ld hl,(yg_vs)
         bit 7,h
         jr nz,yg_neg
