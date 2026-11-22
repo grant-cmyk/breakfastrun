@@ -3695,3 +3695,21 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Shown: docs/design/oil_spill_options.png - A glossy pool (one curved paper highlight), B splat (2x2 droplets thrown
   round it), C splat with a short highlight. Grids: docs/design/oil_spill/option_*.txt (# ink). In the game it takes the
   window's blue ink on the cloth's cyan, as the cars do. A mock-up pasted on a screenshot, not yet in the game.
+
+## 2026-11-22 SAST - OIL SPILLS built (trial tape, with the chasers' NOS) (cloud session, Claude)
+- Grant chose drawing B (the splat). OIL=1 (src/oil.asm; the picture: tools/make_oil.py -> src/oil_gfx.asm from
+  docs/design/oil_spill/option_b_splat.txt) -> build/racer_cars75_breakfast_fast_cnos.tap.
+- Each time you cross the line, 3 or 4 of the 8 spots on the line (docs/design/oil_spill_spots.png) get a spill, at
+  random; never S8 on your first lap (it is in front of the grid); none before the first crossing. A spill is drawn as a
+  car is (draw_car, entered at its new label dc_frame with the spill's own frame), under the cars. A car whose top left
+  is within 9 px of a spill's both ways spins for 12 pictures (about a second): no steering, no push, it slides on the
+  way it was going, a sixteenth slower a picture, its picture turning 1.5 times round; then 12 pictures it cannot be
+  caught again. You hear the crash.
+- ROOM: grip.asm's qmul now multiplies by shift and add on this tape (OIL) - the 768-byte quarter-square table left out
+  (the same product, rounded once). Program 210 bytes free after it all.
+- Found on the way: the breakfast tapes use the SMALL car frames (16 px, 4 bytes a row): the first spill, made as a big
+  car's 24 px rows, drew as stripes.
+- Measured: the computer cars drive through every spill on their line - about 12 spins a lap among the five cars (80 s:
+  35-37). Careful autopilot, 8 races: laps 24.8-26.0 s (21.1-23.7 without spills), the field closer (slowest car 5% off
+  the quickest, 12% without), you 4.2th on average, 5.8 s behind the winner (8.6 without). race_mode_test 11/12 - the
+  known half-repainted race-order row. Not yet driven by Grant. Open: the computer cars do not steer round a spill.

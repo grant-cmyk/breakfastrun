@@ -78,6 +78,9 @@ printf 'OPT_ROADW equ %s                ; 1: the road white (ROADW=1 bash build.
 # CNOS=1 (breakfast race tape; Grant, 22 Nov 2026): the chasers' NOS - when you lead by 3 s, Spike and Jane may light a can
 # a lap, one at a time; Jane does not lift for corners on it (src/cnos.asm). Needs RACEONLY=1 and WEIGHT=1 (its room).
 printf 'OPT_CNOS equ %s                 ; 1: the chasers'"'"' NOS (CNOS=1 bash build.sh)\n' "${CNOS:-0}" >> "$ROOT/src/options.asm"
+# OIL=1 (breakfast race tape; Grant, 22 Nov 2026): oil spills on the line - 3 or 4 of 8 spots each lap; a car on one spins
+# about a second (src/oil.asm, tools/make_oil.py). Needs RACEONLY=1.
+printf 'OPT_OIL equ %s                  ; 1: the oil spills (OIL=1 bash build.sh)\n' "${OIL:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

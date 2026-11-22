@@ -319,6 +319,9 @@ cpu_move:
         if OPT_CNOS
         call cn_tick            ; CNOS: the chasers' NOS (cnos.asm)
         endif
+        if OPT_OIL
+        call spill_tick         ; OIL: new spills each lap, who is on one (oil.asm)
+        endif
         if OPT_ARMOUR
         call arm_tick           ; ARMOUR: the cool-downs, the bars that flash, the tank's gun and the clown's wheels (armour.asm)
         endif
@@ -348,6 +351,9 @@ cpu_move:
         endif
         if OPT_RT = 0
         call draw_tiles
+        endif
+        if OPT_OIL
+        call spill_draw         ; OIL: the spills, under the cars (oil.asm)
         endif
         ld ix,cars+(NCARS-1)*C_SIZE ; computer cars first, yours last (on top)
         ld b,NCARS
@@ -559,6 +565,14 @@ tk_on:
         xor a
         ld (cars+C_CTRL),a
 tk_you:
+        if OPT_OIL              ; OIL: spinning on a spill - no buttons
+        ld a,(spill_spin)
+        cp OIL_IMM+1
+        jr c,tk_nsp
+        xor a
+        ld (cars+C_CTRL),a
+tk_nsp:
+        else
         if OPT_ARMOUR           ; ARMOUR: spinning - no buttons
         ld a,(arm_tab+1+A_SPIN)
         or a
@@ -566,6 +580,7 @@ tk_you:
         xor a
         ld (cars+C_CTRL),a
 tk_nsp:
+        endif
         endif
         if OPT_2P               ; TWOP: just put back by the leash - held still for a moment
         ld a,(lsh_car)
@@ -770,9 +785,14 @@ rk_spup:
 ; PHYSICS (IX = car): buttons -> steering and push -> friction -> move
 ; ---------------------------------------------------------------------
 physics:
+        if OPT_OIL              ; OIL: a car on a spill spins on the way it was going, and nothing else (oil.asm)
+        call spill_phys
+        ret nz
+        else
         if OPT_ARMOUR           ; ARMOUR: a car that a shell or a wheel has hit spins where it is, and nothing else (armour.asm)
         call arm_phys
         ret nz
+        endif
         endif
         ld e,(ix+C_CTRL)
         ld a,(ph_steps)         ; steering: one heading step per frame
@@ -2729,6 +2749,11 @@ draw_car:
         cp BUF_TOP+WIN_H+32     ; buffer rows -32..the window's last
         ret nc
         ld (dc_row0),a
+        if OPT_OIL              ; (OIL: a spill's record - its own frame, oil.asm)
+        ld a,(ix+C_KIND)
+        cp OIL_KIND
+        jp z,dc_oil
+        endif
         ; picture: big_tab[kind * 16 + heading]: the frame's address, its first
         ; row and how many rows it has (only the rows in use are kept: the cars
         ; turned at full size are up to 27 rows, the upright ones 20)
@@ -2799,6 +2824,7 @@ dc_kt:
         ld b,(hl)               ; B = its first row
         inc hl
         ld a,(hl)
+dc_frame:                       ; (DE = a frame's rows, B its first row, A how many: OIL's spill comes in here)
         if OPT_MIRROR           ; MIRROR: bit 6 = this heading is another's frame turned left for right: made in dm_buf
         bit 6,a
         call nz,dc_mirror
@@ -4634,6 +4660,9 @@ me_world:
         if OPT_CNOS
         include "cnos.asm"      ; CNOS: the chasers' NOS - Spike and Jane, when you lead by 3 s
         endif
+        if OPT_OIL
+        include "oil.asm"       ; OIL: the oil spills on the line
+        endif
         endif
         include "armour.asm"    ; ARMOUR: every car's armour, the bar on the HUD, the tank's gun and the clown's wheels
         endif
@@ -4657,7 +4686,9 @@ me_wp:
         defs MP_WP-(me_wp-mb_wp)        ; (MULTI: every track's block is as long as the longest)
         endif
         include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
+        if OPT_OIL = 0          ; (OIL: grip.asm's qmul multiplies by shift and add - 768 bytes for the spills)
         include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
+        endif
 mb_ridx:
         include "rowidx.asm"    ; the map: each tile row's list
 me_ridx:
