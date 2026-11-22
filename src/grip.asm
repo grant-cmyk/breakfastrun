@@ -365,6 +365,18 @@ yg_g5:
         ld a,(yg_sl)
         or a
         jp z,yg_world
+        if OPT_SCRUB            ; SCRUB (Grant, 22 Nov 2026: "I need skidding to be more severe - forcing cars to slow down at the
+        ld hl,(yg_vf)           ; corners - or brake"): in a slide the forward speed loses 1/2^OPT_SCRUB of itself each TV frame
+        ld d,h
+        ld e,l
+        rept OPT_SCRUB
+        sra d
+        rr e
+        endm
+        or a
+        sbc hl,de
+        ld (yg_vf),hl
+        endif
         ld hl,(yg_vf)           ; m = larger of |vf|, |vs| + half the smaller
         call abs_hl
         push hl

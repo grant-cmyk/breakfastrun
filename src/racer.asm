@@ -1089,6 +1089,28 @@ skc_v:  ld de,SKID_VC           ; (CARDS: card_push writes the car's own number 
         sbc hl,de
         pop de
         ret c                   ; slow: it grips
+        if OPT_SCRUB            ; SCRUB (Grant, 22 Nov 2026: "skidding to be more severe - forcing cars to slow down at the corners
+        push de                 ; - or brake"): a computer car turning too fast keeps three quarters of its push and all its
+        sra d                   ; drag (it was half the push and half the drag: a slide kept its speed), so it loses speed
+        rr e                    ; while it slides. (Half the push and twice the drag, tried first: laps 27-35 s - far too much.)
+        sra d
+        rr e
+        pop hl                  ; (HL the push, DE a quarter of it)
+        or a
+        sbc hl,de
+        ex de,hl
+        push bc
+        sra b
+        rr c
+        sra b
+        rr c
+        pop hl
+        or a
+        sbc hl,bc
+        ld b,h
+        ld c,l
+        ret
+        endif
         ld a,SKID_N             ; up to SKID_N steps, each SKID_STEP faster
 skc_lv:
         call sk_half

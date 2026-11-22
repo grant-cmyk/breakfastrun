@@ -142,6 +142,7 @@ printf 'OPT_ARMOUR equ %s               ; 1: armour, the bar on the HUD and the 
 # src/race.asm, src/ai_tune.asm (the RACE drivers). ELASTIC=1 with it: the computer cars behind the leader get a small push.
 # tools/build_race.sh builds the two tapes.
 printf 'OPT_RACE equ %s                 ; 1: the title offers RACE or COMBAT (RACEMODE=1 ARMOUR=1: tools/build_race.sh)\n' "${RACEMODE:-0}" >> "$ROOT/src/options.asm"
+printf 'OPT_SCRUB equ %s                ; 0: as before; n: a slide costs speed - yours 1/2^n of it a TV frame, a computer car twice the drag (SCRUB=n)\n' "${SCRUB:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_NOSBOX equ %s               ; 1: the NOS you hold shown as a canister in a rounded box, one colour square each (NOSBOX=1)\n' "${NOSBOX:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_RACEONLY equ %s             ; 1: RACE only - no COMBAT, every car its own picture and driver card (RACEONLY=1 RACEMODE=1)\n' "${RACEONLY:-0}" >> "$ROOT/src/options.asm"
 H32V=${HEAD32:-0}; [ "$H32V" = "all" ] && H32V=2
