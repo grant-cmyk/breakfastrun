@@ -3558,7 +3558,7 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - TRIAL build/racer_cars75_breakfast_fast.tap (STEADY=4): 11.8 pictures a second, 76% on the 4-frame rhythm, 23% a frame
   late; the view's jump 4.2 px a picture (4.8 on the 5-frame tape). race_mode_test 12 of 12 on both. For Grant to judge.
 
-## 2026-11-22 17:30 SAST - the fast breakfast tape is the game: 85%, a stronger NOS, damage that hurts less (cloud session, Claude)
+## 2026-11-22 17:17 SAST - the fast breakfast tape is the game: 85%, a stronger NOS, damage that hurts less (cloud session, Claude)
 - Grant: "still too slow, but it is smooth. Also - my car gets damaged too easily, so make it more resistant to damage, or
   rather make damage have less of an impact. Also - make the NOS a bit stronger".
 - build/racer_cars75_breakfast_fast.tap - THE TAPE NOW: STEADY=4 (12.5 pictures a second as the rhythm), GAME_SPEED 85
