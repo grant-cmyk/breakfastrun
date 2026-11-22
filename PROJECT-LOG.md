@@ -3629,3 +3629,14 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Careful autopilot, 10 races: all finish (one computer car still on its last lap when the race ended after you - the race
   ends a little after you cross the line), last 9 of 10, 8.3 s behind (9.1 before the change), order changes 19.7 a race
   (14.8 before - more bumping). race_mode_test 12/12. Plain tapes byte-identical.
+
+## 2026-11-22 SAST - cars wedged between the O's (cloud session, Claude)
+- Grant: "cars I have seen get stuck between the round loops".
+- Measured (16 races a tape, a car counted stuck when it moves under 8 px in 1.5 s): the computer cars - never, on the tape
+  before today's bump change or after (they already slip through after O_FREE bounces since their last waypoint); the
+  cars thrown 160 px by the bump bug fixed above landed among the O's - likely what Grant saw. YOUR car (the corner-cutting
+  autopilot) wedged nose-first between two O's at the top of the track for up to 20 s: you had no way through.
+- racer.asm bumps_o (breakfast race tapes only: OPT_RACEONLY, not RT): you are let through too after O_FREE bounces in
+  O_YOU_CLK pictures (25, 2 s - the count starts again every 2 s, so it does not open the O's in normal driving); O_FREE 4
+  (was 6) so a computer car slips through sooner. After: no car stuck 1.5 s in 16 races; careful autopilot 8.2 s behind,
+  good 5.5 s; race_mode_test 12/12; only the two breakfast tapes changed.

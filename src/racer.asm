@@ -670,10 +670,25 @@ tk_o:
         inc (hl)
         jr tk_o1
 tk_o0:
+        if OPT_RACEONLY         ; (race-only tapes - Grant, 22 Nov 2026: "cars I have seen get stuck between the round loops":
+        ld hl,o_clk             ;  YOU too are let through after O_FREE bounces, counted over O_YOU_CLK goes of this - your
+        dec (hl)                ;  car could wedge nose-first between two O's for 20 s)
+        jr nz,tk_oc
+        ld (hl),O_YOU_CLK
+        xor a
+        ld (o_hits),a
+tk_oc:  ld a,(o_hits)
+        cp O_FREE
+        jr nc,tk_o1
+        endif
         call o_check
         jr nc,tk_o1
         ld a,1                  ; you: the crew chief may say so
         ld (HIT_O),a
+        if OPT_RACEONLY
+        ld hl,o_hits
+        inc (hl)
+        endif
 tk_o1:
         ld de,C_SIZE
         add ix,de
@@ -4303,7 +4318,13 @@ oc_y:     dw 0
 oc_dx:    dw 0
 oc_dy:    dw 0
 snd_bump: db 0                  ; crash noise: pictures left
+        if OPT_RACEONLY * (1 - OPT_RT)
+O_FREE   equ 4              ; (race-only tapes: let through sooner - 22 Nov 2026)
+O_YOU_CLK equ 25            ; (your count of O's starts again every 25 pictures, 2 s: 4 bounces in 2 s is wedged)
+o_clk:    db O_YOU_CLK
+        else
 O_FREE   equ 6
+        endif
 o_hits:   db 0,0,0,0,0          ; each car's bounces off O's since its last waypoint
         if OPT_AY + OPT_MUSIC
 mu_wait:  db 1                  ; the ditty: frames until its next note
