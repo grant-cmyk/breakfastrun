@@ -3713,3 +3713,15 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   35-37). Careful autopilot, 8 races: laps 24.8-26.0 s (21.1-23.7 without spills), the field closer (slowest car 5% off
   the quickest, 12% without), you 4.2th on average, 5.8 s behind the winner (8.6 without). race_mode_test 11/12 - the
   known half-repainted race-order row. Not yet driven by Grant. Open: the computer cars do not steer round a spill.
+
+## 2026-11-22 SAST - the mini-map back on the panel, top right (cloud session, Claude)
+- Grant: "move the map out of the in game display and back to the HUD please. You can place it at the top of the HUD on
+  the right". MAPHUD=1 (both breakfast fast tapes): hud.asm map_blit copies the map (its dots already XORed in) to the
+  screen at columns 27-29, lines 12-28 - the panel's yellow above RACE - blue on yellow, whenever map_update moves the dots
+  (one picture in four); nothing is drawn in the window's corner any more. Picture: docs/design/map_on_panel.png.
+- The 40-wide map trial (racer_cars75_breakfast_fast_map40.tap) retired - deleted from build/.
+- race_mode_test: racer_cars75_breakfast_fast 12/12; the trial tape 11/12 - a gap left in a race-order row a picture or two
+  after it should have gone (the race-order redraw family; which check catches it changes from race to race). Plain tapes
+  byte-identical.
+- Next on the list: Grant, "During the music - animate the faces - at the start and end of a race" (the jingle player runs
+  with nothing else running - to look at).

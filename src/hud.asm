@@ -1275,7 +1275,11 @@ map_init:                       ; a new race: the last race's dots out of the ma
 ; MAP_BLIT: the mini-map over the picture, each picture after the cars and the arrow (about 130 T a line)
 map_blit:
         ld hl,MAPDAT
+        if OPT_MAPHUD           ; MAPHUD (Grant, 22 Nov 2026: "move the map out of the in game display and back to the HUD
+        ld de,MAP_SCR           ; please. You can place it at the top of the HUD on the right"): copied to the screen, over
+        else                    ; the race order, whenever its dots move (map_update) - not ORed into the window
         ld de,MAP_BUF
+        endif
         ld b,MAP_H
 mb_1:
         if OPT_MAP40            ; MAPW40: 5 bytes a line (about 200 T a line), the ink anywhere in the program (so INC HL)
@@ -1306,6 +1310,18 @@ mb_1:
         inc hl
         ld e,c
         else
+        if OPT_MAPHUD           ; (the screen: a copy - the dots are in MAPDAT already)
+        ld a,(hl)
+        ld (de),a
+        inc l
+        inc e
+        ld a,(hl)
+        ld (de),a
+        inc l
+        inc e
+        ld a,(hl)
+        ld (de),a
+        else
         ld a,(de)
         or (hl)
         ld (de),a
@@ -1319,6 +1335,7 @@ mb_1:
         ld a,(de)
         or (hl)
         ld (de),a
+        endif
         inc l
         dec e
         dec e
@@ -1336,6 +1353,18 @@ mb_1:
         ld d,a
 mb_2:
         djnz mb_1
+        if OPT_MAPHUD           ; (and its squares' colours: blue on the panel's yellow)
+        ld hl,0x5800+(MAP_SY/8)*32+MAP_SC
+        ld de,32-3
+        ld b,(MAP_SY+MAP_H+7)/8-MAP_SY/8
+mb_a:   ld (hl),MAP_ATTR
+        inc l
+        ld (hl),MAP_ATTR
+        inc l
+        ld (hl),MAP_ATTR
+        add hl,de
+        djnz mb_a
+        endif
         ret
 
 map_update:
@@ -1407,7 +1436,11 @@ mu_skip:
         pop bc
         dec c
         jp p,mu_new
+        if OPT_MAPHUD
+        jp map_blit             ; MAPHUD: to the screen now
+        else
         ret
+        endif
 
 ; MAP_OFF: every dot shown, off again - drawn with XOR, so drawing it again
 ; puts the map back (no copy of the map needed: Grant's sweep, 10 Nov 2026)

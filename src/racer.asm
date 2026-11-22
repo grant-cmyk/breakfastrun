@@ -433,7 +433,9 @@ da_next:
         call map_blit
 rt_nomap:
         else
+        if OPT_MAPHUD = 0       ; (MAPHUD: on the panel instead - map_update puts it there)
         call map_blit           ; the mini-map, ORed over the bottom left corner (hud.asm)
+        endif
         endif
         ld a,(lt_on)            ; the start lights, while they are up
         or a
@@ -5387,6 +5389,10 @@ dl_attr:
         include "minimap.asm"   ; the mini-map's ink (start_once copies it to MAPDAT)
         endif
 MAP_ROW equ BUF_TOP+WIN_H-3-MAP_H       ; its first line in the back buffer: its last is 3 lines above the window's foot
+MAP_SY  equ 12                          ; MAPHUD: its first screen line - the panel's top right, above the race order
+MAP_SC  equ 27                          ;   its first column (27-29)
+MAP_ATTR equ 0x31                       ;   blue on the panel's yellow
+MAP_SCR equ 0x4000 + (MAP_SY AND 0xC0)*32 + (MAP_SY AND 7)*256 + (MAP_SY AND 0x38)*4 + MAP_SC
 MAP_BUF equ BUF + (MAP_ROW AND 0xC0)*32 + (MAP_ROW AND 7)*256 + (MAP_ROW AND 0x38)*4 + 2    ; ... and that line's address, the window's first byte
         include "arrows.asm"    ; the corner arrows' frames (tools/make_arrows.py; start_once copies them to ARROW_F)
 s1_src:                         ; what start_once copies to STRIP1: the corner arrows, a byte a waypoint (tools/make_world.py) ...

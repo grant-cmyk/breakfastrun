@@ -18,6 +18,7 @@ OPT_ROADBR equ 0               ; 1: the trial road paper bright (ROADCOL=5 ROADB
 OPT_ROADW equ 0                ; 1: the road white (ROADW=1 bash build.sh); 2: and plain, no dots (ROADW=2) - a trial
 OPT_CNOS equ 0                 ; 1: the chasers' NOS (CNOS=1 bash build.sh)
 OPT_OIL equ 0                  ; 1: the oil spills (OIL=1 bash build.sh)
+OPT_MAPHUD equ 0               ; 1: the mini-map on the panel (MAPHUD=1 bash build.sh)
 OPT_MAP40 equ 0                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)
 OPT_RT equ 0                   ; 1: the race track trial - black road, green grass (RACETRACK=1 bash build.sh)
 OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)

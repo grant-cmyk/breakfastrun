@@ -81,6 +81,8 @@ printf 'OPT_CNOS equ %s                 ; 1: the chasers'"'"' NOS (CNOS=1 bash b
 # OIL=1 (breakfast race tape; Grant, 22 Nov 2026): oil spills on the line - 3 or 4 of 8 spots each lap; a car on one spins
 # about a second (src/oil.asm, tools/make_oil.py). Needs RACEONLY=1.
 printf 'OPT_OIL equ %s                  ; 1: the oil spills (OIL=1 bash build.sh)\n' "${OIL:-0}" >> "$ROOT/src/options.asm"
+# MAPHUD=1 (breakfast race tapes; Grant, 22 Nov 2026): the mini-map on the panel, top right, not in the window.
+printf 'OPT_MAPHUD equ %s               ; 1: the mini-map on the panel (MAPHUD=1 bash build.sh)\n' "${MAPHUD:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"
