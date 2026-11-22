@@ -28,6 +28,14 @@ with open(os.path.join(ROOT, 'src', 'lights.asm'), 'w') as f:
     import re
     sp = re.search(r'== Level spoon ==\n((?:[#.]{8}\n){16})', open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sugar_spoons.txt')).read()).group(1).split()
     assert not any('#' in r for r in sp[:3] + sp[13:])
+    # NOSBOX (Grant, 22 Nov 2026: "change that to the NOS cannister, but can you make it smaller and fit into a little square
+    # with slightly rounded corners. That square fits within colour area to avoid colour clash"): 8 x 8, one colour square
+    BOX = ['.XXXXXX.', 'X......X', 'X..XX..X', 'X.XXXX.X', 'X.XXXX.X', 'X.XXXX.X', 'X......X', '.XXXXXX.']
+    f.write('        if OPT_NOSBOX\n')
+    f.write('nos_can:                        ; the NOS you hold: a canister in a box with rounded corners, 8 x 8 - one colour square\n')
+    f.write('        defb ' + ','.join('0x%02X' % int(r.replace('X', '1').replace('.', '0'), 2) for r in BOX) + '\n')
+    f.write('        else\n')
     f.write('nos_can:                        ; the NOS you hold: a spoon of sugar, 8 x 10\n')
     f.write('        defb ' + ','.join('0x%02X' % int(r.replace('#', '1').replace('.', '0'), 2) for r in sp[3:13]) + '\n')
+    f.write('        endif\n')
 print('wrote src/lights.asm')

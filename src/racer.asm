@@ -2985,6 +2985,14 @@ nd_1:
         jr z,nd_next
         push hl
         ld de,nos_can
+        if OPT_NOSBOX           ; (NOSBOX: the boxed canister, 8 lines in the lower square alone)
+        ld hl,NOS_BB
+        ld a,l
+        sub c
+        ld l,a
+        ld b,8
+        call nd_col
+        else
         ld hl,NOS_BA
         ld a,l
         sub c                   ; (beside the gauge and leftwards: Grant, 15 Nov 2026, "Move the damage to the right" - the map has the left corner)
@@ -2997,6 +3005,7 @@ nd_1:
         ld l,a
         ld b,6
         call nd_col
+        endif
         pop hl
 nd_next:
         inc hl

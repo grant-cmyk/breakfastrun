@@ -231,6 +231,17 @@ hp_slot:                        ; A = the slot (0: empty), HL = its upper cell o
         ld a,WIN_ATTR2
         jr z,hp_2
         ex de,hl                ; held: its two cells cleared (16 lines of the one byte)
+        if OPT_NOSBOX           ; (NOSBOX: the boxed canister is in the lower square alone - the upper one is the track's)
+        ld a,l
+        add a,32
+        ld l,a
+        ld a,e
+        add a,32
+        ld e,a
+        jr nc,hp_nb
+        inc d
+hp_nb:
+        else
         xor a
         ld b,8
 hp_0:
@@ -243,6 +254,7 @@ hp_0:
         ld a,l
         add a,32
         ld l,a
+        endif
         xor a
         ld b,8
 hp_1:
@@ -259,10 +271,14 @@ hp_2:
         add hl,de
         HP_PUT
         else
+        if OPT_NOSBOX
+        ld (hl),a               ; (NOSBOX: HL is the lower square already)
+        else
         ld (hl),a
         ld bc,32
         add hl,bc
         ld (hl),a
+        endif
         endif
         ret
 WIN_ATTR2 equ 0x29              ; the window's own colours: blue on cyan

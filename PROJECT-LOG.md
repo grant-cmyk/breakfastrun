@@ -3359,3 +3359,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   28.4 (26% apart); careful driver mean place 3.0, 2.2 s behind the winner. Next: balance - the cards' cars are far slower
   under the race drivers than the race cars were (Jane's grip 1 and Spike's speed 2 most).
 - NOT VERIFIED: nobody has driven racer_cars75.
+
+## 2026-11-22 SAST - the NOS you hold: a canister in a rounded box (cloud session, Claude)
+- Grant: "the NOS - sugar icon - change that to the NOS cannister, but can you make it smaller and fit into a little square
+  with slightly rounded corners. That sqaure fits within colour area to avoid colour clash. So each NOS has a little
+  square around it. They can be made smaller icons if necessary".
+- NOSBOX=1 (build.sh; on the race-only tapes, tools/build_race.sh): the NOS you hold, at the window's bottom right, is an
+  8 x 8 box with its corners cut and a 4 x 4 canister (nozzle and body) in it - one colour square each, red on black
+  (tools/make_lights.py -> src/lights.asm nos_can; racer.asm nos_draw; plate_slow.asm hp_slot: only the lower square is
+  cleared and coloured - the one above is the track's again). The 8 x 10 sugar spoon took two squares.
+- Pictures: docs/design/head32/nosbox_race.png, nosbox_zoom.png. Every other tape byte for byte the same.
