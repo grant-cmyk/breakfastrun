@@ -91,6 +91,14 @@ printf 'OPT_JFACE equ %s                ; 1: the faces move with the music (JFAC
 printf 'OPT_LJ equ %s                   ; 1: the finish line judges the places (LINEJ=1 bash build.sh)\n' "${LINEJ:-0}" >> "$ROOT/src/options.asm"
 # LAPFIX=1 (breakfast fast tapes; Grant, 22 Nov 2026): lap_low.asm's catch-up for your waypoint, kept in the stack's page.
 printf 'OPT_LAPFIX equ %s               ; 1: your lap is not lost when the game loses your waypoint (LAPFIX=1 bash build.sh)\n' "${LAPFIX:-0}" >> "$ROOT/src/options.asm"
+# QMUL=1: your grip sums multiply by shift and add, not the 768-byte quarter-square table (breakfast fast tapes).
+printf 'OPT_QMUL equ %s                 ; 1: qmul by shift and add (QMUL=1 bash build.sh)\n' "${QMUL:-0}" >> "$ROOT/src/options.asm"
+# UPPER=1 (with LOOP=1): tables above the looped copy routine (tools/make_up.py writes src/up_data.asm and up_equs.asm).
+printf 'OPT_UPPER equ %s                ; 1: tables above the looped copy routine (UPPER=1 LOOP=1 bash build.sh)\n' "${UPPER:-0}" >> "$ROOT/src/options.asm"
+if [ "${UPPER:-0}" = "1" ]; then
+  UPF="${UPFILES:-data.asm omap.asm waypoints.asm rowidx.asm faces.asm faces_mood.asm dmgicon.asm minimap.asm}"
+  [ "${OIL:-0}" = "1" ] && UPF="$UPF oil_gfx.asm"
+fi                      # (make_up runs just before assembling, in the build's own copy of src/ - below)
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"
@@ -203,6 +211,7 @@ else
 fi
 OUTN="${OUT:-$OUTN}"
 [ "$GS" != "100" ] && GAME_SPEED=$GS CARDS_OUT=. python3 "$ROOT/tools/make_cards.py" | tail -1   # (the slow cards: in the copy only)
+[ "${UPPER:-0}" = "1" ] && UP_SRC="$PWD" python3 "$ROOT/tools/make_up.py" $UPF   # (UPPER: after make_world has written this build's tables)
 [ -n "${PREASM:-}" ] && bash -c "$PREASM"
 bash "$B" asm racer.asm "$ROOT/build/$OUTN.tap" racer
 pasmo racer.asm "$ROOT/build/$OUTN.bin" "$ROOT/build/$OUTN.sym"

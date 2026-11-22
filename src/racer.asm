@@ -175,7 +175,7 @@ low_end:                        ; (the end of what is kept under 0x8000: the roo
         if OPT_HEAD32 + OPT_MIRROR
         include "head32_low.asm"
         endif
-        if OPT_FACESLOW
+        if OPT_FACESLOW * (1 - OPT_UPPER)
         include "faces_mood.asm"
         endif
         if OPT_WEIGHT
@@ -188,7 +188,7 @@ low_end:                        ; (the end of what is kept under 0x8000: the roo
         include "linej.asm"     ; LINEJ: the finish line's judge
         endif
 
-        if OPT_MAP40 * OPT_MAPHUD
+        if OPT_MAP40 * OPT_MAPHUD * (1 - OPT_UPPER)
 MAPDAT:                         ; MAPW40 with MAPHUD: the 40-wide map's ink here, under 0x8000 (Grant, 22 Nov 2026: "The map in the
         include "minimap.asm"   ; top right corner needs to be quite a big bigger"); the cars' dots XORed into it
         endif
@@ -4587,7 +4587,9 @@ tr_base:  dw 0
 dt_rowp:  dw 0
 dc_tab:   db 0
 
+        if OPT_UPPER = 0        ; (UPPER: above the copy routine - up_data.asm)
         include "data.asm"
+        endif
         include "clothmini.asm"   ; (fills the gap before sq4's page)
 ; buf_addr: B = buffer row, C = x  ->  HL = address (screen layout at BUF)
 buf_addr:
@@ -4727,17 +4729,21 @@ me_world:
         include "strip.asm"     ; the driver strip: inventory, the radio, the flag
         endif
 mb_wp:
+        if OPT_UPPER = 0
         include "waypoints.asm" ; the centre line, for the computer cars (4 bytes each)
+        endif
 me_wp:
         if OPT_MULTI*MP_ON
         defs MP_WP-(me_wp-mb_wp)        ; (MULTI: every track's block is as long as the longest)
         endif
         include "grip.asm"      ; your car: the tyre-grip model (the Skid Lab's)
-        if OPT_OIL = 0          ; (OIL: grip.asm's qmul multiplies by shift and add - 768 bytes for the spills)
+        if OPT_QMUL = 0         ; (QMUL: grip.asm's qmul multiplies by shift and add - 768 bytes kept)
         include "sqtab.asm"     ; quarter squares 0..383, for grip.asm's multiplying
         endif
 mb_ridx:
+        if OPT_UPPER = 0
         include "rowidx.asm"    ; the map: each tile row's list
+        endif
 me_ridx:
         if OPT_MULTI*MP_ON
         defs MP_RIDX-(me_ridx-mb_ridx)        ; (MULTI: every track's block is as long as the longest)
@@ -4745,7 +4751,9 @@ me_ridx:
         if 1-OPT_BRIDGE         ; (BRIDGE: no O map)
 mb_omap:
         if OPT_RT = 0           ; (RACETRACK: there are no O's - o_check is never called; "omap" is then just an address)
+        if OPT_UPPER = 0
         include "omap.asm"      ; the cereal O's: one bit a tile
+        endif
         else
 omap_src:
         endif
@@ -4758,7 +4766,7 @@ me_omap:
         include "faces7.asm"
 faces_src equ faces7
         else
-        if OPT_RT = 0           ; (RACETRACK: under 0x8000)
+        if OPT_RT + OPT_UPPER = 0       ; (RACETRACK: under 0x8000; UPPER: above the copy routine)
         include "faces.asm"     ; the drivers' faces for the race order
         endif
         endif
@@ -5090,6 +5098,12 @@ code_end:
 ; START_ONCE: the data copied up out of the way, the tables, the copy routine,
 ; the screen, the interrupts - then the first race
 start_once:                     ; (start, from the start-up area)
+        if OPT_UPPER            ; UPPER: the tables up above the looped copy routine first (they load after the start-up
+        ld hl,up_src            ; area, across the strips and tables filled below)
+        ld de,UP_AT
+        ld bc,up_end-up_src
+        ldir
+        endif
         if OPT_RT               ; RACETRACK: the grass's rows and pictures go up above the looped copy routine first (they load
         ld hl,rt_src_end-1      ; after the start-up area, across the strips and tables filled below). From the top down: the
         ld de,RT_DATA+rt_src_end-rt_src-1       ; two may overlap
@@ -5956,6 +5970,19 @@ bufe_end:
         include "twoplayer_pic.asm" ; TWOP: two routines copied down under the stack
         endif
 init_end:
+        if OPT_UPPER            ; UPPER: the tables kept above the looped copy routine (tools/make_up.py) - start_once copies them up first
+UP_AT   equ HP                  ; (defined BEFORE up_equs.asm: pasmo takes an EQU's value where it stands - with UP_AT after them,
+up_src:                         ;  the moved tables' names came out as offsets from 0 in the code, and the O map was read from
+        include "up_data.asm"   ;  ROM: 22 Nov 2026)
+up_end:
+        include "up_equs.asm"
+        if UP_AT + up_end - up_src > HIMEM
+        .error UPPER: the tables above the copy routine run into the row lists at HIMEM
+        endif
+        if OPT_LOOP = 0
+        .error UPPER needs LOOP=1 (the room is what the looped copy routine leaves)
+        endif
+        endif
         if OPT_RT
         include "rt_world.asm"  ; RACETRACK: the grass - rows and pictures (tools/make_world.py; start_once copies it to RT_DATA)
         endif

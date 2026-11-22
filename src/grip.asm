@@ -752,7 +752,7 @@ sm_2:
 ; QMUL: E (0..255) x D (0..128) -> HL = E x D / 32, by quarter squares (B, C kept):
 ; sqtab holds n * n / 128, so the / 32 comes free (within 1/256 of a pixel)
 qmul:
-        if OPT_OIL              ; (OIL, 22 Nov 2026: by shift and add - sqtab's 768 bytes went to the oil spills; the same
+        if OPT_QMUL             ; (QMUL, 22 Nov 2026: by shift and add - sqtab's 768 bytes kept for the oil spills; the same
         push bc                 ; product, rounded down once rather than as two squares: within 1/256 of a pixel)
         ld h,0
         ld l,h

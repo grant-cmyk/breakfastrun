@@ -281,4 +281,6 @@ spill_lap:  db 0                  ; your lap when they were picked
 spill_spin: defs NCARS            ; each car (by kind): pictures of spin (and then immunity) left
 spill_rec:  defs C_SIZE           ; the record draw_car draws a spill from
         endif
+        if OPT_UPPER = 0        ; (UPPER: above the copy routine)
         include "oil_gfx.asm"
+        endif

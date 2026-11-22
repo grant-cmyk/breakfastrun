@@ -3815,3 +3815,29 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   C, simpler rules: C1 your car on the computer cars' card-and-slide model, ~1,100 of grip.asm's 1,150; C2 one bump rule
   (a weight table of 5 for the two 6x6), ~200-300.
 - Nothing changed in the game for this; waiting on Grant's choices.
+
+## 2026-11-22 SAST - MEMORY HUNT GROUP A done: the looped copy, the tables moved above it, the multiply (cloud session, Claude)
+- Grant: "do group A".
+- A1 LOOP=1 on both fast tapes (the screen copy as a loop: 404 bytes, not 6,083) and UPPER=1: tables moved up into the
+  room it frees above the copy routine (0xEA00 - HIMEM). tools/make_up.py (run by build.sh just before assembling, in the
+  build's own copy of src/) writes src/up_data.asm - the tables, each name renamed name_u - and src/up_equs.asm - each name
+  at its place up there; racer.asm assembles them after the start-up area (up_src) and start_once copies them up first
+  thing. Moved: the car picture index (big_tab, 640), the O map (576), the waypoints (184), the map's row index (128),
+  the faces (160), the faces' moods (210), the mug (64), the 40-wide map (145), and on the trial tape the oil spill (72):
+  2,211 bytes; 3,360 left up there. src/up_data.asm and up_equs.asm in the repo are empty placeholders (pasmo opens an
+  INCLUDE even in an IF that is off).
+- A2 QMUL=1 on both fast tapes (the trial tape had it with OIL): the main tape's 768-byte multiply table gone.
+- A3 not done: the picture index went up whole instead (640 out of the program, not 320) - working out the mirrored
+  headings now would only add drawing time.
+- A4 not done: the code that never ran turned out rare, not impossible (the computer cars' brake - every card's brake
+  speed is 255, but a car at its top speed on NOS still reaches it), and with 2.3 KB free it is not worth the risk.
+- FOUND ON THE WAY: pasmo takes an EQU's value where it stands - with UP_AT defined after the moved names, the code used
+  them as offsets from 0 (the O map read from ROM: every car bounced off O's on the grid and wandered off the table,
+  then a car drawn with 0 rows ran its drawing loop 256 times, over the tables above the buffer, and the game reset).
+  Found with zxdev's watch and break; UP_AT now defined first, and every moved name's value checked in the listing.
+- FREE NOW: main fast tape - program 2,383 bytes (was 53), under 0x8000 520 (was 69); trial tape - program 1,645 (was 13),
+  under 0x8000 466 (was 15); above the copy routine 3,360 on both.
+- Checked: no reset in 80 s on both tapes; race_mode_test 12/12 (trial), 11/12 (main: the race order's half-repainted
+  row); finish order 8/8 true; full races as before (careful driver 8.9 and 9.1 s behind). SPEED: 11.36 pictures a
+  second (11.54 before; smooth3), the lap 11.0 (11.3; tearlap) - about 2-3% slower, the looped copy's 6,800 T; torn
+  frames the same (20.4%), more of the window's lower rows a TV frame late.

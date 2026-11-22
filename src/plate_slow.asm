@@ -397,7 +397,9 @@ da_2:
         jp dmg_draw
 dmg_sh:  db 0xFF                 ; the damage dmg_bmp shows (0xFF: none yet)
 dmg_bmp: defs 3*DMG_ROWS
+        if OPT_UPPER = 0        ; (UPPER: above the copy routine)
         include "dmgicon.asm"   ; dmg_heart: the icon's art (tools/make_damage_icons.py)
+        endif
         endif                   ; (ARMOUR)
 pl_tl:   dw 0xFFFF               ; the lap time (frames) the plate's figures were last cut for
 
