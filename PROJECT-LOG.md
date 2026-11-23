@@ -4043,3 +4043,15 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Checked: race_mode_test 12/12 (_cnos), 11/12 (_c: the known half-repainted race-order colour, frame 782, seen before);
   no reset in 80 s on either; plain tapes byte-identical; main tape unchanged. Balance (C tape, racer, 8 races): mean place
   2.8, 2 wins; laps you 21.83, Frank 21.81, Spike 22.96, Bruno 21.59, Jane 22.36. Nobody has driven it yet.
+
+## 2026-11-23 14:12 SAST - the Sound Board: the race's key sounds to listen to (cloud session, Claude)
+- Grant: "lets work on sound. I would like there to be more significant sounds. Can you play in Claude the key sounds played
+  during the gameplay".
+- One race on the group C tape recorded in the emulator (zxdev wav_start / wav_save, 44.1 kHz) with the sound variables logged
+  each TV frame (snd_bump, snd_fxt / snd_fxk, snd_skt, HIT_O, spill_spin, the lights, laps); ten clips cut at the logged
+  frames, 22,050 Hz 8-bit: docs/sound/race_clips/*.wav - start music, start lights, engine, car crash, hitting an O, oil
+  spin, NOS pickup, NOS fired, lap complete, finish music. tools/make_sound_board.py -> docs/sound/sound_board.html, published
+  privately: https://claude.ai/artifact/CJfPsJCYhhHbZMGP7AtxXk (each clip with its click density, and seven ideas).
+- Found: NO SKID SCREECH on the group C tape - snd_skt is set only by you_grip (the grip model), which SIMPLE leaves out. The
+  in-race sounds are thin beside the music: engine ~46 speaker clicks a second; crash 176 in 0.9 s; bonk 59 in 0.7 s; the
+  music thousands. The snd_fxk codes seen: 48 a red light, 24 green, 9 NOS fired, 0 NOS picked up, 2 an O, 14 a lap.
