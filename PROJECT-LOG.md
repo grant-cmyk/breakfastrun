@@ -3949,3 +3949,14 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   target, C a bolder (2 px) white outline - each the same at every heading, so the game can add it to any car's frames as
   it unpacks them. Recommended C: it reads at the game's size and does not touch the car's drawing (A and B land off a thin
   car's body at 45 degrees - the dragster).
+
+## 2026-11-23 10:14 SAST - Car Studio: an editor for every car graphic (cloud session, Claude)
+- Grant: "give me an editor to make a tweak to each graphic".
+- docs/tools/car_studio.html (tools/make_car_studio.py from docs/tools/car_studio.template.html), published privately:
+  https://claude.ai/artifact/4AX5oqNc3y2mzdjMWheKtK. All seven cars as the game draws them today - racer (Max), six-wheeler
+  (Frank), clown car (Spike), tank (Bruno), dragster (Jane), and the spares coupe and saloon - each its three drawn
+  headings (0, 22.5, 45; ink, white body, empty), with mirror, undo, back-to-the-game's-drawing, all 16 headings on the
+  table with the 1px white edge (4x and 2x), and the text in the car-art format. Edits save to the page's database
+  (cars/<key>: art, h0, h22, h45, changed) for Claude to read back (ArtifactData list cars); copy-text when not connected.
+- Checked: headless Chromium - no errors, a paint stroke and car/heading switching, no sideways scroll at 390 px; the store
+  read back empty (nothing drawn yet). The 11.25 and 33.75 headings the game drafts by turn_car.py are not shown.

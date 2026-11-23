@@ -1,0 +1,246 @@
+<title>Breakfast Run Car Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a workbench - the painting grid on the left, the car on the breakfast table on the right; cars as a strip of chips above. */
+:root {
+  --bg: #f3f5f7; --panel: #ffffff; --fg: #15192a; --muted: #5b6377; --line: #d9dde6;
+  --ink: #0000d7; --table: #00d7d7; --body: #ffffff; --cheq: #d70000; --ok: #1f8a3b; --warn: #b25b00;
+  --cell-empty: #e9edf3; --cell-line: #ccd3de; --chip: #eef1f6; --chip-on: #15192a; --chip-on-fg: #ffffff;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --text: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10131c; --panel: #181c28; --fg: #e9ecf4; --muted: #9aa2b6; --line: #2b3142;
+  --cell-empty: #232838; --cell-line: #323a4f; --chip: #222839; --chip-on: #e9ecf4; --chip-on-fg: #10131c;
+  --ok: #5fcf7a; --warn: #f0a04b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #10131c; --panel: #181c28; --fg: #e9ecf4; --muted: #9aa2b6; --line: #2b3142;
+  --cell-empty: #232838; --cell-line: #323a4f; --chip: #222839; --chip-on: #e9ecf4; --chip-on-fg: #10131c;
+  --ok: #5fcf7a; --warn: #f0a04b; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 span { color: var(--cheq); }
+.sub { color: var(--muted); margin: 2px 0 0; font-size: 0.92rem; }
+.status { font-family: var(--mono); font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); max-width: 100%; }
+.status.ok { color: var(--ok); } .status.warn { color: var(--warn); }
+.cars { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--chip); color: var(--fg);
+  border-radius: 10px; padding: 6px 10px 6px 6px; font: 500 0.9rem var(--text); cursor: pointer; }
+.chip canvas { width: 32px; height: 32px; image-rendering: pixelated; border-radius: 4px; }
+.chip small { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 400; }
+.chip[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-fg); border-color: var(--chip-on); }
+.chip[aria-pressed="true"] small { color: inherit; opacity: 0.75; }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cheq); margin-left: 2px; }
+.chip:focus-visible, button:focus-visible { outline: 2px solid var(--cheq); outline-offset: 2px; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 760px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.panel h2 { font-family: var(--display); font-size: 1rem; margin: 0; font-weight: 700; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 7px 11px; font: 500 0.85rem var(--text); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-fg); }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 7px 11px; border-radius: 8px; font: 500 0.85rem var(--text); cursor: pointer; }
+.btn.danger { color: var(--cheq); }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+#grid { display: grid; grid-template-columns: repeat(16, 1fr); width: min(100%, 448px); aspect-ratio: 1; touch-action: none; user-select: none;
+  border: 1px solid var(--cell-line); background: var(--cell-line); gap: 1px; }
+#grid div { background: var(--cell-empty); }
+#grid div.X { background: var(--ink); } #grid div.o { background: var(--body); }
+#grid div.mid { box-shadow: inset 0 0 0 1px rgba(215, 0, 0, 0.35); }
+.note { color: var(--muted); font-size: 0.82rem; margin: 0; }
+.stage { background: var(--table); border-radius: 8px; overflow: hidden; max-width: 100%; }
+.stage canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.scale { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+textarea { width: 100%; min-height: 120px; font: 0.75rem/1.25 var(--mono); background: var(--cell-empty); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; box-sizing: border-box; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Breakfast Run <span>Car Studio</span></h1>
+      <p class="sub">Tweak any car. Each one is three drawings, 16 × 16: nose up, 22.5° and 45°. The game turns them to make the other headings.</p>
+    </div>
+    <span id="status" class="status">Connecting…</span>
+  </header>
+
+  <div id="cars" class="cars" role="group" aria-label="Cars"></div>
+
+  <div class="bench">
+    <section class="panel" aria-label="Drawing">
+      <div class="row" style="justify-content: space-between">
+        <h2 id="carTitle">Racer</h2>
+        <div class="seg" id="heads" role="group" aria-label="Heading">
+          <button id="h-h0" data-h="h0" aria-pressed="true">Nose up</button>
+          <button id="h-h22" data-h="h22" aria-pressed="false">22.5°</button>
+          <button id="h-h45" data-h="h45" aria-pressed="false">45°</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="seg" id="tools" role="group" aria-label="Paint">
+          <button id="t-X" data-t="X" aria-pressed="true"><span class="swatch" style="background: var(--ink)"></span>Ink</button>
+          <button id="t-o" data-t="o" aria-pressed="false"><span class="swatch" style="background: var(--body)"></span>White body</button>
+          <button id="t-." data-t="." aria-pressed="false"><span class="swatch" style="background: var(--cell-empty)"></span>Empty</button>
+        </div>
+        <button id="mirror" class="btn" aria-pressed="false">Mirror left/right: off</button>
+      </div>
+      <div id="grid" aria-label="16 by 16 drawing"></div>
+      <div class="row">
+        <button id="undo" class="btn">Undo</button>
+        <button id="reset" class="btn danger">Back to the game's drawing</button>
+      </div>
+      <p class="note">Tap or drag to paint. Empty shows the table through; the game puts a 1-pixel white edge round the car. The faint red square marks the middle, which the car turns about.</p>
+    </section>
+
+    <section class="panel" aria-label="Preview">
+      <h2>On the table</h2>
+      <div class="stage"><canvas id="big" width="296" height="80"></canvas></div>
+      <p class="scale">All 16 headings, 4× the game's size</p>
+      <div class="stage" style="width: max-content"><canvas id="small" width="296" height="80" style="width: 296px"></canvas></div>
+      <p class="scale">The same, twice the game's size</p>
+      <details>
+        <summary class="note" style="cursor: pointer">The drawing as text (for the car art file)</summary>
+        <textarea id="txt" readonly></textarea>
+        <div class="row"><button id="copy" class="btn">Copy text</button><span id="copied" class="note"></span></div>
+      </details>
+    </section>
+  </div>
+</div>
+
+<script>
+const CARS = __CARS__;
+const HEADS = ['h0', 'h22', 'h45'], HDEG = { h0: '0', h22: '22.5', h45: '45' };
+const state = {};                 // key -> {h0, h22, h45}: arrays of 16 strings
+for (const c of CARS) state[c.key] = { h0: c.h0.slice(), h22: c.h22.slice(), h45: c.h45.slice() };
+let cur = CARS[0].key, head = 'h0', tool = 'X', mirror = false, undo = [];
+let db = null, saveTimer = null;
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const same = (a, b) => HEADS.every(h => a[h].join('') === b[h].join(''));
+const game = k => CARS.find(c => c.key === k);
+
+// ---- the 16 headings, as the game builds them: 0, 22.5, 45, the 22.5 mirrored on the diagonal, then each turned 90 degrees
+const toG = rows => rows.map(r => r.split(''));
+const mirrorDiag = g => g.map((_, r) => g.map((__, c) => g[15 - c][15 - r]));
+const rot90 = g => g.map((_, r) => g.map((__, c) => g[15 - c][r]));
+function headings(s) {
+  const f = [toG(s.h0), toG(s.h22), toG(s.h45)]; f.push(mirrorDiag(f[1]));
+  for (let i = 4; i < 16; i++) f.push(rot90(f[i - 4]));
+  return f;
+}
+function drawCar(ctx, g, ox, oy, z) {   // the car with its 1-pixel white edge, as draw_car's mask gives it
+  const solid = (x, y) => x >= 0 && y >= 0 && x < 16 && y < 16 && g[y][x] !== '.';
+  for (let y = -1; y < 17; y++) for (let x = -1; x < 17; x++) {
+    let c = null;
+    if (solid(x, y)) c = g[y][x] === 'X' ? css('--ink') : css('--body');
+    else for (let j = -1; j <= 1 && !c; j++) for (let i = -1; i <= 1; i++) if (solid(x + i, y + j)) { c = css('--body'); break; }
+    if (c) { ctx.fillStyle = c; ctx.fillRect(ox + x * z, oy + y * z, z, z); }
+  }
+}
+function table(ctx, w, h, z) {          // the cloth: plain squares and dotted ones, 32 px, as the race screen
+  ctx.fillStyle = css('--table'); ctx.fillRect(0, 0, w, h); ctx.fillStyle = css('--ink');
+  for (let y = 0; y < h / z; y++) for (let x = 0; x < w / z; x++)
+    if (((x >> 5) + (y >> 5)) & 1 && x % 4 === 0 && y % 4 === 0) ctx.fillRect(x * z, y * z, z, z);
+}
+function preview() {
+  const f = headings(state[cur]);
+  for (const [id, z] of [['big', 4], ['small', 1]]) {
+    const cv = $(id), W = 8 * 20 * z + 4 * z, H = 2 * 20 * z + 4 * z;
+    cv.width = W; cv.height = H; if (z === 1) { cv.style.width = W * 2 + 'px'; cv.style.height = H * 2 + 'px'; }
+    const ctx = cv.getContext('2d'); table(ctx, W, H, z);
+    f.forEach((g, i) => drawCar(ctx, g, (2 + (i % 8) * 20) * z, (2 + (i >> 3) * 20) * z, z));
+  }
+  $('txt').value = HEADS.map(h => '== ' + game(cur).art + ' heading ' + HDEG[h] + ' ==\n' + state[cur][h].join('\n')).join('\n\n') + '\n';
+}
+function chipIcon(cv, s) { const ctx = cv.getContext('2d'); cv.width = 18; cv.height = 18; table(ctx, 18, 18, 1); drawCar(ctx, toG(s.h0), 1, 1, 1); }
+function chips() {
+  const box = $('cars'); box.textContent = '';
+  for (const c of CARS) {
+    const b = document.createElement('button'); b.className = 'chip'; b.id = 'car-' + c.key; b.setAttribute('aria-pressed', c.key === cur);
+    const cv = document.createElement('canvas'); chipIcon(cv, state[c.key]); b.append(cv);
+    const t = document.createElement('span'); t.textContent = c.name; const sm = document.createElement('small'); sm.textContent = c.who; t.append(sm); b.append(t);
+    if (!same(state[c.key], c)) { const d = document.createElement('span'); d.className = 'dot'; d.title = 'Changed from the game'; b.append(d); }
+    b.onclick = () => { cur = c.key; undo = []; render(); };
+    box.append(b);
+  }
+}
+function grid() {
+  const g = $('grid'); if (!g.children.length) for (let i = 0; i < 256; i++) { const d = document.createElement('div'); d.dataset.i = i; if ([7, 8].includes(i >> 4) && [7, 8].includes(i & 15)) d.classList.add('mid'); g.append(d); }
+  const rows = state[cur][head];
+  [...g.children].forEach((d, i) => { const v = rows[i >> 4][i & 15]; d.classList.toggle('X', v === 'X'); d.classList.toggle('o', v === 'o'); });
+}
+function render() {
+  $('carTitle').textContent = game(cur).name + ' · ' + game(cur).who;
+  for (const b of $('heads').children) b.setAttribute('aria-pressed', b.dataset.h === head);
+  for (const b of $('tools').children) b.setAttribute('aria-pressed', b.dataset.t === tool);
+  $('mirror').setAttribute('aria-pressed', mirror); $('mirror').textContent = 'Mirror left/right: ' + (mirror ? 'on' : 'off');
+  grid(); chips(); preview();
+}
+function paint(i) {
+  const s = state[cur][head], y = i >> 4, x = i & 15, set = (x, y) => { const r = s[y].split(''); r[x] = tool; s[y] = r.join(''); };
+  set(x, y); if (mirror) set(15 - x, y);
+}
+// ---- painting: one stroke = one undo step, saved when the stroke ends
+let down = false, last = -1;
+const cellAt = e => { const el = document.elementFromPoint(e.clientX, e.clientY); return el && el.parentElement === $('grid') ? +el.dataset.i : -1; };
+$('grid').addEventListener('pointerdown', e => {
+  const i = cellAt(e); if (i < 0) return; e.preventDefault();
+  undo.push({ key: cur, head, rows: state[cur][head].slice() }); if (undo.length > 60) undo.shift();
+  down = true; last = i; paint(i); grid(); preview();
+});
+window.addEventListener('pointermove', e => { if (!down) return; const i = cellAt(e); if (i >= 0 && i !== last) { last = i; paint(i); grid(); preview(); } });
+window.addEventListener('pointerup', () => { if (down) { down = false; chips(); save(cur); } });
+$('heads').onclick = e => { const h = e.target.closest('button')?.dataset.h; if (h) { head = h; render(); } };
+$('tools').onclick = e => { const t = e.target.closest('button')?.dataset.t; if (t) { tool = t; render(); } };
+$('mirror').onclick = () => { mirror = !mirror; render(); };
+$('undo').onclick = () => { const u = undo.pop(); if (!u) return; state[u.key][u.head] = u.rows; cur = u.key; head = u.head; render(); save(cur); };
+let armed = false;
+$('reset').onclick = () => {
+  if (!armed) { armed = true; $('reset').textContent = 'Tap again to put this car back'; setTimeout(() => { armed = false; $('reset').textContent = "Back to the game's drawing"; }, 3000); return; }
+  armed = false; $('reset').textContent = "Back to the game's drawing";
+  const c = game(cur); undo.push({ key: cur, head, rows: state[cur][head].slice() });
+  state[cur] = { h0: c.h0.slice(), h22: c.h22.slice(), h45: c.h45.slice() }; render(); save(cur);
+};
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('txt').value); $('copied').textContent = 'Copied'; }
+  catch { $('txt').select(); $('copied').textContent = 'Selected - copy it with your keyboard'; }
+};
+// ---- keeping it: each car's drawings in the page's store (cars/<key>), where Claude reads them
+function status(t, cls) { $('status').textContent = t; $('status').className = 'status ' + (cls || ''); }
+const pending = new Set();
+function save(key) {
+  if (!db) return; pending.add(key); status('Saving…'); clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    for (const k of [...pending]) {
+      pending.delete(k);
+      try { await db.doc('cars/' + k).set({ art: game(k).art, h0: state[k].h0, h22: state[k].h22, h45: state[k].h45, changed: !same(state[k], game(k)), at: new Date().toISOString() }); status('Saved', 'ok'); }
+      catch (e) { status(e && e.code === 'permission_denied' ? 'View only - your changes are not kept' : 'Not saved - copy the text instead', 'warn'); }
+    }
+  }, 500);
+}
+render();
+(async () => {
+  const timer = setTimeout(() => { if (!db) status('Not connected: copy the text to keep changes', 'warn'); }, 10000);
+  let d = null; try { d = await window.claude?.use?.('db'); } catch { d = null; }
+  if (!d) { clearTimeout(timer); status('Not connected: copy the text to keep changes', 'warn'); return; }
+  db = d;
+  db.collection('cars').onSnapshot(snap => {
+    clearTimeout(timer);
+    for (const doc of snap.docs) {
+      const v = doc.data(); if (!v || !state[doc.id] || doc.metadata.hasPendingWrites) continue;
+      if (HEADS.every(h => Array.isArray(v[h]) && v[h].length === 16 && v[h].every(r => typeof r === 'string' && /^[Xo.]{16}$/.test(r))))
+        state[doc.id] = { h0: v.h0.slice(), h22: v.h22.slice(), h45: v.h45.slice() };
+    }
+    if (!down) render();
+    if (!pending.size && !$('status').classList.contains('ok')) status('Saves as you draw', 'ok');
+  }, () => { clearTimeout(timer); status('Not connected - copy the text instead', 'warn'); });
+})();
+</script>
