@@ -260,8 +260,19 @@ wka_s:                          ; b hit in the side (or standing, or slower towa
         call wk_hurt_b
         if OPT_MAPHUD           ; (the breakfast fast tapes - Grant, 22 Nov 2026: "If I hit one of the other cars on its side, it
         call wk_slowb           ; should move more to the side and be temporarily slowed": kicked twice as hard, and its speed
-        ld hl,(wk_kbv)          ; the other way - along the road - halved; it pushes back up to speed as ever)
+        if OPT_GRIPX            ; the other way - along the road - halved; it pushes back up to speed as ever)
+        call wk_slowb           ; GRIPX (Grant, 23 Nov 2026: "Bumping a car with your front to its side is a tactic and should
+        ld a,(wk_cb)            ; have more of an impact"): a quarter of its speed along the road left, kicked three times as
+        call wk_skid            ; hard, and knocked into a slide (its gx_t: no grip for GX_T pictures - it runs wide)
+        ld hl,(wk_kbv)
+        ld d,h
+        ld e,l
         add hl,hl
+        add hl,de
+        else
+        ld hl,(wk_kbv)
+        add hl,hl
+        endif
         else
         ld hl,(wk_kbv)
         endif
@@ -289,8 +300,19 @@ wkb_s:
         call wk_hurt_a
         if OPT_MAPHUD
         call wk_slowa
+        if OPT_GRIPX            ; (GRIPX: as wka_s)
+        call wk_slowa
+        ld a,(wk_ca)
+        call wk_skid
+        ld hl,(wk_kav)
+        ld d,h
+        ld e,l
+        add hl,hl
+        add hl,de
+        else
         ld hl,(wk_kav)          ; (twice the kick: through HL, 2 bytes shorter - the tape was full)
         add hl,hl
+        endif
         ld b,h
         ld c,l
         else
@@ -298,6 +320,19 @@ wkb_s:
         endif
         pop hl
         ret
+        if OPT_GRIPX
+wk_skid:                        ; A = a car's kind (5: you on NOS - your car): it slides, GX_T pictures (racer.asm gx_t)
+        cp 5
+        jr c,wsk_1
+        xor a
+wsk_1:  add a,gx_t AND 255
+        ld l,a
+        adc a,gx_t/256
+        sub l
+        ld h,a
+        ld (hl),GX_T
+        ret
+        endif
         if OPT_MAPHUD
 wk_slowb:                       ; car b's speed across the bump's axis (along the road) halved
         ld a,(wk_ax)

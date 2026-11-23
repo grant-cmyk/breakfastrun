@@ -4127,3 +4127,12 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   sliding 639, big 115 of 1,500); laps (8 races) you 21.75, Frank 21.42, Spike 22.27, Bruno 21.98, Jane 22.49 - about a
   second slower than before (the slides cost time); mean place 2.4, 1 win. race_mode_test 12/12; no reset in 80 s (racer,
   dragster); plain tapes byte-identical; only the C tape changed.
+
+## 2026-11-23 18:51 SAST - side hits with more impact (group C tape) (cloud session, Claude)
+- Grant: "Bumping a car with your front to its side is a tactic and should have more of an impact".
+- weight.asm (GRIPX): the car hit in the side keeps a quarter of its speed along the road (was half), is kicked three times
+  as hard as a bump (was twice), and is knocked into a slide (wk_skid: its gx_t = GX_T - no grip for 12 pictures, it runs
+  wide). The hitter as before: three quarters of its speed, no damage. Any car's side hit, the computer cars' too.
+- Staged (you at 1.6 px a frame into Frank's side going up the right straight, 4 times): Frank pushed 55-64 px sideways in
+  0.6 s and sliding (the main fast tape, the old rule: 15-33 px). Balance (8 races, careful autopilot): mean place 2.2; laps
+  21.0-21.8. race_mode_test 12/12; no reset in 80 s; plain tapes byte-identical; only the C tape changed.
