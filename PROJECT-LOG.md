@@ -3891,3 +3891,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   (tools/new_cast_art.txt), for Grant to pick the one to swap.
 - Checked: plain tapes byte-identical; no reset in 80 s (_c); race_mode_test 12/12 on _cnos, 11/12 on the main fast and _c
   tapes - the one fail is the known half-repainted race-order row (a colour caught mid-redraw at one frame; seen before).
+
+## 2026-11-23 SAST - Frank drives the six-wheeled truck on the breakfast fast tapes (cloud session, Claude)
+- Grant: "The six wheeler to replace Franks car" (his coupe looked like Max's racer - docs/design/all_car_graphics.png).
+- tools/make_data.py: SWAP_CAR=CYAN=TRUCK takes a car's pictures from another drawing in tools/pool_art.txt (TRUCK's 0,
+  22.5 and 45 headings; the 11.25 and 33.75 drafted from heading 0 as for every car). Set on the three fast tapes only
+  (tools/build_race.sh); Frank's driving, card, weight and face unchanged. Every other tape keeps the coupe.
+- Checked: all 32 headings read back from the game's memory on all three tapes (docs/design/frank_truck_headings.png,
+  top row of each pair Frank, bottom yours); in the race and the race order; no reset in 80 s on each; race_mode_test 12/12
+  on _cnos and _c, 11/12 on the main fast tape (the known half-repainted race-order row); plain tapes byte-identical.
+- Nobody has driven it yet.

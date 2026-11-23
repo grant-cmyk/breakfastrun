@@ -66,6 +66,9 @@ TRUCK: the long 6-wheeled truck - GREEN's car until Grant redraws it (kept at hi
 ask, 10 Nov 2026: "want that old design for later - with the 6 wheels"). GREEN's
 driving when it was this truck: throttle 12/16 (the slowest), mistakes 6/256,
 style 30,3,2,1,2 (turns in early, cuts corners).
+Since 23 Nov 2026 FRANK'S CAR on the breakfast fast tapes (Grant: "The six wheeler to replace Franks car" - his coupe
+looked like Max's racer): SWAP_CAR=CYAN=TRUCK, tools/build_race.sh and tools/make_data.py. The coupe is still CYAN in
+tools/car_art.txt for every other tape.
 
 == TRUCK heading 0 ==
 ................

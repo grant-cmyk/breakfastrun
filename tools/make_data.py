@@ -127,6 +127,16 @@ def hand_drawn():
     if CHOOSE:
         for f in ('pool_art.txt', 'choose_car_art.txt'):
             if os.path.exists(os.path.join(HERE, f)): text += open(os.path.join(HERE, f)).read()
+    # SWAP_CAR=CYAN=TRUCK (Grant, 23 Nov 2026: "The six wheeler to replace Franks car" - his coupe looked like Max's racer): a
+    # car's pictures from another drawing (tools/pool_art.txt); the driver, card and face are the same. Set on the breakfast
+    # fast tapes only (tools/build_race.sh), so the other tapes keep their pictures.
+    swap = dict(a.split('=') for a in os.environ.get('SWAP_CAR', '').split(',') if a)
+    if swap:
+        pool = open(os.path.join(HERE, 'pool_art.txt')).read()
+        for to, frm in swap.items():
+            assert to in NAMES and ('== %s heading 0 ==' % frm) in pool, 'SWAP_CAR: %s=%s' % (to, frm)
+            text = re.sub(r'== %s heading ' % to, '== %s_OLD heading ' % to, text)
+            text += re.sub(r'== %s heading ' % frm, '== %s heading ' % to, pool)
     for m in re.finditer(r'== (\w+) heading ([\d.]+) ==\n((?:[Xo.]{16}\n){16})', text):
         if m.group(1) not in NAMES: continue
         g = [[INK if c == 'X' else PAPER if c == 'o' else NONE for c in r] for r in m.group(3).split()]
