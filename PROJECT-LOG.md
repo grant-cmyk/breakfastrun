@@ -3923,3 +3923,10 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   Spike 24.4 / 23.1 / 21.7; Jane 24.0 / 22.7 / 22.5; you 22.8 / 21.7 / 21.8. The four computer cars within 3% a lap.
 - Checked: race_mode_test 12/12 on _c and _cnos; no reset in 80 s on each; plain tapes byte-identical; the main fast tape
   unchanged. Nobody has driven it yet.
+
+## 2026-11-23 09:46 SAST - group C tape slightly tougher (cloud session, Claude)
+- Grant: "Okay the balance is much better. You can make it slightly tougher." Your pushes 2/64 under the MAX card's
+  (YOU_HARD, cards_code.asm; 0 before, 4 put him last). First built with YOU_HARD after the EQUs that use it - pasmo's
+  trap again: it came out 0 and the tape did not change; moved first, checked in the .sym (YOU_KA -12, YOU_KS -13).
+- Measured (8 races, careful autopilot): mean place 1.9, 3 wins (1.4 and 5 before); the field within 1-3 s at the flag;
+  flying laps you 22.51, Frank 22.58, Spike 23.12, Bruno 22.51, Jane 23.09. The tank 25.7 / 23.0 / 21.7 by lap.
