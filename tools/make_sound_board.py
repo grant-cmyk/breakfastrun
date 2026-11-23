@@ -8,6 +8,7 @@ D = os.path.join(ROOT, 'docs', 'sound', 'race_clips')
 CLIPS = [('start_music', 'Start music', 'Plays while the drivers’ faces animate, before the lights.', 'music'),
          ('start_lights', 'Start lights', 'Three beeps on red, a higher one on green, then your engine.', 'event'),
          ('engine', 'Engine, flat out', 'Your engine while you hold accelerate. It goes quiet when you lift.', 'loop'),
+         ('skid', 'Skid screech', 'NEW: as a slide starts, and all through a big one (well over the car\u2019s grip), harsher the harder it slides. Here the dragster in a corner.', 'event'),
          ('crash', 'Car crash', 'You and another car bump.', 'event'),
          ('bonk', 'Hitting a cereal O', 'A falling note when you bounce off an O.', 'event'),
          ('oil', 'Oil spin', 'Today the same crash noise as a bump, then quiet while you spin.', 'event'),
@@ -16,8 +17,7 @@ CLIPS = [('start_music', 'Start music', 'Plays while the drivers’ faces animat
          ('lap', 'Lap complete', 'NEW: its own chime, a low note then a high one (ding-DING), louder than the other beeps.', 'event'),
          ('crew', 'Crew chief message', 'A short blip as his speech bubble opens.', 'event'),
          ('finish', 'Finish music', 'The chequered flag, then the podium.', 'music')]
-IDEAS = [('Skid screech', 'There is none on this tape: the screech belongs to the old handling model. A screech while a car slides, harsher the further over its grip.'),
-         ('Heavier crash', 'Twice as long, denser noise, and longer still for a hard hit than a rub.'),
+IDEAS = [('Heavier crash', 'Twice as long, denser noise, and longer still for a hard hit than a rub.'),
          ('Engine with more body', 'More clicks a second, rising in pitch with speed, so you hear yourself accelerate.'),
          ('Oil spin sound', 'Its own sound: a whooshing fall in pitch through the spin, not the crash.'),
          ('NOS roar', 'A rough roar for the whole burn, not only the moment it fires.'),

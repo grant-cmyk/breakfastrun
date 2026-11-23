@@ -1275,6 +1275,8 @@ skid:                           ; (the computer cars: you have the grip model)
         ld (hl),0               ; it grips again
         ret
 gx_on:  dec (hl)
+        ld a,1                  ; (your slide: level 1 - the screech, snd_picture)
+        call gx_lvs
         jr gx_one
 gx_turn:
         push hl
@@ -1297,11 +1299,25 @@ gx_over:
         or a
         sbc hl,de
         pop de
-        call nc,sk_half         ; well over: a longer slide
+        ld a,1                  ; (your slide's level: 1, or 2 well over - the screech, snd_picture)
+        jr c,gx_o1
+        call sk_half            ; well over: a longer slide
+        inc a
+gx_o1:  call gx_lvs
 gx_one:
         call sk_half
         jr gx_scrub
 gx_t:   defs NCARS              ; each car's slide: pictures left
+gx_lv:  db 0                    ; YOUR slide this picture: 0 gripping, 1 sliding, 2 well over its grip (snd_picture reads it)
+gx_lvs: push af                 ; A = the slide's level: kept in gx_lv if this is your car (AF only)
+        ld a,(ix+C_KIND)
+        or a
+        jr nz,gxl_1
+        pop af
+        ld (gx_lv),a
+        ret
+gxl_1:  pop af
+        ret
         else
         ld a,(ix+C_CTRL)        ; a computer car: only while turning fast
         and CT_L+CT_R
@@ -3457,6 +3473,23 @@ snd_picture:
         dec a
         ld (snd_bump),a
 sp_1:
+        if OPT_GRIPX            ; GRIPX: the skid's screech (Grant, 23 Nov 2026: "do the skid screech" - the group C tape had
+        ld a,(gx_lv)            ; none: snd_skt was set only by the grip model's you_grip). As grip.asm has it: a short screech
+        ld hl,snd_skid          ; as a slide STARTS, then quiet until the car grips and slides again - but a BIG slide (well
+        ld b,(hl)               ; over its grip) screeches as long as it lasts, and harsher (isr_sk: more flips a frame)
+        ld (hl),a
+        or a
+        jr z,sgx_x
+        cp 2
+        jr z,sgx_go
+        ld a,b
+        or a
+        jr nz,sgx_x
+sgx_go: ld a,SKID_FR
+        ld (snd_skt),a
+sgx_x:  xor a
+        ld (gx_lv),a
+        endif
         xor a                   ; engine pitch: 0 = quiet
         ld (snd_rate),a
         ld a,(race_on)
@@ -5164,7 +5197,15 @@ isr_sk:
         jr z,isr_x              ; SKID_FR frames (you_grip sets it)
         dec a
         ld (snd_skt),a
+        if OPT_GRIPX            ; (GRIPX: 4 flips a frame as a slide fades, 8 sliding, 12 well over its grip)
+        ld a,(snd_skid)
+        add a,a
+        add a,a
+        add a,4
+        ld h,a
+        else
         ld h,8                  ; (8 flips a frame since 15 Nov 2026 - it was 4: Grant, "the game is a bit quiet
+        endif
         ld l,0                  ; now - can you up the skidding sound"). Gap 0: a random one each flip
 isr_burst:                      ; H flips, L counts apart (16 T a count)
         ld a,(snd_port)

@@ -4080,3 +4080,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   Board republished (https://claude.ai/artifact/CJfPsJCYhhHbZMGP7AtxXk).
 - Checked: race_mode_test 12/12 (_cnos), 11/12 (main and _c: the known race-order colour, the same frames as before); no
   reset in 80 s on each; plain tapes byte-identical. Room: C tape program 138 bytes. Nobody has heard it on a Spectrum yet.
+
+## 2026-11-23 16:44 SAST - the skid screech on the group C tape (cloud session, Claude)
+- Grant: "do the skid screech".
+- GRIPX (racer.asm): skid keeps YOUR slide's level each picture in gx_lv (1 sliding, 2 well over the grip - GX_STEP);
+  snd_picture applies grip.asm's rule: a screech (SKID_FR frames) as a slide STARTS, then quiet until the car grips and
+  slides again - but a big slide screeches as long as it lasts. isr_sk: 4 flips a frame as a slide fades, 8 sliding, 12 well
+  over (it was 8 always). Only your car screeches.
+- Measured (30 s, careful autopilot): the racer 33 screeches, 32 of them big, sound 21% of the time (most corners); the
+  dragster 21, all big, 14%. The Sound Board has the clip (the dragster in a corner) - republished.
+- Checked: race_mode_test (see below); no reset in 80 s; plain tapes byte-identical; only the C tape changed. Room: program 132.
