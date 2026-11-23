@@ -4153,3 +4153,18 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Checked: race_mode_test 12/12 on all three fast tapes; no reset in 80 s on each; plain tapes byte-identical; a race recorded
   - effects 1, 3, 4, 5 and the squeal all heard; an O hit in a second race (boing). The Sound Board republished with the new
   clips (https://claude.ai/artifact/CJfPsJCYhhHbZMGP7AtxXk).
+
+## 2026-11-23 20:54 SAST - the missing O's fixed; NOS shorter; your car blinks; the NOS a yellow lightning bolt (cloud session, Claude)
+- Grant (with a screenshot of the grid): "many of the inside loops acting as boundaries to the road are not showing ... still
+  have the issue with the car not showing at the start ... make the NOS effective for a shorter period, as it tends to result
+  in the player overshooting"; then "the NOS needs to be in yellow and in the shape of a lightning bolt in the HUD area".
+- THE O'S: my bug of earlier today - ovface.asm's box (ov_bmp) put at TS (0x5B00) to make room ran into STRIP3 (0x5B16), the
+  row lists of two map rows: the first overtaking face wiped them, and those rows' O's were gone until the tape was loaded
+  again (a fresh start looked right, so the grid check passed). ov_bmp back in the program. Checked: a race with 5 faces,
+  STRIP3 the same after; the second race's grid has all its O's (docs/design/race2_grid_and_nos_bolt.png).
+- YOUR CAR AT THE START: it is drawn; once the lights are up FLASHME left it out 4 pictures in 8 (16 TV frames off, 16 on -
+  measured), which reads as missing. BLINK=1 (the three fast tapes): out one picture in 8.
+- NOS (C tape): NOS_FR 60 - a canister burns 1.2 s (2 s before).
+- NOSBOLT=1 (the three fast tapes): the NOS a lightning bolt (lights.asm nos_can), bright yellow on black (yellow on the
+  cloth's cyan hardly shows), flashing white while it burns (plate_slow.asm NB_HELD / NB_FLASH).
+- Checked: race_mode_test 12/12 on all three fast tapes; no reset in 80 s; plain tapes byte-identical. Room: C program 9 bytes.

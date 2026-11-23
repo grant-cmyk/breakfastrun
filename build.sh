@@ -125,6 +125,10 @@ printf 'OPT_RREC equ %s                 ; 1: the race time and race record on th
 # SND3=1 (the breakfast fast tapes; Grant, 23 Nov 2026, from Sound Lab 2: "car crash b, skid b, oil spin B, NOS C, hitting b,
 # lap b"): the effects as the Lab played them (racer.asm fx_fire, isr_sk).
 printf 'OPT_SND3 equ %s                 ; 1: the Sound Lab 2 picks (SND3=1 bash build.sh)\n' "${SND3:-0}" >> "$ROOT/src/options.asm"
+# NOSBOLT=1 / BLINK=1 (the breakfast fast tapes; Grant, 23 Nov 2026): the NOS a yellow lightning bolt; your car on the grid blinks
+# (off a picture in 8) rather than flashes (off 4 in 8).
+printf 'OPT_NOSBOLT equ %s              ; 1: the NOS a yellow lightning bolt (NOSBOLT=1 bash build.sh)\n' "${NOSBOLT:-0}" >> "$ROOT/src/options.asm"
+printf 'OPT_BLINK equ %s                ; 1: your car blinks on the grid (BLINK=1 bash build.sh)\n' "${BLINK:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

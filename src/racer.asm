@@ -387,8 +387,13 @@ draw_all:
         or a                    ; music does not actually show": the jingle holds the pictures up, and one drawn without the car
         jr z,da_fm              ; stayed on the screen all through it)
         ld a,(renders)
+        if OPT_BLINK            ; BLINK (Grant, 23 Nov 2026: "still have the issue with the car not showing at the start" - off 4
+        and 7                   ; pictures in 8 read as missing): off one picture in 8, a blink
+        jr z,da_next
+        else
         and 4
         jr nz,da_next
+        endif
 da_fm:
         endif
         if 0                    ; (WEIGHT: a computer car just hurt flickered - its row of arm_tab, byte 4: weight.asm. Left

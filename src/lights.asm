@@ -38,8 +38,13 @@ lt_rail:                        ; the rail, 10 cells wide: its 3 kinds of pixel 
         defb 0x0F,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xF0   ; rows 2-4: the rail
         defb 0x00,0x01,0x80,0x00,0x01,0x80,0x00,0x01,0x80,0x00   ; rows 5-7: a hanger down to each lamp
         if OPT_NOSBOX
+        if OPT_NOSBOLT
+nos_can:                        ; NOSBOLT (Grant, 23 Nov 2026: "the NOS needs to be in yellow and in the shape of a lightning bolt in the
+        defb 0x1C,0x38,0x70,0xFE,0x1C,0x38,0x70,0x40   ; HUD area"): a lightning bolt, 8 x 8, yellow on black (NB_HELD)
+        else
 nos_can:                        ; the NOS you hold: a canister in a box with rounded corners, 8 x 8 - one colour square
         defb 0x7E,0x81,0x99,0xBD,0xBD,0xBD,0x81,0x7E
+        endif
         else
 nos_can:                        ; the NOS you hold: a spoon of sugar, 8 x 10
         defb 0x00,0x00,0x20,0x51,0xAA,0xFC,0xF8,0x70,0x00,0x00

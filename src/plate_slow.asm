@@ -238,8 +238,13 @@ hpr_g:
 NB_HELD  equ 0x02               ; (the race track: red on black, flashing yellow)
 NB_FLASH equ 0x06
         else
+        if OPT_NOSBOLT
+NB_HELD  equ 0x46               ; (NOSBOLT: the bolt bright yellow on black - yellow on the cloth's cyan hardly shows - flashing
+NB_FLASH equ 0x47               ; bright white while it burns)
+        else
 NB_HELD  equ 0x2A               ; (the breakfast table, 22 Nov 2026 - Grant: "the image for the NOS glitches - black and red
 NB_FLASH equ 0x28               ; mess": red on the cloth's cyan, flashing black; and on the table nothing puts a square's
+        endif
         endif                   ; colours back each picture - an empty slot, and the gauge's square once the burn is over,
 hp_slot:                        ; get the cloth's again here: hpb_e, hpb_h)
         or a
