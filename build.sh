@@ -102,6 +102,9 @@ fi                      # (make_up runs just before assembling, in the build's o
 # SIMPLE=1 (the memory hunt's group C, a trial; Grant, 22 Nov 2026: "try c"): your car on the computer cars' card and slide
 # (grip.asm left out); one bump rule (weight.asm).
 printf 'OPT_SIMPLE equ %s               ; 1: group C - your car on the card model, one bump rule (SIMPLE=1 bash build.sh)\n' "${SIMPLE:-0}" >> "$ROOT/src/options.asm"
+# TANKUP=1 (the group C tape; Grant, 23 Nov 2026: the tank "should be the slowest car initially but ... gets stronger towards
+# the end"): Bruno's pushes less on the early laps (src/tank.asm).
+printf 'OPT_TANKUP equ %s               ; 1: the tank weaker early, stronger each lap (TANKUP=1 bash build.sh)\n' "${TANKUP:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

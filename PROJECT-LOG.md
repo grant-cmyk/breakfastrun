@@ -3901,3 +3901,25 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   top row of each pair Frank, bottom yours); in the race and the race order; no reset in 80 s on each; race_mode_test 12/12
   on _cnos and _c, 11/12 on the main fast tape (the known half-repainted race-order row); plain tapes byte-identical.
 - Nobody has driven it yet.
+
+## 2026-11-23 08:12 SAST - oil spill smaller, half on the line, never on a NOS; group C: back to the balance Grant liked, the tank weak early and strong late (cloud session, Claude)
+- Grant: "We need to make the oil spill a little smaller and also make sure it does not sit on top of a NOS. Make it slightly
+  off the race line - so partly on partly off. Right now I'm coming last. The fastest car appears to be the tank - so the
+  tank needs a slight slowdown - it should be the slowest car initially but as it takes little damage it gets stronger
+  towards the end".
+- OIL (both oil tapes, _cnos and _c): the spill drawn 12 x 12 (docs/design/oil_spill/option_b_small.txt; was 15 x 13), the
+  2px mask kept; OIL_R 8 (was 10). Each spot's middle 9 px off the line the cars drive, measured at each spot
+  (scratchpad linespots.py) - the spill overlaps a car on the line but a car must be 2 px or more to that side to spin.
+  7 px off was tried first: 4 cars in 5 spun on every spill. Now about 2 spins a lap (2 races each tape). S7 was on NOS
+  canister A (156, 416): moved after the line (330, 422), and with S8 never on your first lap; every spot 50 px or more
+  from canisters B and C.
+- GROUP C BALANCE (_c only): the corner boosts of this morning taken out (they made the tank, grip 8, the quickest car)
+  and your pushes back to the MAX card's - the balance Grant liked - with Jane's pushes 4 less (8 less made her the
+  slowest). THE TANK (src/tank.asm, TANKUP=1): Bruno's pushes 5/64 less on lap 1, his card's on lap 2, 3 more on lap 3.
+  The game has no gradual damage slowdown (only a car with no armour left limps), so "stronger towards the end" is done by
+  the lap.
+- Measured (8 races, careful autopilot): mean place 1.4, 5 wins - easier than the version Grant liked (1.9, 3 wins).
+  Laps, lap 1 / 2 / 3: tank 25.6 / 22.5 / 21.3 - the slowest car on lap 1, the quickest on lap 3; Frank 23.3 / 22.6 / 22.5;
+  Spike 24.4 / 23.1 / 21.7; Jane 24.0 / 22.7 / 22.5; you 22.8 / 21.7 / 21.8. The four computer cars within 3% a lap.
+- Checked: race_mode_test 12/12 on _c and _cnos; no reset in 80 s on each; plain tapes byte-identical; the main fast tape
+  unchanged. Nobody has driven it yet.

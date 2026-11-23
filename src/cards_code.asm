@@ -258,7 +258,7 @@ you_card:                       ; cars' rows are (where it slides; no braking; A
         include "cards.asm"     ; the cards' numbers (tools/make_cards.py)
         if OPT_SIMPLE           ; (These EQUs AFTER cards.asm: pasmo takes an EQU's value where it stands - before it, CD_R_SLIDE
 YOU_SL  equ CD_R_SLIDE*45/64    ; was 0: slide 0, sliding always. 22 Nov 2026.) Its pushes are the MAX card's as the computer cars
-YOU_KA  equ CD_R_KA-4           ; have it, less 4/64 - 8 at first made you the slowest car on the straights (Grant, 23 Nov 2026:
-YOU_KS  equ CD_R_KS-4           ; "my car is definitely the slowest of the lot": typical 1.20 px a frame, theirs 1.26-1.41); with
-                                ; the computer cars' corners (ai_tune.asm, GROUP C) the balance Grant liked comes back
+YOU_KA  equ CD_R_KA             ; have it - 8/64 less at first made you the slowest car on the straights (Grant, 23 Nov 2026:
+YOU_KS  equ CD_R_KS             ; "my car is definitely the slowest of the lot"); 4 less, tried next, put him last ("Right now
+                                ; I'm coming last") - so as the computer cars have it, the balance he liked
         endif

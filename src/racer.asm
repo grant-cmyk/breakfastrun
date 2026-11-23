@@ -330,6 +330,9 @@ cpu_move:
         if OPT_CNOS
         call cn_tick            ; CNOS: the chasers' NOS (cnos.asm)
         endif
+        if OPT_TANKUP
+        call tk_tick            ; TANKUP: the tank stronger each lap (tank.asm)
+        endif
         if OPT_OIL
         call spill_tick         ; OIL: new spills each lap, who is on one (oil.asm)
         endif
@@ -4733,6 +4736,9 @@ me_world:
         endif
         if OPT_OIL
         include "oil.asm"       ; OIL: the oil spills on the line
+        endif
+        if OPT_TANKUP
+        include "tank.asm"      ; TANKUP: the tank stronger each lap
         endif
         if OPT_JFACE
         include "jface.asm"     ; JFACE: the faces move with the music (in the program: the room under 0x8000 is full)

@@ -4,7 +4,7 @@
 ; have 3 or 4 spots where a spill may appear during a lap ... around the race track line ... The oil spill should stay
 ; on the race track line but should appear randomly and in different places"; "The oil spill will be about the size of
 ; a car"; of the three drawings, "B").
-;   - EIGHT SPOTS on the straights, just off the line the cars drive (spill_spots). Each time YOU start a lap, ONE of
+;   - EIGHT SPOTS on the straights, half on the line the cars drive (spill_spots). Each time YOU start a lap, ONE of
 ;     them gets a spill, picked at random (spill_pick); the others are dry. (First built 3 or 4 a lap, on the line at the
 ;     corner entries: every car spun on nearly every one - 12 spins a lap. Grant: "One oil spill a lap is fine, and an
 ;     oil spill somewhere on a straight just slightly off the racing path".)
@@ -14,7 +14,7 @@
 ;     round; then OIL_IMM pictures before a spill can catch it again. You hear the crash.
 ; =====================================================================
 OIL_KIND equ 0xEE               ; (spill_rec's kind: draw_car draws the spill for it)
-OIL_R   equ 10
+OIL_R   equ 8                   ; (10 until 23 Nov 2026, the spill 15 x 13; now 12 x 12 - Grant: "make the oil spill a little smaller")
 OIL_T   equ 12                  ; pictures of spin (12.5 a second)
 OIL_IMM equ 12                  ; then this many it cannot spin again
 OIL_ROT equ 2                   ; heading steps (of 64) a TV frame while it spins: about 1.5 turns
@@ -98,10 +98,11 @@ slop_1:   call rnd
 slop_2:   rlc d
         dec e
         jr nz,slop_2              ; D = bit (r) of 8
-        ld a,(cars+C_LAPS)      ; (not S8 on your first lap: it is just ahead of the grid)
+        ld a,(cars+C_LAPS)      ; (not S7 or S8 on your first lap: they are just ahead of the grid)
         cp 2
         jr nc,slop_3
-        bit 7,d
+        ld a,d
+        and 0xC0
         jr nz,slop_1
 slop_3: ld a,c
         and d
@@ -268,12 +269,19 @@ slod_n:   pop hl
         pop af
         jr slod_1
 
-spill_spots:                      ; top left of each spill (its middle - 8). ON THE STRAIGHTS, 13 px to one side of the line the
-        dw 519-8,230-8, 493-8,300-8     ; computer cars drive (Grant, 22 Nov 2026: "an oil spill somewhere on a straight just
-        dw 68-8,200-8, 94-8,290-8       ; slightly off the racing path"; the line measured from four races: the right straight
-        dw 180-8,110-8, 420-8,82-8      ; at x 506, the left at 81, the top at y 95-97, the bottom at 411-415 - each road 72 px
-        dw 150-8,424-8, 420-8,402-8     ; across). Right, right, left, left, top, top, bottom (before the grid), bottom (after the
-                                        ; line: never on your first lap). A car on the line passes it; one a little off hits it.
+spill_spots:                      ; top left of each spill (its middle - 8). ON THE STRAIGHTS, HALF ON THE LINE: its middle 9 px
+        dw 515-8,230-8, 497-8,300-8     ; to one side of the line the computer cars drive (Grant, 23 Nov 2026: "slightly off the
+        dw 74-8,200-8, 89-8,290-8       ; race line - so partly on partly off"; it was 13 px off - 22 Nov: "an oil spill somewhere
+        dw 180-8,106-8, 420-8,86-8      ; on a straight just slightly off the racing path"). The line where each spot is, the
+        dw 330-8,422-8, 420-8,405-8     ; middle of the cars measured over two races (scratchpad linespots.py): right 506, 506;
+                                        ; left 83, 80; top 97, 95; bottom 413, 414. The spill (12 px) covers 3 to 15 px from the
+                                        ; line, a car on the line 8 either side: they overlap, but a car right on the line passes
+                                        ; it (middles 9 apart, OIL_R - 1 is 7); one 2 px or more to that side spins. (7 px off,
+                                        ; tried first: 4 cars in 5 spun on every spill.)
+                                        ; Right, right, left, left, top, top, bottom, bottom - both bottom ones after the line
+                                        ; (never on your first lap). S7 was at x 150, before the grid - on NOS canister A (156,
+                                        ; 416): Grant, 23 Nov 2026, "make sure it does not sit on top of a NOS". The canisters
+                                        ; B (276, 146) and C (76, 146) are 50 px or more from every spot.
                                         ; (The first spots, 8 on the line at the corner entries: docs/design/oil_spill_spots.png.)
         if OPT_MAP40 * OPT_MAPHUD = 0   ; (the breakfast fast tapes: in the D0 strip - vars_d0.asm)
 spill_on:   db 0                  ; which of the 8 have a spill (bit 0 = S1)

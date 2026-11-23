@@ -389,23 +389,21 @@ EL_EASE    equ 1
 EL_AHEAD   equ 4                ; (more than this many waypoints ahead of you - about 2 seconds - before it eases off)
         endif
 
-; GROUP C (SIMPLE=1, the trial tape racer_cars75_breakfast_fast_c; Grant 23 Nov 2026: "balance was good though", "my car is
-; definitely the slowest of the lot", "Jane was quite a bit faster than the others"): each computer car's slide speed x
-; AI_x_SX / 64 (it corners faster - sliding costs speed) and both its pushes AI_x_SA 64ths more or less. Frank, Bruno and Jane
-; 2.5 times, Spike - who slid half the time and gained most - 1.4; Jane's pushes 8 less. (Your own: YOU_KA/KS, cards_code.asm.)
+; GROUP C (SIMPLE=1, the trial tape racer_cars75_breakfast_fast_c): each computer car's slide speed x AI_x_SX / 64 (higher: it
+; corners faster - sliding costs speed) and both its pushes AI_x_SA 64ths more or less.
+;   23 Nov 2026, first: Frank, Bruno and Jane x2.5, Spike x1.4, your pushes 4 less - Grant: "Right now I'm coming last. The
+;   fastest car appears to be the tank". So back to the balance he liked ("balance was good though" - every slide x1, your
+;   pushes the MAX card's) with only Jane's pushes 8 less ("Jane was quite a bit faster than the others"); and the TANK
+;   slowest at the start, stronger each lap (tank.asm, TK_).
         if OPT_SIMPLE
-AI_C_SX equ 160
-AI_G_SX equ 90
-AI_P_SX equ 160
-AI_W_SX equ 160
-AI_W_SA equ -8
+AI_W_SA equ -4
         else
+AI_W_SA equ 0
+        endif
 AI_C_SX equ 64
 AI_G_SX equ 64
 AI_P_SX equ 64
 AI_W_SX equ 64
-AI_W_SA equ 0
-        endif
 AI_C_SA equ 0
 AI_G_SA equ 0
 AI_P_SA equ 0
