@@ -4105,3 +4105,16 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Measured (careful autopilot, 8 races, the racer): mean place 2.5, 1 win; laps you 20.51, Frank 20.64, Spike 21.31,
   Bruno 21.40, Jane 20.56 (were ~21.8-22.7); computer cars in a slide Frank 12%, Spike 65%, Bruno 6%, Jane 42%.
 - Checked: race_mode_test 12/12 (C); no reset in 80 s; plain tapes byte-identical.
+
+## 2026-11-23 16:58 SAST - Sound Lab 2: alternative sounds to pick from (cloud session, Claude)
+- Grant: "Please can you work on alternative sounds to try - sounds need to be distinct, in the background drone they all sound
+  the same".
+- Why they sound alike: every effect is the interrupt's burst - 6 flips a frame, all high (gaps 14-48 counts: ~2-6 kHz) - over
+  the engine's ~46 clicks a second.
+- tools/make_sound_lab2.py -> docs/sound/sound_lab2.html (docs/sound/lab2/*.wav), published privately:
+  https://claude.ai/artifact/AxUYaB8C3J89wtipqWRB8a (if the link differs: the publish result). For crash, skid, oil, NOS pickup,
+  NOS fired, O hit, lap and a new overtaking blip: A today (recorded), and B-D alternatives that differ in pitch (low thuds and
+  knocks, ~0.5-1 kHz, to high squeals), texture (noise or tone) and shape (rising, falling, warbling, pulsed) - each rendered as
+  the effect player would play it (FLIPS flips a frame, GAP counts apart, 16 T a count, ~80 T a flip; noise a random gap) over
+  the engine recorded in a race, with its cost: the most of a TV frame it takes (3-12%). And one with the engine hushed while
+  the sound plays (ducking).
