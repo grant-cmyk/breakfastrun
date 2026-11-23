@@ -5,16 +5,16 @@
 ; acceleration is the car as it always was; "tyres hold" 16 and "slides above" 1.00 were the cars as they were.
 ; rating   SPEED: top speed    ACCELERATION: push, and TV frames    GRIP, your car:   GRIP, a computer car: it slides (and
 ;          px a TV frame       from rest to 1.4 px a frame          the tyres hold    brakes for a corner) above ... px a frame
-;    1         1.59                  44      21                          6                 0.47
-;    2         1.64                  49      19                          7                 0.59
-;    3         1.67                  54      18                          9                 0.70
-;    4         1.70                  59      16                         10                 0.82
-;    5         1.75                  64      13                         12                 0.96
-;    6         1.80                  69      11                         13                 1.09
-;    7         1.86                  74       9                         15                 1.23
-;    8         1.91                  79       8                         17                 1.37
-;    9         1.97                  84       8                         19                 1.52
-;   10         2.02                  89       7                         21                 1.68
+;    1         1.59                  44      21                          6                 0.39
+;    2         1.64                  49      19                          7                 0.49
+;    3         1.67                  54      18                          9                 0.59
+;    4         1.70                  59      16                         10                 0.68
+;    5         1.75                  64      13                         12                 0.80
+;    6         1.80                  69      11                         13                 0.92
+;    7         1.86                  74       9                         15                 1.04
+;    8         1.91                  79       8                         17                 1.15
+;    9         1.97                  84       8                         19                 1.29
+;   10         2.02                  89       7                         21                 1.43
 ; ARMOUR (the ARMOUR=1 build): every car has 6 pieces; what ONE piece takes, and so how many knocks the car takes in all
 ; rating   a piece takes   firm bumps a piece   firm bumps for all six   rams (twice as fast)   shells   wheel hits
 ;    1         22                2.2                  14                    8               9        11
@@ -28,13 +28,13 @@
 ;    9         77                7.7                  47                   26              29        39
 ;   10         92                9.2                  56                   31              35        46
 ; THE CARS
-;   MAX    RACER      acceleration 5, speed 4, grip 4, armour 5 -> top speed 1.70 px a frame, push 64, tyres 10,5,5,3, slides above 0.82, a piece of armour takes 38
-;   FRANK  COUPE      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 0.82, a piece of armour takes 38
-;   JANE   DRAGSTER   acceleration 7, speed 8, grip 1, armour 2 -> top speed 1.91 px a frame, push 74, tyres 6,3,3,2, slides above 0.47, a piece of armour takes 26
-;   BRUNO  TANK       acceleration 4, speed 2, grip 8, armour 9 -> top speed 1.64 px a frame, push 59, tyres 17,9,8,5, slides above 1.37, a piece of armour takes 77; weapon: Shoots a shell straight ahead. A hit spins the other car where it is.
-;   SPIKE  CLOWN CAR  acceleration 6, speed 2, grip 3, armour 4 -> top speed 1.64 px a frame, push 69, tyres 9,4,4,3, slides above 0.70, a piece of armour takes 34; weapon: Extends its wheels out to both sides. A car they touch spins where it is.
-;   SPECS  SALOON     acceleration 4, speed 5, grip 3, armour 5 -> top speed 1.75 px a frame, push 59, tyres 9,4,4,3, slides above 0.70, a piece of armour takes 38
-;   DOT    TRUCK      acceleration 3, speed 3, grip 8, armour 8 -> top speed 1.67 px a frame, push 54, tyres 17,9,8,5, slides above 1.37, a piece of armour takes 65
+;   MAX    RACER      acceleration 5, speed 4, grip 4, armour 5 -> top speed 1.70 px a frame, push 64, tyres 10,5,5,3, slides above 0.68, a piece of armour takes 38
+;   FRANK  COUPE      acceleration 5, speed 5, grip 4, armour 5 -> top speed 1.75 px a frame, push 64, tyres 10,5,5,3, slides above 0.68, a piece of armour takes 38
+;   JANE   DRAGSTER   acceleration 7, speed 8, grip 1, armour 2 -> top speed 1.91 px a frame, push 74, tyres 6,3,3,2, slides above 0.39, a piece of armour takes 26
+;   BRUNO  TANK       acceleration 4, speed 2, grip 8, armour 9 -> top speed 1.64 px a frame, push 59, tyres 17,9,8,5, slides above 1.15, a piece of armour takes 77; weapon: Shoots a shell straight ahead. A hit spins the other car where it is.
+;   SPIKE  CLOWN CAR  acceleration 6, speed 2, grip 3, armour 4 -> top speed 1.64 px a frame, push 69, tyres 9,4,4,3, slides above 0.59, a piece of armour takes 34; weapon: Extends its wheels out to both sides. A car they touch spins where it is.
+;   SPECS  SALOON     acceleration 4, speed 5, grip 3, armour 5 -> top speed 1.75 px a frame, push 59, tyres 9,4,4,3, slides above 0.59, a piece of armour takes 38
+;   DOT    TRUCK      acceleration 3, speed 3, grip 8, armour 8 -> top speed 1.67 px a frame, push 54, tyres 17,9,8,5, slides above 1.15, a piece of armour takes 65
 ; ---- your car (MAX): its top speed, its push, and its tyres at each level of grip you buy (a level = a point of grip) ----
 CD_TOP  equ 434
 CD_PUSH equ 64
@@ -97,33 +97,33 @@ CD_ARM_4 equ 26      ; JANE, armour 2
 ;      where its ACCEL push gives way to its SPEED push (both / 4), its ACCEL push and its SPEED push (64ths more or less than the plain 64),
 ;      1 while it is braking (the game writes it), and a byte to make the row 8 ----
 cd_tab:
-        dw 210+210*(AI_C_SX-64)/64
+        dw 175+175*(AI_C_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
         db AI_K_BRAKE, 89, (AI_C_SA+0) AND 255, (AI_KC_KS+AI_C_SA+0) AND 255, 0, 0
         else
-        db 52+AI_C_SLIP, 89, 0, 0, 0, 0      ; CYAN: FRANK (COUPE) - acceleration 5, speed 5, grip 4
+        db 43+AI_C_SLIP, 89, 0, 0, 0, 0      ; CYAN: FRANK (COUPE) - acceleration 5, speed 5, grip 4
         endif
-        dw 180+180*(AI_G_SX-64)/64
+        dw 150+150*(AI_G_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
         db AI_K_BRAKE, 84, (AI_G_SA+5) AND 255, (AI_KG_KS+AI_G_SA-4) AND 255, 0, 0
         else
-        db 45+AI_G_SLIP, 84, 5, 252, 0, 0      ; GREEN: SPIKE (CLOWN CAR) - acceleration 6, speed 2, grip 3
+        db 37+AI_G_SLIP, 84, 5, 252, 0, 0      ; GREEN: SPIKE (CLOWN CAR) - acceleration 6, speed 2, grip 3
         endif
-        dw 350+350*(AI_P_SX-64)/64
+        dw 295+295*(AI_P_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
         db AI_K_BRAKE, 84, (AI_P_SA-5) AND 255, (AI_KP_KS+AI_P_SA-4) AND 255, 0, 0
         else
-        db 87+AI_P_SLIP, 84, 251, 252, 0, 0      ; PINK: BRUNO (TANK) - acceleration 4, speed 2, grip 8
+        db 73+AI_P_SLIP, 84, 251, 252, 0, 0      ; PINK: BRUNO (TANK) - acceleration 4, speed 2, grip 8
         endif
-        dw 120+120*(AI_W_SX-64)/64
+        dw 100+100*(AI_W_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
         db AI_K_BRAKE, 98, (AI_W_SA+10) AND 255, (AI_KW_KS+AI_W_SA+6) AND 255, 0, 0
         else
-        db 30+AI_W_SLIP, 98, 10, 6, 0, 0      ; WHITE: JANE (DRAGSTER) - acceleration 7, speed 8, grip 1
+        db 25+AI_W_SLIP, 98, 10, 6, 0, 0      ; WHITE: JANE (DRAGSTER) - acceleration 7, speed 8, grip 1
         endif
 ; ---- RACE mode (RACEMODE=1): every computer car on MAX's card (acceleration 5, speed 4, grip 4) - the same row, as numbers ----
-CD_R_SLIDE equ 210
-CD_R_BRAKE equ 52+AI_R_SLIP
+CD_R_SLIDE equ 175
+CD_R_BRAKE equ 43+AI_R_SLIP
 CD_R_VSW equ 86
 CD_R_KA equ 0
 CD_R_KS equ -2

@@ -4090,3 +4090,18 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Measured (30 s, careful autopilot): the racer 33 screeches, 32 of them big, sound 21% of the time (most corners); the
   dragster 21, all big, 14%. The Sound Board has the clip (the dragster in a corner) - republished.
 - Checked: race_mode_test (see below); no reset in 80 s; plain tapes byte-identical; only the C tape changed. Room: program 132.
+
+## 2026-11-23 16:56 SAST - race time and race record on the podium; more skidding; the C tape at 110% (cloud session, Claude)
+- Grant: "at the end of the race, give a fastest lap, but also give the ability to track and show the fastest race time";
+  then "there is still not enough skidding, and ideally would like the race speed overall to be upped a bit".
+- The podium already showed the race's FASTEST LAP (time, whose, which lap). RREC=1 (the three fast tapes): under it your
+  race time (green to the line) and the RACE RECORD - the best since the game was loaded, as the lap record -: "RACE 1:02.6
+  RECORD 59.7", or "NEW RACE RECORD 59.7" (plate_slow.asm pd_rrec; rr_t0 at green, hud.asm; rr_you/rr_rec at the line,
+  racer.asm). Found on the way: time_fmt blanks "0:" under a minute and never puts the colon back - a later time over a
+  minute read "1 02.6"; pd_rrec puts it back (time_fmt itself left as it is). Checked: two races in a row - 62.6 a new
+  record, then 59.8 beat it (docs/design/podium_race_record.png).
+- Skidding (C tape): the GRIPX grip scale 15% lower again (slides from 100 at grip 1 to 365 at grip 10); a slide goes on 8
+  pictures after the steering stops (was 5). GAME_SPEED 110 (was 100).
+- Measured (careful autopilot, 8 races, the racer): mean place 2.5, 1 win; laps you 20.51, Frank 20.64, Spike 21.31,
+  Bruno 21.40, Jane 20.56 (were ~21.8-22.7); computer cars in a slide Frank 12%, Spike 65%, Bruno 6%, Jane 42%.
+- Checked: race_mode_test 12/12 (C); no reset in 80 s; plain tapes byte-identical.

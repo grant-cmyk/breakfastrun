@@ -516,6 +516,9 @@ podium:
         add a,'0'
         call glyph
 pd_nb:
+        if OPT_RREC
+        call pd_rrec            ; RREC: your race time and the race record, under the fastest lap
+        endif
         ld hl,pd_d1             ; the places, large
         ld bc,0x090C
         ld a,(order)
@@ -695,3 +698,64 @@ jin_due:                        ; after each picture
         cp 2
         ret nz
         jp jin_start
+
+        if OPT_RREC
+; RREC (Grant, 23 Nov 2026: "at the end of the race, give a fastest lap, but also give the ability to track and show the fastest
+; race time"): your race time - from the green light to the line (rr_t0: race_time at green, hud.asm; rr_you: at the line,
+; racer.asm) - and the RACE RECORD, the best of any race since the game was loaded (as the lap record), on the podium under the
+; fastest lap: "RACE 1:02.6  RECORD 1:01.9", or "NEW RACE RECORD 1:01.9" when you have just set it.
+pd_rrec:
+        ld de,rr_buf
+        ld a,(rr_new)
+        or a
+        jr nz,prr_new
+        ld hl,rr_t1
+        call rr_cpy
+        ld hl,(rr_you)
+        call rr_time
+        ld hl,rr_t2
+        call rr_cpy
+        ld hl,(rr_rec)
+        call rr_time
+        jr prr_go
+prr_new:
+        ld hl,rr_t3
+        call rr_cpy
+        ld hl,(rr_you)
+        call rr_time
+prr_go: xor a
+        ld (de),a
+        ld hl,rr_buf
+        ld bc,138*256+104
+        jp sm_ctr
+rr_cpy: ld a,(hl)
+        or a
+        ret z
+        ld (de),a
+        inc hl
+        inc de
+        jr rr_cpy
+rr_time:                        ; HL = TV frames, as "1:02.6" or "59.7" (time_fmt blanks "0:" under a minute, and never puts the
+        push de                 ; colon back after: here it is put back)
+        call time_fmt
+        pop de
+        ld hl,time_txt
+        ld a,(hl)
+        cp ' '
+        jr z,rrt_1
+        ld a,':'
+        ld (time_txt+1),a
+rrt_1:  ld a,(hl)               ; (no leading spaces)
+        cp ' '
+        jr nz,rr_cpy
+        inc hl
+        jr rrt_1
+rr_t0:  dw 0                    ; race_time at the green light
+rr_you: dw 0                    ; your race time, this race
+rr_rec: dw 0xFFFF               ; the race record (TV frames; 0xFFFF: none yet)
+rr_new: db 0                    ; 1: you set it this race
+rr_t1:  db "RACE ",0
+rr_t2:  db "  RECORD ",0
+rr_t3:  db "NEW RACE RECORD ",0
+rr_buf: defs 28
+        endif

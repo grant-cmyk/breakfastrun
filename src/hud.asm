@@ -342,6 +342,10 @@ sl_ph:
 sl_green:
         ld hl,0x1800+10         ; green: a higher beep, longer
         ld (snd_fxt),hl
+        if OPT_RREC             ; (RREC: the race clock at green - your race time runs from here)
+        ld hl,(race_time)
+        ld (rr_t0),hl
+        endif
         ld a,1                  ; and away
         ld (race_on),a
         if OPT_AY

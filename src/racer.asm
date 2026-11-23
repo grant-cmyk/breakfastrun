@@ -1247,7 +1247,7 @@ SKID_VC   equ 256               ; the computer cars: from 1.0 px a frame, as bef
 SKID_STEP equ 64*GAME_SPEED/100 ; and more for each 0.25 faster (Grant: more skid; GAME_SPEED: a slower game, smaller steps)
 SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
 GX_STEP   equ 96*GAME_SPEED/100 ; GRIPX: this much (8.8, px a frame) over its grip: the second, longer slide
-GX_T      equ 5                 ; GRIPX: pictures a slide goes on after the steering stops (12.5 a second)
+GX_T      equ 8                 ; GRIPX: pictures a slide goes on after the steering stops (12.5 a second; 5 until "there is still not enough skidding")
 skid:                           ; (the computer cars: you have the grip model)
         if OPT_GRIPX            ; GRIPX (Grant, 23 Nov 2026: "grip needs to have a bigger impact. So skidding should be more
         ld a,(ix+C_KIND)        ; severe for all cars"). Turning faster than its grip, a car SLIDES: the push and the friction
@@ -4204,6 +4204,21 @@ rp_all:
         ld (you_done),a
         ld hl,(race_time)       ; your time stays on the clock
         ld (you_time),hl
+        if OPT_RREC             ; RREC: your race time, green to the line - and the race record (plate_slow.asm pd_rrec)
+        ld de,(rr_t0)
+        or a
+        sbc hl,de
+        ld (rr_you),hl
+        ld de,(rr_rec)
+        or a
+        sbc hl,de
+        ld a,0
+        jr nc,rr_1
+        ld hl,(rr_you)
+        ld (rr_rec),hl
+        inc a
+rr_1:   ld (rr_new),a
+        endif
         if OPT_LJ
         ld a,(line_at)          ; your place: the order over the line
         else
