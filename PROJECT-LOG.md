@@ -4001,3 +4001,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   unchanged. Room left on the C tape: program 742, above the copy routine 436, under 0x8000 427.
 - Open: Frank drives the six-wheeler on his coupe's card; your six-wheeler is the DOT/TRUCK card (3/3/8/8). Nobody has
   driven it yet.
+
+## 2026-11-23 10:56 SAST - CHOOSE YOUR CAR: each car measured; choosing again after a race (cloud session, Claude)
+- After a race: back to the title, 1, the dragster chosen - its numbers in your card row (slide 125, pushes -3 / -6),
+  armour 26 a piece, weight class 0; the next race ran (built_popup_after_a_race.png).
+- Each car with the careful autopilot, 4 races each (few - a first look; tests/race_measure.py, RT_CAR=n):
+  racer mean place 1.5, laps 22.09 s; six-wheeler 2.8, 23.83; clown car 3.2, 24.00; tank 3.5, 23.79; DRAGSTER 1.0 (4 wins
+  of 4), 19.19 - 15% quicker than the field; coupe 1.8, 21.98; saloon 2.2, 22.37. The computer cars 22.3-24.7.
+- The dragster is far too strong as yours: the computer cars' rows carry the race-only top-speed balance (ai_tune.asm
+  AI_K?_KS) and your card row does not - the dragster's speed 8 is the card's in full. To be tuned with Grant (stage 3,
+  rock/paper/scissors).
