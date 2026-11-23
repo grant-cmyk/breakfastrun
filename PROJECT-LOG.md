@@ -3960,3 +3960,15 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   (cars/<key>: art, h0, h22, h45, changed) for Claude to read back (ArtifactData list cars); copy-text when not connected.
 - Checked: headless Chromium - no errors, a paint stroke and car/heading switching, no sideways scroll at 390 px; the store
   read back empty (nothing drawn yet). The 11.25 and 33.75 headings the game drafts by turn_car.py are not shown.
+
+## 2026-11-23 10:39 SAST - Grant's Car Studio edits in the game (cloud session, Claude)
+- Grant: "cars done". Read from the studio's store (6 cars: clown, coupe, dragster, saloon, six-wheeler, tank; the racer
+  untouched). He changed heading 0 only: clown 9 pixels (white middle), coupe 6, dragster 4 (white stripe), saloon 10
+  (white cockpit), six-wheeler 8, tank 4 (white turret). Carried onto 22.5 and 45 (each angled pixel looked up in heading
+  0, turned back, 4 samples a pixel; the tank's turret cleared of a stray dot by hand) and written back to the studio.
+- tools/car_art_studio.txt holds them; tools/make_data.py reads it on top when STUDIO_ART=1 - set on the three breakfast
+  fast tapes only, so the plain tapes keep the old drawings (byte-identical). Studio defaults now these drawings.
+  Before/after, all 16 headings: docs/design/car_studio_edits_before_after.png.
+- Checked: heading 0 of Frank, Spike, Bruno and Jane read back from the game's memory on all three tapes matches the
+  studio; no reset in 80 s on each; race_mode_test 12/12 on _cnos, 11/12 on the main fast and _c tapes - each fail one
+  of the known race-order display glitches (the _c one the same frame as seen before). Nobody has driven it yet.
