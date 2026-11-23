@@ -3939,3 +3939,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   the real title screen (the C tape's, from the emulator), the ROM font, the cars' own 16 x 16 drawings twice the size,
   kept to 8 x 8 colour squares. Each car: name, one line, ACCEL / SPEED / GRIP / ARMOUR as ten squares each (Grant's driver
   cards), one plus and one minus, the keys. Racer, tank, dragster, saloon shown. Not in the game; questions to Grant.
+
+## 2026-11-23 10:06 SAST - choose your car: Grant's answers; the "which is yours" marks mocked up (cloud session, Claude)
+- Grant's answers: you may take a computer driver's car - then there are two of it on the road, with "a small graphic tweak
+  to specify which is yours"; ratings are not all equal - rock/paper/scissors, some cars slower on some tracks; everything
+  can be adjusted but armour, which is fixed to the car; no adjusting when you choose - the car has default settings
+  (tweaking a car comes later, elsewhere). Spare cars: not answered - going with the coupe and the saloon (ready drawn).
+- tools/make_your_car_marker_mock.py -> docs/design/choose_popup/your_car_marks.png: A a white spot on the roof, B a
+  target, C a bolder (2 px) white outline - each the same at every heading, so the game can add it to any car's frames as
+  it unpacks them. Recommended C: it reads at the game's size and does not touch the car's drawing (A and B land off a thin
+  car's body at 45 degrees - the dragster).
