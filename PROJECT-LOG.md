@@ -4027,3 +4027,19 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   Your DRAGSTER still wins every race (laps 17.9) - to tune (its straight speed).
 - Checked: race_mode_test 12/12; no reset in 80 s (racer, dragster); plain tapes byte-identical; main and trial tapes
   unchanged. Room: program 742, upper 436, low 427. Nobody has driven it yet.
+
+## 2026-11-23 12:36 SAST - oil: one whole turn, out almost facing the way you were; you can steer out of it; slides end when you ease off (cloud session, Claude)
+- Grant: "if you hit the oil, then you spin like currently So you lose control and deflect ever so slightly off your path,
+  so you end up almost facing the way you were"; "the idea is that with some clever driving, after the skid you can
+  potentially recover".
+- OIL (both oil tapes): the spin turns the car ONE whole turn and OIL_DEF (2 steps, 11 degrees) more or less, at random,
+  shared out over the spin's pictures (spill_left); the path turned an eighth of the speed the same way (about 7 degrees,
+  spill_go). It was 1.5 turns - out facing back. Checked: 48 spins with oil on all 8 spots, every car out at +-11 degrees.
+- Recovering: YOUR steering in a spin (spill_key - tick still clears the buttons, so the car is not steered as ever) turns
+  it a step more or less a picture, up to OIL_STEER (4 steps, 22 degrees) either way (spill_kadj): out anywhere from 34
+  degrees left to 34 right - a well-timed tap brings it out straight. Checked: right held +6/+2, left held -6/-2, none +-2.
+  GRIPX slides (C tape): a slide that goes on after the steering stops now ends at once when the car is back under its grip
+  (eased off).
+- Checked: race_mode_test 12/12 (_cnos), 11/12 (_c: the known half-repainted race-order colour, frame 782, seen before);
+  no reset in 80 s on either; plain tapes byte-identical; main tape unchanged. Balance (C tape, racer, 8 races): mean place
+  2.8, 2 wins; laps you 21.83, Frank 21.81, Spike 22.96, Bruno 21.59, Jane 22.36. Nobody has driven it yet.

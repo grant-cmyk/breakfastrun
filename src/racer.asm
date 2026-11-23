@@ -586,10 +586,13 @@ tk_on:
         xor a
         ld (cars+C_CTRL),a
 tk_you:
-        if OPT_OIL              ; OIL: spinning on a spill - no buttons
-        ld a,(spill_spin)
+        if OPT_OIL              ; OIL: spinning on a spill - no buttons but the steering (oil.asm: it steers you out of the spin -
+        ld a,(spill_spin)       ; Grant, 23 Nov 2026: "with some clever driving, after the skid you can potentially recover")
         cp OIL_IMM+1
         jr c,tk_nsp
+        ld a,(cars+C_CTRL)      ; (the steering kept for the spin alone, not to turn the car as ever)
+        and CT_L+CT_R
+        ld (spill_key),a
         xor a
         ld (cars+C_CTRL),a
 tk_nsp:
@@ -1254,10 +1257,21 @@ skid:                           ; (the computer cars: you have the grip model)
         ld a,(ix+C_CTRL)
         and CT_L+CT_R
         jr nz,gx_turn
-        ld a,(hl)               ; not turning: a slide carries on while it lasts
-        or a
+        ld a,(hl)               ; not turning: a slide carries on while it lasts - unless the car is under its grip again (eased
+        or a                    ; off: Grant, 23 Nov 2026, "with some clever driving, after the skid you can potentially recover")
         ret z
-        dec (hl)
+        push hl
+        call sk_speed
+        push de
+        ld de,(skc_v+1)
+        or a
+        sbc hl,de
+        pop de
+        pop hl
+        jr nc,gx_on
+        ld (hl),0               ; it grips again
+        ret
+gx_on:  dec (hl)
         jr gx_one
 gx_turn:
         push hl

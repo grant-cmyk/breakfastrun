@@ -10,14 +10,18 @@
 ;     oil spill somewhere on a straight just slightly off the racing path".)
 ;   - A spill is drawn as a car is (draw_car, from a record of its own: spill_rec) - under the cars.
 ;   - A car whose top left comes within OIL_R - 1 px of a spill's, both ways, SPINS for OIL_T pictures (about a second):
-;     no steering, no push - it slides on the way it was going, a sixteenth slower each picture, its picture turning
-;     round; then OIL_IMM pictures before a spill can catch it again. You hear the crash.
+;     no steering, no push - it slides on, a sixteenth slower each picture, its picture turning round ONE WHOLE TURN and
+;     OIL_DEF more or less, so it comes out almost facing the way it was (Grant, 23 Nov 2026: "you lose control and deflect
+;     ever so slightly off your path, so you end up almost facing the way you were" - it was 1.5 turns: it came out facing
+;     back), its path turned an eighth of its speed the same way (about 7 degrees); then OIL_IMM pictures before a spill
+;     can catch it again. You hear the crash.
 ; =====================================================================
 OIL_KIND equ 0xEE               ; (spill_rec's kind: draw_car draws the spill for it)
 OIL_R   equ 8                   ; (10 until 23 Nov 2026, the spill 15 x 13; now 12 x 12 - Grant: "make the oil spill a little smaller")
 OIL_T   equ 12                  ; pictures of spin (12.5 a second)
 OIL_IMM equ 12                  ; then this many it cannot spin again
-OIL_ROT equ 2                   ; heading steps (of 64) a TV frame while it spins: about 1.5 turns
+OIL_DEF equ 2                   ; heading steps (of 64) it comes out off the way it was: 11 degrees, either way at random
+OIL_STEER equ 4                 ; YOU steering in a spin: up to this many heading steps (22 degrees) either way
 
 spill_new:                        ; a new race: no spills yet (the first come with the green light), nobody spinning
         if OPT_LJ * OPT_MAPHUD  ; (with LINEJ: the judge's 16 bytes before these cleared too - lj_new's work: vars_d0.asm)
@@ -67,6 +71,7 @@ slot_try: push hl
         pop hl
         jr nc,slot_n
         ld (hl),OIL_T+OIL_IMM
+        call spill_go           ; which way it comes out; its path turned a little
         ld a,(ix+C_KIND)
         or a
         jr nz,slot_n
@@ -113,6 +118,78 @@ slop_3: ld a,c
         djnz slop_1
         ld (spill_on),a
         ret
+
+spill_go:                         ; IX = a car that has just hit a spill: its turn, a whole one and OIL_DEF more or less, at
+        push hl                   ; random; its path turned an eighth of its speed the same way (HL kept)
+        ld a,(ix+C_KIND)          ; (you: not steered out of it yet)
+        or a
+        jr nz,sgo_0
+        ld (spill_kadj),a
+sgo_0:
+        ld e,(ix+C_VY)
+        ld d,(ix+C_VY+1)
+        call sgo_8
+        ld hl,0
+        or a
+        sbc hl,de
+        ex de,hl                  ; DE = -vy / 8 (clockwise: x's share)
+        ld c,(ix+C_VX)
+        ld b,(ix+C_VX+1)
+        push de
+        ld d,b
+        ld e,c
+        call sgo_8
+        ld b,d
+        ld c,e                    ; BC = vx / 8 (clockwise: y's share)
+        pop de
+        call rnd
+        rra
+        ld a,64+OIL_DEF
+        jr c,sgo_cw
+        ld hl,0                   ; the other way round
+        or a
+        sbc hl,de
+        ex de,hl
+        ld hl,0
+        or a
+        sbc hl,bc
+        ld b,h
+        ld c,l
+        ld a,64-OIL_DEF
+sgo_cw: push af
+        ld l,(ix+C_VX)
+        ld h,(ix+C_VX+1)
+        add hl,de
+        ld (ix+C_VX),l
+        ld (ix+C_VX+1),h
+        ld l,(ix+C_VY)
+        ld h,(ix+C_VY+1)
+        add hl,bc
+        ld (ix+C_VY),l
+        ld (ix+C_VY+1),h
+        call spill_lrow
+        pop af
+        ld (hl),a
+        pop hl
+        ret
+sgo_8:  sra d                     ; DE / 8, signed
+        rr e
+        sra d
+        rr e
+        sra d
+        rr e
+        ret
+spill_lrow:                       ; IX = a car: HL = what is left of its turn
+        ld a,(ix+C_KIND)
+        add a,spill_left AND 255
+        ld l,a
+        adc a,spill_left/256
+        sub l
+        ld h,a
+        ret
+spill_left: defs NCARS            ; each car's turn left to do (heading steps of 64)
+spill_key: db 0                   ; your steering while you spin (racer.asm tick)
+spill_kadj: db 0                  ; how far you have steered this spin (steps, signed)
 
 spill_hit:                        ; IX = a car: CY if it is on a spill
         ld hl,spill_spots
@@ -165,16 +242,52 @@ spill_phys:                       ; (physics, first; IX = a car): NZ if it is sp
         jr nc,slop_spin
         xor a
         ret
-slop_spin:
-        ld a,(ph_steps)
-        ld b,a
-        rept OIL_ROT
-        add a,b
-        endm
+slop_spin:                      ; (A = its count: OIL_IMM + the pictures of spin left, this one too)
+        sub OIL_IMM
+        ld c,a
+        call spill_lrow         ; its picture turns round: what is left of its turn, shared out over the pictures left
+        ld a,(ix+C_KIND)        ; YOU can steer out of it (Grant, 23 Nov 2026: "with some clever driving, after the skid you
+        or a                    ; can potentially recover"): right turns it a step further, left a step less, a step a picture,
+        jr nz,slt_0             ; OIL_STEER steps at most either way (spill_kadj) - enough to come out straight, or further off
+        ld a,(spill_key)        ; (your steering in the spin: tick keeps it here)
+        and CT_R
+        jr z,slt_a
+        ld a,(spill_kadj)
+        cp OIL_STEER
+        jr z,slt_0
+        inc a
+        ld (spill_kadj),a
+        inc (hl)
+        jr slt_0
+slt_a:  ld a,(spill_key)
+        and CT_L
+        jr z,slt_0
+        ld a,(hl)               ; (a step a picture still to turn, at least)
+        cp c
+        jr z,slt_0
+        jr c,slt_0
+        ld a,(spill_kadj)
+        cp 0-OIL_STEER AND 255
+        jr z,slt_0
+        dec a
+        ld (spill_kadj),a
+        dec (hl)
+slt_0:  ld a,(hl)
+        ld b,0
+slt_1:  cp c
+        jr c,slt_2
+        sub c
+        inc b
+        jr slt_1
+slt_2:  ld a,(hl)
         sub b
-        add a,(ix+C_ANG)        ; its picture turns round
+        ld (hl),a
+        ld a,b
+        add a,(ix+C_ANG)
         and 63
         ld (ix+C_ANG),a
+        ld a,(ph_steps)
+        ld b,a
         push ix                 ; a sixteenth slower
         pop hl
         ld de,C_VX
