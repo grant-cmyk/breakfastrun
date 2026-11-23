@@ -3861,3 +3861,15 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - pasmo's EQU trap twice more (an EQU takes its value where it stands): YOU_SL/KA/KS first came out 0-based (slide 0:
   always sliding) - now after cards.asm.
 - Checked: no reset in 80 s; race_mode_test 12/12; finish order 8/8.
+
+## 2026-11-23 SAST - group C tape: your car was the slowest on the straights - power back to the MAX card (cloud session, Claude)
+- Grant (on the group C tape): "my car is definitely the slowest of the lot - can you confirm comparative car speeds".
+  Measured (scratchpad carspeeds.py: each car's speed on the right and bottom straights, 4 races, careful autopilot):
+  group C tape - you typical 1.20 px a frame, 90th percentile 1.31; the computer cars 1.26-1.41 and 1.37-1.50. Confirmed:
+  the slowest. (Main fast tape and trial tape: you 1.42 / 1.41 typical - among the quickest.)
+- Cause: the group C tuning (22 Nov) took 8/64 off both your pushes to keep the careful autopilot last - the wrong lever.
+  Now your pushes are the MAX card's as the computer cars have it (YOU_KA/KS = CD_R_KA/KS); your tyres still slide from
+  45/64 of their slide speed. After: you typical 1.42, 90th 1.45 (Jane 1.45 / 1.50, Frank 1.33 / 1.39, Spike 1.31 / 1.48,
+  Bruno 1.37 / 1.39).
+- What it does to the difficulty: the careful autopilot now 1.9th on average, 3 wins in 8 (laps 21.50 s; the computer
+  cars 21.9-23.0). On the grip model it was last. Easier - to put back by the computer cars, not by slowing you.

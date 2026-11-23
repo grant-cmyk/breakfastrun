@@ -256,8 +256,8 @@ you_card:                       ; cars' rows are (where it slides; no braking; A
         db 255, CD_R_VSW, YOU_KA AND 255, YOU_KS AND 255, 0, 0  ; did on the grip model (laps 24.4 s, last, ~8 s behind):
         endif                   ; it slides sooner than the computer cars' MAX card (tyres poor to start, as yours were),
         include "cards.asm"     ; the cards' numbers (tools/make_cards.py)
-        if OPT_SIMPLE           ; and both its pushes 8 64ths less. (These EQUs AFTER cards.asm: pasmo takes an EQU's value where
-YOU_SL  equ CD_R_SLIDE*45/64    ; it stands - before it, CD_R_SLIDE was 0: slide 0, sliding always. 22 Nov 2026)
-YOU_KA  equ CD_R_KA-8
-YOU_KS  equ CD_R_KS-8
+        if OPT_SIMPLE           ; (These EQUs AFTER cards.asm: pasmo takes an EQU's value where it stands - before it, CD_R_SLIDE
+YOU_SL  equ CD_R_SLIDE*45/64    ; was 0: slide 0, sliding always. 22 Nov 2026.) Its pushes are the MAX card's as the computer cars
+YOU_KA  equ CD_R_KA             ; have it - 8/64 less at first, which made you the slowest car on the straights (Grant, 23 Nov 2026:
+YOU_KS  equ CD_R_KS             ; "my car is definitely the slowest of the lot": typical 1.20 px a frame, theirs 1.26-1.41)
         endif
