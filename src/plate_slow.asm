@@ -70,6 +70,11 @@ cf_wave:
         jp fl_draw
 ; MSG_SND: a blip as the crew chief starts to talk ("If a message comes up make a sound of sorts"); then msg_final.
 msg_snd:
+        if OPT_SND2             ; (SND2: not over a sound already playing - it cut the NOS's whoosh off at once, as the crew chief
+        ld a,(snd_fxt)          ; says "BOOST" the moment you fire)
+        or a
+        jp nz,msg_final
+        endif
         ld hl,9*256+5
         ld (snd_fxt),hl
         jp msg_final

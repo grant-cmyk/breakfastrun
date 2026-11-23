@@ -5134,6 +5134,19 @@ fx_fire:
         add a,12
         jr fx_go
 fx_bonk:
+        if OPT_SND2             ; SND2 (Grant, 23 Nov 2026: "lap complete needs a unique beep"): 3, a lap done - its own chime,
+        cp 3                    ; two notes, low then high (ding-DING), 16 flips a frame - twice and more the other beeps'. (It
+        jr nz,fx_b2             ; was a plain beep, 14 counts apart: next to the start lights' beeps, 48 and 24.)
+        ld a,l
+        cp 8
+        ld a,14
+        jr c,fx_lap
+        ld a,24
+fx_lap: ld l,a
+        ld h,16
+        jr isr_burst
+fx_b2:
+        endif
         cp 2                    ; (3 up: a beep, flips that many counts apart)
         jr nz,fx_go
         ld a,l                  ; 2, a bang into a cereal O: the bonk (B2) - a note

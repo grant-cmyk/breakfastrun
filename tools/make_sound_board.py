@@ -12,8 +12,9 @@ CLIPS = [('start_music', 'Start music', 'Plays while the drivers’ faces animat
          ('bonk', 'Hitting a cereal O', 'A falling note when you bounce off an O.', 'event'),
          ('oil', 'Oil spin', 'Today the same crash noise as a bump, then quiet while you spin.', 'event'),
          ('nos_pickup', 'NOS pickup', 'Driving over a NOS canister: a run of four notes.', 'event'),
-         ('nos_fire', 'NOS fired', 'SPACE: the boost starts.', 'event'),
-         ('lap', 'Lap complete', 'Crossing the line.', 'event'),
+         ('nos_fire', 'NOS fired', 'SPACE: a buzz that climbs steeply as the boost starts. (Until today the crew chief\u2019s blip cut it off at once.)', 'event'),
+         ('lap', 'Lap complete', 'NEW: its own chime, a low note then a high one (ding-DING), louder than the other beeps.', 'event'),
+         ('crew', 'Crew chief message', 'A short blip as his speech bubble opens.', 'event'),
          ('finish', 'Finish music', 'The chequered flag, then the podium.', 'music')]
 IDEAS = [('Skid screech', 'There is none on this tape: the screech belongs to the old handling model. A screech while a car slides, harsher the further over its grip.'),
          ('Heavier crash', 'Twice as long, denser noise, and longer still for a hard hit than a rub.'),
@@ -22,6 +23,7 @@ IDEAS = [('Skid screech', 'There is none on this tape: the screech belongs to th
          ('NOS roar', 'A rough roar for the whole burn, not only the moment it fires.'),
          ('Overtaking', 'A short rising blip when you pass a car and a falling one when you are passed, with the faces.'),
          ('Final lap', 'A bigger fanfare as you start the last lap.')]
+# (done 23 Nov 2026: the lap's own chime - "lap complete needs a unique beep"; the NOS whoosh no longer cut off)
 def clicks(path):
     w = wave.open(path); d = w.readframes(w.getnframes()); sr = w.getframerate()
     win = sr // 50; hi = [v > 128 for v in d]

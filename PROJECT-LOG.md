@@ -4066,3 +4066,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Checked: in a race - you passed Jane (Jane sad), Spike passed you (Spike happy), the order before and after as the game
   had it (docs/design/overtake_faces.png); race_mode_test 11/12 (the known half-repainted race-order colour); no reset in
   80 s; plain tapes byte-identical; main and trial tapes unchanged. Room on the C tape: program 156 bytes. Nobody has driven it.
+
+## 2026-11-23 14:29 SAST - the lap's own chime; the NOS whoosh no longer cut off (cloud session, Claude)
+- Grant: "lap complete needs a unique beep".
+- Found: the lap sound was a plain beep (effect 14, flips 14 counts apart) - next to the start lights' plain beeps (48, 24).
+  And the Sound Board's "NOS fired" was the crew chief's blip: firing NOS set the whoosh (effect 1) and the crew chief's
+  "BOOST" message's blip (msg_snd, effect 9) replaced it at once - the whoosh was never heard.
+- SND2=1 (the three breakfast fast tapes): effect 3, a lap done - its own chime, a low note then a high one (ding-DING:
+  flips 24 then 14 counts apart, 8 frames each), 16 flips a frame (the other beeps 6) - racer.asm fx_bonk, clothmini.asm.
+  msg_snd waits: no blip over a sound already playing (plate_slow.asm).
+- Re-recorded a race (C tape) and the clips re-cut from the logged events (start music, lights, engine, crash, O, oil,
+  NOS pickup, NOS fired - the whoosh now -, lap - the chime: ~3.7 kHz then ~5.5 kHz -, crew chief blip, finish); the Sound
+  Board republished (https://claude.ai/artifact/CJfPsJCYhhHbZMGP7AtxXk).
+- Checked: race_mode_test 12/12 (_cnos), 11/12 (main and _c: the known race-order colour, the same frames as before); no
+  reset in 80 s on each; plain tapes byte-identical. Room: C tape program 138 bytes. Nobody has heard it on a Spectrum yet.

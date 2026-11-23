@@ -29,6 +29,7 @@ OPT_TANKUP equ 0               ; 1: the tank weaker early, stronger each lap (TA
 OPT_PICK equ 0                 ; 1: choose your car at the title (PICK=1 bash build.sh)
 OPT_GRIPX equ 0                ; 1: harder slides, a wider grip scale (GRIPX=1 bash build.sh)
 OPT_OVF equ 0                  ; 1: the face of who you passed or who passed you (OVF=1 bash build.sh)
+OPT_SND2 equ 0                 ; 1: the lap chime; the blip waits (SND2=1 bash build.sh)
 OPT_MAP40 equ 0                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)
 OPT_RT equ 0                   ; 1: the race track trial - black road, green grass (RACETRACK=1 bash build.sh)
 OPT_CHOOSE equ 0               ; 1: the choose screen (tools/build_choose.sh: not for build.sh alone)

@@ -157,7 +157,11 @@ yl_note:                        ; HL = a lap's time, IX = whose (kept: HL)
         ld (hl),d
         ex de,hl
         push hl                 ; a lap done: a high beep, a quarter of a second (Grant, 15 Nov 2026:
-        ld hl,14*256+14         ; "As you go past a lap, make a sound")
+        if OPT_SND2             ; "As you go past a lap, make a sound")
+        ld hl,3*256+16          ; (SND2: its own chime, 16 frames - racer.asm fx_bonk)
+        else
+        ld hl,14*256+14
+        endif
         ld (snd_fxt),hl
         pop hl
         jr yl_show              ; and shown at once
