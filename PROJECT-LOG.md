@@ -3930,3 +3930,12 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   trap again: it came out 0 and the tape did not change; moved first, checked in the .sym (YOU_KA -12, YOU_KS -13).
 - Measured (8 races, careful autopilot): mean place 1.9, 3 wins (1.4 and 5 before); the field within 1-3 s at the flag;
   flying laps you 22.51, Frank 22.58, Spike 23.12, Bruno 22.51, Jane 23.09. The tank 25.7 / 23.0 / 21.7 by lap.
+
+## 2026-11-23 09:49 SAST - CHOOSE YOUR CAR: the popup mocked up (cloud session, Claude)
+- Grant: "show the strengths of each car. This is the grip, acceleration, speed. The armour cannot be adjusted - that is
+  linked to the car you get ... a rock/paper/scissors type setup ... when you click 1, a popup appears asking you to choose
+  your car. You press left and right to select cars ... We need to have spare cars to choose from ... Please mock this up".
+- tools/make_choose_popup_mock.py -> docs/design/choose_popup/choose_popup_mock.png (and popup_1..4_*.png): the popup over
+  the real title screen (the C tape's, from the emulator), the ROM font, the cars' own 16 x 16 drawings twice the size,
+  kept to 8 x 8 colour squares. Each car: name, one line, ACCEL / SPEED / GRIP / ARMOUR as ten squares each (Grant's driver
+  cards), one plus and one minus, the keys. Racer, tank, dragster, saloon shown. Not in the game; questions to Grant.
