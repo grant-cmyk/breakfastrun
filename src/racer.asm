@@ -470,6 +470,9 @@ rt_nomap:
         call dmg_anim           ; and your car's damage, in the other corner
         endif
         call pl_draw            ; and your place, on its plate, top right
+        if OPT_OVF
+        call ov_draw            ; OVF: the face of who you passed (sad) or who passed you (happy), under the plate (ovface.asm)
+        endif
         if OPT_STEADY = 0       ; (STEADY: one rhythm, OPT_STEADY TV frames a picture, never changed)
         ld a,(last_shown)       ; did this picture run over the rhythm?
         ld b,a
@@ -4803,6 +4806,9 @@ me_world:
         endif
         if OPT_PICK
         include "pick.asm"      ; PICK: the CHOOSE YOUR CAR card over the title
+        endif
+        if OPT_OVF
+        include "ovface.asm"    ; OVF: the overtaking faces
         endif
         if OPT_JFACE
         include "jface.asm"     ; JFACE: the faces move with the music (in the program: the room under 0x8000 is full)

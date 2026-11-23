@@ -113,6 +113,9 @@ printf 'OPT_PICK equ %s                 ; 1: choose your car at the title (PICK=
 # all cars"): a car over its grip slides wide as well as scrubbing speed (racer.asm skid), and the grip scale is wider
 # (tools/make_cards.py SLIDE_AT_X).
 printf 'OPT_GRIPX equ %s                ; 1: harder slides, a wider grip scale (GRIPX=1 bash build.sh)\n' "${GRIPX:-0}" >> "$ROOT/src/options.asm"
+# OVF=1 (the group C tape; Grant, 23 Nov 2026: "if you overtake or are overtaken by a player, then their face shows up top
+# right in the gameplay as either happy or sad"): src/ovface.asm.
+printf 'OPT_OVF equ %s                  ; 1: the face of who you passed or who passed you (OVF=1 bash build.sh)\n' "${OVF:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

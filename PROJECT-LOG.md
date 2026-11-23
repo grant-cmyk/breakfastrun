@@ -4055,3 +4055,14 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Found: NO SKID SCREECH on the group C tape - snd_skt is set only by you_grip (the grip model), which SIMPLE leaves out. The
   in-race sounds are thin beside the music: engine ~46 speaker clicks a second; crash 176 in 0.9 s; bonk 59 in 0.7 s; the
   music thousands. The snd_fxk codes seen: 48 a red light, 24 green, 9 NOS fired, 0 NOS picked up, 2 an O, 14 a lap.
+
+## 2026-11-23 14:16 SAST - the overtaking faces on the group C tape (cloud session, Claude)
+- Grant: "if you overtake or are overtaken by a player, then their face shows up top right in the gameplay as either happy or
+  sad a short animation between frames and then it disappears".
+- OVF=1 (src/ovface.asm, called from draw_all after the place plate): each picture your place against the last; better - the
+  driver now just behind you, SAD; worse - the driver now just ahead, HAPPY. His face (faces + faces_mood's happy/sad rows)
+  in a framed box 24 x 18 just under the plate, his everyday face and the mood by turns every 4 pictures, 20 pictures (1.6 s),
+  then gone (the window is drawn afresh each picture). A new pass starts it again.
+- Checked: in a race - you passed Jane (Jane sad), Spike passed you (Spike happy), the order before and after as the game
+  had it (docs/design/overtake_faces.png); race_mode_test 11/12 (the known half-repainted race-order colour); no reset in
+  80 s; plain tapes byte-identical; main and trial tapes unchanged. Room on the C tape: program 156 bytes. Nobody has driven it.
