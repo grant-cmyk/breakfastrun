@@ -97,27 +97,27 @@ CD_ARM_4 equ 26      ; JANE, armour 2
 ;      where its ACCEL push gives way to its SPEED push (both / 4), its ACCEL push and its SPEED push (64ths more or less than the plain 64),
 ;      1 while it is braking (the game writes it), and a byte to make the row 8 ----
 cd_tab:
-        dw 300
+        dw 300+300*(AI_C_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
-        db AI_K_BRAKE, 89, 0, (AI_KC_KS+0) AND 255, 0, 0
+        db AI_K_BRAKE, 89, (AI_C_SA+0) AND 255, (AI_KC_KS+AI_C_SA+0) AND 255, 0, 0
         else
         db 75+AI_C_SLIP, 89, 0, 0, 0, 0      ; CYAN: FRANK (COUPE) - acceleration 5, speed 5, grip 4
         endif
-        dw 270
+        dw 270+270*(AI_G_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
-        db AI_K_BRAKE, 84, 5, (AI_KG_KS-4) AND 255, 0, 0
+        db AI_K_BRAKE, 84, (AI_G_SA+5) AND 255, (AI_KG_KS+AI_G_SA-4) AND 255, 0, 0
         else
         db 67+AI_G_SLIP, 84, 5, 252, 0, 0      ; GREEN: SPIKE (CLOWN CAR) - acceleration 6, speed 2, grip 3
         endif
-        dw 420
+        dw 420+420*(AI_P_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
-        db AI_K_BRAKE, 84, 251, (AI_KP_KS-4) AND 255, 0, 0
+        db AI_K_BRAKE, 84, (AI_P_SA-5) AND 255, (AI_KP_KS+AI_P_SA-4) AND 255, 0, 0
         else
         db 105+AI_P_SLIP, 84, 251, 252, 0, 0      ; PINK: BRUNO (TANK) - acceleration 4, speed 2, grip 8
         endif
-        dw 210
+        dw 210+210*(AI_W_SX-64)/64
         if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)
-        db AI_K_BRAKE, 98, 10, (AI_KW_KS+6) AND 255, 0, 0
+        db AI_K_BRAKE, 98, (AI_W_SA+10) AND 255, (AI_KW_KS+AI_W_SA+6) AND 255, 0, 0
         else
         db 52+AI_W_SLIP, 98, 10, 6, 0, 0      ; WHITE: JANE (DRAGSTER) - acceleration 7, speed 8, grip 1
         endif

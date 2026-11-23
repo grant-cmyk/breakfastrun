@@ -5861,9 +5861,9 @@ t_name  equ TD + t_name_src - td_src
         if (1-OPT_CHOOSE) * (1-OPT_FACESLOW)
 faces_mood equ TD + faces_mood_src - td_src
         endif
-        if OPT_FACESLOW
-faces_mood equ faces_mood_src
-        endif
+        if OPT_FACESLOW * (1 - OPT_UPPER)       ; (UPPER: after up_equs.asm, below - an EQU takes its value where it stands, and
+faces_mood equ faces_mood_src                   ;  here faces_mood_src is not yet known: the faces' looks, happy and sad were read
+        endif                                   ;  from address 0 - Grant, 23 Nov 2026: Frank and the clown did not move)
 pod_anim equ TD + pod_anim_src - td_src
         if OPT_RACE
 rm_setup equ TD + rm_setup_src - td_src
@@ -6002,6 +6002,9 @@ up_src:                         ;  the moved tables' names came out as offsets f
         include "up_data.asm"   ;  ROM: 22 Nov 2026)
 up_end:
         include "up_equs.asm"
+        if OPT_FACESLOW
+faces_mood equ faces_mood_src
+        endif
         if UP_AT + up_end - up_src > HIMEM
         .error UPPER: the tables above the copy routine run into the row lists at HIMEM
         endif

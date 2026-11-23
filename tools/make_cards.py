@@ -133,10 +133,10 @@ def asm(cards):
         n = by[who]
         for what, k in (('acceleration', n['ka']), ('speed', n['ks'])):
             if not -60 <= k <= 60: raise SystemExit('%s: the scale gives a %s push the game cannot multiply (%d: keep it within 60 of the plain push)' % (who, what, k))
-        L.append('        dw %d' % n['slide'])
+        L.append('        dw %d+%d*(AI_%s_SX-64)/64' % (n['slide'], n['slide'], letter))   # (AI_x_SX, ai_tune.asm: 64 unless SIMPLE - group C's corners; written so that 64 is the number exactly, and no product passes 65535)
         brake = '%d+AI_%s_SLIP' % (n['slide'] // 4, letter) if GAME_SPEED == 100 else '((%d+AI_%s_SLIP)*%d+50)/100' % (SLIDE_AT[by[who]['g']] // 4, letter, GAME_SPEED)
         L.append('        if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)')
-        L.append('        db AI_K_BRAKE, %d, %d, (AI_K%s_KS%+d) AND 255, 0, 0' % (n['vsw'] // 4, n['ka'] & 255, letter, n['ks']))   # (pasmo reads -16+X as -(16+X): the card's number goes last)
+        L.append('        db AI_K_BRAKE, %d, (AI_%s_SA%+d) AND 255, (AI_K%s_KS+AI_%s_SA%+d) AND 255, 0, 0' % (n['vsw'] // 4, letter, n['ka'], letter, letter, n['ks']))   # (pasmo reads -16+X as -(16+X): the card's number goes last; AI_x_SA: 0 unless SIMPLE)
         L.append('        else')
         L.append('        db %s, %d, %d, %d, 0, 0      ; %s: %s (%s) - acceleration %d, speed %d, grip %d' % (
             brake, n['vsw'] // 4, n['ka'] & 255, n['ks'] & 255, colour, who, n['car'], n['a'], n['s'], n['g']))

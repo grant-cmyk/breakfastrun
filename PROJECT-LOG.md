@@ -3873,3 +3873,21 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   Bruno 1.37 / 1.39).
 - What it does to the difficulty: the careful autopilot now 1.9th on average, 3 wins in 8 (laps 21.50 s; the computer
   cars 21.9-23.0). On the grip model it was last. Easier - to put back by the computer cars, not by slowing you.
+
+## 2026-11-23 07:49 SAST - faces at the start and podium fixed on the fast tapes; group C balance with Jane trimmed; the car sheet (cloud session, Claude)
+- Grant: "when frank is placed second there is no animation of his head. Also the clown does not animate at the start
+  sequence. Note that Jane was quite a bit faster than the others"; "balance was good though".
+- FACES (all three fast tapes): faces_mood (the faces' looks, happy and sad) was aliased before up_equs.asm, so with
+  UPPER it took the value 0 - pasmo's EQU trap again - and the face overlays were read from address 0. Moved after
+  up_equs.asm. Checked (scratchpad startfaces.py): every race-order row's face now changes during the start music, on
+  racer_cars75_breakfast_fast and racer_cars75_breakfast_fast_c.
+- GROUP C BALANCE (racer_cars75_breakfast_fast_c only): your pushes 4/64 under the MAX card (were 8 under at first, then
+  equal); the computer cars corner faster (slide speed x2.5 for Frank, Bruno and Jane, x1.4 for Spike - ai_tune.asm GROUP C,
+  make_cards.py) and Jane's pushes 8/64 less. Measured (8 races, careful autopilot): mean place 4.2, 3.7 s behind the
+  winner; flying laps you 24.27, Frank 23.31, Spike 23.95, Bruno 23.86, Jane 24.31 - Jane no longer the quickest, the
+  slowest car 4% off the quickest. Straight speeds (4 races) typical 1.29-1.36 px a frame for all five, you 1.31.
+  Nobody has driven this yet.
+- CAR SHEET: docs/design/all_car_graphics.png - every car graphic in the game plus the five spare drafts
+  (tools/new_cast_art.txt), for Grant to pick the one to swap.
+- Checked: plain tapes byte-identical; no reset in 80 s (_c); race_mode_test 12/12 on _cnos, 11/12 on the main fast and _c
+  tapes - the one fail is the known half-repainted race-order row (a colour caught mid-redraw at one frame; seen before).

@@ -388,3 +388,24 @@ EL_MAX     equ 3
 EL_EASE    equ 1
 EL_AHEAD   equ 4                ; (more than this many waypoints ahead of you - about 2 seconds - before it eases off)
         endif
+
+; GROUP C (SIMPLE=1, the trial tape racer_cars75_breakfast_fast_c; Grant 23 Nov 2026: "balance was good though", "my car is
+; definitely the slowest of the lot", "Jane was quite a bit faster than the others"): each computer car's slide speed x
+; AI_x_SX / 64 (it corners faster - sliding costs speed) and both its pushes AI_x_SA 64ths more or less. Frank, Bruno and Jane
+; 2.5 times, Spike - who slid half the time and gained most - 1.4; Jane's pushes 8 less. (Your own: YOU_KA/KS, cards_code.asm.)
+        if OPT_SIMPLE
+AI_C_SX equ 160
+AI_G_SX equ 90
+AI_P_SX equ 160
+AI_W_SX equ 160
+AI_W_SA equ -8
+        else
+AI_C_SX equ 64
+AI_G_SX equ 64
+AI_P_SX equ 64
+AI_W_SX equ 64
+AI_W_SA equ 0
+        endif
+AI_C_SA equ 0
+AI_G_SA equ 0
+AI_P_SA equ 0
