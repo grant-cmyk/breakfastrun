@@ -67,7 +67,7 @@ textarea { width: 100%; min-height: 120px; font: 0.75rem/1.25 var(--mono); backg
   <header>
     <div>
       <h1>Breakfast Run <span>Car Studio</span></h1>
-      <p class="sub">Tweak any car. Each one is three drawings, 16 × 16: nose up, 22.5° and 45°. The game turns them to make the other headings.</p>
+      <p class="sub">Each car as <strong>your</strong> car shows it when you drive it. The computer drivers keep the game's drawing, so yours stands out. Three drawings a car, 16 × 16: nose up, 22.5° and 45°; the game turns them to make the other headings.</p>
     </div>
     <span id="status" class="status">Connecting…</span>
   </header>
@@ -167,7 +167,7 @@ function chips() {
     const b = document.createElement('button'); b.className = 'chip'; b.id = 'car-' + c.key; b.setAttribute('aria-pressed', c.key === cur);
     const cv = document.createElement('canvas'); chipIcon(cv, state[c.key]); b.append(cv);
     const t = document.createElement('span'); t.textContent = c.name; const sm = document.createElement('small'); sm.textContent = c.who; t.append(sm); b.append(t);
-    if (!same(state[c.key], c)) { const d = document.createElement('span'); d.className = 'dot'; d.title = 'Changed from the game'; b.append(d); }
+    if (!same(state[c.key], c)) { const d = document.createElement('span'); d.className = 'dot'; d.title = 'Your version differs from the computer car\'s'; b.append(d); }
     b.onclick = () => { cur = c.key; undo = []; render(); };
     box.append(b);
   }

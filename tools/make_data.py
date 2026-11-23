@@ -130,8 +130,9 @@ def hand_drawn():
     # SWAP_CAR=CYAN=TRUCK (Grant, 23 Nov 2026: "The six wheeler to replace Franks car" - his coupe looked like Max's racer): a
     # car's pictures from another drawing (tools/pool_art.txt); the driver, card and face are the same. Set on the breakfast
     # fast tapes only (tools/build_race.sh), so the other tapes keep their pictures.
-    # STUDIO_ART=1 (Grant, 23 Nov 2026, "cars done" in the Car Studio): tools/car_art_studio.txt read on top - a car drawn again
-    # there wins (the last drawing of a name and heading is the one kept). Set on the breakfast fast tapes only.
+    # STUDIO_ART=1: tools/car_art_studio.txt read on top - a car drawn again there wins (the last drawing of a name and heading
+    # is the one kept). Those are YOUR car's versions (Grant, 23 Nov 2026: "I made those changes in each car so that only my
+    # car gets those changes") - for the choose screen's car, not the computer cars: no tape sets it today.
     studio = open(os.path.join(HERE, 'car_art_studio.txt')).read() if os.environ.get('STUDIO_ART') == '1' else ''
     text += studio
     swap = dict(a.split('=') for a in os.environ.get('SWAP_CAR', '').split(',') if a)

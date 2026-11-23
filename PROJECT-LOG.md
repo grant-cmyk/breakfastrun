@@ -3972,3 +3972,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Checked: heading 0 of Frank, Spike, Bruno and Jane read back from the game's memory on all three tapes matches the
   studio; no reset in 80 s on each; race_mode_test 12/12 on _cnos, 11/12 on the main fast and _c tapes - each fail one
   of the known race-order display glitches (the _c one the same frame as seen before). Nobody has driven it yet.
+
+## 2026-11-23 10:43 SAST - correction: the Car Studio edits are YOUR car's versions, not the computer cars' (cloud session, Claude)
+- Grant: "I made those changes in each car so that only my car gets those changes." I had put them on the computer cars.
+  Undone: STUDIO_ART off the fast tapes - the three tapes are byte-identical to 255748c again (computer cars as drawn).
+- tools/car_art_studio.txt is now YOUR car's version of each car, for the choose-your-car popup: when you pick a car a
+  computer driver also has, yours is drawn from it. That answers "which one is yours" - the A/B/C marks are dropped.
+  (The racer has no second version: only you drive it.)
+- The Car Studio says so (republished; "back to the game's drawing" gives the computer car's): the drawings in it are
+  yours. docs/design/choose_popup/yours_vs_computer.png: each pair side by side on the table, 4x and the game's size;
+  docs/design/choose_popup/your_versions_all_headings.png: all 16 headings, computer car above yours.

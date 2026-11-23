@@ -5,9 +5,8 @@ Claude reads them back. The page: docs/tools/car_studio.template.html."""
 import json, os, re
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.join(HERE, '..')
 text = open(os.path.join(HERE, 'car_art.txt')).read() + open(os.path.join(HERE, 'pool_art.txt')).read()
-studio = open(os.path.join(HERE, 'car_art_studio.txt')).read()   # (Grant's Car Studio edits, 23 Nov 2026: the game's drawing now)
 def art(name, h):
-    m = re.search(r'== %s heading %s ==\n((?:[Xo.]{16}\n){16})' % (name, h), studio) or re.search(r'== %s heading %s ==\n((?:[Xo.]{16}\n){16})' % (name, h), text)
+    m = re.search(r'== %s heading %s ==\n((?:[Xo.]{16}\n){16})' % (name, h), text)
     return m.group(1).split()
 CARS = [('YOU', 'racer', 'Racer', 'Max - you'), ('TRUCK', 'sixwheeler', 'Six-wheeler', 'Frank'),
         ('GREEN', 'clown', 'Clown car', 'Spike'), ('PINK', 'tank', 'Tank', 'Bruno'), ('WHITE', 'dragster', 'Dragster', 'Jane'),

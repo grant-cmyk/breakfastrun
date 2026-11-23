@@ -1,7 +1,9 @@
-BREAKFAST RUN CAR ART - CAR STUDIO EDITS (Grant, 23 Nov 2026, in https://claude.ai/artifact/4AX5oqNc3y2mzdjMWheKtK).
-Heading 0 is Grant's; his changes carried onto 22.5 and 45 by Claude (each angled pixel looked up in heading 0, turned
-back; the tank's turret cleared of a stray dot by hand). Read on top of tools/car_art.txt and tools/pool_art.txt by
-tools/make_data.py when STUDIO_ART=1 (the breakfast fast tapes) - the other tapes keep the old drawings.
+BREAKFAST RUN CAR ART - YOUR CAR'S VERSIONS (Grant, 23 Nov 2026, in the Car Studio https://claude.ai/artifact/4AX5oqNc3y2mzdjMWheKtK:
+"I made those changes in each car so that only my car gets those changes"). Each car as YOUR car shows it when you choose
+it - so that when a computer driver has the same car, yours is told apart. The computer cars keep tools/car_art.txt /
+tools/pool_art.txt. Heading 0 is Grant's; his changes carried onto 22.5 and 45 by Claude (each angled pixel looked up in
+heading 0, turned back; the tank's turret cleared of a stray dot by hand). The racer has no second version (only you
+drive it). Not in a tape yet: for the choose-your-car popup.
 
 == GREEN heading 0 ==
 ................
