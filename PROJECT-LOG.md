@@ -4112,7 +4112,7 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Why they sound alike: every effect is the interrupt's burst - 6 flips a frame, all high (gaps 14-48 counts: ~2-6 kHz) - over
   the engine's ~46 clicks a second.
 - tools/make_sound_lab2.py -> docs/sound/sound_lab2.html (docs/sound/lab2/*.wav), published privately:
-  https://claude.ai/artifact/AxUYaB8C3J89wtipqWRB8a (if the link differs: the publish result). For crash, skid, oil, NOS pickup,
+  https://claude.ai/artifact/Lnq4BpF4Yem7zfBHF2Sxxv. For crash, skid, oil, NOS pickup,
   NOS fired, O hit, lap and a new overtaking blip: A today (recorded), and B-D alternatives that differ in pitch (low thuds and
   knocks, ~0.5-1 kHz, to high squeals), texture (noise or tone) and shape (rising, falling, warbling, pulsed) - each rendered as
   the effect player would play it (FLIPS flips a frame, GAP counts apart, 16 T a count, ~80 T a flip; noise a random gap) over
