@@ -73,7 +73,7 @@ pd_same:                        ; the figures are cut afresh only once the time 
         cp 5
         jr c,pd_blit
 pd_time:
-        ld hl,pl_bmp+10*PL_W+1  ; your lap's time so far, small: m:ss.t - its 5 rows solid again,
+        ld hl,pl_bmp+PL_TR*PL_W+1  ; your lap's time so far, small: m:ss.t - its 5 rows solid again,
         ld b,5
 pd_3:
         ld (hl),0xFF
@@ -97,20 +97,20 @@ pd_3:
         ld a,(time_txt)
         call pd_d
         ld c,10                 ; m and :
-        ld hl,pl_bmp+10*PL_W+1
+        ld hl,pl_bmp+PL_TR*PL_W+1
         call pl_pair
         ld a,(time_txt+3)
         call pd_d
         ld c,a
         ld a,(time_txt+2)
         call pd_d               ; s s
-        ld hl,pl_bmp+10*PL_W+2
+        ld hl,pl_bmp+PL_TR*PL_W+2
         call pl_pair
         ld a,(time_txt+5)
         call pd_d
         ld c,a
         ld a,11                 ; . and t
-        ld hl,pl_bmp+10*PL_W+3
+        ld hl,pl_bmp+PL_TR*PL_W+3
         call pl_pair
 pd_blit:
         if OPT_RT               ; RACETRACK: only as much of it as has changed (rt_plate, racetrack_hot.asm: it comes to pd_4)

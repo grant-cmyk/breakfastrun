@@ -128,6 +128,8 @@ printf 'OPT_SND3 equ %s                 ; 1: the Sound Lab 2 picks (SND3=1 bash 
 # NOSBOLT=1 / BLINK=1 (the breakfast fast tapes; Grant, 23 Nov 2026): the NOS a yellow lightning bolt; your car on the grid blinks
 # (off a picture in 8) rather than flashes (off 4 in 8).
 printf 'OPT_NOSBOLT equ %s              ; 1: the NOS a yellow lightning bolt (NOSBOLT=1 bash build.sh)\n' "${NOSBOLT:-0}" >> "$ROOT/src/options.asm"
+# BIGPL=1 (the group C tape; Grant, 23 Nov 2026: "lets try A"): the place twice the size on the plate (plate_slow.asm pl_static).
+printf 'OPT_BIGPL equ %s                ; 1: the big place on the plate (BIGPL=1 bash build.sh)\n' "${BIGPL:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_BLINK equ %s                ; 1: your car blinks on the grid (BLINK=1 bash build.sh)\n' "${BLINK:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then

@@ -11,7 +11,11 @@
 ; =====================================================================
 OV_T    equ 20                  ; pictures it shows (12.5 a second)
 OV_FR   equ 4                   ; pictures a look lasts (a power of two)
+        if OPT_BIGPL
+OV_B    equ BUF + 5*32 + 0*0x100 + 23   ; (BIGPL: buffer row 40, under the plate's 28 rows)
+        else
 OV_B    equ BUF + 3*32 + 6*0x100 + 23   ; buffer row 30 (window line 22, under the plate's 18 rows), bytes 23-25
+        endif
 
 ov_draw:
         ld a,(race_on)

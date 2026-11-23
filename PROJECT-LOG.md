@@ -4175,3 +4175,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   the size on the plate with ND, the lap and the time in the small figures; B a box of its own beside today's plate, the place
   three times the size; C the place twice the size with /5, the lap and the lap time under it. Not in the game. A and C make
   the plate 28 lines tall (18 today): the overtaking face's box (under the plate) would move down 10 lines.
+
+## 2026-11-23 21:05 SAST - the bigger place number, option A, on the group C tape (cloud session, Claude)
+- Grant: "lets try A" (docs/design/place_number_mockups.png).
+- BIGPL=1 (C tape): the plate 28 rows (18), 33 px across (29): the place twice the size - the ROM's figure, each bit and row
+  twice (plate_slow.asm pl_big), cut out of the plate - with ST/ND/RD/TH (plate_low.asm: S T N D R H small figures, 15-20)
+  and the lap (1/3) beside it, the lap time under it on row 20 (plateco.asm PL_TR; 10 before). The overtaking face's box moved
+  down under it (ovface.asm OV_B: buffer row 40). tools/make_plate.py writes the new figures too.
+- Checked: mid-race 2ND 1/3 0:04.0, 2ND 2/3, the face under it (docs/design/place_number_A_built.png); race_mode_test and no
+  reset (below); plain tapes byte-identical; main and trial tapes unchanged. Room on the C tape: under 0x8000 52 bytes,
+  program 9.

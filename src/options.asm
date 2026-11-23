@@ -33,6 +33,7 @@ OPT_SND2 equ 0                 ; 1: the lap chime; the blip waits (SND2=1 bash b
 OPT_RREC equ 0                 ; 1: the race time and race record on the podium (RREC=1 bash build.sh)
 OPT_SND3 equ 0                 ; 1: the Sound Lab 2 picks (SND3=1 bash build.sh)
 OPT_NOSBOLT equ 0              ; 1: the NOS a yellow lightning bolt (NOSBOLT=1 bash build.sh)
+OPT_BIGPL equ 0                ; 1: the big place on the plate (BIGPL=1 bash build.sh)
 OPT_BLINK equ 0                ; 1: your car blinks on the grid (BLINK=1 bash build.sh)
 OPT_MAP40 equ 0                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)
 OPT_RT equ 0                   ; 1: the race track trial - black road, green grass (RACETRACK=1 bash build.sh)

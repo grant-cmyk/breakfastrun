@@ -131,7 +131,13 @@ CT_BRK  equ 8
         endif
 DMG_ROWS equ 16                 ; the gauge: 2 colour cells high - a clear row, the icon's 13, two clear (dmgicon.asm)
 PL_W    equ 5                   ; the place plate as composed (pl_bmp): bytes a row,
+        if OPT_BIGPL            ; BIGPL (Grant, 23 Nov 2026, of the mock-ups docs/design/place_number_mockups.png: "lets try A"):
+PL_H    equ 28                  ; the place twice the size - 28 rows, the lap time on row 20
+PL_TR   equ 20
+        else
 PL_H    equ 18                  ; rows
+PL_TR   equ 10                  ; (the lap time's first row)
+        endif
         include "plate_low.asm" ; the place plate's small letters (tools/make_plate.py)
         include "plate_slow.asm" ; ... and its parts that run rarely
         if OPT_RT

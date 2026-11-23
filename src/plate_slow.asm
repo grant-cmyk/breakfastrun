@@ -1,5 +1,93 @@
 ; The place plate's parts that run rarely (see plateco.asm), in the slower memory under 0x8000.
 pl_static:                      ; B = your place, C = your lap: the plate composed in pl_bmp
+        if OPT_BIGPL            ; BIGPL (option A): the place twice the size (the ROM's figure), its ST/ND/RD/TH and the lap beside
+        ld (pl_key),bc          ; it, the lap time under (pl_draw, row PL_TR) - 33 pixels across, 28 rows
+        push bc
+        ld hl,pl_bmp
+        ld c,PL_W
+        ld de,0x0000
+        call pf_row
+        ld de,0x03F8
+        call pf_row
+        ld b,PL_H-4
+pbs_1:  ld de,0x07FC
+        call pf_row
+        djnz pbs_1
+        ld de,0x03F8
+        call pf_row
+        ld de,0x0000
+        call pf_row
+        pop bc
+        push bc
+        ld a,b                  ; the place, big
+        add a,'0'
+        call pl_big
+        pop bc
+        push bc
+        ld a,b                  ; its letters
+        dec a
+        add a,a
+        add a,pl_suf AND 255
+        ld l,a
+        adc a,pl_suf/256
+        sub l
+        ld h,a
+        ld a,(hl)
+        inc hl
+        ld c,(hl)
+        ld hl,pl_bmp+4*PL_W+3
+        call pl_pair
+        pop bc                  ; the lap, / and 3
+        ld a,c
+        ld c,12
+        ld hl,pl_bmp+12*PL_W+3
+        call pl_pair
+        ld a,3
+        ld c,13
+        ld hl,pl_bmp+12*PL_W+4
+        jp pl_pair
+pl_suf: db 15,16, 17,18, 19,18, 16,20, 16,20    ; ST ND RD TH TH
+pl_big:                         ; A = a figure: the ROM's, twice the size, cut out of the plate - bytes 1-2, rows 3-18
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld de,0x3C00
+        add hl,de
+        ld de,pl_bmp+3*PL_W+1
+        ld b,8
+pg_1:   push bc
+        ld c,(hl)
+        inc hl
+        push hl
+        ld hl,0
+        ld b,8
+pg_2:   sla c                   ; each bit twice
+        push af
+        adc hl,hl
+        pop af
+        adc hl,hl
+        djnz pg_2
+        ld b,2                  ; each row twice
+pg_3:   ld a,(de)
+        xor h
+        ld (de),a
+        inc de
+        ld a,(de)
+        xor l
+        ld (de),a
+        ld a,e
+        add a,PL_W-1
+        ld e,a
+        jr nc,pg_4
+        inc d
+pg_4:   djnz pg_3
+        pop hl
+        pop bc
+        djnz pg_1
+        ret
+        else
         ld (pl_key),bc
         push bc
         ld hl,pl_bmp            ; the plate: a clear line, a rounding row, 14 solid, a rounding
@@ -31,6 +119,7 @@ ps_1:
         ld c,3
         ld hl,pl_bmp+3*PL_W+3
         jp pl_pair
+        endif
 ; (pl_cols, pl_cut and pl_fill, which nothing called any more, went on 15 Nov 2026: 63 bytes)
 ; PA_STEP: the faces' step, 0-3 in A and E - a new one every 32 TV frames; Z if it is the one last given.
 pa_step:
