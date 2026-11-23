@@ -256,6 +256,11 @@ HP_AT   equ RT_SH + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL    ; and red on black; 
 HP_AT   equ 0x5800 + (WIN_Y/8 + WIN_H/8 - 2)*32 + WIN_COL   ; the window's last two cell rows on the screen
         endif
 HP_NB   equ BUF + 0x800*2 + 2*32 + 2 + WIN_W - 1            ; the first canister's upper cell in the buffer (its last byte)
+        if OPT_NOSBOLT          ; (NOSBOLT: the bolt and its squares one cell row up - Grant, 23 Nov 2026: "The flash icon needs to be
+HP_UP   equ 32                  ; one up"; racer.asm NOS_BB)
+        else
+HP_UP   equ 0
+        endif
         if OPT_ROADW            ; ROADW (roadwhite.asm): a square here keeps the paper it has - the road's white
 HP_PUT  macro                   ; or the table's cyan - and takes C's ink
         ld a,(hl)               ; (the paper's three bits from the square, the rest from C)
@@ -308,16 +313,16 @@ hpr_g:
         HP_PUT
         endif                   ; (ARMOUR)
         ld a,(INV)              ; the spoons: red - beside the gauge, then leftwards (NOS_COL, racer.asm)
-        ld hl,HP_AT + WIN_W - 4
-        ld de,HP_NB - 3
+        ld hl,HP_AT + WIN_W - 4 - HP_UP
+        ld de,HP_NB - 3 - HP_UP
         call hp_slot
         ld a,(INV+1)
-        ld hl,HP_AT + WIN_W - 5
-        ld de,HP_NB - 4
+        ld hl,HP_AT + WIN_W - 5 - HP_UP
+        ld de,HP_NB - 4 - HP_UP
         call hp_slot
         ld a,(INV+2)
-        ld hl,HP_AT + WIN_W - 6
-        ld de,HP_NB - 5
+        ld hl,HP_AT + WIN_W - 6 - HP_UP
+        ld de,HP_NB - 5 - HP_UP
         if OPT_NOSBOX
 ; HP_SLOT (NOSBOX - Grant, 22 Nov 2026): A = the slot (0 empty, 1 held, 2 burning), HL = its upper square on the screen
 ; (in rt_sh), DE = in the buffer. Held: the box's square (the lower) red on black, its lines cleared - the upper square is
@@ -657,6 +662,23 @@ pd_big:
         call pd_cc
         jp print_big
 pd_face:                        ; car A's everyday face into cells B, C (2 x 2)
+        if OPT_WINLR            ; WINLR (Grant, 23 Nov 2026: "If our guy wins, then in the end display have him smiling looking left
+        or a                    ; and right"): YOU, the race over and you first - your everyday face is the happy one, so the
+        jr nz,pdw_x             ; podium's steps (pa_car) show it smiling, and mirrored on its "look" steps (pa_face_y: your look
+        ld a,(race_over)        ; is your face mirrored) - smiling, looking left and right
+        or a
+        jr z,pdw_0
+        ld a,(order)
+        or a
+        jr nz,pdw_0
+        push bc
+        call pdw_0
+        pop bc
+        ld a,1                  ; (faces_mood list 1: your happy)
+        jp pa_face
+pdw_0:  xor a
+pdw_x:
+        endif
         if OPT_CHOOSE
         call who_a              ; CHOOSE: the driver in this car today
         endif

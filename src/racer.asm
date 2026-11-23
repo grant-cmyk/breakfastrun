@@ -3312,7 +3312,7 @@ ld_r1:
 ; Window lines 132-135 are buffer rows 140-143 (one character row), 136-141 rows 144-149.
 NOS_COL equ 24-4                ; the first spoon's column in the window (WIN_W - 4): the one beside the gauge (the others to its left)
 NOS_BA  equ BUF + 0x800*2 + 4*0x100 + 2*32 + 2 + NOS_COL      ; buffer row 148 (third 2, char row 2, line 4)
-NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 2 + NOS_COL      ; buffer row 152 (third 2, char row 3, line 0)
+NOS_BB  equ BUF + 0x800*2 + 0*0x100 + 3*32 + 2 + NOS_COL - HP_UP ; buffer row 152 (third 2, char row 3, line 0); NOSBOLT: 144, a row up
 nos_draw:
         ld hl,INV
         ld c,0                  ; C = slot 0..2: the window's columns 20, 19, 18 (screen 21, 20, 19) - beside the gauge, then leftwards

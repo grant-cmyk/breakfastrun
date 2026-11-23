@@ -4185,3 +4185,12 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Checked: mid-race 2ND 1/3 0:04.0, 2ND 2/3, the face under it (docs/design/place_number_A_built.png); race_mode_test and no
   reset (below); plain tapes byte-identical; main and trial tapes unchanged. Room on the C tape: under 0x8000 52 bytes,
   program 9.
+
+## 2026-11-23 21:11 SAST - your winning face smiles left and right; the NOS bolt a row up (cloud session, Claude)
+- Grant: "If our guy wins, then in the end display have him smiling looking left and right. The flash icon needs to be one up."
+- WINLR=1 (the three fast tapes; plate_slow.asm pd_face): YOU, the race over and you first - your everyday face is the happy
+  one, so the podium's steps show it smiling and its "look" steps (your face mirrored) smiling the other way. Checked: a win
+  (the dragster), 16 pictures of the podium over 10 s - all smiling, by turns as drawn and mirrored.
+- NOSBOLT: the bolt and its colour squares one cell row up (HP_UP 32: plate_slow.asm, racer.asm NOS_BB)
+  (docs/design/podium_win_bolt_up.png).
+- Checked: race_mode_test and no reset on all three fast tapes (below); plain tapes byte-identical.
