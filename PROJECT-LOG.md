@@ -4118,3 +4118,12 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   the effect player would play it (FLIPS flips a frame, GAP counts apart, 16 T a count, ~80 T a flip; noise a random gap) over
   the engine recorded in a race, with its cost: the most of a TV frame it takes (3-12%). And one with the engine hushed while
   the sound plays (ducking).
+
+## 2026-11-23 18:48 SAST - skidding more prevalent (group C tape) (cloud session, Claude)
+- Grant: "Skidding needs to be more prevalent as it requires more skill to drive".
+- GRIPX: a slide goes on GX_T 12 pictures after the steering stops (was 8; about a second); a third level - twice GX_STEP
+  over the grip, the push and friction halved a third time: far too fast into a corner, the car drifts wide until eased off.
+- Measured: your car (the racer, careful autopilot) sliding 47% of the time in a race (screech levels: gripping 746 frames,
+  sliding 639, big 115 of 1,500); laps (8 races) you 21.75, Frank 21.42, Spike 22.27, Bruno 21.98, Jane 22.49 - about a
+  second slower than before (the slides cost time); mean place 2.4, 1 win. race_mode_test 12/12; no reset in 80 s (racer,
+  dragster); plain tapes byte-identical; only the C tape changed.

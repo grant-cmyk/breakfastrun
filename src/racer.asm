@@ -1247,7 +1247,7 @@ SKID_VC   equ 256               ; the computer cars: from 1.0 px a frame, as bef
 SKID_STEP equ 64*GAME_SPEED/100 ; and more for each 0.25 faster (Grant: more skid; GAME_SPEED: a slower game, smaller steps)
 SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
 GX_STEP   equ 96*GAME_SPEED/100 ; GRIPX: this much (8.8, px a frame) over its grip: the second, longer slide
-GX_T      equ 8                 ; GRIPX: pictures a slide goes on after the steering stops (12.5 a second; 5 until "there is still not enough skidding")
+GX_T      equ 12                ; GRIPX: pictures a slide goes on after the steering stops (12.5 a second; 5, then 8 - "there is still not enough skidding", then 12 - "more prevalent")
 skid:                           ; (the computer cars: you have the grip model)
         if OPT_GRIPX            ; GRIPX (Grant, 23 Nov 2026: "grip needs to have a bigger impact. So skidding should be more
         ld a,(ix+C_KIND)        ; severe for all cars"). Turning faster than its grip, a car SLIDES: the push and the friction
@@ -1303,6 +1303,13 @@ gx_over:
         jr c,gx_o1
         call sk_half            ; well over: a longer slide
         inc a
+        push de                 ; and twice GX_STEP over: halved a third time - far too fast into the corner, it drifts wide
+        ld de,GX_STEP           ; until you ease off (Grant, 23 Nov 2026: "Skidding needs to be more prevalent as it requires
+        or a                    ; more skill to drive")
+        sbc hl,de
+        pop de
+        jr c,gx_o1
+        call sk_half
 gx_o1:  call gx_lvs
 gx_one:
         call sk_half
