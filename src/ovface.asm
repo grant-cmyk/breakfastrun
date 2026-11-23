@@ -207,4 +207,5 @@ ov_kind: db 0                   ; whose face
 ov_mood: db 0                   ; 1 happy, 2 sad
 ov_m:    db 0
 ov_face: defs 32
-ov_bmp:  defs 3*18
+ov_bmp  equ TS                  ; the box, 3 x 18 bytes - in the title's scratch (the printer buffer, 0x5B00: title.asm TS - free
+                                ; while a race runs), not the program: the room went on the Sound Lab picks (SND3)

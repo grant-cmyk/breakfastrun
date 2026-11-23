@@ -122,6 +122,9 @@ printf 'OPT_SND2 equ %s                 ; 1: the lap chime; the blip waits (SND2
 # RREC=1 (the breakfast fast tapes; Grant, 23 Nov 2026: "give the ability to track and show the fastest race time"): your race
 # time and the race record on the podium (src/plate_slow.asm pd_rrec).
 printf 'OPT_RREC equ %s                 ; 1: the race time and race record on the podium (RREC=1 bash build.sh)\n' "${RREC:-0}" >> "$ROOT/src/options.asm"
+# SND3=1 (the breakfast fast tapes; Grant, 23 Nov 2026, from Sound Lab 2: "car crash b, skid b, oil spin B, NOS C, hitting b,
+# lap b"): the effects as the Lab played them (racer.asm fx_fire, isr_sk).
+printf 'OPT_SND3 equ %s                 ; 1: the Sound Lab 2 picks (SND3=1 bash build.sh)\n' "${SND3:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

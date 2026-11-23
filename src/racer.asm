@@ -2330,7 +2330,11 @@ ocb_snd:
         or a
         sbc hl,de
         ret nz
+        if OPT_SND3             ; (SND3: the boing, 10 frames)
+        ld hl,2*256+10
+        else
         ld hl,2*256+6           ; you: a bonk - a note that falls, 6 frames (Grant's pick from
+        endif
         ld (snd_fxt),hl         ; the Sound Lab, 14 Nov 2026: B2)
         call dmg_hit            ; and damage
         ld hl,5*256+2           ; and the border red, a moment
@@ -2439,6 +2443,10 @@ bump:
 bp_you:
         ld a,SND_CRASH
         ld (snd_bump),a
+        if OPT_SND3             ; (SND3: the thud, 10 frames)
+        ld hl,4*256+10
+        ld (snd_fxt),hl
+        endif
         ld hl,10*256+2          ; a crash: the border red for a fifth of a second
         call flash
         if ((1 - OPT_ARMOUR) + OPT_MUG) * (1 - OPT_WEIGHT)   ; (ARMOUR: your damage is your car's armour, lost like every car's - arm_bump, above; MUG: damage; WEIGHT: wt_bump has done it)
@@ -3719,12 +3727,15 @@ of_x:
 
         endif
 snd_wait:
+        if OPT_SND3 = 0         ; (SND3: the crash is the interrupt's THUD - effect 4 - not this noise)
         ld a,(snd_bump)
         or a
         jr nz,sw_crash
+        endif
         halt                    ; no crash noise: just wait for the interrupt (the engine's tone
         ret                     ; in the wait, and the count of the picture's spare time for
                                 ; the ditty's burst, have both gone: 14 Nov 2026)
+        if OPT_SND3 = 0         ; (SND3: not used - the crash is the interrupt's thud)
 sw_crash:                       ; 16 random flips, random short gaps
         ld c,16
         ld a,(snd_port)         ; (the border as it is: red, if it is flashing)
@@ -3746,6 +3757,75 @@ sw_c2:
         ld a,e
         out (254),a
         ret
+        endif
+
+        if OPT_SND3
+fx3:                            ; (the interrupt's effects 1-5, SND3; A = the effect, L = frames left - fx_fire)             ; SND3 (Grant, 23 Nov 2026, from Sound Lab 2: "car crash b, skid b, oil spin B, NOS C, hitting b,
+        cp 1                    ; lap b" - docs/sound/sound_lab2.html, tools/make_sound_lab2.py): 1, NOS fired - the JET: noise
+        jr nz,fx3_2             ; that rises, a random gap from 2 x frames left + 3 up, 8 flips a frame
+        ld a,l
+        add a,a
+        add a,3
+        ld h,a
+        ld a,r
+        and 7
+        add a,h
+        ld l,a
+        ld h,8
+        jp isr_burst
+fx3_2:  cp 2                    ; 2, an O - the BOING: a springy note that bounces down (fx_boing), 6 flips
+        jr nz,fx3_3
+        ld a,l
+        add a,fx_boing AND 255
+        ld l,a
+        ld a,fx_boing/256
+        adc a,0
+        ld h,a
+        ld a,(hl)
+        ld l,a
+        ld h,6
+        jp isr_burst
+fx3_3:  cp 3                    ; 3, a lap - the FANFARE: three rising notes, the last held, 14 flips
+        jr nz,fx3_4
+        ld a,l
+        ld h,14
+        cp 8
+        jr c,fx3_f
+        ld h,22
+        cp 12
+        jr c,fx3_f
+        ld h,30
+fx3_f:  ld l,h
+        ld h,14
+        jp isr_burst
+fx3_4:  cp 4                    ; 4, a crash - the THUD: a few widely spaced clicks that die away (fx_thud: flips a frame)
+        jr nz,fx3_5
+        ld a,l
+        add a,fx_thud AND 255
+        ld l,a
+        ld a,fx_thud/256
+        adc a,0
+        ld h,a
+        ld a,(hl)
+        ld h,a
+        ld a,r
+        and 63
+        add a,60
+        ld l,a
+        jp isr_burst
+fx3_5:  cp 5                    ; 5, an oil spill - the WHOOSH DOWN: a tone falling through the spin, 8 flips
+        jp nz,fx_go
+        ld a,13
+        sub l
+        add a,a
+        add a,a
+        add a,10
+        ld l,a
+        ld h,8
+        jp isr_burst
+fx_boing: db 70,60,50,40,50,40,30,40,30,20   ; (by frames left, 0-9: heard from the right)
+fx_thud:  db 1,1,1,2,2,3,3,4,4,5
+        endif
 
 ; FLASH: the border as a signal (the layout review, Grant, 10 Nov 2026): green
 ; at GO, red on a crash, white while the NOS burns. H = TV frames, L = the
@@ -5180,6 +5260,9 @@ mu_out:
         add a,15
         jr fx_go
 fx_fire:
+        if OPT_SND3             ; (SND3: the Sound Lab 2 picks - fx3, out of line: below sw_crash)
+        jp fx3
+        else
         cp 1
         jr nz,fx_bonk
         ld a,l                  ; 1, NOS fired: the whoosh up (F2) - a buzz that climbs
@@ -5209,6 +5292,7 @@ fx_b2:
         add a,a
         neg
         add a,34
+        endif
 fx_go:
         ld l,a
         ld h,6
@@ -5228,7 +5312,15 @@ isr_sk:
         else
         ld h,8                  ; (8 flips a frame since 15 Nov 2026 - it was 4: Grant, "the game is a bit quiet
         endif
+        if OPT_SND3             ; (SND3: the SQUEAL - a high tone wavering between two notes, gap 9 and 11 by turns)
+        ld a,(snd_skt)
+        and 1
+        add a,a
+        add a,9
+        ld l,a
+        else
         ld l,0                  ; now - can you up the skidding sound"). Gap 0: a random one each flip
+        endif
 isr_burst:                      ; H flips, L counts apart (16 T a count)
         ld a,(snd_port)
         xor 24

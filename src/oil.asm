@@ -77,6 +77,10 @@ slot_try: push hl
         jr nz,slot_n
         ld a,SND_CRASH          ; (you: the crash)
         ld (snd_bump),a
+        if OPT_SND3             ; (SND3: the whoosh down, 14 frames)
+        ld hl,5*256+14
+        ld (snd_fxt),hl
+        endif
 slot_n:   ld de,C_SIZE
         add ix,de
         pop bc

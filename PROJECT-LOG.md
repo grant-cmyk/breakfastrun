@@ -4136,3 +4136,20 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Staged (you at 1.6 px a frame into Frank's side going up the right straight, 4 times): Frank pushed 55-64 px sideways in
   0.6 s and sliding (the main fast tape, the old rule: 15-33 px). Balance (8 races, careful autopilot): mean place 2.2; laps
   21.0-21.8. race_mode_test 12/12; no reset in 80 s; plain tapes byte-identical; only the C tape changed.
+
+## 2026-11-23 19:36 SAST - the Sound Lab 2 picks in the game (cloud session, Claude)
+- Grant: "car crash b, skid b, oil spin B, NOS C, hitting b, lap b".
+- SND3=1 (the three breakfast fast tapes; racer.asm fx3, out of line - fx_fire jumps to it): effect 1 NOS fired - the JET
+  (noise rising: a random gap from 2 x frames left + 3, 8 flips); 2 an O - the BOING (fx_boing, 10 frames, 6 flips); 3 a lap -
+  the FANFARE (gaps 30, 22, 14 - 4, 4, 8 frames, 14 flips); 4 a crash - the THUD (fx_thud flips 5..1, random gaps 60-123,
+  10 frames: bp_you sets it); 5 oil - the WHOOSH DOWN (gap 10 + 4 x (13 - frames left), 14 frames, 8 flips: oil.asm sets it).
+  The skid (isr_sk): the SQUEAL - gaps 9 and 11 by turns (flips 4/8/12 by the slide). The main loop's crash noise (sw_crash)
+  and the old effects 1-3 left out under SND3. As the Lab rendered them (tools/make_sound_lab2.py).
+- ROOM (C tape: 124 bytes over at first): the packed cars placed biggest-first above the copy routine (make_data.py - the
+  program keeps the two smallest, 887 bytes, not 1,000); ovface.asm's box (54 bytes) in the title's scratch at TS (0x5B00,
+  free while a race runs); the code SND3 replaces left out. Program now 63 bytes free on the C tape.
+- Found on the way: the quick C-tape build script had been made before SND3 was in tools/build_race.sh - one round of tests
+  ran on a C tape without it; re-made and re-run.
+- Checked: race_mode_test 12/12 on all three fast tapes; no reset in 80 s on each; plain tapes byte-identical; a race recorded
+  - effects 1, 3, 4, 5 and the squeal all heard; an O hit in a second race (boing). The Sound Board republished with the new
+  clips (https://claude.ai/artifact/CJfPsJCYhhHbZMGP7AtxXk).
