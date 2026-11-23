@@ -109,6 +109,10 @@ printf 'OPT_TANKUP equ %s               ; 1: the tank weaker early, stronger eac
 # PICK=1 (the group C tape; Grant, 23 Nov 2026: "when you click 1, a popup appears asking you to choose your car"): the CHOOSE
 # YOUR CAR card (src/pick.asm; the cars: tools/pick_cars.txt). tools/make_data.py packs the cars (PICK=1 in its environment).
 printf 'OPT_PICK equ %s                 ; 1: choose your car at the title (PICK=1 bash build.sh)\n' "${PICK:-0}" >> "$ROOT/src/options.asm"
+# GRIPX=1 (the group C tape; Grant, 23 Nov 2026: "grip needs to have a bigger impact. So skidding should be more severe for
+# all cars"): a car over its grip slides wide as well as scrubbing speed (racer.asm skid), and the grip scale is wider
+# (tools/make_cards.py SLIDE_AT_X).
+printf 'OPT_GRIPX equ %s                ; 1: harder slides, a wider grip scale (GRIPX=1 bash build.sh)\n' "${GRIPX:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

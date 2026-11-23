@@ -33,6 +33,9 @@ ACCEL_STEP = 5          # 64ths of the push a point of acceleration: 5 is 7.8% a
 #        what YOUR car's tyres hold at each rating: gripping, while you hold Q, while sliding, both (16, 8, 8, 5 was the car as it was)
 TYRES    = [None, (6, 3, 3, 2), (7, 4, 3, 2), (9, 4, 4, 3), (10, 5, 5, 3), (12, 6, 5, 4), (13, 7, 6, 4), (15, 7, 7, 5), (17, 9, 8, 5), (19, 10, 9, 6), (21, 11, 10, 7)]
 SLIDE_AT = [None, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480]
+if os.environ.get('GRIPX') == '1':             # GRIPX (the group C tape; Grant, 23 Nov 2026: "grip needs to have a bigger impact"):
+    SLIDE_AT = [None, 120, 150, 180, 210, 245, 280, 315, 350, 390, 430]   # a wider scale, and lower all through (Grant, 23 Nov 2026:
+                                                                         # "all cars need to be affected by skidding more")
 #        ARMOUR: the damage one of a car's six pieces takes (a firm bump is 10 - FIRM_BUMP, for the table only)
 ARMOUR_PIECE = [None, 22, 26, 30, 34, 38, 46, 55, 65, 77, 92]
 FIRM_BUMP = 10

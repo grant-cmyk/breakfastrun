@@ -258,8 +258,9 @@ you_card:                       ; cars' rows are (where it slides; no braking; A
         include "cards.asm"     ; the cards' numbers (tools/make_cards.py)
         if OPT_SIMPLE           ; (These EQUs AFTER cards.asm: pasmo takes an EQU's value where it stands - before it, CD_R_SLIDE
 YOU_SL  equ CD_R_SLIDE*45/64    ; was 0: slide 0, sliding always. 22 Nov 2026.) Its pushes are the MAX card's as the computer cars
-YOU_HARD equ 2                  ; have it, less YOU_HARD 64ths - 8 less at first made you the slowest car on the straights (Grant,
+YOU_HARD equ 4                  ; have it, less YOU_HARD 64ths - 8 less at first made you the slowest car on the straights (Grant,
 YOU_KA  equ CD_R_KA-YOU_HARD    ; 23 Nov 2026: "my car is definitely the slowest of the lot"); 4 less put him last ("Right now I'm
-YOU_KS  equ CD_R_KS-YOU_HARD    ; coming last"); 0, "the balance is much better. You can make it slightly tougher": 2. (YOU_HARD
+YOU_KS  equ CD_R_KS-YOU_HARD    ; coming last"); 0, "the balance is much better. You can make it slightly tougher": 2; 4 at the full speed with
+                                ; the harder slides (GRIPX, 23 Nov 2026: the careful autopilot 2.0th, as at 2 before). (YOU_HARD
                                 ; first: pasmo takes an EQU's value where it stands - after these it came out 0)
         endif

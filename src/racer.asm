@@ -1240,7 +1240,52 @@ ph_sn1:
 SKID_VC   equ 256               ; the computer cars: from 1.0 px a frame, as before
 SKID_STEP equ 64*GAME_SPEED/100 ; and more for each 0.25 faster (Grant: more skid; GAME_SPEED: a slower game, smaller steps)
 SKID_N    equ 3                 ; at most 3 steps: sideways speed dies at 1/64
+GX_STEP   equ 96*GAME_SPEED/100 ; GRIPX: this much (8.8, px a frame) over its grip: the second, longer slide
+GX_T      equ 5                 ; GRIPX: pictures a slide goes on after the steering stops (12.5 a second)
 skid:                           ; (the computer cars: you have the grip model)
+        if OPT_GRIPX            ; GRIPX (Grant, 23 Nov 2026: "grip needs to have a bigger impact. So skidding should be more
+        ld a,(ix+C_KIND)        ; severe for all cars"). Turning faster than its grip, a car SLIDES: the push and the friction
+        ld hl,gx_t              ; halved - the speed it had dies away half as fast, so it runs wide - and the push a quarter
+        add a,l                 ; less still (SCRUB's), so it loses speed; GX_STEP further over, the push and friction halved
+        ld l,a                  ; again. And the slide does not stop when the steering does: it goes on GX_T pictures after
+        adc a,h                 ; (gx_t, each car's), unless the car is turned again below its grip. (Before: only while the
+        sub l                   ; key was held - a few TV frames a corner, so grip hardly told.)
+        ld h,a                  ; (HL = this car's slide)
+        ld a,(ix+C_CTRL)
+        and CT_L+CT_R
+        jr nz,gx_turn
+        ld a,(hl)               ; not turning: a slide carries on while it lasts
+        or a
+        ret z
+        dec (hl)
+        jr gx_one
+gx_turn:
+        push hl
+        call sk_speed           ; HL = speed
+        push de
+skc_v:  ld de,SKID_VC           ; (CARDS: card_push writes the car's own number here)
+        or a
+        sbc hl,de
+        pop de
+        ex (sp),hl              ; (HL = its slide, the speed over its grip kept)
+        jr nc,gx_over
+        ld (hl),0               ; slow enough: it grips
+        pop hl
+        ret
+gx_over:
+        ld (hl),GX_T
+        pop hl
+        push de
+        ld de,GX_STEP
+        or a
+        sbc hl,de
+        pop de
+        call nc,sk_half         ; well over: a longer slide
+gx_one:
+        call sk_half
+        jr gx_scrub
+gx_t:   defs NCARS              ; each car's slide: pictures left
+        else
         ld a,(ix+C_CTRL)        ; a computer car: only while turning fast
         and CT_L+CT_R
         ret z
@@ -1251,7 +1296,9 @@ skc_v:  ld de,SKID_VC           ; (CARDS: card_push writes the car's own number 
         sbc hl,de
         pop de
         ret c                   ; slow: it grips
+        endif
         if OPT_SCRUB            ; SCRUB (Grant, 22 Nov 2026: "skidding to be more severe - forcing cars to slow down at the corners
+gx_scrub:
         push de                 ; - or brake"): a computer car turning too fast keeps three quarters of its push and all its
         sra d                   ; drag (it was half the push and half the drag: a slide kept its speed), so it loses speed
         rr e                    ; while it slides. (Half the push and twice the drag, tried first: laps 27-35 s - far too much.)

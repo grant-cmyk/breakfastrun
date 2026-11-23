@@ -4011,3 +4011,19 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - The dragster is far too strong as yours: the computer cars' rows carry the race-only top-speed balance (ai_tune.asm
   AI_K?_KS) and your card row does not - the dragster's speed 8 is the card's in full. To be tuned with Grant (stage 3,
   rock/paper/scissors).
+
+## 2026-11-23 11:27 SAST - group C tape: harder slides for every car, grip counts for more, the full speed (cloud session, Claude)
+- Grant: "grip needs to have a bigger impact. So skidding should be more severe for all cars"; then "all cars need to be
+  affected by skidding more, the game also needs to run faster".
+- Found: a car slid only while its steering key was held (C_CTRL) - a few TV frames a corner; your dragster, grip 1, was
+  over its grip in 135 of 140 turning frames but turned in only 140 of 1,500.
+- GRIPX=1 (racer.asm skid): over its grip a car SLIDES - push and friction halved (it runs wide), the push a quarter less
+  still (it loses speed); GX_STEP (0.375 px a frame) further over, halved again; and the slide goes on GX_T (5) pictures
+  after the steering stops (gx_t, each car's). The grip scale lower and wider (make_cards.py, GRIPX): slides from 120 (grip
+  1) to 430 (grip 10), was 210 to 480. The C tape at GAME_SPEED 100 (was 85): every speed 18% up. YOU_HARD 4 (was 2).
+- Measured (careful autopilot, 8 races, the racer): mean place 2.0, 3 wins (1.9 / 3 before); laps you 21.75, Frank 21.96,
+  Spike 22.65, Bruno 21.83, Jane 22.43 (were 22.5-23.1 at 85% with the old slides); computer cars in a slide 16 / 16 / 5 /
+  30% of the time. The tank still slowest on lap 1 (24.1) and quickest on lap 3 (21.3). Your tank: mean place 1.8 (4 races).
+  Your DRAGSTER still wins every race (laps 17.9) - to tune (its straight speed).
+- Checked: race_mode_test 12/12; no reset in 80 s (racer, dragster); plain tapes byte-identical; main and trial tapes
+  unchanged. Room: program 742, upper 436, low 427. Nobody has driven it yet.
