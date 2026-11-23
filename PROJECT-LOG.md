@@ -4168,3 +4168,10 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - NOSBOLT=1 (the three fast tapes): the NOS a lightning bolt (lights.asm nos_can), bright yellow on black (yellow on the
   cloth's cyan hardly shows), flashing white while it burns (plate_slow.asm NB_HELD / NB_FLASH).
 - Checked: race_mode_test 12/12 on all three fast tapes; no reset in 80 s; plain tapes byte-identical. Room: C program 9 bytes.
+
+## 2026-11-23 20:55 SAST - bigger place number: mock-ups (cloud session, Claude)
+- Grant: "I'd also like a mockup of a bigger position number in the top right".
+- tools/make_place_mock.py -> docs/design/place_number_mockups.png, on a real race screen (C tape): Today; A the place twice
+  the size on the plate with ND, the lap and the time in the small figures; B a box of its own beside today's plate, the place
+  three times the size; C the place twice the size with /5, the lap and the lap time under it. Not in the game. A and C make
+  the plate 28 lines tall (18 today): the overtaking face's box (under the plate) would move down 10 lines.
