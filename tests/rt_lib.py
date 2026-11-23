@@ -40,6 +40,10 @@ class Game:
         #  tests written for the armour tape run on these in COMBAT. Unset: the game the tape starts with, RACE.)
         if os.environ.get('RT_MODE') and 'rmode' in self.sym: self.poke(self.sym['rmode'], [int(os.environ['RT_MODE'] == 'race')])
         self.rpc('press', keys=key, frames=10, after=5)
+        if 'pk_sel' in self.sym and key == '1':        # (PICK, 23 Nov 2026: the CHOOSE YOUR CAR card - RT_CAR=n picks car n of
+            self.run(30)                               #  tools/pick_cars.txt, 0 the racer; then accelerate)
+            for _ in range(int(os.environ.get('RT_CAR', '0'))): self.rpc('press', keys='P', frames=6, after=10); self.run(10)
+            self.rpc('press', keys='Q', frames=6, after=10)
         n = 0
         while self.w16(self.sym['renders']) == 0 and n < 200: self.run(5); n += 1
         assert n < 200, 'the race never started'

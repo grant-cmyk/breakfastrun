@@ -4740,6 +4740,9 @@ me_world:
         if OPT_TANKUP
         include "tank.asm"      ; TANKUP: the tank stronger each lap
         endif
+        if OPT_PICK
+        include "pick.asm"      ; PICK: the CHOOSE YOUR CAR card over the title
+        endif
         if OPT_JFACE
         include "jface.asm"     ; JFACE: the faces move with the music (in the program: the room under 0x8000 is full)
         endif

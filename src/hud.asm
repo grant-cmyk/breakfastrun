@@ -834,7 +834,12 @@ su_apply:
         add a,a
         add a,a
         ld c,a
+        if OPT_PICK             ; (PICK: from the car you chose - pick.asm)
+        ld hl,pk_ks
+        add a,(hl)
+        else
         add a,YOU_KS AND 255
+        endif
         ld (you_card+5),a
         ld a,(su_lv+2)
         dec a
@@ -844,15 +849,26 @@ su_apply:
         add a,e
         add a,a
         add a,c
+        if OPT_PICK
+        ld hl,pk_ka
+        add a,(hl)
+        else
         add a,YOU_KA AND 255
+        endif
         ld (you_card+4),a
         ld a,(su_lv)
         dec a
         ld e,a
         ld d,0
+        if OPT_PICK
+        ld hl,(pk_sl)
+        ld bc,(pk_s8)
+        else
         ld hl,YOU_SL
+        ld bc,YOU_SL/8
+        endif
         jr z,sua_g
-sua_1:  ld bc,YOU_SL/8
+sua_1:
         add hl,bc
         dec e
         jr nz,sua_1

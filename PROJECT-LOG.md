@@ -3982,3 +3982,22 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - The Car Studio says so (republished; "back to the game's drawing" gives the computer car's): the drawings in it are
   yours. docs/design/choose_popup/yours_vs_computer.png: each pair side by side on the table, 4x and the game's size;
   docs/design/choose_popup/your_versions_all_headings.png: all 16 headings, computer car above yours.
+
+## 2026-11-23 10:55 SAST - CHOOSE YOUR CAR built on the group C tape (cloud session, Claude)
+- Grant: "go ahead and build the car selector too". PICK=1 on racer_cars75_breakfast_fast_c: the title's 1 opens the CHOOSE
+  YOUR CAR card (src/pick.asm) over the title - left/right through 7 cars, round and round; accelerate or SPACE races.
+  Each car: its picture (YOUR version) twice the size on its colour, name, line, ACCEL / SPEED / GRIP / ARMOUR as ten
+  squares and the number, a plus and a minus. The words, colours, weight classes and which card: tools/pick_cars.txt.
+- What the car brings: its 32 headings (tools/make_data.py packs each car's frames and table rows with ZX0 - 3,410 bytes for
+  7 cars; four above the copy routine in pick_data.asm, three in the program in pick_data2.asm) unpacked into your
+  frames (pk_buf = the racer's, padded to the biggest: pk_pad) and big_tab's kind-0 rows; its card as YOUR card row's
+  numbers (slide 45/64 of the card's, pushes YOU_HARD less - as the racer's; su_apply reads pk_sl/pk_s8/pk_ka/pk_ks); the
+  damage a piece of its armour takes (arm_tab row 0); its weight class (wt_cls). A computer driver keeps his car.
+- tests/rt_lib.py to_grid: on a PICK tape picks car RT_CAR (default 0, the racer) and accelerates.
+- Checked: all 7 cards shown and read back (docs/design/choose_popup/built_popup_all_cars.png); the saloon's and the tank's
+  numbers in your card row, armour and weight as their cards; two tanks on the road, yours in your version
+  (built_race_two_tanks.png); with the racer the race is the same as before (race_mode_test 11/12, the same known glitch at
+  the same frame); no reset in 80 s with the racer, tank, dragster; plain tapes byte-identical; main and trial tapes
+  unchanged. Room left on the C tape: program 742, above the copy routine 436, under 0x8000 427.
+- Open: Frank drives the six-wheeler on his coupe's card; your six-wheeler is the DOT/TRUCK card (3/3/8/8). Nobody has
+  driven it yet.

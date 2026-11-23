@@ -98,6 +98,7 @@ printf 'OPT_UPPER equ %s                ; 1: tables above the looped copy routin
 if [ "${UPPER:-0}" = "1" ]; then
   UPF="${UPFILES:-data.asm omap.asm waypoints.asm rowidx.asm faces.asm faces_mood.asm dmgicon.asm minimap.asm}"
   [ "${OIL:-0}" = "1" ] && UPF="$UPF oil_gfx.asm"
+  [ "${PICK:-0}" = "1" ] && UPF="$UPF pick_data.asm"
 fi                      # (make_up runs just before assembling, in the build's own copy of src/ - below)
 # SIMPLE=1 (the memory hunt's group C, a trial; Grant, 22 Nov 2026: "try c"): your car on the computer cars' card and slide
 # (grip.asm left out); one bump rule (weight.asm).
@@ -105,6 +106,9 @@ printf 'OPT_SIMPLE equ %s               ; 1: group C - your car on the card mode
 # TANKUP=1 (the group C tape; Grant, 23 Nov 2026: the tank "should be the slowest car initially but ... gets stronger towards
 # the end"): Bruno's pushes less on the early laps (src/tank.asm).
 printf 'OPT_TANKUP equ %s               ; 1: the tank weaker early, stronger each lap (TANKUP=1 bash build.sh)\n' "${TANKUP:-0}" >> "$ROOT/src/options.asm"
+# PICK=1 (the group C tape; Grant, 23 Nov 2026: "when you click 1, a popup appears asking you to choose your car"): the CHOOSE
+# YOUR CAR card (src/pick.asm; the cars: tools/pick_cars.txt). tools/make_data.py packs the cars (PICK=1 in its environment).
+printf 'OPT_PICK equ %s                 ; 1: choose your car at the title (PICK=1 bash build.sh)\n' "${PICK:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then
   T40=racer_map40; [ "${TRACK:-1}" != "1" ] && T40="racer_map40_track${TRACK:-1}"

@@ -1,0 +1,76 @@
+BREAKFAST RUN - THE CARS YOU CAN CHOOSE (the CHOOSE YOUR CAR popup: PICK=1, src/pick.asm)
+Grant, 23 Nov 2026: "when you click 1, a popup appears asking you to choose your car. You press left and right to select
+cars"; "Everything can be adjusted but the armour for a car is fixed ... when you choose a car at the beginning there is no
+option to adjust anything. The car has default settings."; "I made those changes in each car so that only my car gets
+those changes" (his versions: tools/car_art_studio.txt).
+
+One block a car, in the order the popup shows them (the first is the one you start with). To change a word, change it here
+and build again (bash tools/build_race.sh).
+  art:    the drawing's name (tools/car_art.txt / pool_art.txt; YOUR version from tools/car_art_studio.txt if it is there)
+  card:   the driver card its ratings come from (tools/driver_cards.txt): acceleration, speed, grip, armour
+  colour: the band behind it in the popup - red, cyan, green, magenta, yellow, white
+  weight: its weight class in a bump (0 light ... 2 heavy; src/weight.asm)
+  line, good, poor: the popup's words - up to 22 letters for the line, 20 for good and poor
+
+== RACER ==
+art: YOU
+card: MAX
+colour: red
+weight: 1
+line: THE ALL-ROUNDER
+good: NOTHING LETS IT DOWN
+poor: GRIP: ITS WEAK SPOT
+
+== SIX-WHEELER ==
+art: TRUCK
+card: DOT
+colour: cyan
+weight: 2
+line: SLOW BUT SURE
+good: CORNERS, ARMOUR
+poor: STARTS, STRAIGHTS
+
+== CLOWN CAR ==
+art: GREEN
+card: SPIKE
+colour: green
+weight: 1
+line: QUICK OFF THE MARK
+good: STARTS, SPINS
+poor: LONG STRAIGHTS
+
+== TANK ==
+art: PINK
+card: BRUNO
+colour: magenta
+weight: 2
+line: HEAVY AND SLOW
+good: SHOVES, TAKES HITS
+poor: STRAIGHTS
+
+== DRAGSTER ==
+art: WHITE
+card: JANE
+colour: white
+weight: 0
+line: FLIES ON STRAIGHTS
+good: STRAIGHTS, NOS
+poor: CORNERS, OIL, BUMPS
+
+== COUPE ==
+art: CYAN
+card: FRANK
+colour: yellow
+weight: 1
+line: A QUICK RACER
+good: PACE ALL ROUND
+poor: LITTLE GRIP TO SPARE
+
+== SALOON ==
+art: SPECS
+card: SPECS
+colour: yellow
+weight: 1
+line: A REAL CHALLENGER
+good: QUICK ON STRAIGHTS
+poor: LOOSE IN CORNERS

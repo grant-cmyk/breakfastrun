@@ -237,7 +237,11 @@ t_keys:
         jr z,t_loop
         ld a,l
         cp 15                   ; 1: play
+        if OPT_PICK             ; (PICK: first the CHOOSE YOUR CAR card - pick.asm)
+        jp z,pick
+        else
         jp z,k_up
+        endif
         cp 16                   ; 2: not yet
         jr nz,t_k
         if OPT_2P               ; TWOP: 2 - a two-player race (twoplayer.asm)

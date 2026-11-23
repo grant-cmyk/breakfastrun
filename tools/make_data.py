@@ -344,9 +344,68 @@ def big_layout():
             dest = lo if n <= room else hi
             if dest is lo: room -= n
             dest.append((k, h, rows)); tab.append((k, h, first, len(rows), 'bf_%d_%d' % (k, h)))
+        if PICK and k == 0:                     # (PICK: kind 0's frames are pk_buf - padded to the biggest car's, and its table rows)
+            assert not [v for v in hi if v[0] == 0], 'PICK: your car\'s frames must all be below the program'
+            own = sum(ROWB * len(r) for kk, _, r in lo if kk == 0)
+            pad = PICK_MAX + 128 - own
+            prow = [[0] * ROWB] * (-(-pad // ROWB)); lo.append((0, 'pad', prow)); room -= ROWB * len(prow)
     return lo, hi, tab
+# PICK=1 (Grant, 23 Nov 2026: "go ahead and build the car selector"): the CHOOSE YOUR CAR popup (src/pick.asm). Each car of
+# tools/pick_cars.txt as YOUR car draws it - YOUR version (tools/car_art_studio.txt: "I made those changes in each car so that
+# only my car gets those changes") where there is one - its 32 headings laid out as kind 0's are (the same keeping, mirroring
+# and turning upside down), the frames then the 32 table rows (their addresses from the frames' start), packed by ZX0. The
+# popup unpacks the one shown into kind 0's frames (pk_buf: the racer's frames, padded to the biggest car's) and its table
+# rows into big_tab. src/pick_data.asm: the packed cars and each one's record and words.
+PICK = os.environ.get('PICK') == '1'
+def pick_hand(name):
+    import re
+    base = open(os.path.join(HERE, 'car_art.txt')).read() + open(os.path.join(HERE, 'pool_art.txt')).read()
+    mine = open(os.path.join(HERE, 'car_art_studio.txt')).read()
+    out = {}
+    for h, i in (('0', 0), ('22.5', 1), ('45', 2), ('11.25', 3), ('33.75', 4)):
+        m = re.search(r'== %s heading %s ==\n((?:[Xo.]{16}\n){16})' % (name, h), mine) or re.search(r'== %s heading %s ==\n((?:[Xo.]{16}\n){16})' % (name, h), base)
+        if m: out[i] = [[INK if c == 'X' else PAPER if c == 'o' else NONE for c in r] for r in m.group(1).split()]
+    assert all(i in out for i in (0, 1, 2)), 'PICK: %s needs headings 0, 22.5 and 45' % name
+    if 3 in out and not re.search(r'== %s heading 11.25 ==' % name, mine) and re.search(r'== %s heading 0 ==' % name, mine):
+        del out[3]                              # (YOUR version changed heading 0: the in-between ones drafted from it, not the old)
+    if 4 in out and not re.search(r'== %s heading 33.75 ==' % name, mine) and re.search(r'== %s heading 0 ==' % name, mine):
+        del out[4]
+    return out
+def pick_block(name):
+    """(frames bytes, table bytes) of a car of the popup, laid out as kind 0's are"""
+    HAND['pick'] = pick_hand(name)
+    frames = []
+    for g in frames32_of('pick'):
+        G = [[NONE] * GN for _ in range(GN)]
+        for y in range(16):
+            for x in range(16):
+                v = g[y][x]
+                G[y + 5][x + FX] = (INK if (x + y) % 2 == 0 else PAPER) if v == DITH else v
+        frames.append(G)
+    del HAND['pick']
+    fr = [big_bytes(g) for g in frames]; kept = []; ent = []
+    for h in range(32):
+        first, rows = fr[h]
+        for sk in kept:
+            rs = fr[sk][1]
+            if rs[::-1] == rows: ent.append((first, len(rows) | 0x80, sk, ROWB * (len(rs) - 1))); break
+            if [mir(r) for r in rs] == rows: ent.append((first, len(rows) | 0x40, sk, 0)); break
+            if [mir(r) for r in rs[::-1]] == rows: ent.append((first, len(rows) | 0xC0, sk, ROWB * (len(rs) - 1))); break
+        else:
+            kept.append(h); ent.append((first, len(rows), h, 0))
+    off, data = {}, []
+    for h in kept: off[h] = len(data); data += [v for r in fr[h][1] for v in r]
+    tab = []
+    for first, n, sk, add in ent: a = off[sk] + add; tab += [a & 255, a >> 8, first, n]
+    return bytes(data), bytes(tab)
+if PICK:
+    sys.path.insert(0, HERE); import make_cards
+    PICKS = make_cards.read_pick()
+    PBLK = [pick_block(c['art']) for c in PICKS]
+    PICK_MAX = max(len(d) for d, t in PBLK)
 def write_frames(f, frames):
     for k, h, rows in frames:
+        if h == 'pad': f.write('pk_pad:                         ; PICK: room for the biggest car of the popup, and its table rows\n        defs %d\n' % (ROWB * len(rows))); continue
         f.write('bf_%d_%d:                        ; %s, heading %d: %d rows\n' % (k, h, NAMES[k], h, len(rows)))
         for r in rows: f.write('        defb ' + ','.join('0x%02X' % v for v in r) + '\n')
 
@@ -398,6 +457,44 @@ if __name__ == '__main__':
         write_frames(f, lo)
     print(('SMALL' if SMALL_CARS else 'big') + ' cars: %d bytes below the program, %d above, table %d; tallest frame %d rows' % (
         sum(ROWB * len(r) for _, _, r in lo), sum(ROWB * len(r) for k, _, r in hi if k < 5), 4 * len([v for v in tab if v[0] < 5]), max(n & 0x3F for _, _, _, n, _ in tab)))
+    if PICK:                                    # the popup's cars, packed (src/pick_data.asm - moved up above the copy routine: UPPER)
+        import subprocess, shutil, tempfile
+        own = bytes(v for kk, h, r in lo if kk == 0 and h != 'pad' for row in r for v in row)
+        assert PICKS[0]['art'] == 'YOU' and PBLK[0][0] == own, 'PICK: the first car must be the racer, laid out as kind 0 is'
+        ZX0 = os.environ.get('ZX0') or shutil.which('zx0') or os.path.join(HERE, '..', 'build', 'zx0')
+        if not os.path.exists(ZX0):
+            zs = os.path.join(HERE, 'zx0')
+            subprocess.run(['gcc', '-O2', '-o', ZX0] + [os.path.join(zs, f) for f in ('zx0.c', 'optimize.c', 'compress.c', 'memory.c')], check=True)
+        COL = dict(red=0x50, cyan=0x68, green=0x60, magenta=0x58, yellow=0x70, white=0x38)
+        packed = []
+        with tempfile.TemporaryDirectory() as td:
+            for i, (d, t) in enumerate(PBLK):
+                fi = os.path.join(td, 'c%d' % i); open(fi, 'wb').write(d + t)
+                subprocess.run([ZX0, '-f', fi, fi + '.zx0'], capture_output=True, check=True)
+                packed.append(open(fi + '.zx0', 'rb').read())
+        with open(os.path.join(HERE, '..', 'src', 'pick_data.asm'), 'w') as f:
+            f.write('; GENERATED by tools/make_data.py (PICK=1) from tools/pick_cars.txt - the CHOOSE YOUR CAR popup\'s cars (src/pick.asm)\n')
+            f.write('PK_N    equ %d                   ; cars\nPK_MAX  equ %d                 ; the biggest car\'s frames (pk_pad leaves room for them and the table)\n' % (len(PICKS), PICK_MAX))
+            f.write('pk_recs:                        ; 16 bytes a car: its packed frames and table, the frames\' size, YOUR card row\'s numbers from its card\n')
+            f.write(';   (slide, ACCEL-to-SPEED, the two pushes), the damage a piece of its armour takes, its weight class, its colour, its ratings A S G R\n')
+            for i, c in enumerate(PICKS):
+                f.write('        dw pk_z%d, %d, PK_%d_SL*45/64\n        db PK_%d_VSW, (PK_%d_KA-YOU_HARD) AND 255, (PK_%d_KS-YOU_HARD) AND 255, PK_%d_ARM, %d, 0x%02X\n        db PK_%d_A, PK_%d_S, PK_%d_G, PK_%d_R      ; %s (%s; the %s card)\n' % (
+                    i, len(PBLK[i][0]), i, i, i, i, i, int(c['weight']), COL[c['colour']], i, i, i, i, c['name'], c['art'], c['card']))
+            f.write('pk_words:                       ; each car\'s name, line, good and poor\n')
+            for c in PICKS:
+                f.write('        db "%s",0, "%s",0, "%s",0, "%s",0\n' % tuple(c[k].replace('"', "'") for k in ('name', 'line', 'good', 'poor')))
+            up = 0; UP_ROOM = int(os.environ.get('PICK_UP', '2850'))   # (above the copy routine: this much at most - the rest in the program, pick_data2.asm)
+            f2 = open(os.path.join(HERE, '..', 'src', 'pick_data2.asm'), 'w')
+            f2.write('; GENERATED by tools/make_data.py (PICK=1) - the popup\'s packed cars that did not go above the copy routine (in the program)\n')
+            for i, z in enumerate(packed):
+                o = f if up + len(z) <= UP_ROOM else f2
+                if o is f: up += len(z)
+                o.write('pk_z%d:                          ; %s: %d bytes packed (%d of frames, 128 of table)\n' % (i, PICKS[i]['name'], len(z), len(PBLK[i][0])))
+                for j in range(0, len(z), 16): o.write('        defb ' + ','.join('0x%02X' % v for v in z[j:j + 16]) + '\n')
+            f2.close()
+        print('PICK: %d cars, frames %s bytes (pad to %d), packed %d bytes in all (%d above the copy routine)' % (len(PICKS), '/'.join(str(len(d)) for d, t in PBLK), PICK_MAX + 128, sum(len(z) for z in packed), up))
+    else:                                       # (pasmo opens an INCLUDE even in an IF that is off: pick.asm's needs to be there)
+        open(os.path.join(HERE, '..', 'src', 'pick_data2.asm'), 'w').write('; (PICK=0: nothing - tools/make_data.py)\n')
     with open(os.path.join(HERE, '..', 'src', 'sqtab.asm'), 'w') as f:
         f.write('; GENERATED by tools/make_data.py - do not edit by hand\n')
         f.write('; quarter squares / 32: n * n / 128 for n = 0..383, 2 bytes each (grip.asm:\n')
