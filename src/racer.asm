@@ -1360,6 +1360,16 @@ gx_scrub:
         pop hl                  ; (HL the push, DE a quarter of it)
         or a
         sbc hl,de
+        if OPT_SIMPLE           ; (Grant, 24 Nov 2026: "I think Jane is too fast, could we make her skid more to compensate?":
+        ld a,(ix+C_KIND)        ; her slide costs her an eighth more of her push - ai_tune.asm AI_W_SCRUB)
+        cp AI_W_SCRUB
+        jr nz,gx_s1
+        sra d                   ; (DE an eighth of the push)
+        rr e
+        or a
+        sbc hl,de
+gx_s1:
+        endif
         ex de,hl
         push bc
         sra b

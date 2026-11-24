@@ -4227,3 +4227,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Room: program 388 bytes (224 before; 29 of the gap before sq4's page are padding again), under 0x8000 26, upper 323.
 - Checked: keys 1 2 3 on the grid change nothing (the saloon's row stays its card's); the bubble reads ON THE GRID / WAIT FOR
   GREEN (docs/design/grid_on_the_grid.png); race_mode_test 12/12; no reset in 80 s; plain tapes byte-identical.
+
+## 2026-11-24 14:20 SAST - Jane skids harder (breakfast_run.tap) (cloud session, Claude)
+- Grant: "I think Jane is too fast, could we make her skid more to compensate?"
+- TRIED FIRST, no use: a lower slide speed for her (AI_W_SX 44, then 16). Her card's slide word is 100 (0.39 px a frame), so
+  she already slides in every turn - nothing changed. It also showed make_cards.py's sum slide+slide*(SX-64)/64 wraps round in
+  the assembler's 16-bit unsigned sums for any SX under 64 (she stopped sliding at all, 16.5 s laps); now slide*SX/64 - the
+  same numbers for 64, so every other tape is unchanged.
+- DONE: in a slide Jane keeps 5/8 of her push, not 3/4 (racer.asm gx_scrub, SIMPLE only; ai_tune.asm AI_W_SCRUB = 4, her car).
+  She runs wide and loses speed in the corners; her straights are as fast as before.
+- MEASURED (careful autopilot, 8 races, 3 laps): flying laps before Y 20.99 C 21.32 G 22.45 P 21.59 W 21.88; tried half her
+  push - W 23.2, last every race; a sixteenth more - W 21.6, no change; an eighth (kept) - Y 21.03 C 21.04 G 21.61 P 21.34
+  W 22.46, Jane last in 7 of 8, in a slide 57% of the time moving.
+- Checked: race_mode_test 12/12; no reset in 80 s (3 seeds); plain tapes byte-identical. Room unchanged (program 388).
+- Nobody has driven it yet: if she is now too slow, say "ease Jane" (a sixteenth plus a thirty-second is the midpoint).

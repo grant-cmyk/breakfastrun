@@ -137,7 +137,7 @@ def asm(cards):
         n = by[who]
         for what, k in (('acceleration', n['ka']), ('speed', n['ks'])):
             if not -60 <= k <= 60: raise SystemExit('%s: the scale gives a %s push the game cannot multiply (%d: keep it within 60 of the plain push)' % (who, what, k))
-        L.append('        dw %d+%d*(AI_%s_SX-64)/64' % (n['slide'], n['slide'], letter))   # (AI_x_SX, ai_tune.asm: 64 unless SIMPLE - group C's corners; written so that 64 is the number exactly, and no product passes 65535)
+        L.append('        dw %d*AI_%s_SX/64' % (n['slide'], letter))   # (AI_x_SX, ai_tune.asm: 64 unless SIMPLE - group C's corners; 64 gives the number exactly. The assembler's sums are 16-bit unsigned, so no part may go below 0 - the old form slide+slide*(SX-64)/64 wrapped round for an SX under 64 - or pass 65535)
         brake = '%d+AI_%s_SLIP' % (n['slide'] // 4, letter) if GAME_SPEED == 100 else '((%d+AI_%s_SLIP)*%d+50)/100' % (SLIDE_AT[by[who]['g']] // 4, letter, GAME_SPEED)
         L.append('        if OPT_RACEONLY         ; (the race-only tapes: no braking for a corner, its top speed balanced - ai_tune.asm AI_K_)')
         L.append('        db AI_K_BRAKE, %d, (AI_%s_SA%+d) AND 255, (AI_K%s_KS+AI_%s_SA%+d) AND 255, 0, 0' % (n['vsw'] // 4, letter, n['ka'], letter, letter, n['ks']))   # (pasmo reads -16+X as -(16+X): the card's number goes last; AI_x_SA: 0 unless SIMPLE)
