@@ -406,9 +406,10 @@ AI_P_SX equ 64
 AI_W_SX equ 64
 ;   24 Nov 2026, Grant: "I think Jane is too fast, could we make her skid more to compensate?" Her slide speed (AI_W_SX 44,
 ;   then 16) changed nothing: her card's slide word is 100 (0.39 px a frame), so she slides in every turn already. Instead
-;   her slide costs her more: 5/8 of her push in a slide, not three quarters (AI_W_SCRUB, racer.asm gx_scrub, SIMPLE only).
-;   (Half her push, tried first: laps 23.2 s against the field's 20.8-21.5 - last every race, too much. A sixteenth more:
-;   21.6 - no change from before, 21.9. An eighth: 22.5 against 20.8-21.6 - last in 7 of 8 careful-driver races.)
+;   her slide costs her more: 11/16 of her push in a slide, not three quarters (AI_W_SCRUB, racer.asm gx_scrub, SIMPLE only).
+;   (Half her push, tried first: laps 23.2 s against the field's 20.8-21.5 - last every race, too much. An eighth less push
+;   (22.5 s, last in 7 of 8) - Grant, 24 Nov 2026: "that was much too tough - now Jane is very weak". 16 careful-driver races
+;   each, her flying laps: nothing more 21.56, a sixteenth 21.92 (kept), 3/32 22.12.)
 AI_W_SCRUB equ 4                ; (C_KIND of the car whose slide costs it the extra: 4, Jane's dragster; 0 for none)
 AI_C_SA equ 0
 AI_G_SA equ 0

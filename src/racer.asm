@@ -1361,10 +1361,12 @@ gx_scrub:
         or a
         sbc hl,de
         if OPT_SIMPLE           ; (Grant, 24 Nov 2026: "I think Jane is too fast, could we make her skid more to compensate?":
-        ld a,(ix+C_KIND)        ; her slide costs her an eighth more of her push - ai_tune.asm AI_W_SCRUB)
+        ld a,(ix+C_KIND)        ; her slide costs her a sixteenth more of her push - ai_tune.asm AI_W_SCRUB)
         cp AI_W_SCRUB
         jr nz,gx_s1
-        sra d                   ; (DE an eighth of the push)
+        sra d                   ; (DE a sixteenth of the push)
+        rr e
+        sra d
         rr e
         or a
         sbc hl,de

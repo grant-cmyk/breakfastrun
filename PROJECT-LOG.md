@@ -4241,3 +4241,12 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   W 22.46, Jane last in 7 of 8, in a slide 57% of the time moving.
 - Checked: race_mode_test 12/12; no reset in 80 s (3 seeds); plain tapes byte-identical. Room unchanged (program 388).
 - Nobody has driven it yet: if she is now too slow, say "ease Jane" (a sixteenth plus a thirty-second is the midpoint).
+
+## 2026-11-24 14:26 SAST - Jane eased: a sixteenth, not an eighth (breakfast_run.tap) (cloud session, Claude)
+- Grant: "that was much too tough - now Jane is very weak".
+- Her slide now keeps 11/16 of her push (an eighth less was 5/8; the others keep 3/4) - racer.asm gx_scrub, AI_W_SCRUB.
+- MEASURED (careful autopilot, 16 races each, her mean flying lap): nothing extra 21.56, a sixteenth 21.92 (kept), 3/32 22.12,
+  an eighth 22.46 (8 races). Field this run Y 21.13 C 21.02 G 21.72 P 21.40.
+- NOTE: the autopilot does not see what Grant sees - even with nothing extra it places her 3.6th on average, while Grant found
+  her too fast. His feel decides; the numbers only rank the settings.
+- Checked: race_mode_test 12/12; no reset in 80 s (2 seeds); plain tapes byte-identical. Nobody has driven it yet.
