@@ -4217,3 +4217,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - FOR GRANT (from the first hunt's group B, still open; measured then): B1 the title's car lapping the border (459), B2 the
   keys screen (~300), B3 "PICK 2 UPGRADES" on the grid (~190) - which now goes against "when you choose a car ... there is no
   option to adjust anything"; and the spare cars (each ~430-520 packed).
+
+## 2026-11-24 13:19 SAST - B3 dropped: no upgrades on the grid (cloud session, Claude)
+- Grant: "b3 can go".
+- NOUPG=1 (breakfast_run): no keys 1 2 3 on the grid (hud.asm su_keys out); su_apply puts the chosen car's numbers straight
+  into your card row (pk_sl, pk_ka, pk_ks); the crew chief says ON THE GRID / WAIT FOR GREEN (strip_g.asm, make_strip.py - the
+  choose-screen tape's words, the same length). With it, left out as unreachable under SIMPLE: the grip model's set-up tail of
+  su_apply and its grip table su_gtab.
+- Room: program 388 bytes (224 before; 29 of the gap before sq4's page are padding again), under 0x8000 26, upper 323.
+- Checked: keys 1 2 3 on the grid change nothing (the saloon's row stays its card's); the bubble reads ON THE GRID / WAIT FOR
+  GREEN (docs/design/grid_on_the_grid.png); race_mode_test 12/12; no reset in 80 s; plain tapes byte-identical.

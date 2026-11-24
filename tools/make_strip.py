@@ -76,7 +76,7 @@ MSGS = [('M_LUCK', 'GOOD LUCK!|SPACE FOR NOS'),       # the green light
         ('M_OTH3', 'LOOKING QUICK|@')]
 # the tape with the choose screen (CHOOSE=1, tools/build_choose.sh) has no set-up keys: there the chief says this on the grid
 # (no longer than the text it stands in for, so that everything after it stays where it is)
-CHOOSE_TEXT = {'M_SETUP': 'ON THE GRID|WAIT FOR GREEN'}
+CHOOSE_TEXT = {'M_SETUP': 'ON THE GRID|WAIT FOR GREEN'}   # (and NOUPG - no upgrades on the grid: Grant, 24 Nov 2026, "b3 can go")
 # the chasers' NOS tape (CNOS=1, src/cnos.asm): one of the random remarks becomes what the chief says when Spike or Jane
 # lights a can (M_CNOS; trg_rand then never picks it at random)
 CNOS_TEXT = {'M_OTH2': 'NOS LIT BY|@'}
@@ -109,7 +109,7 @@ for i, (n, t) in enumerate(MSGS):
             if n in CNOS_TEXT:
                 put(k, '%s equ %d\n%s_t:\n        if OPT_CNOS\n        db "%s",0\n        else\n        db "%s",0\n        endif\n' % (n, i, n, CNOS_TEXT[n], t), len(t) + 1); where[n] = k; break
             if n in CHOOSE_TEXT:
-                put(k, '%s equ %d\n%s_t:\n        if OPT_CHOOSE\n        db "%s",0\n        else\n        db "%s",0\n        endif\n' % (n, i, n, CHOOSE_TEXT[n], t), len(t) + 1); where[n] = k; break
+                put(k, '%s equ %d\n%s_t:\n        if OPT_CHOOSE + OPT_NOUPG\n        db "%s",0\n        else\n        db "%s",0\n        endif\n' % (n, i, n, CHOOSE_TEXT[n], t), len(t) + 1); where[n] = k; break
             put(k, '%s equ %d\n%s_t:\n        db "%s",0\n' % (n, i, n, t), len(t) + 1); where[n] = k; break
     else:
         raise SystemExit('no room for message %s' % n)

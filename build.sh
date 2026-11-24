@@ -133,6 +133,8 @@ printf 'OPT_BIGPL equ %s                ; 1: the big place on the plate (BIGPL=1
 # WINLR=1 (the breakfast fast tapes; Grant, 23 Nov 2026: "If our guy wins, then in the end display have him smiling looking left and
 # right"): plate_slow.asm pd_face.
 printf 'OPT_WINLR equ %s                ; 1: your winning face smiles, looking left and right (WINLR=1 bash build.sh)\n' "${WINLR:-0}" >> "$ROOT/src/options.asm"
+# NOUPG=1 (breakfast_run; Grant, 24 Nov 2026, "b3 can go"): no "PICK 2 UPGRADES - KEYS 1 2 3" on the grid - your car as you chose it.
+printf 'OPT_NOUPG equ %s                ; 1: no upgrades on the grid (NOUPG=1 bash build.sh)\n' "${NOUPG:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_BLINK equ %s                ; 1: your car blinks on the grid (BLINK=1 bash build.sh)\n' "${BLINK:-0}" >> "$ROOT/src/options.asm"
 printf 'OPT_MAP40 equ %s                ; 1: the mini-map 40 wide, its ink in the program (MAPW40=1 bash build.sh)\n' "${MAPW40:-0}" >> "$ROOT/src/options.asm"
 if [ "${MAPW40:-0}" = "1" ]; then

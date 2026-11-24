@@ -644,7 +644,7 @@ hud_update:
         ld a,(race_on)          ; until green: keys 1, 2, 3 set your car up (the lights' 2.6 s, now that the
                                 ; jingle and the countdown come by themselves)
         or a
-        if 1-OPT_CHOOSE         ; (CHOOSE: the extra is picked on the choose screen instead)
+        if (1-OPT_CHOOSE)*(1-OPT_NOUPG) ; (CHOOSE: the extra is picked on the choose screen instead; NOUPG: no upgrades at all)
         call z,su_keys
         endif
         call start_lights       ; Q pressed: the lights, red, red, red, green
@@ -788,6 +788,7 @@ sa_c1:
 sa_c2:
         ld (yg_pushv),hl
         else
+        if OPT_NOUPG = 0        ; (NOUPG - Grant, 24 Nov 2026, "b3 can go": no keys 1 2 3 on the grid)
 su_keys:
         ld a,0xEF               ; 0: start again (keys 6-0: 0 is bit 0)
         in a,(0xFE)
@@ -830,8 +831,18 @@ su_reset:
         ld (hl),1
         inc hl
         ld (hl),2
+        endif                   ; (NOUPG)
 ; SU_APPLY: the levels -> the numbers grip.asm drives your car by, then the row
 su_apply:
+        if OPT_SIMPLE * OPT_NOUPG * OPT_PICK    ; NOUPG: your card row is the chosen car's, as it is - no levels (pick.asm)
+        ld a,(pk_ks)
+        ld (you_card+5),a
+        ld a,(pk_ka)
+        ld (you_card+4),a
+        ld hl,(pk_sl)
+        ld (you_card),hl
+        ret
+        else
         if OPT_SIMPLE           ; SIMPLE (C1): the levels into your card row (you_card, cards_code.asm) - SPEED s: its SPEED push
         ld a,(su_lv+1)          ; 4 (s - 1) 64ths more (as the grip model's top speed: +6% a level); ACCEL a: its ACCEL push
         dec a                   ; 10 (a - 1) more as well; GRIP g: where it slides, an eighth more a level
@@ -879,6 +890,8 @@ sua_1:
 sua_g:  ld (you_card),hl
         ret
         endif
+        endif                   ; (NOUPG)
+        if OPT_SIMPLE = 0       ; (SIMPLE returns above: the grip model's set-up is not reached - the memory hunt, 24 Nov 2026)
         ld a,(su_lv+1)          ; SPEED s: top = 448 + 28 (s - 1) (8.8: 1.75 + 0.11)
         dec a
         add a,a
@@ -905,7 +918,9 @@ sua_g:  ld (you_card),hl
         ld l,a
         ld h,0
         ld (yg_pushv),hl
+        endif                   ; (SIMPLE)
         endif                   ; (CHOOSE)
+        if OPT_SIMPLE = 0
         ld a,(su_lv)            ; GRIP g: its row of the grip table
         dec a
         add a,a
@@ -917,7 +932,8 @@ sua_g:  ld (you_card),hl
         ld de,yg_gtab
         ld bc,4
         ldir
-        ret                     ; (the set-up is not shown on the race screen: Grant, 14 Nov
+        ret
+        endif                   ; (SIMPLE) (the set-up is not shown on the race screen: Grant, 14 Nov
                                 ; 2026, "don't worry about displaying the car strengths")
 
 ; ---------------------------------------------------------------------
