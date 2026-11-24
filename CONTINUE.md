@@ -3,6 +3,19 @@
 **Stamped:** 2026-11-19 22:06 SAST (wrap-up) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not merged to main) · commit: 4e7a7d1 (wrap-up; game change 96b7f86, race mode: computer cars skid more)
 **Lifecycle:** Active
 
+**LATEST (24 Nov 2026) - ONE TAPE: build/breakfast_run.tap** (Grant: "yes, one tape"; it is the group C trial, byte for byte -
+racer_cars75_breakfast_fast_c.tap, _fast and _cnos retired: tools/build_race.sh, their lines commented out; the old tapes are in
+the git history). Raw link: https://github.com/grant-cmyk/breakfastrun/raw/claude/breakfast-run-layout-ik0vpe/build/breakfast_run.tap
+What it has (23 Nov 2026, PROJECT-LOG): CHOOSE YOUR CAR at the title (7 cars, YOUR versions from the Car Studio); overtaking faces;
+the card-model handling (SIMPLE) with harder, longer, recoverable slides (GRIPX) and the skid squeal; side hits that knock a car
+into a slide; the tank weak early and strong late (TANKUP); oil (one whole spin, steer out of it); the chasers' NOS; 110% speed;
+NOS 1.2 s, a yellow lightning bolt; the Sound Lab 2 sounds (SND3); the lap fanfare; race time and race record on the podium; your
+winning face smiling left and right; the big place number (BIGPL). Room on it: program 9 bytes, under 0x8000 ~50 - the next
+feature needs a clean-up first (move the car selector's code above the copy routine). Tools: Car Studio
+https://claude.ai/artifact/4AX5oqNc3y2mzdjMWheKtK; Sound Board https://claude.ai/artifact/CJfPsJCYhhHbZMGP7AtxXk; Sound Lab
+https://claude.ai/artifact/Lnq4BpF4Yem7zfBHF2Sxxv. Open: the dragster too strong as your car (its straight speed); per-car
+rock/paper/scissors tuning; the known race-order colour half-repaint (cosmetic). Nobody has driven the 23 Nov evening changes yet.
+
 **LATEST (22 Nov 2026, 18:41 SAST) - same game, build/racer_cars75_breakfast_fast.tap (dotted cloth - Grant: "lets stick to that").** Bumps now by how the hit happens (weight.asm wt_kick): ram a side - they are kicked sideways and hurt, you keep 3/4 of your speed and take a quarter; hit from behind - pushed on, no damage; head-on - both bounce, both hurt. Your damage a quarter. Your car flashes on the grid only with the lights up. PROJECT-LOG 22 Nov 18:41. Waiting on Grant: drive it, try ramming sides.
 
 **LATEST (22 Nov 2026, 17:17 SAST) - THE GAME GRANT PLAYS NOW: build/racer_cars75_breakfast_fast.tap** - the breakfast table, race only, every car its own card and WEIGHT (bumps and damage), 32 headings, the 4-frame rhythm (12.5 a second; 82% of pictures make it), 85% speed, NOS 1.75x, the coffee mug (damage hurts less), your car flashing on the grid, you start 3rd. Level-1 difficulty (careful autopilot last, ~8 s behind). Next: speed (task: make the 4-frame rhythm hold - tiles 34k and cars 34k T a picture are the targets; the cloth is already PUSH-filled); levels (harder later - not designed).

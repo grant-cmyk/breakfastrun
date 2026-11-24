@@ -4194,3 +4194,10 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - NOSBOLT: the bolt and its colour squares one cell row up (HP_UP 32: plate_slow.asm, racer.asm NOS_BB)
   (docs/design/podium_win_bolt_up.png).
 - Checked: race_mode_test and no reset on all three fast tapes (below); plain tapes byte-identical.
+
+## 2026-11-24 12:36 SAST - one tape: build/breakfast_run.tap (cloud session, Claude)
+- Grant: "yes, one tape".
+- tools/build_race.sh: the group C trial built as build/breakfast_run.tap (BDIR breakfast_run) - byte for byte the
+  racer_cars75_breakfast_fast_c.tap it was (md5 c3b8a2e9...). The _fast and _cnos tapes retired (their lines commented out);
+  the three old tape files removed from the branch (in the git history). The options they shared stay in the code (off). Plain
+  tapes byte-identical. CONTINUE.md: a LATEST entry for the one tape.
