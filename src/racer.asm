@@ -1220,6 +1220,7 @@ phr_go:
 phr_tab:                        ; fshift 0-6 -> the jump at phr_fr: none; / 4 twice (as friction has it); / 8 ... / 64
         db phr_go-phr_h6, 16, 16, 12, 8, 4, 0
         endif
+        if OPT_SIMPLE = 0       ; (SIMPLE: nothing jumps here - your car is pushed as a computer car is; the memory hunt, 24 Nov 2026)
 ph_snap:
         ld a,e
         and CT_L+CT_R
@@ -1243,6 +1244,7 @@ ph_sn1:
         and 63
         ld (ix+C_ANG),a
         jp ph_push_set
+        endif
 
 ; ---------------------------------------------------------------------
 ; SKID (IX = car; DE, BC = this frame's push): friction takes 1/8 of the speed
@@ -1371,6 +1373,7 @@ gx_scrub:
         ld c,l
         ret
         endif
+        if OPT_SCRUB = 0        ; (SCRUB returns above: these steps are not reached - the memory hunt, 24 Nov 2026)
         ld a,SKID_N             ; up to SKID_N steps, each SKID_STEP faster
 skc_lv:
         call sk_half
@@ -1383,6 +1386,7 @@ skc_lv:
         dec a
         jr nz,skc_lv
         ret
+        endif
 sk_half:                        ; half the push (DE, BC) and half the friction
         sra d
         rr e
@@ -4926,6 +4930,15 @@ gd_2:
         jp st_text
         endif                   ; (ARMOUR)
         ; (gap_draw, from hud.asm, also fills the gap)
+        if OPT_TANKUP           ; (the memory hunt, 24 Nov 2026: these three fill the gap before sq4's page - 224 bytes were
+        include "tank.asm"      ; padding; with them 9 are) TANKUP: the tank stronger each lap
+        endif
+        if OPT_PICK
+        include "pick_dzx0.asm" ; PICK: the popup's unpacker
+        endif
+        if OPT_OVF
+        include "ovface_buf.asm" ; OVF: the face's buffers
+        endif
         include "sq4.asm"
 mb_world:
         include "world.asm"
@@ -4946,9 +4959,6 @@ me_world:
         endif
         if OPT_OIL
         include "oil.asm"       ; OIL: the oil spills on the line
-        endif
-        if OPT_TANKUP
-        include "tank.asm"      ; TANKUP: the tank stronger each lap
         endif
         if OPT_PICK
         include "pick.asm"      ; PICK: the CHOOSE YOUR CAR card over the title

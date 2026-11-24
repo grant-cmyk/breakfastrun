@@ -4201,3 +4201,19 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
   racer_cars75_breakfast_fast_c.tap it was (md5 c3b8a2e9...). The _fast and _cnos tapes retired (their lines commented out);
   the three old tape files removed from the branch (in the git history). The options they shared stay in the code (off). Plain
   tapes byte-identical. CONTINUE.md: a LATEST entry for the one tape.
+
+## 2026-11-24 12:51 SAST - memory hunt 2 (breakfast_run.tap) (cloud session, Claude)
+- Grant: "memory hunt again".
+- MEASURED: an access map of a whole play (zxdev access, on from the title: the popup through all 7 cars, a race with NOS, oil
+  on every spot and bumps, the podium, the keys screen, a second race) - 4,175 bytes never read, written or run. Almost all of
+  it is needed: map and tiles of places nobody drove (surface_map 425 of 576, omap 220 of 576, tiles 168 of 792), start-up and
+  title-only code, rare events (a car on NOS into an O, the 2UP message). Dead on this tape and left out now: ph_snap (your car
+  turning to a pictured heading - SIMPLE never jumps there) and the skid's old stepped slide (SCRUB returns before it).
+- FOUND: 224 bytes of padding before sq4's page (0x9820-0x98FF) - code put there is free. Moved in: tank.asm (61), the
+  selector's unpacker (pick_dzx0.asm, 68), the face's buffers (ovface_buf.asm, 86). sq4 stays at 0x9900.
+- ROOM NOW: program 224 bytes (9 before), under 0x8000 26, above the copy routine 323 - about 570 in all.
+- Checked: race_mode_test 12/12; no reset in 80 s (racer, tank); the saloon from the popup (its card in your row); 5 faces
+  in a race and STRIP3 untouched; plain tapes byte-identical.
+- FOR GRANT (from the first hunt's group B, still open; measured then): B1 the title's car lapping the border (459), B2 the
+  keys screen (~300), B3 "PICK 2 UPGRADES" on the grid (~190) - which now goes against "when you choose a car ... there is no
+  option to adjust anything"; and the spare cars (each ~430-520 packed).
