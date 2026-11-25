@@ -1,7 +1,58 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-19 22:06 SAST (wrap-up) · machine: Claude cloud container · branch: claude/breakfast-run-layout-ik0vpe (not merged to main) · commit: 4e7a7d1 (wrap-up; game change 96b7f86, race mode: computer cars skid more)
+**Stamped:** 2026-11-25 07:55 SAST (wrap-up) · machine: Claude cloud container · identity: Personal · branch: claude/breakfast-run-layout-ik0vpe (not merged to main; no pull request) · commit: the wrap-up commit after 6672f12 (last game change: your car shows during the start music)
 **Lifecycle:** Active
+
+## START HERE (wrap-up, 25 Nov 2026 07:55 SAST)
+
+**THE ONE TAPE:** build/breakfast_run.tap - raw link (send it every report):
+https://github.com/grant-cmyk/breakfastrun/raw/claude/breakfast-run-layout-ik0vpe/build/breakfast_run.tap
+It is the breakfast-table race game: CHOOSE YOUR CAR popup (7 cars, Grant's own art from the Car Studio), card-model handling
+with hard recoverable slides (GRIPX) and the skid squeal, side hits that knock a car into a slide, the tank weak early and strong
+late, oil (one spin, steer out), the chasers' NOS (1.2 s, a yellow lightning bolt), 110% speed, Sound Lab sounds (SND3), lap
+fanfare, race time and race record on the podium, overtaking faces, the big place number, your winning face smiling left and
+right. No upgrades on the grid (B3 dropped, 24 Nov).
+
+**DONE IN THE LAST SESSION (24-25 Nov, PROJECT-LOG has each):**
+- Memory hunt 2: 224 bytes found before sq4's page; B3 (grid upgrades) dropped. Room now: program 388 bytes, under 0x8000 26,
+  upper 323.
+- Jane (the dragster, computer car): "too fast" -> her slide now keeps 11/16 of her push, the others 3/4 (racer.asm gx_scrub,
+  ai_tune.asm AI_W_SCRUB = 4, SIMPLE only). An eighth (5/8) was "much too tough - now Jane is very weak". Her slide SPEED is no
+  lever (card slide word 100 = 0.39 px a frame: she slides in every turn). 16-race flying laps: none 21.56, 1/16 21.92 (kept),
+  3/32 22.12, 1/8 22.46. If still a bit strong: 3/32 is the next step (a sixteenth plus a thirty-second; the code is in the log).
+- Fixed a latent bug: tools/make_cards.py's slide sum wrapped round for AI_x_SX under 64 (now slide*SX/64).
+- "my car does still not appear at the start of the race during the music": BLINK's off beat fell on the race's first picture
+  (renders 0), which the music holds up. No blink while jin_on is 1 or 2 now (racer.asm draw_all). Screenshot:
+  docs/design/start_music_your_car.png. NOTE: rt_lib's to_grid turns the music off, so tests never see that stretch - use the
+  screenshot method (scratchpad musshots.py: title, 1, Q, shots every 12 TV frames).
+
+**NOBODY HAS DRIVEN** the Jane 1/16 change or the start-music fix yet.
+
+**WAITING ON GRANT:**
+- Drive the tape: does your car show during the music; is Jane right now.
+- Open choices from before: the dragster too strong as YOUR car (its straight speed); per-car rock/paper/scissors tuning;
+  memory options B1 (the title's lapping car, 459 bytes) and B2 (the keys screen, ~300); the overtaking blip and engine hush
+  (Sound Lab) not chosen.
+
+**KNOWN OPEN (Claude):**
+- tests/finish_test.py breakfast_run: 1 FAIL - the podium's 2nd and 3rd faces do not move between everyday and SAD as the test
+  expects. Fails the same without the 25 Nov change (pre-existing; not investigated).
+- The occasional race-order colour half-repaint (cosmetic, test glitch).
+
+**HOW TO WORK ON IT:**
+- Build: `bash tools/build_race.sh` (all race tapes, the plain game last). The game is the `env SIMPLE=1 ...` line, OUT=breakfast_run.
+- Plain tapes must stay byte-identical: md5 of build/racer.tap, racer_track2/3/5.tap before and after.
+- Tests: `python3 tests/race_mode_test.py breakfast_run` (12/12); a no-reset run of 80 s; `tests/race_measure.py` via
+  measure('breakfast_run','careful',8) for balance (Y you, C Frank/six-wheeler, G Spike, P Bruno/tank, W Jane).
+- Tuning: src/ai_tune.asm GROUP C block (end of file); cars in tools/pick_cars.txt; art in tools/car_art_studio.txt.
+- pasmo traps: an EQU takes its value where it stands (define before use); INCLUDE files open even inside an off IF; jr +-127.
+- Tools (claude.ai artifacts, not watched): Car Studio https://claude.ai/artifact/4AX5oqNc3y2mzdjMWheKtK; Sound Board
+  https://claude.ai/artifact/CJfPsJCYhhHbZMGP7AtxXk; Sound Lab https://claude.ai/artifact/Lnq4BpF4Yem7zfBHF2Sxxv.
+
+**NEXT STEP (Grant):** load breakfast_run.tap, race once: check your car during the music and how Jane races.
+
+---
+## EARLIER (history, newest first)
 
 **LATEST (24 Nov 2026) - ONE TAPE: build/breakfast_run.tap** (Grant: "yes, one tape"; it is the group C trial, byte for byte -
 racer_cars75_breakfast_fast_c.tap, _fast and _cnos retired: tools/build_race.sh, their lines commented out; the old tapes are in
