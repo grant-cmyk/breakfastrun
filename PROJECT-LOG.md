@@ -4250,3 +4250,13 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - NOTE: the autopilot does not see what Grant sees - even with nothing extra it places her 3.6th on average, while Grant found
   her too fast. His feel decides; the numbers only rank the settings.
 - Checked: race_mode_test 12/12; no reset in 80 s (2 seeds); plain tapes byte-identical. Nobody has driven it yet.
+
+## 2026-11-25 07:20 SAST - your car shows during the start music (breakfast_run.tap and the other BLINK tapes) (cloud session, Claude)
+- Grant: "my car does still not appear at the start of the race during the music".
+- CAUSE (my bug of 23 Nov, BLINK): the start lights are up before the music starts, and the blink leaves your car out of
+  every picture whose count is a multiple of 8 - which the race's FIRST picture always is (renders 0). The music then holds
+  that picture on the screen all through it. The tests never saw it: to_grid turns the music off (jin_on 0xFF).
+- FIX (racer.asm draw_all): no blink while the music is due or playing (jin_on 1 or 2); then one picture in 8 as before.
+- Checked: screenshots every 12 TV frames through the music - your car in its grid box from the first picture
+  (docs/design/start_music_your_car.png); race_mode_test 12/12; no reset in 80 s; finish_test as before (its one failure, the
+  podium's second and third faces, fails the same without this change); plain tapes byte-identical. Room unchanged.

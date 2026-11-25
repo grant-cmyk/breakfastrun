@@ -392,11 +392,16 @@ draw_all:
         ld a,(lt_on)            ; (only once the lights are up - Grant, 22 Nov 2026: "sometimes in the grid my car during the intro
         or a                    ; music does not actually show": the jingle holds the pictures up, and one drawn without the car
         jr z,da_fm              ; stayed on the screen all through it)
-        ld a,(renders)
         if OPT_BLINK            ; BLINK (Grant, 23 Nov 2026: "still have the issue with the car not showing at the start" - off 4
-        and 7                   ; pictures in 8 read as missing): off one picture in 8, a blink
+        ld a,(jin_on)           ; pictures in 8 read as missing): off one picture in 8, a blink. Never while the start music is
+        dec a                   ; due or playing (jin_on 1 or 2 - Grant, 25 Nov 2026: "my car does still not appear at the start
+        cp 2                    ; of the race during the music": the lights are up before the music, the first picture is
+        jr c,da_fm              ; renders 0 - a blink - and the music holds that picture up all through it)
+        ld a,(renders)
+        and 7
         jr z,da_next
         else
+        ld a,(renders)
         and 4
         jr nz,da_next
         endif
