@@ -4260,3 +4260,17 @@ NOT DONE / NOT VERIFIED: nobody has driven it; fun and fairness are counted, not
 - Checked: screenshots every 12 TV frames through the music - your car in its grid box from the first picture
   (docs/design/start_music_your_car.png); race_mode_test 12/12; no reset in 80 s; finish_test as before (its one failure, the
   podium's second and third faces, fails the same without this change); plain tapes byte-identical. Room unchanged.
+
+## 2026-11-28 14:00 SAST - finish_test's one FAIL explained and fixed (test only; no tape changed) (cloud session, Claude)
+- The "1 FAIL" (2nd and 3rd's faces not moving to SAD) was never on breakfast_run: tests/finish_test.py takes no
+  tape argument - it reads ZTAP/ZSYM and otherwise tests the PLAIN game (build/racer.tap). `finish_test.py breakfast_run`
+  ran the plain game.
+- The plain game keeps the faces from before Grant's 18 Nov redraw ON PURPOSE (src/faces_mood_plain.asm, no room for the
+  new ones; OPT_FACESLOW 0). The test compared against tools/face_moods.txt (the new faces): YOUR sad had one extra cheek
+  pixel (row 8) and YOUR look a different row 9, so YOU, third, read as "?".
+- Fix: finish_test.py, on a build with neither FACESLOW nor CHOOSE, builds its expected looks from faces_mood_plain.asm laid
+  over the everyday faces. Result: RESULT: PASS. build/racer.tap md5 97205552..., build/breakfast_run.tap md5 822f5342...
+  (rebuilt from source, byte-identical to the committed tape).
+- finish_test.py cannot drive breakfast_run itself (it expects the old flow: no car-pick popup, PICK 2 UPGRADES on the
+  grid): with ZTAP/ZSYM/ZMAP pointed at it, 12 FAIL - all flow, not the game. The breakfast tape's own suite is
+  tests/race_mode_test.py breakfast_run.

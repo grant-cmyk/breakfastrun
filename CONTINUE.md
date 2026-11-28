@@ -1,6 +1,6 @@
 # CONTINUE - Breakfast Run
 
-**Stamped:** 2026-11-25 07:55 SAST (wrap-up) · machine: Claude cloud container · identity: Personal · branch: claude/breakfast-run-layout-ik0vpe (not merged to main; no pull request) · commit: the wrap-up commit after 6672f12 (last game change: your car shows during the start music)
+**Stamped:** 2026-11-28 14:00 SAST (session update) · machine: Claude cloud container · identity: Personal · branch: claude/breakfast-run-layout-ik0vpe (not merged to main; no pull request) · commit: the commit after 4b665ce (test fix only - the tape is unchanged since 6672f12)
 **Lifecycle:** Active
 
 ## START HERE (wrap-up, 25 Nov 2026 07:55 SAST)
@@ -35,8 +35,8 @@ right. No upgrades on the grid (B3 dropped, 24 Nov).
   (Sound Lab) not chosen.
 
 **KNOWN OPEN (Claude):**
-- tests/finish_test.py breakfast_run: 1 FAIL - the podium's 2nd and 3rd faces do not move between everyday and SAD as the test
-  expects. Fails the same without the 25 Nov change (pre-existing; not investigated).
+- (28 Nov: the finish_test "1 FAIL" is fixed - it was the plain game's deliberately older faces, not this tape; PROJECT-LOG
+  28 Nov. finish_test.py tests the plain game only - it takes no tape argument.)
 - The occasional race-order colour half-repaint (cosmetic, test glitch).
 
 **HOW TO WORK ON IT:**

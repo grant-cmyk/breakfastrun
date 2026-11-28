@@ -17,6 +17,17 @@ def art(path, kind):
     return {m.group(1): np.array([[ch == 'X' for ch in r] for r in m.group(2).split()]) for m in re.finditer(r'== (\w+) %s ==\n((?:[X.]{16}\n){16})' % kind, t)}
 CAR = ['YOU', 'CYAN', 'GREEN', 'PINK', 'WHITE']; COLOUR = [0x57, 0x68, 0x60, 0x58, 0x78]
 EVERY, HAPPY = art('face_art.txt', 'face'), art('face_moods.txt', 'happy'); SAD, EYES = art('face_moods.txt', 'sad'), art('face_moods.txt', 'eyes')
+if not SYM.get('opt_faceslow') and not SYM.get('opt_choose'):
+    # The plain game keeps the faces from before Grant's 18 Nov 2026 redraw (src/faces_mood_plain.asm - no room for
+    # the new ones there; racer.asm), so its looks are checked against those rows laid over the everyday face, not
+    # against tools/face_moods.txt (28 Nov 2026: this check failed on the plain game for that reason alone).
+    _plain = {'eyes': {}, 'happy': {}, 'sad': {}}; _k = None
+    for _l in open(os.path.join(ROOT, 'src', 'faces_mood_plain.asm')).read().split('faces_mood_src:', 1)[1].splitlines():
+        _m = re.match(r'; (\w+) (eyes|happy|sad)$', _l.strip())
+        if _m: _k = (_m.group(1), _m.group(2)); _plain[_k[1]][_k[0]] = EVERY[_k[0]].copy(); continue
+        _m = re.match(r'\s*defb (\d+),%([01]{8}),%([01]{8})', _l)
+        if _m and _k: _plain[_k[1]][_k[0]][int(_m.group(1))] = [c == '1' for c in _m.group(2) + _m.group(3)]
+    HAPPY, SAD, EYES = _plain['happy'], _plain['sad'], _plain['eyes']
 with Racer(headless=True) as sp:
     Spectrum.load_tape(sp, TAP)                         # (the plain loader: the header's holds the jingle off)
     t = 0.0
